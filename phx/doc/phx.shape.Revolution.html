@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.shape.Revolution</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.shape.Revolution</div>
+
+<h1 class="phx-title">phx.shape.Revolution</h1>
+<p class="phx-purpose">Revolution shape</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.shape.Revolution &nbsp;|&nbsp; Superclasses: <a href="phx.base.Shape.html">phx.base.Shape</a>, <a href="phx.base.ShapeMesh.html">phx.base.ShapeMesh</a></p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.shape.Revolution</code> revolves a user-defined 2-D
+<code class="phx-inline">Profile</code> about the modeling axis to form a solid of revolution. The
+collision shape is a convex or concave envelope (<code class="phx-inline">Envelope</code>); the mass
+properties are computed from the actual triangular mesh.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">shape = phx.shape.Revolution</span>
+<span class="phx-syntax">shape = phx.shape.Revolution(Name,Value)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">shape = phx.shape.Revolution(Name,Value)</code> creates a solid of
+revolution from the given <code class="phx-inline">Profile</code>.</p>
+</div>
+
+<h2 class="phx-h2">Properties</h2>
+<h3 class="phx-h3">Geometry</h3>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">Profile</td><td class="type">M&times;2 double</td><td>Profile revolved about the modeling axis; each row is a 2-D point (axial, radial).</td></tr>
+<tr><td class="name">Axis</td><td class="dflt">"z"</td><td>Modeling axis: <code class="phx-inline">"x"</code>, <code class="phx-inline">"y"</code> or <code class="phx-inline">"z"</code>.</td></tr>
+<tr><td class="name">Segments</td><td class="dflt">45</td><td>Number of segments around the revolution.</td></tr>
+<tr><td class="name">Envelope</td><td class="dflt">"convex"</td><td>Collision envelope: <code class="phx-inline">"convex"</code> or <code class="phx-inline">"concave"</code>.</td></tr>
+<tr><td class="name">Density</td><td class="dflt">1000</td><td>Volumetric density, <span class="phx-unit">kg/m&sup3;</span>.</td></tr>
+</table>
+
+<p>Appearance properties are inherited from <a href="phx.base.ShapeMesh.html">phx.base.ShapeMesh</a>
+and skeletal properties from <a href="phx.base.Shape.html">phx.base.Shape</a>.</p>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">Revolve a profile into a vase</h4>
+<pre class="phx-code">t = linspace(0, 1, 20)';
+profile = [t, 0.3 + 0.2*sin(t*pi)];     <span class="cmt">% [axial, radial]</span>
+
+b = phx.Body(<span class="str">"Shape"</span>, phx.shape.Revolution(<span class="str">"Profile"</span>, profile, <span class="str">"Envelope"</span>, <span class="str">"concave"</span>));
+
+sim = phx.Simulation;
+sim.step(2, 200, 1);</pre>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.Body.html">phx.Body</a>,
+<a href="phx.shape.Extrusion.html">phx.shape.Extrusion</a>,
+<a href="phx.shape.Cylinder.html">phx.shape.Cylinder</a>,
+<a href="phx.base.Shape.html">phx.base.Shape</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

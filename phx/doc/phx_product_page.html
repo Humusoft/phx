@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PHX Toolbox</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb">PHX Toolbox</div>
+
+<h1 class="phx-title">PHX Toolbox</h1>
+<p class="phx-purpose">Object-oriented rigid-body physics for MATLAB&reg;</p>
+
+<p>PHX (the <code class="phx-inline">phx</code> package) is a thin object-oriented layer over a
+rigid-body physics engine. A scene is built from <code class="phx-inline">phx.*</code> handle
+objects that draw into MATLAB axes, are advanced by a <a href="phx.Simulation.html">phx.Simulation</a>,
+and can optionally be driven from <a href="PhxModel.html">Simulink&reg;</a>.</p>
+
+<p>A typical scene is only a few lines long: create one or more
+<a href="phx.Body.html">phx.Body</a> objects, optionally connect them with joints, springs
+and force elements, wrap them in a <a href="phx.Simulation.html">phx.Simulation</a> and call
+<code class="phx-inline">step</code>.</p>
+
+<pre class="phx-code"><span class="cmt">% Minimal scene: a falling body and a static ground</span>
+clf; view(3); axis equal; grid on; camlight headlight;
+
+phx.Body(<span class="str">"Position"</span>, [0.6 -0.5 2]);   <span class="cmt">% dynamic box (default type and shape of a body)</span>
+phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>);           <span class="cmt">% ground</span>
+
+sim = phx.Simulation;                  <span class="cmt">% collect all bodies in the axes</span>
+sim.step(1, 100, 1);                   <span class="cmt">% 1 s, 100 substeps, redraw every step</span></pre>
+
+<h2 class="phx-h2">Classes</h2>
+
+<div class="phx-cards">
+
+<div class="phx-card">
+<h3>Core</h3>
+<ul>
+<li><a href="phx.Simulation.html">phx.Simulation</a> &mdash; scene root and stepper</li>
+<li><a href="phx.Body.html">phx.Body</a> &mdash; movable rigid body</li>
+</ul>
+</div>
+
+<div class="phx-card">
+<h3>Joints</h3>
+<ul>
+<li><a href="phx.RevoluteJoint.html">phx.RevoluteJoint</a> &mdash; 1 DOF hinge</li>
+<li><a href="phx.SphericalJoint.html">phx.SphericalJoint</a> &mdash; 3 DOF ball</li>
+<li><a href="phx.GearJoint.html">phx.GearJoint</a> &mdash; coupled rotation</li>
+<li><a href="phx.FixedJoint.html">phx.FixedJoint</a> <span class="phx-tag dev">dev</span></li>
+<li><a href="phx.GenericJoint.html">phx.GenericJoint</a> <span class="phx-tag dev">dev</span></li>
+</ul>
+</div>
+
+<div class="phx-card">
+<h3>Springs &amp; ropes</h3>
+<ul>
+<li><a href="phx.Spring.html">phx.Spring</a> &mdash; spring&ndash;damper</li>
+<li><a href="phx.Rope.html">phx.Rope</a> &mdash; rope over pulleys</li>
+<li><a href="phx.GenericSpring.html">phx.GenericSpring</a> <span class="phx-tag dev">dev</span></li>
+</ul>
+</div>
+
+<div class="phx-card">
+<h3>Force &amp; field elements</h3>
+<ul>
+<li><a href="phx.Thruster.html">phx.Thruster</a> &mdash; body-fixed thrust</li>
+<li><a href="phx.Resistance.html">phx.Resistance</a> &mdash; drag vs. environment</li>
+<li><a href="phx.Monopole.html">phx.Monopole</a> &mdash; charge interaction</li>
+<li><a href="phx.Dipole.html">phx.Dipole</a> &mdash; dipole interaction</li>
+</ul>
+</div>
+
+<div class="phx-card">
+<h3>Geometry &mdash; primitives</h3>
+<ul>
+<li><a href="phx.shape.Box.html">phx.shape.Box</a> &mdash; box shape</li>
+<li><a href="phx.shape.Sphere.html">phx.shape.Sphere</a> &mdash; sphere shape</li>
+<li><a href="phx.shape.Cylinder.html">phx.shape.Cylinder</a> &mdash; cylinder shape</li>
+<li><a href="phx.shape.Cone.html">phx.shape.Cone</a> &mdash; cone shape</li>
+<li><a href="phx.shape.Capsule.html">phx.shape.Capsule</a> &mdash; capsule shape</li>
+<li><a href="phx.shape.Globe.html">phx.shape.Globe</a> &mdash; globe shape</li>
+</ul>
+</div>
+
+<div class="phx-card">
+<h3>Geometry &mdash; custom &amp; imported</h3>
+<ul>
+<li><a href="phx.shape.Mesh.html">phx.shape.Mesh</a> &mdash; custom shape with texture</li>
+<li><a href="phx.shape.Extrusion.html">phx.shape.Extrusion</a> &mdash; extrusion shape</li>
+<li><a href="phx.shape.Revolution.html">phx.shape.Revolution</a> &mdash; revolution shape</li>
+<li><a href="phx.shape.Rock.html">phx.shape.Rock</a> &mdash; rock shape</li>
+<li><a href="phx.shape.Terrain.html">phx.shape.Terrain</a> &mdash; terrain heightfield</li>
+<li><a href="phx.shape.OBJ.html">phx.shape.OBJ</a> &mdash; OBJ imported shape</li>
+<li><a href="phx.shape.STL.html">phx.shape.STL</a> &mdash; STL imported shape</li>
+</ul>
+</div>
+
+<div class="phx-card">
+<h3>Viewer</h3>
+<ul>
+<li><a href="phx.extra.Viewer.html">phx.extra.Viewer</a> &mdash; interactive scene viewer</li>
+</ul>
+</div>
+
+<div class="phx-card">
+<h3>Simulink</h3>
+<ul>
+<li><a href="PhxModel.html">PhxModel</a> &mdash; co-simulation block</li>
+<li><a href="PhxAction.html">PhxAction</a> &mdash; triggered scene actions</li>
+</ul>
+</div>
+
+</div>
+
+<div class="phx-note">
+<span class="lbl">Conventions.</span> Constructors accept any public property as a
+<code class="phx-inline">Name,&nbsp;Value</code> pair. Lengths are in metres, mass in kilograms,
+forces in newtons, torques in newton-metres and angles in radians unless stated otherwise.
+Positions, orientations and velocities are expressed in the world coordinate system; connection
+points and axes are given in each body's local coordinate system.
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

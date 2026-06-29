@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.shape.Mesh</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.shape.Mesh</div>
+
+<h1 class="phx-title">phx.shape.Mesh</h1>
+<p class="phx-purpose">Custom shape with texture</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.shape.Mesh &nbsp;|&nbsp; Superclasses: <a href="phx.base.Shape.html">phx.base.Shape</a>, <a href="phx.base.ShapeMesh.html">phx.base.ShapeMesh</a></p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.shape.Mesh</code> wears a user-supplied triangular mesh defined by the
+<code class="phx-inline">Vertices</code>, <code class="phx-inline">Normals</code>,
+<code class="phx-inline">Faces</code> and <code class="phx-inline">UV</code> properties, optionally
+textured. The collision shape and mass properties are modeled as an ideal block based on the
+axis-aligned bounding box of the mesh, scaled by <code class="phx-inline">Scale</code>.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">shape = phx.shape.Mesh</span>
+<span class="phx-syntax">shape = phx.shape.Mesh(Name,Value)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">shape = phx.shape.Mesh(Name,Value)</code> creates a shape from the given
+mesh data. Supply at least <code class="phx-inline">Vertices</code> and <code class="phx-inline">Faces</code>;
+provide <code class="phx-inline">Normals</code> for shading and <code class="phx-inline">UV</code> with a
+<code class="phx-inline">Texture</code> for texturing.</p>
+</div>
+
+<h2 class="phx-h2">Properties</h2>
+<h3 class="phx-h3">Geometry</h3>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">Vertices</td><td class="type">N&times;3 double</td><td>Vertex coordinates.</td></tr>
+<tr><td class="name">Normals</td><td class="type">N&times;3 double</td><td>Vertex normals.</td></tr>
+<tr><td class="name">Faces</td><td class="type">M&times;3 double</td><td>Triangle vertex indices.</td></tr>
+<tr><td class="name">UV</td><td class="type">N&times;2 double</td><td>Vertex texture coordinates.</td></tr>
+<tr><td class="name">Scale</td><td class="dflt">[1 1 1]</td><td>Scale factor applied to the mesh.</td></tr>
+<tr><td class="name">Density</td><td class="dflt">1000</td><td>Volumetric density, <span class="phx-unit">kg/m&sup3;</span> (applied to the bounding box).</td></tr>
+</table>
+
+<p>Appearance properties are inherited from <a href="phx.base.ShapeMesh.html">phx.base.ShapeMesh</a>
+and skeletal properties from <a href="phx.base.Shape.html">phx.base.Shape</a>.
+<code class="phx-inline">Mesh</code> uses the <code class="phx-inline">"flat"</code> style by default.</p>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">A body from a custom triangulation</h4>
+<pre class="phx-code">[X, Y, Z] = sphere(16);
+fv = surf2patch(X, Y, Z, <span class="str">"triangles"</span>);
+
+b = phx.Body(<span class="str">"Shape"</span>, phx.shape.Mesh(<span class="str">"Vertices"</span>, fv.vertices, <span class="str">"Faces"</span>, fv.faces));
+
+sim = phx.Simulation;
+sim.step(2, 200, 1);</pre>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.Body.html">phx.Body</a>,
+<a href="phx.shape.OBJ.html">phx.shape.OBJ</a>,
+<a href="phx.shape.STL.html">phx.shape.STL</a>,
+<a href="phx.base.Shape.html">phx.base.Shape</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

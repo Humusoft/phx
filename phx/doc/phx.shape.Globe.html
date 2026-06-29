@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.shape.Globe</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.shape.Globe</div>
+
+<h1 class="phx-title">phx.shape.Globe</h1>
+<p class="phx-purpose">Globe shape</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.shape.Globe &nbsp;|&nbsp; Superclasses: <a href="phx.base.Shape.html">phx.base.Shape</a>, <a href="phx.base.ShapeMesh.html">phx.base.ShapeMesh</a></p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.shape.Globe</code> is a sphere geometry built from a meridian/parallel
+grid, which carries proper texture coordinates &mdash; making it the right choice for an image-mapped
+sphere (a planet, a ball with a print). The collision shape and mass properties are modeled as an
+ideal sphere. For an untextured sphere, prefer the lighter <a href="phx.shape.Sphere.html">phx.shape.Sphere</a>.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">shape = phx.shape.Globe</span>
+<span class="phx-syntax">shape = phx.shape.Globe(Name,Value)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">shape = phx.shape.Globe</code> creates a unit globe with default parameters.
+<code class="phx-inline">phx.shape.Globe(Name,Value)</code> sets properties with name-value arguments.</p>
+</div>
+
+<h2 class="phx-h2">Properties</h2>
+<h3 class="phx-h3">Geometry</h3>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">Diameter</td><td class="dflt">1</td><td>Globe diameter, <span class="phx-unit">m</span>.</td></tr>
+<tr><td class="name">Radius</td><td class="type">double (dependent)</td><td>Globe radius, <span class="phx-unit">m</span>. Setting it updates <code class="phx-inline">Diameter</code>.</td></tr>
+<tr><td class="name">Segments</td><td class="dflt">32</td><td>Number of meridian and parallel segments.</td></tr>
+<tr><td class="name">Density</td><td class="dflt">1000</td><td>Volumetric density, <span class="phx-unit">kg/m&sup3;</span>.</td></tr>
+</table>
+
+<p>Appearance properties are inherited from <a href="phx.base.ShapeMesh.html">phx.base.ShapeMesh</a>
+and skeletal properties from <a href="phx.base.Shape.html">phx.base.Shape</a>.</p>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">A textured planet</h4>
+<pre class="phx-code">b = phx.Body(<span class="str">"Shape"</span>, {<span class="str">"Globe"</span>, <span class="str">"Diameter"</span>, 2, <span class="str">"Segments"</span>, 48, <span class="str">"Texture"</span>, <span class="str">"earth.jpg"</span>});
+
+sim = phx.Simulation(gca, <span class="str">"Gravity"</span>, [0 0 0]);
+b.AngularVelocity = [0 0 0.5];
+sim.step(6, 600, 5);</pre>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.Body.html">phx.Body</a>,
+<a href="phx.shape.Sphere.html">phx.shape.Sphere</a>,
+<a href="phx.base.ShapeMesh.html">phx.base.ShapeMesh</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.GearJoint</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.GearJoint</div>
+
+<h1 class="phx-title">phx.GearJoint</h1>
+<p class="phx-purpose">Gear joint</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.GearJoint &nbsp;|&nbsp; Superclass: <a href="phx.base.Joint.html">phx.base.Joint</a></p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.GearJoint</code> couples the rotations of two bodies so that their
+angular velocities keep a defined ratio &mdash; the constraint of a pair of meshing gears. The
+gear axes are defined in the local space of each body.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">joint = phx.GearJoint(bodyA,bodyB)</span>
+<span class="phx-syntax">joint = phx.GearJoint(___,Name,Value)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">joint = phx.GearJoint(bodyA,bodyB)</code> couples two bodies with their
+rotation axes aligned to the local Z axis of each body and a unit gear ratio. Set the axes with
+<code class="phx-inline">AxisA</code>/<code class="phx-inline">AxisB</code> and the ratio with
+<code class="phx-inline">Ratio</code>.</p>
+</div>
+
+<h3 class="phx-h3">Input Arguments</h3>
+<table class="phx-tbl">
+<tr><th>Argument</th><th>Type</th><th>Description</th></tr>
+<tr><td class="name">bodyA, bodyB</td><td class="type">phx.Body (scalar)</td><td>The two coupled bodies.</td></tr>
+</table>
+
+<h2 class="phx-h2">Properties</h2>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">AxisA</td><td class="dflt">[0 0 1]</td><td>Rotation-axis direction in the local space of body A.</td></tr>
+<tr><td class="name">AxisB</td><td class="dflt">[0 0 1]</td><td>Rotation-axis direction in the local space of body B.</td></tr>
+<tr><td class="name">Ratio</td><td class="dflt">1</td><td>Gear ratio between the angular velocities of the two bodies.</td></tr>
+<tr><td class="name">Overlay</td><td class="dflt">false</td><td>Draw the joint as an overlay (always on top).</td></tr>
+</table>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">Couple two wheels with a 2:1 ratio</h4>
+<pre class="phx-code">w1 = phx.Body(<span class="str">"Position"</span>, [0 0 0], <span class="str">"Shape"</span>, {<span class="str">"Cylinder"</span>, <span class="str">"Radius"</span>, 1, <span class="str">"Length"</span>, 0.3});
+w2 = phx.Body(<span class="str">"Position"</span>, [1.5 0 0], <span class="str">"Shape"</span>, {<span class="str">"Cylinder"</span>, <span class="str">"Radius"</span>, 0.5, <span class="str">"Length"</span>, 0.3});
+
+phx.RevoluteJoint(phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>), w1);
+phx.GearJoint(w1, w2, <span class="str">"Ratio"</span>, 2);
+
+sim = phx.Simulation;
+w1.AngularVelocity = [0 0 5];
+sim.step(4, 400, 1);</pre>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.RevoluteJoint.html">phx.RevoluteJoint</a>,
+<a href="phx.base.Joint.html">phx.base.Joint</a>,
+<a href="phx.Body.html">phx.Body</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PhxModel</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; PhxModel</div>
+
+<h1 class="phx-title">PhxModel</h1>
+<p class="phx-purpose">Co-simulate a PHX scene from Simulink&reg;</p>
+<p class="phx-classref">Simulink&nbsp;block &nbsp;|&nbsp; Library: <code class="phx-inline">PhxLibrary.slx</code></p>
+
+<h2 class="phx-h2">Description</h2>
+<p>The <strong>PhxModel</strong> block runs a PHX physics scene inside a Simulink model. The scene is
+built exactly as it is from MATLAB&nbsp;&mdash; a script or MAT file that creates
+<a href="phx.Body.html">phx.Body</a> objects and their children &mdash; and the block wraps it in a
+<a href="phx.Simulation.html">phx.Simulation</a> that is stepped once per Simulink sample time.</p>
+
+<p>PHX keeps its <em>code-first</em> identity: there is a single co-simulation block rather than a
+palette of physical primitives. You author the scene as ordinary <code class="phx-inline">phx.*</code>
+code and use the block only to exchange signals with the rest of the Simulink model. Each input and
+output port is bound to a public property of a named scene object, so any quantity that is readable
+or writable from MATLAB can be wired into Simulink.</p>
+
+<p>The block is backed by the Level-2 MATLAB S-function <code class="phx-inline">phx/PhxModel.m</code> and
+the support class <code class="phx-inline">phx.simulink.BlockBackend</code>. It is a viewing device:
+it can optionally open an interactive <a href="phx.extra.Viewer.html">phx.extra.Viewer</a> and even
+emit a rendered camera image as a signal.</p>
+
+<h2 class="phx-h2">Ports</h2>
+
+<p>Ports are not fixed: you declare them as text in the block mask. Each line is a
+<em>parameter reference</em> naming one scene object and one of its properties.</p>
+
+<h3 class="phx-h3">Reference syntax</h3>
+<span class="phx-syntax">ObjectName.Property</span>
+<span class="phx-syntax">ObjectName.Property(indices)</span>
+<div class="phx-desc">
+<p><code class="phx-inline">ObjectName</code> is the <code class="phx-inline">Name</code> of a
+<a href="phx.base.Object.html">phx.base.Object</a> in the scene; <code class="phx-inline">Property</code>
+is any of its public properties. The bracket-less form binds the whole property and the signal width is
+resolved automatically from class metadata (for example <code class="phx-inline">Body1.Position</code> is a
+3-element signal). The bracketed form selects linear indices, for example
+<code class="phx-inline">Body1.Quaternion(1:4)</code> or <code class="phx-inline">Body1.TotalForce(3)</code>.</p>
+<p class="phx-eg">Separate several references with new lines or commas. Input references must name a
+<em>writable</em> property; read-only properties may be used only as outputs.</p>
+</div>
+
+<p><strong>Input ports</strong> write the incoming signal into the referenced property at every step
+(for example driving <code class="phx-inline">Position</code> of a kinematic body, or a
+<code class="phx-inline">Thruster</code> force). <strong>Output ports</strong> read the referenced
+property after the step (for example <code class="phx-inline">Position</code>,
+<code class="phx-inline">Quaternion</code> or <code class="phx-inline">Energy</code>). References are
+validated when you edit the mask (for MAT-file sources) and again when the simulation starts; unknown
+objects or properties raise a <code class="phx-inline">phx:PhxModel:*</code> error.</p>
+
+<div class="phx-note">
+<span class="lbl">Method ports.</span> References such as <code class="phx-inline">Body1.applyForce</code> are
+recognised but not yet supported and raise <code class="phx-inline">phx:PhxModel:methodPortsUnsupported</code>.
+Drive bodies through writable properties instead.
+</div>
+
+<h2 class="phx-h2">Parameters</h2>
+<table class="phx-tbl">
+<tr><th>Parameter</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">Source</td><td class="type">char/string</td>
+<td>Scene source: the name of a model script (<code class="phx-inline">.m</code>) that builds and returns
+the bodies, or a <code class="phx-inline">.mat</code> file holding the scene. Loaded once when the
+simulation starts.</td></tr>
+<tr><td class="name">InputRefs</td><td class="type">text list</td>
+<td>One parameter reference per input port, e.g. <code class="phx-inline">Plate.Orientation(1:2)</code>.
+Separate with new lines or commas.</td></tr>
+<tr><td class="name">OutputRefs</td><td class="type">text list</td>
+<td>One parameter reference per output port, e.g. <code class="phx-inline">Ball.Position</code>.</td></tr>
+<tr><td class="name">Substeps</td><td class="dflt">1</td>
+<td>Number of engine substeps per Simulink sample time; the engine step is <code class="phx-inline">SampleTime/Substeps</code>.
+More substeps stabilise stiff constraint networks.</td></tr>
+<tr><td class="name">SampleTime</td><td class="dflt">[]</td>
+<td>Block sample time, in seconds. Each sample time advances the scene by that interval.</td></tr>
+<tr><td class="name">ShowViewer</td><td class="dflt">false</td>
+<td>Open an interactive <a href="phx.extra.Viewer.html">phx.extra.Viewer</a> figure that renders the scene
+while the model runs.</td></tr>
+<tr><td class="name">RenderEachStep</td><td class="dflt">true</td>
+<td>When the viewer is on, redraw on every substep (<code class="phx-inline">true</code>) or only once per
+sample time (<code class="phx-inline">false</code>).</td></tr>
+<tr><td class="name">DefaultCameraPosition</td><td class="dflt">[-10 -10 10]</td>
+<td>Initial viewer camera position, in world coordinates.</td></tr>
+<tr><td class="name">DefaultCameraTarget</td><td class="dflt">[0 0 0]</td>
+<td>Initial viewer camera target, in world coordinates.</td></tr>
+<tr><td class="name">CameraResolution</td><td class="dflt">[]</td>
+<td>Optional rendered-image output. When set to <code class="phx-inline">[H&nbsp;W]</code> (and the viewer is on),
+an extra <code class="phx-inline">uint8</code> output port emits the rendered scene as an
+<code class="phx-inline">[H&nbsp;W&nbsp;3]</code> image signal.</td></tr>
+</table>
+
+<p>An <strong>Edit ports&hellip;</strong> button in the mask opens a picker
+(<code class="phx-inline">phx.simulink.portEditor</code>) that lists the objects and sizeable properties of
+the scene so you can add input and output references without typing them by hand.</p>
+
+<h2 class="phx-h2">Building a model</h2>
+<div class="phx-desc">
+<p>1.&nbsp;Write a scene source. A model script names the objects it wants to expose:</p>
+<pre class="phx-code"><span class="cmt">% model_pendulum.m &mdash; build a scene and name the objects to expose</span>
+<span class="kw">function</span> bodies = model_pendulum
+    ax = cla(clf); view(3); axis equal; grid on;
+
+    anchor = phx.Body(ax, <span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Name"</span>, <span class="str">"Anchor"</span>);
+    bob    = phx.Body(ax, <span class="str">"Position"</span>, [1 0 0], <span class="str">"Name"</span>, <span class="str">"Bob"</span>);
+    phx.RevoluteJoint(anchor, bob, <span class="str">"Point"</span>, [0 0 0], <span class="str">"Axis"</span>, [0 1 0]);
+
+    bodies = [anchor bob];
+<span class="kw">end</span></pre>
+</div>
+<div class="phx-desc">
+<p>2.&nbsp;Drop a <strong>PhxModel</strong> block from <code class="phx-inline">PhxLibrary.slx</code> into your model.</p>
+<p>3.&nbsp;Set <strong>Source</strong> to <code class="phx-inline">model_pendulum</code>, choose a
+<strong>SampleTime</strong>, and declare ports, for example output
+<code class="phx-inline">Bob.Position</code> and input <code class="phx-inline">Bob.TotalForce</code>.</p>
+<p>4.&nbsp;Wire the ports to the rest of the model and run. Turn <strong>ShowViewer</strong> on to watch
+the scene.</p>
+</div>
+
+<h2 class="phx-h2">Examples</h2>
+
+<h4 class="phx-h4">Read a body's position into Simulink</h4>
+<div class="phx-desc">
+<p>With <strong>Source</strong> set to a scene that contains a body named <code class="phx-inline">Ball</code>,
+declare a single output reference to stream its world position:</p>
+<pre class="phx-code"><span class="cmt">% OutputRefs (one line)</span>
+Ball.Position</pre>
+<p>The output port carries a 3-element signal; the width is taken from
+<code class="phx-inline">phx.Body.Position</code> automatically.</p>
+</div>
+
+<h4 class="phx-h4">Drive a kinematic body and read several signals</h4>
+<div class="phx-desc">
+<pre class="phx-code"><span class="cmt">% InputRefs</span>
+Plate.Orientation(1:2)
+
+<span class="cmt">% OutputRefs</span>
+Ball.Position
+Ball.LinearVelocity</pre>
+<p class="phx-eg">For a kinematically pose-driven body, keep <code class="phx-inline">Substeps</code> at 1 and use a
+smaller sample time &mdash; with several substeps the whole pose increment is applied on the first
+substep, so the body appears to move N&times; faster between samples.</p>
+</div>
+
+<p>Ready-made co-simulation models live in <code class="phx-inline">examples/</code>:
+<code class="phx-inline">phxex_sim_stand.slx</code>, <code class="phx-inline">phxex_sim_ballplate2.slx</code> and
+<code class="phx-inline">phxex_sim_sorter.slx</code>, each paired with a <code class="phx-inline">model_*.m</code>
+scene builder.</p>
+
+<div class="phx-note">
+<span class="lbl">Stability.</span> Tight constraint networks need a small engine step (about
+<code class="phx-inline">dt&nbsp;&le;&nbsp;5&nbsp;ms</code>). Reach this either with a small
+<strong>SampleTime</strong> or by raising <strong>Substeps</strong> so that
+<code class="phx-inline">SampleTime/Substeps</code> stays small.
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="PhxAction.html">PhxAction</a>,
+<a href="phx.Simulation.html">phx.Simulation</a>,
+<a href="phx.Body.html">phx.Body</a>,
+<a href="phx.extra.Viewer.html">phx.extra.Viewer</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

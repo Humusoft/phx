@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.Thruster</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.Thruster</div>
+
+<h1 class="phx-title">phx.Thruster</h1>
+<p class="phx-purpose">Thrust actuator</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.Thruster &nbsp;|&nbsp; Superclass: <a href="phx.base.Object.html">phx.base.Object</a></p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.Thruster</code> applies a body-fixed thrust force to a body. The
+mounting point and the thrust direction are defined in the local space of the body, so the thrust
+follows the body orientation &mdash; like an attached rocket engine, a propeller or a fan.</p>
+
+<p>The actual thrust is <code class="phx-inline">MaxThrust&middot;Throttle</code>. Optionally it follows
+the throttle with a first-order lag (<code class="phx-inline">TimeConstant</code>) and applies a
+reaction torque about the thrust axis (<code class="phx-inline">ReactionFactor</code>) &mdash; the
+counter-torque of a spinning propeller. <code class="phx-inline">Throttle</code> can be changed while
+the simulation runs, driven by a <code class="phx-inline">phx.Script</code> or set from Simulink; the
+resulting <code class="phx-inline">Thrust</code> can be recorded with a
+<code class="phx-inline">phx.Logger</code>.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">thr = phx.Thruster(body)</span>
+<span class="phx-syntax">thr = phx.Thruster(___,Name,Value)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">thr = phx.Thruster(body)</code> creates a thruster acting at the origin
+of the body and thrusting along its local Z axis. Adjust the mounting point, direction and thrust
+through the properties below.</p>
+</div>
+
+<h3 class="phx-h3">Input Arguments</h3>
+<table class="phx-tbl">
+<tr><th>Argument</th><th>Type</th><th>Description</th></tr>
+<tr><td class="name">body</td><td class="type">phx.Body (scalar)</td><td>The body the thruster is attached to.</td></tr>
+</table>
+
+<h2 class="phx-h2">Properties</h2>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">Point</td><td class="dflt">[0 0 0]</td><td>Mounting point in the local space of the body.</td></tr>
+<tr><td class="name">Direction</td><td class="dflt">[0 0 1]</td><td>Thrust direction in the local space of the body (normalized to a unit vector).</td></tr>
+<tr><td class="name">MaxThrust</td><td class="dflt">1</td><td>Maximal thrust force at full throttle, <span class="phx-unit">N</span>.</td></tr>
+<tr><td class="name">Throttle</td><td class="dflt">0</td><td>Throttle setting in <code class="phx-inline">[-1, 1]</code> (negative reverses thrust).</td></tr>
+<tr><td class="name">TimeConstant</td><td class="dflt">0</td><td>Time constant of the first-order throttle response, <span class="phx-unit">s</span> (0 = immediate).</td></tr>
+<tr><td class="name">ReactionFactor</td><td class="dflt">0</td><td>Reaction torque about the thrust axis per unit thrust, <span class="phx-unit">N&middot;m/N</span>.</td></tr>
+<tr><td class="name">ForceVectorSize</td><td class="dflt">0.001</td><td>Exhaust-vector multiplication factor for drawing.</td></tr>
+<tr><td class="name">Overlay</td><td class="dflt">false</td><td>Draw the exhaust vector as an overlay (always on top).</td></tr>
+<tr><td class="name">Thrust</td><td class="type">double (read-only)</td><td>Current thrust force magnitude after the throttle lag, <span class="phx-unit">N</span>.</td></tr>
+</table>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">Full-throttle thruster in zero gravity</h4>
+<pre class="phx-code">clf; ax = gca; view(3); axis equal; grid on;
+b = phx.Body(ax, <span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>, <span class="str">"Diameter"</span>, 0.5, <span class="str">"Density"</span>, 50});
+
+phx.Thruster(b, <span class="str">"MaxThrust"</span>, 10, <span class="str">"Throttle"</span>, 1);
+
+sim = phx.Simulation(ax, <span class="str">"Gravity"</span>, [0 0 0]);
+sim.step(4, 800, -1);
+disp(b.LinearVelocity);</pre>
+
+<h4 class="phx-h4">Throttle driven by a script, thrust logged</h4>
+<pre class="phx-code">th = phx.Thruster(b, <span class="str">"MaxThrust"</span>, 10, <span class="str">"TimeConstant"</span>, 0.5, <span class="str">"ReactionFactor"</span>, 0.05);
+phx.Script(th, {<span class="str">'Throttle'</span>, [0 1], [0 1], <span class="str">'linear'</span>, <span class="str">'nearest'</span>});
+lg = phx.Logger(th, <span class="str">"Frequency"</span>, 100, <span class="str">"Parameters"</span>, <span class="str">"Thrust"</span>);</pre>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.Resistance.html">phx.Resistance</a>,
+<a href="phx.Spring.html">phx.Spring</a>,
+<a href="phx.Body.html">phx.Body</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

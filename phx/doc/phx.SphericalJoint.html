@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.SphericalJoint</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.SphericalJoint</div>
+
+<h1 class="phx-title">phx.SphericalJoint</h1>
+<p class="phx-purpose">Spherical joint</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.SphericalJoint &nbsp;|&nbsp; Superclass: <a href="phx.base.Joint.html">phx.base.Joint</a></p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.SphericalJoint</code> realizes a kinematic constraint with three
+degrees of freedom: free rotation about the X, Y and Z axes (a ball joint). The two bodies are
+pinned together at the given connection points but may rotate freely relative to one another.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">joint = phx.SphericalJoint(bodyA,bodyB)</span>
+<span class="phx-syntax">joint = phx.SphericalJoint(___,Name,Value)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">joint = phx.SphericalJoint(bodyA,bodyB)</code> creates a joint between two
+bodies attached at their origins. Use <code class="phx-inline">PointA</code> and
+<code class="phx-inline">PointB</code> to set custom connection points.</p>
+</div>
+
+<h3 class="phx-h3">Input Arguments</h3>
+<table class="phx-tbl">
+<tr><th>Argument</th><th>Type</th><th>Description</th></tr>
+<tr><td class="name">bodyA, bodyB</td><td class="type">phx.Body (scalar)</td><td>The two bodies connected by the joint.</td></tr>
+</table>
+
+<h2 class="phx-h2">Properties</h2>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">PointA</td><td class="dflt">[0 0 0]</td><td>Connection point in the local space of body A.</td></tr>
+<tr><td class="name">PointB</td><td class="dflt">[0 0 0]</td><td>Connection point in the local space of body B.</td></tr>
+<tr><td class="name">Overlay</td><td class="dflt">false</td><td>Draw the joint as an overlay (always on top).</td></tr>
+</table>
+<p>Reaction feedback (<code class="phx-inline">ForceA</code>, <code class="phx-inline">TorqueA</code>,
+<code class="phx-inline">ForceB</code>, <code class="phx-inline">TorqueB</code>) is inherited from
+<a href="phx.base.Joint.html">phx.base.Joint</a>.</p>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">Chain two arms with a ball joint</h4>
+<pre class="phx-code">B = phx.Body(<span class="str">"Position"</span>, [4 1 0]);
+C = phx.Body(<span class="str">"Position"</span>, [4 -2 0]);
+
+phx.SphericalJoint(B, C, <span class="str">"PointA"</span>, [0 -1.5 0], <span class="str">"PointB"</span>, [0 1.5 0], <span class="str">"Color"</span>, 0.5);
+
+sim = phx.Simulation;
+sim.step(6, 600, 1);</pre>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.RevoluteJoint.html">phx.RevoluteJoint</a>,
+<a href="phx.base.Joint.html">phx.base.Joint</a>,
+<a href="phx.Spring.html">phx.Spring</a>,
+<a href="phx.Body.html">phx.Body</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

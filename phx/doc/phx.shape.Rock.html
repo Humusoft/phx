@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.shape.Rock</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.shape.Rock</div>
+
+<h1 class="phx-title">phx.shape.Rock</h1>
+<p class="phx-purpose">Rock shape</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.shape.Rock &nbsp;|&nbsp; Superclasses: <a href="phx.base.Shape.html">phx.base.Shape</a>, <a href="phx.base.ShapeMesh.html">phx.base.ShapeMesh</a></p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.shape.Rock</code> is a procedurally generated irregular rock created by
+perturbing an icosahedron. <code class="phx-inline">Roundness</code> controls how close the result is
+to an ideal sphere and <code class="phx-inline">Diameter</code> (or <code class="phx-inline">Radius</code>)
+sets its size. The collision shape is the convex hull of the generated mesh, while the mass
+properties are modeled as an ideal sphere of the given <code class="phx-inline">Density</code>.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">shape = phx.shape.Rock</span>
+<span class="phx-syntax">shape = phx.shape.Rock(Name,Value)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">shape = phx.shape.Rock</code> creates a unit rock with default parameters.
+<code class="phx-inline">phx.shape.Rock(Name,Value)</code> sets properties with name-value arguments.</p>
+</div>
+
+<h2 class="phx-h2">Properties</h2>
+<h3 class="phx-h3">Geometry</h3>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">Diameter</td><td class="dflt">1</td><td>Rock diameter, <span class="phx-unit">m</span>.</td></tr>
+<tr><td class="name">Radius</td><td class="type">double (dependent)</td><td>Rock radius, <span class="phx-unit">m</span>. Setting it updates <code class="phx-inline">Diameter</code>.</td></tr>
+<tr><td class="name">Roundness</td><td class="dflt">0.75</td><td>Roundness factor relative to the ideal sphere (0&ndash;1, higher is rounder).</td></tr>
+<tr><td class="name">Density</td><td class="dflt">1000</td><td>Volumetric density, <span class="phx-unit">kg/m&sup3;</span>.</td></tr>
+</table>
+
+<p>Appearance properties are inherited from <a href="phx.base.ShapeMesh.html">phx.base.ShapeMesh</a>
+and skeletal properties from <a href="phx.base.Shape.html">phx.base.Shape</a>.
+<code class="phx-inline">Rock</code> uses the <code class="phx-inline">"flat"</code> style by default.</p>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">A scattering of boulders</h4>
+<pre class="phx-code">for k = 1:5
+    phx.Body(<span class="str">"Position"</span>, [k 0 3], ...
+        <span class="str">"Shape"</span>, {<span class="str">"Rock"</span>, <span class="str">"Diameter"</span>, 0.8, <span class="str">"Roundness"</span>, 0.6, <span class="str">"Color"</span>, [0.5 0.45 0.4]});
+end
+
+sim = phx.Simulation;
+sim.step(3, 300, 1);</pre>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.Body.html">phx.Body</a>,
+<a href="phx.shape.Sphere.html">phx.shape.Sphere</a>,
+<a href="phx.shape.Globe.html">phx.shape.Globe</a>,
+<a href="phx.base.Shape.html">phx.base.Shape</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

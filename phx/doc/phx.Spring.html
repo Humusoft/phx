@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.Spring</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.Spring</div>
+
+<h1 class="phx-title">phx.Spring</h1>
+<p class="phx-purpose">Spring</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.Spring &nbsp;|&nbsp; Superclass: <a href="phx.base.Object.html">phx.base.Object</a></p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.Spring</code> is a combined element consisting of an ideal spring and
+an ideal damper in parallel, connecting two bodies between local connection points. The force
+follows <code class="phx-inline">F = Stiffness&middot;(length - FreeLength) + Damping&middot;velocity</code>
+and acts along the line joining the two points. The spring can be colored by its force magnitude.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">spring = phx.Spring(bodyA,bodyB)</span>
+<span class="phx-syntax">spring = phx.Spring(___,Name,Value)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">spring = phx.Spring(bodyA,bodyB)</code> creates a spring between two bodies
+attached at their origins. Use <code class="phx-inline">PointA</code> and
+<code class="phx-inline">PointB</code> for custom connection points.</p>
+</div>
+
+<h3 class="phx-h3">Input Arguments</h3>
+<table class="phx-tbl">
+<tr><th>Argument</th><th>Type</th><th>Description</th></tr>
+<tr><td class="name">bodyA, bodyB</td><td class="type">phx.Body (scalar)</td><td>The two bodies the spring connects.</td></tr>
+</table>
+
+<h2 class="phx-h2">Properties</h2>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">PointA</td><td class="dflt">[0 0 0]</td><td>Connection point in the local space of body A.</td></tr>
+<tr><td class="name">PointB</td><td class="dflt">[0 0 0]</td><td>Connection point in the local space of body B.</td></tr>
+<tr><td class="name">FreeLength</td><td class="dflt">0</td><td>Unstretched length of the spring, <span class="phx-unit">m</span>.</td></tr>
+<tr><td class="name">Stiffness</td><td class="dflt">20</td><td>Spring stiffness, <span class="phx-unit">N/m</span>.</td></tr>
+<tr><td class="name">Damping</td><td class="dflt">0</td><td>Damping coefficient, <span class="phx-unit">N&middot;s/m</span>.</td></tr>
+<tr><td class="name">Colormap</td><td class="dflt">"none"</td><td>Name of the colormap used to color the spring by force.</td></tr>
+<tr><td class="name">ColorRange</td><td class="dflt">[0 100]</td><td>Force range mapped across the whole colormap, <span class="phx-unit">N</span>.</td></tr>
+<tr><td class="name">Overlay</td><td class="dflt">false</td><td>Draw the spring as an overlay (always on top).</td></tr>
+<tr><td class="name">Force</td><td class="type">1&times;3 double (read-only)</td><td>Current spring force vector, <span class="phx-unit">N</span>.</td></tr>
+<tr><td class="name">Length</td><td class="type">double (read-only)</td><td>Current extension beyond <code class="phx-inline">FreeLength</code>, <span class="phx-unit">m</span>.</td></tr>
+<tr><td class="name">Energy</td><td class="type">double (read-only)</td><td>Elastic energy stored in the spring, <span class="phx-unit">J</span> (dependent).</td></tr>
+</table>
+
+<h2 class="phx-h2">Object Functions</h2>
+<table class="phx-tbl">
+<tr><th>Function</th><th>Description</th></tr>
+<tr><td class="name">showCharacteristic</td><td>Plot the force&ndash;travel characteristic of the spring at one or more velocity multiples.</td></tr>
+</table>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">Connect a chain of boxes with colored springs</h4>
+<pre class="phx-code">a = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Position"</span>, [-3 0 10], <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [4 2 1]});
+b = phx.Body(<span class="str">"Position"</span>, [3 0 10], <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [4 2 1]});
+
+phx.Spring(a, b, <span class="str">"Stiffness"</span>, 3e5, <span class="str">"Damping"</span>, 2e3, ...
+    <span class="str">"PointA"</span>, [2 0 0], <span class="str">"PointB"</span>, [-2 0 0], ...
+    <span class="str">"Colormap"</span>, <span class="str">"jet"</span>, <span class="str">"ColorRange"</span>, [0 2e6]);
+
+sim = phx.Simulation;
+sim.step(5, 500, 5);</pre>
+
+<h4 class="phx-h4">Inspect the spring characteristic</h4>
+<pre class="phx-code">s = phx.Spring(a, b, <span class="str">"Stiffness"</span>, 1e4, <span class="str">"Damping"</span>, 50);
+s.showCharacteristic(0.2, [0 1 10]);   <span class="cmt">% +-0.2 m travel, 3 velocity multiples</span></pre>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.Rope.html">phx.Rope</a>,
+<a href="phx.GenericSpring.html">phx.GenericSpring</a>,
+<a href="phx.SphericalJoint.html">phx.SphericalJoint</a>,
+<a href="phx.Body.html">phx.Body</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

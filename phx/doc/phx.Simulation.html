@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.Simulation</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.Simulation</div>
+
+<h1 class="phx-title">phx.Simulation</h1>
+<p class="phx-purpose">Physical simulation</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.Simulation &nbsp;|&nbsp; Superclass: <a href="phx.base.Object.html">phx.base.Object</a></p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.Simulation</code> is the topmost object in the hierarchy of a physical
+scene. It collects a set of <a href="phx.Body.html">phx.Body</a> objects together with all of
+their children (joints, springs, force elements, traces, loggers&hellip;), builds the execution
+pipelines that advance and render them, and steps the underlying physics engine forward in time.</p>
+
+<p>Adding or removing objects requires a rebuild of the simulation pipeline. This operation is done
+automatically, but may take a while.</p>
+
+<p>Deleting a simulation object disconnects the engine, but if the visualization window is open, the
+model objects themselves remain and the simulation object can be recreated.</p>
+
+<h2 class="phx-h2">Creation</h2>
+
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">sim = phx.Simulation</span>
+<span class="phx-syntax">sim = phx.Simulation(bodies)</span>
+<span class="phx-syntax">sim = phx.Simulation(___,Name,Value)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">sim = phx.Simulation</code> creates a simulation of all bodies found in the
+current axes (<code class="phx-inline">gca</code>) and their children.</p>
+</div>
+<div class="phx-desc">
+<p><code class="phx-inline">sim = phx.Simulation(bodies)</code> creates a simulation of the given bodies
+and their children. <code class="phx-inline">bodies</code> may be a <code class="phx-inline">phx.Body</code>
+array or cell array, an axes object, the name of a MAT file, or a struct of bodies.</p>
+<p class="phx-eg">Pass <code class="phx-inline">[]</code> only through one of the explicit sources; an
+axes handle is the usual choice.</p>
+</div>
+<div class="phx-desc">
+<p><code class="phx-inline">sim = phx.Simulation(___,Name,Value)</code> sets properties using one or more
+name-value arguments, for example <code class="phx-inline">phx.Simulation(bodies,"Gravity",[0 0 0])</code>.</p>
+</div>
+
+<h3 class="phx-h3">Input Arguments</h3>
+<table class="phx-tbl">
+<tr><th>Argument</th><th>Accepted types</th><th>Description</th></tr>
+<tr><td class="name">bodies</td><td class="type">phx.Body | cell | axes | char/string | struct</td>
+<td>Source of the bodies to simulate. An axes (or UIAxes) collects every body drawn into it; a
+char/string is treated as a MAT file to load; a struct is scanned for its <code class="phx-inline">phx.Body</code> fields.</td></tr>
+</table>
+
+<h2 class="phx-h2">Properties</h2>
+
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">Gravity</td><td class="dflt">[0 0 -9.81]</td>
+<td>Global gravitational acceleration applied to the world, <span class="phx-unit">m/s&sup2;</span>.</td></tr>
+<tr><td class="name">ExcludeInvisible</td><td class="dflt">true</td>
+<td>Exclude all initially invisible objects from rendering.</td></tr>
+<tr><td class="name">HideInvalid</td><td class="dflt">false</td>
+<td>Turn off visibility for all objects that become invalid during the simulation.</td></tr>
+<tr><td class="name">EngineSettings</td><td class="dflt">[]</td>
+<td>Initial engine-specific settings, e.g. a <code class="phx-inline">phx.engine.BulletSettings</code> object.</td></tr>
+<tr><td class="name">Time</td><td class="type">double (read-only)</td>
+<td>Current simulation time, in seconds. Starts at 0 and advances with each <code class="phx-inline">step</code>.</td></tr>
+</table>
+
+<p>Properties inherited from <a href="phx.base.Object.html">phx.base.Object</a> include
+<code class="phx-inline">Children</code>, <code class="phx-inline">Parents</code>,
+<code class="phx-inline">Name</code> and <code class="phx-inline">UserData</code>.</p>
+
+<h2 class="phx-h2">Object Functions</h2>
+<table class="phx-tbl">
+<tr><th>Function</th><th>Description</th></tr>
+<tr><td class="name">step</td><td>Perform one or more simulation steps.</td></tr>
+<tr><td class="name">addObjects</td><td>Add bodies (with their children) and rebuild the execution pipelines.</td></tr>
+<tr><td class="name">dispStructure</td><td>Display the object tree of the scene.</td></tr>
+<tr><td class="name">dispPipelines</td><td>Display the compute and compute-and-redraw execution pipelines.</td></tr>
+<tr><td class="name">delete</td><td>Destroy the engine world and remove the simulation.</td></tr>
+</table>
+
+<h3 class="phx-h3">step</h3>
+<span class="phx-syntax">step(sim,interval)</span>
+<span class="phx-syntax">step(sim,interval,substeps)</span>
+<span class="phx-syntax">step(sim,interval,substeps,redrawStep)</span>
+<div class="phx-desc">
+<p>Advances the simulation by <code class="phx-inline">interval</code> seconds. With
+<code class="phx-inline">substeps</code> the interval is divided into that many engine steps of size
+<code class="phx-inline">interval/substeps</code>; rendering is then performed only once, on the last
+substep. With <code class="phx-inline">redrawStep</code> the view is additionally redrawn every
+<code class="phx-inline">redrawStep</code>-th substep. Use a value of <code class="phx-inline">-1</code>
+to suppress rendering entirely (headless runs). Smaller substeps improve the stability of stiff
+constraint networks.</p>
+</div>
+
+<h3 class="phx-h3">addObjects</h3>
+<span class="phx-syntax">bodies = addObjects(sim,axes)</span>
+<span class="phx-syntax">bodies = addObjects(sim,fileName)</span>
+<span class="phx-syntax">bodies = addObjects(sim,bodies)</span>
+<div class="phx-desc">
+<p>Adds bodies (and all their children) to a running simulation and rebuilds the pipelines, then
+returns the added bodies for further manipulation.</p>
+</div>
+
+<h2 class="phx-h2">Examples</h2>
+
+<h4 class="phx-h4">Step a minimal scene</h4>
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+phx.Body(<span class="str">"Position"</span>, [0.6 -0.5 2]);   <span class="cmt">% dynamic body</span>
+phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>);             <span class="cmt">% ground</span>
+
+sim = phx.Simulation;                  <span class="cmt">% all bodies in the current axes</span>
+sim.step(1, 100, 1);                   <span class="cmt">% 1 s in 100 substeps, redraw each step</span></pre>
+
+<h4 class="phx-h4">Custom gravity and engine settings</h4>
+<pre class="phx-code"><span class="cmt">% Zero gravity, do not auto-deactivate resting bodies</span>
+sim = phx.Simulation(gca, <span class="str">"Gravity"</span>, [0 0 0], <span class="str">"EngineSettings"</span>, ...
+    phx.engine.BulletSettings(<span class="str">"AutoActivated"</span>, false));
+sim.step(4, 800, -1);                  <span class="cmt">% run headless (no redraw)</span></pre>
+
+<h4 class="phx-h4">Add and delete objects between steps</h4>
+<pre class="phx-code">sim = phx.Simulation(boxes, <span class="str">"HideInvalid"</span>, true);
+sim.step(5, 500, 5);
+
+sim.addObjects(newBox);                <span class="cmt">% rebuilds pipelines</span>
+sim.step(10, 1000, 5);
+
+delete(boxes(7));                      <span class="cmt">% also triggers a rebuild</span>
+sim.step(5, 500, 5);
+delete(sim);                           <span class="cmt">% tear down the engine world</span></pre>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.Body.html">phx.Body</a>,
+<a href="phx.base.Object.html">phx.base.Object</a>,
+<a href="phx.Spring.html">phx.Spring</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

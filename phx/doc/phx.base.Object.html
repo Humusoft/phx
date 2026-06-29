@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.base.Object</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.base.Object</div>
+
+<h1 class="phx-title">phx.base.Object</h1>
+<p class="phx-purpose">Superclass for custom simulable objects</p>
+<p class="phx-classref">Abstract class&nbsp;&nbsp;phx.base.Object &nbsp;|&nbsp; Superclass: matlab.mixin.SetGetExactNames</p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.base.Object</code> is the superclass of every simulable object in
+PHX &mdash; bodies, joints, springs, force elements and helpers all derive from it.
+It implements a directed acyclic graph: each object holds cell arrays of
+<code class="phx-inline">Parents</code> and <code class="phx-inline">Children</code>, owns an
+<code class="phx-inline">hgtransform</code> for its graphics and a handle to its engine counterpart.</p>
+
+<p>Subclass this object (or one of <a href="phx.Body.html">phx.Body</a>,
+<a href="phx.base.Joint.html">phx.base.Joint</a>, <a href="phx.base.Shape.html">phx.base.Shape</a>)
+to create your own simulable element, and implement the four abstract methods below. An empty body
+is acceptable when a hook is not needed.</p>
+
+<h2 class="phx-h2">Properties</h2>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">Parents</td><td class="type">cell (read-only)</td><td>Parent objects in the DAG.</td></tr>
+<tr><td class="name">Children</td><td class="type">cell (read-only)</td><td>Child objects in the DAG.</td></tr>
+<tr><td class="name">Graphics</td><td class="type">hgtransform (read-only)</td><td>Transform that holds the object's graphics.</td></tr>
+<tr><td class="name">ParentAxes</td><td class="type">axes (dependent)</td><td>Shortcut to the graphics transform's parent axes.</td></tr>
+<tr><td class="name">Visible</td><td class="type">logical (dependent)</td><td>Shortcut to the graphics transform's visibility.</td></tr>
+<tr><td class="name">Color</td><td class="type">1&times;3 double</td><td>Global object color applied to its graphics primitives.</td></tr>
+<tr><td class="name">Name</td><td class="type">string</td><td>Optional name, e.g. to identify objects in Simulink.</td></tr>
+<tr><td class="name">UserData</td><td class="dflt">[]</td><td>Arbitrary user data.</td></tr>
+<tr><td class="name">SimulationOrder</td><td class="dflt">"before"</td>
+<td>When <code class="phx-inline">resolveState</code> runs relative to the main step: <code class="phx-inline">"before"</code>, <code class="phx-inline">"after"</code> or <code class="phx-inline">"none"</code>.</td></tr>
+<tr><td class="name">RedrawOrder</td><td class="dflt">"after"</td>
+<td>When <code class="phx-inline">updateView</code> runs relative to the main step: <code class="phx-inline">"before"</code>, <code class="phx-inline">"after"</code> or <code class="phx-inline">"none"</code>.</td></tr>
+</table>
+
+<h2 class="phx-h2">Object Functions</h2>
+<table class="phx-tbl">
+<tr><th>Function</th><th>Description</th></tr>
+<tr><td class="name">dispStructure</td><td>Display the object tree from this object downward.</td></tr>
+<tr><td class="name">propagate</td><td>Set a property value on this object and all its children.</td></tr>
+<tr><td class="name">findBy</td><td>Find objects by a property value (optionally restricted to a class).</td></tr>
+<tr><td class="name">getParentSim</td><td>Return the <a href="phx.Simulation.html">phx.Simulation</a> the object belongs to.</td></tr>
+<tr><td class="name">delete</td><td>Destroy the object, detach it from the graph and rebuild the parent simulation.</td></tr>
+</table>
+
+<h2 class="phx-h2">Abstract Methods</h2>
+<p>A subclass must implement the following. They define how the object maps to the engine and how
+it is advanced and drawn.</p>
+<table class="phx-tbl">
+<tr><th>Method</th><th>Role</th></tr>
+<tr><td class="name">valid = initObject(obj,world)</td>
+<td>Create or refresh the engine counterpart. Called whenever pipelines are (re)built. Return <code class="phx-inline">false</code> to exclude the object from the simulation.</td></tr>
+<tr><td class="name">destroyObject(obj)</td>
+<td>Tear down the engine counterpart. Called from <code class="phx-inline">delete</code>.</td></tr>
+<tr><td class="name">resolveState(cellObjs,dt,time,world)</td>
+<td><b>Static.</b> Advance state each (sub)step. Receives a batch of objects of one class.</td></tr>
+<tr><td class="name">updateView(cellObjs,dt,time,world)</td>
+<td><b>Static.</b> Sync graphics each render step. Receives a batch of objects of one class.</td></tr>
+</table>
+
+<div class="phx-note">
+<span class="lbl">Performance.</span> <code class="phx-inline">resolveState</code> and
+<code class="phx-inline">updateView</code> are static and receive a whole batch of same-class
+objects at once &mdash; this batching is the core performance idea behind the execution pipelines.
+Route all engine access through <code class="phx-inline">phx.engine.io</code>.
+</div>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">Inspect the scene graph</h4>
+<pre class="phx-code">A = phx.Body(<span class="str">"Name"</span>, <span class="str">"base"</span>, <span class="str">"Type"</span>, <span class="str">"static"</span>);
+B = phx.Body(<span class="str">"Name"</span>, <span class="str">"arm"</span>, <span class="str">"Position"</span>, [2 0 0]);
+phx.RevoluteJoint(A, B);
+
+sim = phx.Simulation;
+sim.dispStructure;                     <span class="cmt">% print the object tree</span></pre>
+
+<h4 class="phx-h4">Propagate a property to a whole branch</h4>
+<pre class="phx-code">sim.propagate(<span class="str">"Visible"</span>, false);          <span class="cmt">% hide the simulation and everything under it</span></pre>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.Simulation.html">phx.Simulation</a>,
+<a href="phx.Body.html">phx.Body</a>,
+<a href="phx.base.Joint.html">phx.base.Joint</a>,
+<a href="phx.base.Shape.html">phx.base.Shape</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

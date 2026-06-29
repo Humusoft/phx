@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.extra.Viewer</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.extra.Viewer</div>
+
+<h1 class="phx-title">phx.extra.Viewer</h1>
+<p class="phx-purpose">Enhanced viewer</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.extra.Viewer &nbsp;|&nbsp; Superclass: handle</p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.extra.Viewer</code> turns a MATLAB axes into an interactive viewer for
+a PHX scene: mouse and keyboard camera navigation, picking and editing of bodies, a textured sky
+background, basic preset views, an on-screen text overlay and a built-in free-run mode that steps a
+<a href="phx.Simulation.html">phx.Simulation</a> in real time.</p>
+
+<p>The viewer attaches itself to the figure that owns the axes and installs the interaction
+callbacks. Only one viewer lives on a figure at a time &mdash; creating a new one replaces the
+previous. Deleting the axes (or calling <code class="phx-inline">close</code>) tears the viewer down.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">viewer = phx.extra.Viewer</span>
+<span class="phx-syntax">viewer = phx.extra.Viewer(ax)</span>
+<span class="phx-syntax">viewer = phx.extra.Viewer("clear")</span>
+<span class="phx-syntax">viewer = phx.extra.Viewer("newfigure")</span>
+<span class="phx-syntax">viewer = phx.extra.Viewer(___,Name,Value)</span>
+<span class="phx-syntax">[viewer,ax] = phx.extra.Viewer(___)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">viewer = phx.extra.Viewer</code> attaches a viewer to the current axes
+(<code class="phx-inline">gca</code>).</p>
+</div>
+<div class="phx-desc">
+<p><code class="phx-inline">viewer = phx.extra.Viewer(ax)</code> attaches the viewer to the given axes
+or UIAxes <code class="phx-inline">ax</code>.</p>
+</div>
+<div class="phx-desc">
+<p><code class="phx-inline">viewer = phx.extra.Viewer("clear")</code> clears the current figure and creates
+a fresh UIAxes for the viewer; <code class="phx-inline">"newfigure"</code> creates it in a new
+<code class="phx-inline">uifigure</code> instead.</p>
+</div>
+<div class="phx-desc">
+<p><code class="phx-inline">[viewer,ax] = phx.extra.Viewer(___)</code> also returns the axes the viewer
+is attached to &mdash; handy with <code class="phx-inline">"clear"</code>/<code class="phx-inline">"newfigure"</code>
+so you can draw bodies into <code class="phx-inline">ax</code>.</p>
+</div>
+
+<h3 class="phx-h3">Input Arguments</h3>
+<table class="phx-tbl">
+<tr><th>Argument</th><th>Type</th><th>Description</th></tr>
+<tr><td class="name">ax</td><td class="type">axes | UIAxes | "clear" | "newfigure"</td>
+<td>Target axes, or a keyword that creates one. Default is <code class="phx-inline">gca</code>.</td></tr>
+</table>
+
+<h2 class="phx-h2">Properties</h2>
+
+<h3 class="phx-h3">Default view</h3>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">DefaultCameraPosition</td><td class="dflt">[60 -60 15]</td><td>Camera position restored with the <b>Home</b> key.</td></tr>
+<tr><td class="name">DefaultCameraTarget</td><td class="dflt">[0 0 0]</td><td>Camera target restored with the <b>Home</b> key.</td></tr>
+<tr><td class="name">DefaultCameraViewAngle</td><td class="dflt">30</td><td>Camera view angle restored with the <b>Home</b> key, <span class="phx-unit">deg</span>.</td></tr>
+</table>
+
+<h3 class="phx-h3">Appearance</h3>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">ViewMode</td><td class="dflt">"texture"</td>
+<td>Viewing mode: <code class="phx-inline">"texture"</code> (sky sphere), <code class="phx-inline">"axis"</code> (axes + grid fitted to the bodies) or <code class="phx-inline">"plain"</code> (neither).</td></tr>
+<tr><td class="name">Texture</td><td class="dflt">"defaultSky.jpg"</td>
+<td>Background texture file in equirectangular projection. Accepts a path or the name of a built-in default texture.</td></tr>
+<tr><td class="name">Headlight</td><td class="dflt">true</td><td>Enable the camera headlight.</td></tr>
+<tr><td class="name">SkySphereSize</td><td class="dflt">4</td><td>Sky-sphere size multiplier (relative to the camera distance).</td></tr>
+</table>
+
+<h3 class="phx-h3">Navigation</h3>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">ArrowsEnable</td><td class="dflt">false</td><td>Enable camera panning with the arrow keys.</td></tr>
+<tr><td class="name">WASDEnable</td><td class="dflt">false</td><td>Enable camera movement with the W/A/S/D keys.</td></tr>
+<tr><td class="name">RestrictedNavigation</td><td class="dflt">false</td><td>Restrict mouse navigation to the active area of the parent axes.</td></tr>
+<tr><td class="name">CameraPosition</td><td class="type">1&times;3 double (dependent)</td><td>Live camera position. Use this instead of <code class="phx-inline">axes.CameraPosition</code> for correct viewer behavior.</td></tr>
+<tr><td class="name">CameraTarget</td><td class="type">1&times;3 double (dependent)</td><td>Live camera target. Use this instead of <code class="phx-inline">axes.CameraTarget</code>.</td></tr>
+<tr><td class="name">Position</td><td class="type">1&times;4 double (dependent)</td><td>Position of the viewer figure.</td></tr>
+</table>
+
+<h3 class="phx-h3">Free run</h3>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">FreeRunStep</td><td class="dflt">0.05</td><td>Step size used by the free-run mode (<b>F5</b>), <span class="phx-unit">s</span>.</td></tr>
+<tr><td class="name">FreeRunSpeed</td><td class="dflt">1</td><td>Free-run speed factor (<code class="phx-inline">1</code> = real time, <code class="phx-inline">Inf</code> = maximal speed).</td></tr>
+</table>
+
+<h2 class="phx-h2">Object Functions</h2>
+<table class="phx-tbl">
+<tr><th>Function</th><th>Description</th></tr>
+<tr><td class="name">displayText</td><td>Show or update a text overlay (HUD) in the corner of the viewer.</td></tr>
+<tr><td class="name">cla</td><td>Clear the scene (bodies) while keeping the viewer's own graphics.</td></tr>
+<tr><td class="name">close</td><td>Close the viewer figure and delete the viewer.</td></tr>
+<tr><td class="name">delete</td><td>Detach the interaction callbacks and remove the viewer.</td></tr>
+</table>
+
+<h3 class="phx-h3">displayText</h3>
+<span class="phx-syntax">displayText(viewer,text)</span>
+<span class="phx-syntax">displayText(viewer,"")</span>
+<span class="phx-syntax">displayText(viewer,text,mode)</span>
+<span class="phx-syntax">displayText(viewer,text,mode,maxLines)</span>
+<span class="phx-syntax">displayText(___,fontSize,fontColor)</span>
+<div class="phx-desc">
+<p>Shows <code class="phx-inline">text</code> (a string or a column vector of strings, one per line)
+as an overlay in the corner of the viewer; <code class="phx-inline">""</code> removes it.
+<code class="phx-inline">mode</code> selects how new text combines with the current content:
+<code class="phx-inline">"replace"</code> (default), <code class="phx-inline">"below"</code> (append like a log) or
+<code class="phx-inline">"above"</code>. <code class="phx-inline">maxLines</code> caps the kept lines in the
+log modes (default 10). <code class="phx-inline">fontSize</code> (default 16) and
+<code class="phx-inline">fontColor</code> (default <code class="phx-inline">[1 1 1]</code>) apply when the label
+is first created.</p>
+</div>
+
+<h2 class="phx-h2">Interactive Controls</h2>
+
+<h3 class="phx-h3">Mouse</h3>
+<table class="phx-tbl">
+<tr><th>Action</th><th>Effect</th></tr>
+<tr><td class="name">Left button</td><td>Pan the camera, or move the selected object.</td></tr>
+<tr><td class="name">Middle button</td><td>Orbit the camera, or rotate the selected object.</td></tr>
+<tr><td class="name">Right button</td><td>Open the context menu (snapshot, material, properties, scene load/save, &hellip;).</td></tr>
+<tr><td class="name">Scroll wheel</td><td>Zoom. <b>Shift</b>+scroll changes the field of view.</td></tr>
+<tr><td class="name">Double click</td><td>Select/unselect a body, or trigger its <code class="phx-inline">OnDoubleClickFcn</code>.</td></tr>
+</table>
+<p>In edit mode (a body is selected), clicking directly on an axis of the highlighted coordinate
+system moves or rotates the object along/about that axis.</p>
+
+<h3 class="phx-h3">Keyboard</h3>
+<table class="phx-tbl">
+<tr><th>Key</th><th>Effect</th></tr>
+<tr><td class="name">Arrow keys</td><td>Camera panning (if <code class="phx-inline">ArrowsEnable</code>).</td></tr>
+<tr><td class="name">W / A / S / D</td><td>Camera movement (if <code class="phx-inline">WASDEnable</code>).</td></tr>
+<tr><td class="name">F1</td><td>Show help.</td></tr>
+<tr><td class="name">F2</td><td>Toggle the headlight.</td></tr>
+<tr><td class="name">F3</td><td>Cycle the view mode (texture / axis / plain).</td></tr>
+<tr><td class="name">F5</td><td>Start/stop free run (steps a simulation of the scene in real time).</td></tr>
+<tr><td class="name">Home</td><td>Restore the default view.</td></tr>
+<tr><td class="name">PgUp / PgDown</td><td>Cycle through the basic preset views.</td></tr>
+</table>
+
+<h2 class="phx-h2">Examples</h2>
+
+<h4 class="phx-h4">Attach a viewer to the current axes</h4>
+<pre class="phx-code">clf; view(3); axis equal;
+phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>);
+phx.Body(<span class="str">"Position"</span>, [0 0 3]);
+
+viewer = phx.extra.Viewer;             <span class="cmt">% interactive navigation + sky background</span></pre>
+
+<h4 class="phx-h4">Fresh viewer with a preset camera, then build the scene</h4>
+<pre class="phx-code">[~, ax] = phx.extra.Viewer(<span class="str">"clear"</span>, ...
+    <span class="str">"DefaultCameraPosition"</span>, [0 -70 0], <span class="str">"ViewMode"</span>, <span class="str">"plain"</span>);
+
+box = phx.Body(ax, <span class="str">"Position"</span>, [0 0 10], <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [4 4 4]});
+
+sim = phx.Simulation(ax);
+sim.step(5, 500, 5);</pre>
+
+<h4 class="phx-h4">Show a heads-up text overlay</h4>
+<pre class="phx-code">displayText(viewer, <span class="str">"PHX viewer ready"</span>);
+displayText(viewer, <span class="str">"t = 0.00 s"</span>, <span class="str">"below"</span>);   <span class="cmt">% append a log line</span>
+displayText(viewer, <span class="str">""</span>);                       <span class="cmt">% remove the overlay</span></pre>
+
+<div class="phx-note">
+<span class="lbl">Tip.</span> Press <b>F5</b> in the viewer to free-run the scene without writing a
+<code class="phx-inline">step</code> loop. Tune the cadence with <code class="phx-inline">FreeRunStep</code>
+and <code class="phx-inline">FreeRunSpeed</code> (<code class="phx-inline">Inf</code> runs as fast as possible).
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.Simulation.html">phx.Simulation</a>,
+<a href="phx.Body.html">phx.Body</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.GenericSpring</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.GenericSpring</div>
+
+<h1 class="phx-title">phx.GenericSpring <span class="phx-tag dev">under development</span></h1>
+<p class="phx-purpose">Generic spring</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.GenericSpring &nbsp;|&nbsp; Superclass: <a href="phx.base.Joint.html">phx.base.Joint</a></p>
+
+<div class="phx-note">
+<span class="lbl">Under development.</span> This class is functional but still evolving; its API and
+behaviour may change in a future release.
+</div>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.GenericSpring</code> realizes a six-degree-of-freedom compliant
+constraint &mdash; a spring&ndash;damper acting independently on each linear and angular axis
+between two bodies. Unlike <a href="phx.Spring.html">phx.Spring</a>, which acts along a single line,
+the generic spring constrains the full relative pose with per-axis stiffness and damping.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">spring = phx.GenericSpring(bodyA,bodyB)</span>
+<span class="phx-syntax">spring = phx.GenericSpring(___,Name,Value)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">spring = phx.GenericSpring(bodyA,bodyB)</code> creates a compliant
+6-DOF connection between two bodies at their origins. Set custom connection points with
+<code class="phx-inline">PointA</code> and <code class="phx-inline">PointB</code>.</p>
+</div>
+
+<h2 class="phx-h2">Properties</h2>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">PointA</td><td class="dflt">[0 0 0]</td><td>Connection point in the local space of body A.</td></tr>
+<tr><td class="name">PointB</td><td class="dflt">[0 0 0]</td><td>Connection point in the local space of body B.</td></tr>
+<tr><td class="name">LinearLimits</td><td class="dflt">[0 0 0; 0 0 0]</td><td>Lower and upper linear limits per axis (2&times;3).</td></tr>
+<tr><td class="name">AngularLimits</td><td class="dflt">[0 0 0; 0 0 0]</td><td>Lower and upper angular limits per axis (2&times;3), <span class="phx-unit">rad</span>.</td></tr>
+</table>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">Compliant mount between two bodies</h4>
+<pre class="phx-code">a = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Position"</span>, [0 0 2]);
+b = phx.Body(<span class="str">"Position"</span>, [0 0 2]);
+
+phx.GenericSpring(a, b);
+
+sim = phx.Simulation;
+b.applyForce([0 0 -30]);
+sim.step(3, 600, 5);</pre>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.Spring.html">phx.Spring</a>,
+<a href="phx.GenericJoint.html">phx.GenericJoint</a>,
+<a href="phx.base.Joint.html">phx.base.Joint</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

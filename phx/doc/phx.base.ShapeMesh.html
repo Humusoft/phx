@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.base.ShapeMesh</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.base.ShapeMesh</div>
+
+<h1 class="phx-title">phx.base.ShapeMesh</h1>
+<p class="phx-purpose">Additional material parameters for shapes</p>
+<p class="phx-classref">Mix-in class&nbsp;&nbsp;phx.base.ShapeMesh</p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.base.ShapeMesh</code> is a mix-in superclass that adds visual appearance
+parameters &mdash; surface color, material, style and an optional texture &mdash; shared by all
+mesh-based shapes. Concrete shapes in the <code class="phx-inline">phx.shape.*</code> package combine
+it with <a href="phx.base.Shape.html">phx.base.Shape</a> to define both their geometry and their
+appearance.</p>
+
+<p>You do not instantiate this class directly. The properties and methods documented here are
+available on every <code class="phx-inline">phx.shape.*</code> object and are settable as
+<code class="phx-inline">Name,Value</code> pairs in any shape constructor.</p>
+
+<h2 class="phx-h2">Properties</h2>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">Color</td><td class="dflt">[NaN NaN NaN]</td>
+<td>Surface color (RGB). <code class="phx-inline">NaN</code> assigns the next color from the cyclic palette.</td></tr>
+<tr><td class="name">Material</td><td class="dflt">"dull"</td>
+<td>Surface material: <code class="phx-inline">"default"</code>, <code class="phx-inline">"dull"</code>, <code class="phx-inline">"shiny"</code>, <code class="phx-inline">"metal"</code> or <code class="phx-inline">"matte"</code>.</td></tr>
+<tr><td class="name">Style</td><td class="dflt">"smooth"</td>
+<td>Surface style: <code class="phx-inline">"smooth"</code>, <code class="phx-inline">"edged"</code>, <code class="phx-inline">"flat"</code> or <code class="phx-inline">"wireframe"</code>.</td></tr>
+<tr><td class="name">ForcePatch</td><td class="dflt">false</td>
+<td>Force the use of a <code class="phx-inline">patch</code> object for drawing instead of the fast world primitive.</td></tr>
+<tr><td class="name">Texture</td><td class="type">string</td>
+<td>Texture image file. Setting it loads the image (with alpha, if present) as the surface texture.</td></tr>
+<tr><td class="name">TextureBlend</td><td class="dflt">1</td>
+<td>Texture blending ratio (0&ndash;1) between the texture and the surface color.</td></tr>
+</table>
+
+<div class="phx-note">
+<span class="lbl">Note.</span> The default <code class="phx-inline">Style</code> is overridden to
+<code class="phx-inline">"flat"</code> by the faceted shapes <a href="phx.shape.Box.html">Box</a>,
+<a href="phx.shape.Mesh.html">Mesh</a> and <a href="phx.shape.Rock.html">Rock</a>.
+</div>
+
+<h2 class="phx-h2">Object Functions</h2>
+<table class="phx-tbl">
+<tr><th>Function</th><th>Description</th></tr>
+<tr><td class="name">colormapTexture</td><td>Generate a surface texture from a matrix of scalar data and a colormap.</td></tr>
+<tr><td class="name">nextColor</td><td>Assign the next color from the cyclic color order to the shape.</td></tr>
+<tr><td class="name">resetColorOrder</td><td><b>Static.</b> Reset the counter so <code class="phx-inline">nextColor</code> starts again from the first color.</td></tr>
+</table>
+
+<h3 class="phx-h3">colormapTexture</h3>
+<span class="phx-syntax">shape = colormapTexture(shape,cdata)</span>
+<span class="phx-syntax">shape = colormapTexture(shape,cdata,cmap)</span>
+<div class="phx-desc">
+<p>Maps the scalar values in <code class="phx-inline">cdata</code> to colors and stores the result as
+the surface texture of the shape. <code class="phx-inline">cmap</code> is an N&times;3 matrix of RGB
+rows (default <code class="phx-inline">parula(10)</code>); <code class="phx-inline">cdata</code> is
+normalized to the full range of the colormap.</p>
+</div>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">Material and style</h4>
+<pre class="phx-code">b = phx.Body(<span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>, <span class="str">"Diameter"</span>, 1, ...
+    <span class="str">"Material"</span>, <span class="str">"metal"</span>, <span class="str">"Style"</span>, <span class="str">"smooth"</span>, <span class="str">"Color"</span>, [0.7 0.7 0.75]});</pre>
+
+<h4 class="phx-h4">Texture from an image</h4>
+<pre class="phx-code">earth = phx.shape.Globe(<span class="str">"Diameter"</span>, 2, <span class="str">"Texture"</span>, <span class="str">"earth.jpg"</span>);
+b = phx.Body(<span class="str">"Shape"</span>, earth);</pre>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.base.Shape.html">phx.base.Shape</a>,
+<a href="phx.Body.html">phx.Body</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

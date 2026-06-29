@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.GenericJoint</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.GenericJoint</div>
+
+<h1 class="phx-title">phx.GenericJoint <span class="phx-tag dev">under development</span></h1>
+<p class="phx-purpose">Generic joint</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.GenericJoint &nbsp;|&nbsp; Superclass: <a href="phx.base.Joint.html">phx.base.Joint</a></p>
+
+<div class="phx-note">
+<span class="lbl">Under development.</span> This class is functional but still evolving; its API and
+behaviour may change in a future release.
+</div>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.GenericJoint</code> realizes a six-degree-of-freedom constraint with
+independent linear and angular limits on each axis. With all limits set to zero a given axis is
+locked; opening a limit frees motion along or about that axis. It generalizes the fixed, prismatic
+and revolute joints.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">joint = phx.GenericJoint(bodyA,bodyB)</span>
+<span class="phx-syntax">joint = phx.GenericJoint(___,Name,Value)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">joint = phx.GenericJoint(bodyA,bodyB)</code> connects two bodies at their
+origins with all six degrees of freedom locked. Open them with
+<code class="phx-inline">LinearLimits</code> and <code class="phx-inline">AngularLimits</code>.</p>
+</div>
+
+<h2 class="phx-h2">Properties</h2>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">PointA</td><td class="dflt">[0 0 0]</td><td>Connection point in the local space of body A.</td></tr>
+<tr><td class="name">PointB</td><td class="dflt">[0 0 0]</td><td>Connection point in the local space of body B.</td></tr>
+<tr><td class="name">LinearLimits</td><td class="dflt">[0 0 0; 0 0 0]</td><td>Lower and upper linear limits per axis (2&times;3): <code class="phx-inline">[min; max]</code> for <code class="phx-inline">x y z</code>.</td></tr>
+<tr><td class="name">AngularLimits</td><td class="dflt">[0 0 0; 0 0 0]</td><td>Lower and upper angular limits per axis (2&times;3), <span class="phx-unit">rad</span>.</td></tr>
+</table>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">Allow sliding along the local X axis</h4>
+<pre class="phx-code">a = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Position"</span>, [0 0 2]);
+b = phx.Body(<span class="str">"Position"</span>, [0 0 2]);
+
+<span class="cmt">% Free translation along x in [-1, 1]; everything else locked</span>
+phx.GenericJoint(a, b, <span class="str">"LinearLimits"</span>, [-1 0 0; 1 0 0]);
+
+sim = phx.Simulation;
+b.applyForce([20 0 0]);
+sim.step(2, 200, 1);</pre>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.FixedJoint.html">phx.FixedJoint</a>,
+<a href="phx.GenericSpring.html">phx.GenericSpring</a>,
+<a href="phx.base.Joint.html">phx.base.Joint</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

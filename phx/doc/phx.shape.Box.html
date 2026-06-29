@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.shape.Box</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.shape.Box</div>
+
+<h1 class="phx-title">phx.shape.Box</h1>
+<p class="phx-purpose">Box shape</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.shape.Box &nbsp;|&nbsp; Superclasses: <a href="phx.base.Shape.html">phx.base.Shape</a>, <a href="phx.base.ShapeMesh.html">phx.base.ShapeMesh</a></p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.shape.Box</code> is the geometry of a rectangular block worn by a
+<a href="phx.Body.html">phx.Body</a>. The visual appearance is a simple triangular mesh; the
+collision shape and mass properties are modeled as an ideal block.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">shape = phx.shape.Box</span>
+<span class="phx-syntax">shape = phx.shape.Box(Name,Value)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">shape = phx.shape.Box</code> creates a unit box with default parameters.
+<code class="phx-inline">phx.shape.Box(Name,Value)</code> sets properties with name-value arguments.</p>
+<p class="phx-eg">A shape is normally passed to a body's <code class="phx-inline">Shape</code> property, either
+as an object or as a cell array <code class="phx-inline">{"Box",Name,Value,&hellip;}</code>.</p>
+</div>
+
+<h2 class="phx-h2">Properties</h2>
+<h3 class="phx-h3">Geometry</h3>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">Size</td><td class="dflt">[1 1 1]</td><td>Box size <code class="phx-inline">[X Y Z]</code>, <span class="phx-unit">m</span>.</td></tr>
+<tr><td class="name">Density</td><td class="dflt">1000</td><td>Volumetric density, <span class="phx-unit">kg/m&sup3;</span> (used to compute mass and inertia).</td></tr>
+</table>
+
+<p>In addition, every shape inherits appearance properties
+(<code class="phx-inline">Color</code>, <code class="phx-inline">Material</code>,
+<code class="phx-inline">Style</code>, <code class="phx-inline">Texture</code>, &hellip;) from
+<a href="phx.base.ShapeMesh.html">phx.base.ShapeMesh</a> and skeletal properties
+(<code class="phx-inline">SkeletPoints</code>, <code class="phx-inline">SkeletStyle</code>) from
+<a href="phx.base.Shape.html">phx.base.Shape</a>. <code class="phx-inline">Box</code> uses the
+<code class="phx-inline">"flat"</code> style by default.</p>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">A colored block as a body</h4>
+<pre class="phx-code">b = phx.Body(<span class="str">"Position"</span>, [0 0 3], ...
+    <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [2 1 0.5], <span class="str">"Color"</span>, [0.4 0.6 1]});
+
+sim = phx.Simulation;
+sim.step(2, 200, 1);</pre>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.Body.html">phx.Body</a>,
+<a href="phx.shape.Sphere.html">phx.shape.Sphere</a>,
+<a href="phx.base.Shape.html">phx.base.Shape</a>,
+<a href="phx.base.ShapeMesh.html">phx.base.ShapeMesh</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

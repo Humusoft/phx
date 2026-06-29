@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.shape.OBJ</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.shape.OBJ</div>
+
+<h1 class="phx-title">phx.shape.OBJ</h1>
+<p class="phx-purpose">OBJ imported shape</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.shape.OBJ &nbsp;|&nbsp; Superclasses: <a href="phx.base.Shape.html">phx.base.Shape</a>, <a href="phx.base.ShapeMesh.html">phx.base.ShapeMesh</a></p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.shape.OBJ</code> loads its visual appearance from a Wavefront OBJ file
+specified by the <code class="phx-inline">Source</code> property, including its texture coordinates.
+The mesh can be scaled (<code class="phx-inline">Scale</code>) and recentred to its bounding-box origin
+(<code class="phx-inline">Centered</code>). The collision shape is selected by
+<code class="phx-inline">Envelope</code> and can be a bounding box, cylinder, sphere, convex hull or
+concave triangle mesh; mass properties are modeled from the bounding box and
+<code class="phx-inline">Density</code>.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">shape = phx.shape.OBJ</span>
+<span class="phx-syntax">shape = phx.shape.OBJ(Name,Value)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">shape = phx.shape.OBJ("Source",file)</code> loads a mesh from an OBJ file.
+Set <code class="phx-inline">Envelope</code> to choose how the collision shape is approximated.</p>
+</div>
+
+<h2 class="phx-h2">Properties</h2>
+<h3 class="phx-h3">Geometry</h3>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">Source</td><td class="type">string</td><td>OBJ source file name. Setting it loads the mesh.</td></tr>
+<tr><td class="name">Scale</td><td class="dflt">[1 1 1]</td><td>Scale factor applied to the imported mesh.</td></tr>
+<tr><td class="name">Centered</td><td class="dflt">false</td><td>Move the origin to the centre of the bounding box.</td></tr>
+<tr><td class="name">Envelope</td><td class="dflt">"box"</td><td>Collision envelope: <code class="phx-inline">"box"</code>, <code class="phx-inline">"cylinder"</code>, <code class="phx-inline">"sphere"</code>, <code class="phx-inline">"convex"</code> or <code class="phx-inline">"concave"</code>.</td></tr>
+<tr><td class="name">Density</td><td class="dflt">1000</td><td>Volumetric density, <span class="phx-unit">kg/m&sup3;</span> (applied to the bounding box).</td></tr>
+</table>
+
+<p>Appearance properties are inherited from <a href="phx.base.ShapeMesh.html">phx.base.ShapeMesh</a>
+and skeletal properties from <a href="phx.base.Shape.html">phx.base.Shape</a>.</p>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">Import a textured model with a convex collision hull</h4>
+<pre class="phx-code">shape = phx.shape.OBJ(<span class="str">"Source"</span>, <span class="str">"teapot.obj"</span>, <span class="str">"Scale"</span>, [1 1 1]*0.5, ...
+    <span class="str">"Centered"</span>, true, <span class="str">"Envelope"</span>, <span class="str">"convex"</span>);
+
+b = phx.Body(<span class="str">"Position"</span>, [0 0 3], <span class="str">"Shape"</span>, shape);
+
+sim = phx.Simulation;
+sim.step(3, 300, 1);</pre>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.Body.html">phx.Body</a>,
+<a href="phx.shape.STL.html">phx.shape.STL</a>,
+<a href="phx.shape.Mesh.html">phx.shape.Mesh</a>,
+<a href="phx.base.Shape.html">phx.base.Shape</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

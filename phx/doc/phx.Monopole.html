@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.Monopole</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.Monopole</div>
+
+<h1 class="phx-title">phx.Monopole</h1>
+<p class="phx-purpose">Monopole interaction</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.Monopole &nbsp;|&nbsp; Superclass: <a href="phx.base.Object.html">phx.base.Object</a></p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.Monopole</code> assigns a monopole charge to selected bodies. All
+bodies in the group then interact pairwise through an inverse-square reaction force:</p>
+<pre class="phx-code">          c1 * c2
+F = A * -----------
+            r^2</pre>
+<p>where <code class="phx-inline">c1</code>, <code class="phx-inline">c2</code> are the charges,
+<code class="phx-inline">r</code> the distance, and <code class="phx-inline">A</code> the attractivity
+sign. The interaction can be visualized as a vector field on a configurable grid.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">m = phx.Monopole(bodies)</span>
+<span class="phx-syntax">m = phx.Monopole(___,Name,Value)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">m = phx.Monopole(bodies)</code> creates a monopole element and assigns it
+to all given bodies, forming a mutually interacting group. Provide one charge per body through the
+<code class="phx-inline">Charge</code> property.</p>
+</div>
+
+<h3 class="phx-h3">Input Arguments</h3>
+<table class="phx-tbl">
+<tr><th>Argument</th><th>Type</th><th>Description</th></tr>
+<tr><td class="name">bodies</td><td class="type">phx.Body (1&times;n)</td><td>Bodies forming the interacting group.</td></tr>
+</table>
+
+<h2 class="phx-h2">Properties</h2>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">Charge</td><td class="type">n&times;1 double</td><td>Monopole charge of each body (one per body).</td></tr>
+<tr><td class="name">Attractivity</td><td class="dflt">-1</td><td>Polarity: <code class="phx-inline">-1</code> = opposite charges attract, <code class="phx-inline">+1</code> = they repel.</td></tr>
+<tr><td class="name">VectorFieldCenter</td><td class="dflt">[0 0 0]</td><td>Position of the vector-field origin.</td></tr>
+<tr><td class="name">VectorFieldSize</td><td class="dflt">[10 10 0]</td><td>Extent of the vector field, <code class="phx-inline">[x y z]</code>.</td></tr>
+<tr><td class="name">VectorFieldStep</td><td class="dflt">1</td><td>Spacing of the vector-field grid.</td></tr>
+<tr><td class="name">VectorSegments</td><td class="dflt">4</td><td>Number of segments per field-line vector.</td></tr>
+<tr><td class="name">VectorLength</td><td class="dflt">1</td><td>Length of each field-line vector.</td></tr>
+<tr><td class="name">Overlay</td><td class="dflt">false</td><td>Draw the vector field as an overlay (always on top).</td></tr>
+<tr><td class="name">Energy</td><td class="type">double (read-only)</td><td>Potential energy of the charge pairs, <span class="phx-unit">J</span> (dependent).</td></tr>
+</table>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">Two attracting charges</h4>
+<pre class="phx-code">clf; view(3); axis equal; grid on;
+a = phx.Body(<span class="str">"Position"</span>, [-3 0 0]);
+b = phx.Body(<span class="str">"Position"</span>, [ 3 0 0]);
+
+phx.Monopole([a b], <span class="str">"Charge"</span>, [1; -1], <span class="str">"Attractivity"</span>, -1);
+
+sim = phx.Simulation(gca, <span class="str">"Gravity"</span>, [0 0 0]);
+sim.step(4, 800, 5);</pre>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.Dipole.html">phx.Dipole</a>,
+<a href="phx.Resistance.html">phx.Resistance</a>,
+<a href="phx.Body.html">phx.Body</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

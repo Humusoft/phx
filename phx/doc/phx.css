@@ -1,0 +1,227 @@
+/* PHX Toolbox reference pages - MATLAB doc center inspired styling
+   Copyright 2026 HUMUSOFT s.r.o. */
+
+:root {
+    --phx-orange: #d95319;
+    --phx-blue: #0072bd;
+    --phx-link: #0e6db5;
+    --phx-rule: #d9d9d9;
+    --phx-bg-code: #f3f3f3;
+    --phx-bg-soft: #f7f7f7;
+    --phx-text: #1c1c1c;
+    --phx-muted: #707070;
+}
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+    font-family: "Helvetica Neue", Helvetica, Arial, "Segoe UI", sans-serif;
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--phx-text);
+    margin: 0;
+    padding: 0 0 80px 0;
+    background: #ffffff;
+}
+
+.phx-wrap {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 28px;
+}
+
+/* ---- top accent bar ---- */
+.phx-topbar {
+    height: 6px;
+    background: linear-gradient(90deg, var(--phx-orange) 0%, #e8862f 50%, var(--phx-blue) 100%);
+}
+
+/* ---- breadcrumb ---- */
+.phx-crumb {
+    font-size: 13px;
+    color: var(--phx-muted);
+    padding: 14px 0 2px 0;
+    border-bottom: 1px solid var(--phx-rule);
+}
+.phx-crumb a { color: var(--phx-muted); text-decoration: none; }
+.phx-crumb a:hover { color: var(--phx-orange); text-decoration: underline; }
+
+/* ---- page title block ---- */
+h1.phx-title {
+    font-size: 30px;
+    font-weight: 400;
+    margin: 22px 0 2px 0;
+    color: var(--phx-text);
+}
+.phx-purpose {
+    font-size: 18px;
+    color: #3a3a3a;
+    margin: 0 0 4px 0;
+}
+.phx-classref {
+    font-size: 13px;
+    color: var(--phx-muted);
+    font-family: Consolas, "Courier New", monospace;
+    margin: 2px 0 18px 0;
+}
+
+/* ---- section headings ---- */
+h2.phx-h2 {
+    font-size: 21px;
+    font-weight: 500;
+    color: var(--phx-text);
+    margin: 34px 0 4px 0;
+    padding-top: 10px;
+    border-top: 1px solid var(--phx-rule);
+}
+h3.phx-h3 {
+    font-size: 17px;
+    font-weight: 600;
+    color: #2a2a2a;
+    margin: 22px 0 6px 0;
+}
+h4.phx-h4 {
+    font-size: 15px;
+    font-weight: 600;
+    color: #2a2a2a;
+    margin: 16px 0 4px 0;
+}
+
+p { margin: 8px 0; }
+
+/* ---- code ---- */
+code, .phx-syntax, pre {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 13.5px;
+}
+code.phx-inline {
+    background: var(--phx-bg-code);
+    padding: 1px 4px;
+    border-radius: 3px;
+    color: #a11;
+}
+.phx-syntax {
+    display: block;
+    background: var(--phx-bg-code);
+    border-left: 3px solid var(--phx-blue);
+    padding: 8px 12px;
+    margin: 6px 0;
+    white-space: pre-wrap;
+    color: #1a1a1a;
+}
+pre.phx-code {
+    background: var(--phx-bg-code);
+    border: 1px solid var(--phx-rule);
+    border-radius: 4px;
+    padding: 12px 14px;
+    overflow-x: auto;
+    line-height: 1.45;
+    color: #1a1a1a;
+}
+pre.phx-code .cmt { color: #228B22; }
+pre.phx-code .str { color: #a020f0; }
+pre.phx-code .kw  { color: #0000ff; }
+
+/* ---- syntax/description pairing ---- */
+.phx-desc { margin: 4px 0 18px 18px; }
+.phx-desc .phx-eg { color: var(--phx-muted); font-size: 13px; margin-top: 4px; }
+
+/* ---- property / argument tables ---- */
+table.phx-tbl {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 10px 0 16px 0;
+    font-size: 14px;
+}
+table.phx-tbl th {
+    text-align: left;
+    background: var(--phx-bg-soft);
+    border-bottom: 2px solid var(--phx-rule);
+    padding: 7px 10px;
+    font-weight: 600;
+}
+table.phx-tbl td {
+    border-bottom: 1px solid var(--phx-rule);
+    padding: 7px 10px;
+    vertical-align: top;
+}
+table.phx-tbl td.name {
+    font-family: Consolas, "Courier New", monospace;
+    color: #0a5d8a;
+    white-space: nowrap;
+    font-weight: 600;
+}
+table.phx-tbl td.type {
+    font-family: Consolas, "Courier New", monospace;
+    color: var(--phx-muted);
+    white-space: nowrap;
+    font-size: 12.5px;
+}
+table.phx-tbl td.dflt {
+    font-family: Consolas, "Courier New", monospace;
+    color: #555;
+    white-space: nowrap;
+    font-size: 12.5px;
+}
+.phx-unit { color: var(--phx-muted); font-style: italic; }
+
+/* ---- links ---- */
+a { color: #0e6db5; text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ---- note / tip callouts ---- */
+.phx-note {
+    background: #fef6ec;
+    border-left: 4px solid var(--phx-orange);
+    padding: 8px 12px;
+    margin: 14px 0;
+    font-size: 14px;
+}
+.phx-note .lbl { font-weight: 700; color: var(--phx-orange); }
+
+/* ---- See Also footer ---- */
+.phx-seealso {
+    margin-top: 30px;
+    padding-top: 12px;
+    border-top: 1px solid var(--phx-rule);
+    font-size: 14px;
+}
+.phx-seealso .lbl { font-weight: 600; }
+
+.phx-foot {
+    margin-top: 36px;
+    padding-top: 10px;
+    border-top: 1px solid var(--phx-rule);
+    font-size: 12px;
+    color: var(--phx-muted);
+}
+
+/* ---- landing page cards ---- */
+.phx-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin: 16px 0;
+}
+.phx-card {
+    flex: 1 1 240px;
+    border: 1px solid var(--phx-rule);
+    border-radius: 6px;
+    padding: 12px 16px;
+    background: #fff;
+}
+.phx-card h3 { margin: 0 0 6px 0; font-size: 15px; }
+.phx-card ul { margin: 4px 0 0 0; padding-left: 18px; }
+.phx-card li { margin: 3px 0; font-size: 14px; }
+.phx-tag {
+    display: inline-block;
+    font-size: 11px;
+    background: var(--phx-bg-soft);
+    border: 1px solid var(--phx-rule);
+    border-radius: 10px;
+    padding: 0 8px;
+    color: var(--phx-muted);
+    margin-left: 6px;
+    vertical-align: middle;
+}
+.phx-tag.dev { background: #fdecec; border-color: #f3c6c6; color: #b03030; }

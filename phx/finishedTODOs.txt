@@ -1,0 +1,51 @@
+Simulation.m
+% DONE exclude static bodies from the redraw pipeline
+% DONE add/remove objects and update pipelines (without the need to recreate the simulation object)
+% DONE property for engine specific settings
+
+Body.m
+% DONE velocities are not transferred to a new sim object (e.g. between freeruns)
+% DONE store/restoreState methods for kinematic props (transform & velocities)
+% DONE ability to set position relative to other body
+% DONE group transform method
+
+PhxModel.m
+% DONE image output
+% DONE port picker
+% DONE no brackets needed for port definition
+% DONE model from function
+% DONE model from MAT file
+% DONE always define signal size for ports
+% DONE default camera settings
+
+Resistance.m
+% DONE add EnvironmentVelocity
+% DONE EnvironmentOrigin and EnvironmentTwist
+
+Spring.m
+% DONE free length property
+% DONE validate input arguments but do not try to convert classes (e.g. phx.Trace -> phx.Body)
+% DONE method to plot spring characteristics
+
+Joint.m
+% DONE remove constraints in engine when MATLAB object is deleted
+% DONE read result force/torque (for all joints)
+
+Object.m
+% DONE optional Name as object identificator (for Simulink etc.)
+% DONE find by param-value (and class optionally)
+
+Viever.m
+% DONE triad overlay
+% DONE viewer clf does not delete the viewer, callbacks are holding the object reference
+% DONE scale the sky sphere radius with the current camera position to avoid distance limits and inappropriate cut planes
+% DONE use axes of visible coordinate system for per-axis editing
+% DONE safe cla() function to clear content but keep viewer objects
+
+STL.m
+% DONE optional mesh reduction
+% DONE reduce geometry only once within file loading
+% DONE avoid re-reading STL for saved MAT models
+
+Sphere.m
+% DONE nonico geometry for texture support

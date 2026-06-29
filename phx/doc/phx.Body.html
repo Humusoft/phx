@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.Body</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.Body</div>
+
+<h1 class="phx-title">phx.Body</h1>
+<p class="phx-purpose">Physical body</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.Body &nbsp;|&nbsp; Superclass: <a href="phx.base.Object.html">phx.base.Object</a></p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.Body</code> is the principal object of PHX. It represents
+every movable object in the virtual world: it carries the mass and inertia, holds the kinematic
+state (pose and velocities), wears a geometric <a href="phx.base.Shape.html">Shape</a> for
+visualization and collision, and is the body that joints, springs and force elements attach to.</p>
+
+<p>A body can be <em>dynamic</em> (driven by forces and collisions), <em>static</em> (immovable,
+e.g. ground) or <em>kinematic</em> (moved by script, unaffected by forces). Many kinematic
+properties are <em>dependent</em> and read from or write to the engine directly while the simulation
+is built.</p>
+
+<h2 class="phx-h2">Creation</h2>
+
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">body = phx.Body</span>
+<span class="phx-syntax">body = phx.Body(ax)</span>
+<span class="phx-syntax">body = phx.Body(___,Name,Value)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">body = phx.Body(ax)</code> creates a physical body and draws its visual
+representation into the axes <code class="phx-inline">ax</code> (default <code class="phx-inline">gca</code>).
+Pass <code class="phx-inline">[]</code> when no visualization is needed; the target axes can also be
+set later through the <code class="phx-inline">ParentAxes</code> property.</p>
+<p class="phx-eg">A body with no explicit shape is created as a unit <a href="phx.base.Shape.html">Box</a>.</p>
+</div>
+<div class="phx-desc">
+<p><code class="phx-inline">body = phx.Body(___,Name,Value)</code> sets properties using name-value
+arguments, for example <code class="phx-inline">phx.Body("Type","static","Position",[1 0 0])</code>.</p>
+</div>
+
+<h3 class="phx-h3">Input Arguments</h3>
+<table class="phx-tbl">
+<tr><th>Argument</th><th>Type</th><th>Description</th></tr>
+<tr><td class="name">ax</td><td class="type">axes | UIAxes | []</td>
+<td>Target axes for the body graphics. Use <code class="phx-inline">[]</code> for a headless body.</td></tr>
+</table>
+
+<h2 class="phx-h2">Properties</h2>
+
+<h3 class="phx-h3">General</h3>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">Type</td><td class="dflt">"dynamic"</td>
+<td>Body type: <code class="phx-inline">"static"</code>, <code class="phx-inline">"kinematic"</code> or <code class="phx-inline">"dynamic"</code>.</td></tr>
+<tr><td class="name">Mass</td><td class="dflt">1</td>
+<td>Body mass, <span class="phx-unit">kg</span>. Recomputed from the shape and density when a <code class="phx-inline">Shape</code> is assigned.</td></tr>
+<tr><td class="name">Inertia</td><td class="dflt">[1 1 1]</td>
+<td>Principal moments of the inertia tensor, <span class="phx-unit">kg&middot;m&sup2;</span>.</td></tr>
+<tr><td class="name">Friction</td><td class="dflt">[0.5 0 0]</td>
+<td>Friction coefficients (0&ndash;1) as <code class="phx-inline">[drag roll spin]</code>.</td></tr>
+<tr><td class="name">Collisions</td><td class="dflt">true</td>
+<td>Enable or disable collisions for this body.</td></tr>
+<tr><td class="name">Shape</td><td class="type">phx.shape.* | cell (write-only)</td>
+<td>Geometry worn by the body. Assign a <code class="phx-inline">phx.shape.*</code> object or a cell array such as <code class="phx-inline">{"Box","Size",[2 1 1]}</code>.</td></tr>
+<tr><td class="name">OnDoubleClickFcn</td><td class="dflt">[]</td>
+<td>Callback fired on a double-click on the body (in the <code class="phx-inline">phx.extra.Viewer</code>).</td></tr>
+</table>
+
+<h3 class="phx-h3">Kinematic state (world frame)</h3>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type</th><th>Description</th></tr>
+<tr><td class="name">Transform</td><td class="type">4&times;4 double</td><td>Full homogeneous transform (dependent).</td></tr>
+<tr><td class="name">Position</td><td class="type">1&times;3 double</td><td>Linear position <code class="phx-inline">[x y z]</code> (dependent).</td></tr>
+<tr><td class="name">Orientation</td><td class="type">3&times;3 double</td><td>Rotation matrix (dependent).</td></tr>
+<tr><td class="name">AxisAngle</td><td class="type">1&times;4 double</td><td>Axis-angle rotation <code class="phx-inline">[x y z angle]</code> (dependent).</td></tr>
+<tr><td class="name">EulerAngles</td><td class="type">1&times;3 double</td><td>Euler angles for z&rarr;y&rarr;x order (dependent).</td></tr>
+<tr><td class="name">Quaternion</td><td class="type">1&times;4 double</td><td>Quaternion rotation (dependent).</td></tr>
+<tr><td class="name">LinearVelocity</td><td class="type">1&times;3 double</td><td>Linear velocity, <span class="phx-unit">m/s</span>.</td></tr>
+<tr><td class="name">AngularVelocity</td><td class="type">1&times;3 double</td><td>Angular velocity, <span class="phx-unit">rad/s</span>.</td></tr>
+<tr><td class="name">TotalForce</td><td class="type">1&times;3 double (read-only)</td><td>Total force at the body centre, <span class="phx-unit">N</span> (dependent).</td></tr>
+<tr><td class="name">TotalTorque</td><td class="type">1&times;3 double (read-only)</td><td>Total torque at the body centre, <span class="phx-unit">N&middot;m</span> (dependent).</td></tr>
+<tr><td class="name">Energy</td><td class="type">double (read-only)</td><td>Kinetic energy of the body, <span class="phx-unit">J</span> (dependent).</td></tr>
+</table>
+
+<h2 class="phx-h2">Object Functions</h2>
+<table class="phx-tbl">
+<tr><th>Function</th><th>Description</th></tr>
+<tr><td class="name">applyForce</td><td>Apply a force for the next simulation step (then reset).</td></tr>
+<tr><td class="name">applyTorque</td><td>Apply a torque for the next simulation step (then reset).</td></tr>
+<tr><td class="name">offset</td><td>Transformation matrix relative to the body's own pose.</td></tr>
+<tr><td class="name">groupTransform</td><td>Rigidly transform a group of bodies about the first body.</td></tr>
+<tr><td class="name">boundingBox</td><td>Axis-aligned world bounding box of one or more bodies.</td></tr>
+<tr><td class="name">overlay</td><td>Show/hide an auxiliary overlay (center, system, bbox, edit, hull).</td></tr>
+<tr><td class="name">storeState / restoreState / clearStates</td><td>Save, restore and remove kinematic states by name.</td></tr>
+<tr><td class="name">gca</td><td>Return the body's <code class="phx-inline">hgtransform</code> for attaching custom graphics.</td></tr>
+</table>
+
+<h3 class="phx-h3">applyForce</h3>
+<span class="phx-syntax">applyForce(body,force)</span>
+<span class="phx-syntax">applyForce(body,force,point)</span>
+<span class="phx-syntax">applyForce(body,force,point,isLocalForce,isLocalPoint)</span>
+<div class="phx-desc">
+<p>Applies <code class="phx-inline">force</code> (<span class="phx-unit">N</span>) acting during the
+next simulation step only. Without <code class="phx-inline">point</code> the force acts at the body
+origin; otherwise it acts at <code class="phx-inline">point</code> (local space by default). The two
+logical flags select local (<code class="phx-inline">true</code>, default) or world space for the
+force and the point respectively.</p>
+</div>
+
+<h3 class="phx-h3">applyTorque</h3>
+<span class="phx-syntax">applyTorque(body,torque)</span>
+<span class="phx-syntax">applyTorque(body,torque,isLocalTorque)</span>
+<div class="phx-desc">
+<p>Applies <code class="phx-inline">torque</code> (<span class="phx-unit">N&middot;m</span>) during the
+next step. <code class="phx-inline">isLocalTorque</code> selects local (default) or world space.</p>
+</div>
+
+<h3 class="phx-h3">offset</h3>
+<span class="phx-syntax">M = offset(body,translation)</span>
+<span class="phx-syntax">M = offset(body,translation,rotation)</span>
+<div class="phx-desc">
+<p>Returns a transform with translation and rotation relative to the body itself.
+<code class="phx-inline">rotation</code> is interpreted by size: scalar &rarr; angle about Z,
+1&times;3 &rarr; Euler angles, 1&times;4 &rarr; axis-angle.</p>
+</div>
+
+<h3 class="phx-h3">overlay</h3>
+<span class="phx-syntax">overlay(body,type)</span>
+<span class="phx-syntax">overlay(body,type,state)</span>
+<div class="phx-desc">
+<p>Toggles (or sets <code class="phx-inline">"on"</code>/<code class="phx-inline">"off"</code>) an auxiliary
+overlay. <code class="phx-inline">type</code> is one of <code class="phx-inline">"center"</code>,
+<code class="phx-inline">"system"</code>, <code class="phx-inline">"bbox"</code>,
+<code class="phx-inline">"edit"</code> or <code class="phx-inline">"hull"</code>.</p>
+</div>
+
+<h2 class="phx-h2">Examples</h2>
+
+<h4 class="phx-h4">Create a dynamic body and a ground plane</h4>
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+ground = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>);
+box    = phx.Body(<span class="str">"Position"</span>, [0 0 3], ...
+                 <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [1 1 1], <span class="str">"Color"</span>, [0.4 0.6 1]});
+
+sim = phx.Simulation;
+sim.step(2, 200, 1);</pre>
+
+<h4 class="phx-h4">Drive a body with a transient force</h4>
+<pre class="phx-code">box.applyForce([0 0 50]);              <span class="cmt">% upward kick, world frame</span>
+box.applyForce([10 0 0], [0 0 0.5]);   <span class="cmt">% off-centre push, local point</span>
+sim.step(0.1, 20, 1);</pre>
+
+<h4 class="phx-h4">Read state during the run</h4>
+<pre class="phx-code">v = box.LinearVelocity;
+E = box.Energy;                        <span class="cmt">% kinetic energy (J)</span>
+bb = box.boundingBox;                  <span class="cmt">% [min; max] world corners</span></pre>
+
+<div class="phx-note">
+<span class="lbl">Tip.</span> Use <code class="phx-inline">storeState</code> before a run and
+<code class="phx-inline">restoreState</code> afterwards to replay a scenario from identical initial
+conditions without rebuilding it.
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.Simulation.html">phx.Simulation</a>,
+<a href="phx.base.Shape.html">phx.base.Shape</a>,
+<a href="phx.Spring.html">phx.Spring</a>,
+<a href="phx.RevoluteJoint.html">phx.RevoluteJoint</a>,
+<a href="phx.Thruster.html">phx.Thruster</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

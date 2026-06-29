@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PhxAction</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; PhxAction</div>
+
+<h1 class="phx-title">PhxAction</h1>
+<p class="phx-purpose">Run MATLAB code against a running PHX scene</p>
+<p class="phx-classref">Simulink&nbsp;block &nbsp;|&nbsp; Library: <code class="phx-inline">PhxLibrary.slx</code></p>
+
+<h2 class="phx-h2">Description</h2>
+<p>The <strong>PhxAction</strong> block executes a snippet of user MATLAB code against the live scene of a
+<a href="PhxModel.html">PhxModel</a> block during simulation. It complements the property-driven ports of
+PhxModel: where PhxModel streams signals to and from public properties every step, PhxAction lets you run
+arbitrary code on demand &mdash; to make <em>structural</em> changes such as adding or removing bodies, or
+to make an occasional method call &mdash; that does not fit the fixed, per-step port interface.</p>
+
+<p>The code runs only on a <strong>rising edge</strong> of the block's trigger input, so actions are
+event-driven rather than executed every step. Between triggers the block simply holds its last outputs.</p>
+
+<p>PhxAction binds to the scene-defining PhxModel block in the same model: it shares that block's
+<a href="phx.Simulation.html">phx.Simulation</a> and viewer axes, so your code operates on exactly the
+objects PhxModel is stepping. The block is the Level-2 MATLAB S-function <code class="phx-inline">phx/PhxAction.m</code>,
+backed by <code class="phx-inline">phx.simulink.ActionBackend</code>.</p>
+
+<h2 class="phx-h2">The action code</h2>
+<p>The <strong>Code</strong> parameter is ordinary MATLAB code that runs with the following variables in
+scope. It reads the scene through <code class="phx-inline">sim</code>, may keep data across triggers in
+<code class="phx-inline">state</code>, and assigns the output ports by writing
+<code class="phx-inline">output1</code>&hellip;<code class="phx-inline">outputM</code>.</p>
+
+<table class="phx-tbl">
+<tr><th>Variable</th><th>Type</th><th>Description</th></tr>
+<tr><td class="name">sim</td><td class="type">phx.Simulation</td>
+<td>The running simulation of the bound PhxModel block. Use it to read the scene or change its structure,
+e.g. <code class="phx-inline">sim.addObjects(&hellip;)</code> or <code class="phx-inline">delete(&hellip;)</code>.</td></tr>
+<tr><td class="name">ax</td><td class="type">axes | []</td>
+<td>The viewer axes of the bound block, or <code class="phx-inline">[]</code> when its viewer is off. Pass it
+as the parent when creating bodies that should be drawn.</td></tr>
+<tr><td class="name">t</td><td class="type">double</td>
+<td>Current simulation time, in seconds.</td></tr>
+<tr><td class="name">input1&hellip;inputN</td><td class="type">double</td>
+<td>The data input ports, in order (see <strong>NumInputs</strong>). Sizes are inherited from the connected
+signals.</td></tr>
+<tr><td class="name">state</td><td class="type">struct</td>
+<td>Persistent user state, preserved across triggers. Read and write freely; initially an empty struct.</td></tr>
+<tr><td class="name">output1&hellip;outputM</td><td class="type">double</td>
+<td>Assign these to set the data output ports (see <strong>OutputSizes</strong>). Any output left unassigned
+defaults to 0.</td></tr>
+</table>
+
+<div class="phx-note">
+<span class="lbl">Structural changes.</span> Adding or removing objects rebuilds the simulation pipelines
+automatically (see <a href="phx.Simulation.html">phx.Simulation</a>). Trigger such actions sparingly &mdash;
+on events rather than every step &mdash; and keep stiff constraint networks in mind (a small engine step,
+about <code class="phx-inline">dt&nbsp;&le;&nbsp;5&nbsp;ms</code>, remains necessary for stability).
+</div>
+
+<h2 class="phx-h2">Parameters</h2>
+<table class="phx-tbl">
+<tr><th>Parameter</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">Code</td><td class="type">char</td>
+<td>The MATLAB code to run on each rising trigger edge, using the variables above.</td></tr>
+<tr><td class="name">NumInputs</td><td class="dflt">0</td>
+<td>Number of <em>data</em> input ports, in addition to the trigger. They appear as
+<code class="phx-inline">input1</code>&hellip;<code class="phx-inline">inputN</code> and inherit their sizes.</td></tr>
+<tr><td class="name">OutputSizes</td><td class="dflt">{}</td>
+<td>Cell array of output-port dimensions, one entry per output, e.g. <code class="phx-inline">{1, 3, [2 4]}</code>
+for a scalar, a 3-vector and a 2&times;4 matrix. The number of outputs is <code class="phx-inline">numel(OutputSizes)</code>.</td></tr>
+<tr><td class="name">MainBlock</td><td class="type">SID</td>
+<td>The block to bind to, given as a Simulink block <code class="phx-inline">SID</code>. Leave empty to
+auto-bind to the single <a href="PhxModel.html">PhxModel</a> block in the model.</td></tr>
+</table>
+
+<h2 class="phx-h2">Ports</h2>
+<p><strong>Input&nbsp;1</strong> is the <em>trigger</em>: the code runs whenever this signal crosses from
+&le;&nbsp;0 to &gt;&nbsp;0. <strong>Inputs&nbsp;2&hellip;1+NumInputs</strong> are data inputs, exposed in the
+code as <code class="phx-inline">input1</code>&hellip;<code class="phx-inline">inputN</code> with inherited
+sizes. <strong>Outputs&nbsp;1&hellip;M</strong> carry the values assigned to
+<code class="phx-inline">output1</code>&hellip;<code class="phx-inline">outputM</code>, sized per
+<strong>OutputSizes</strong>; each holds its last value between triggers.</p>
+
+<h2 class="phx-h2">Examples</h2>
+
+<h4 class="phx-h4">Spawn a body on a trigger</h4>
+<div class="phx-desc">
+<p>With <strong>NumInputs</strong>&nbsp;=&nbsp;0 and <strong>OutputSizes</strong>&nbsp;=&nbsp;<code class="phx-inline">{1}</code>,
+drop a new box into the scene each time the trigger fires and report how many have been dropped:</p>
+<pre class="phx-code"><span class="cmt">% Code</span>
+<span class="kw">if</span> ~isfield(state, <span class="str">"n"</span>), state.n = 0; <span class="kw">end</span>
+state.n = state.n + 1;
+
+b = phx.Body(ax, <span class="str">"Position"</span>, [0 0 5], <span class="str">"Name"</span>, <span class="str">"Drop"</span> + state.n);
+sim.addObjects(b);                 <span class="cmt">% rebuilds the pipelines</span>
+
+output1 = state.n;                 <span class="cmt">% number of bodies dropped so far</span></pre>
+</div>
+
+<h4 class="phx-h4">Remove a body using an input</h4>
+<div class="phx-desc">
+<p>With <strong>NumInputs</strong>&nbsp;=&nbsp;1, delete a named body when triggered; the name index arrives
+on <code class="phx-inline">input1</code>:</p>
+<pre class="phx-code"><span class="cmt">% Code</span>
+target = sim.findBy(<span class="str">"Name"</span>, <span class="str">"Drop"</span> + input1);
+<span class="kw">if</span> ~isempty(target)
+    delete(target{1});             <span class="cmt">% also rebuilds the pipelines</span>
+<span class="kw">end</span></pre>
+</div>
+
+<div class="phx-note">
+<span class="lbl">Binding.</span> Place a <a href="PhxModel.html">PhxModel</a> block in the same model. PhxAction
+resolves its target on the first step: it auto-binds to the single PhxModel block, or to the block named by
+<strong>MainBlock</strong>. With no PhxModel block present the simulation errors with
+<code class="phx-inline">phx:PhxAction:noMainBlock</code>.
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="PhxModel.html">PhxModel</a>,
+<a href="phx.Simulation.html">phx.Simulation</a>,
+<a href="phx.Body.html">phx.Body</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

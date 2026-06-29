@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.Rope</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.Rope</div>
+
+<h1 class="phx-title">phx.Rope</h1>
+<p class="phx-purpose">Rope routed over pulleys</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.Rope &nbsp;|&nbsp; Superclass: <a href="phx.base.Object.html">phx.base.Object</a></p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.Rope</code> connects a chain of two or more bodies. The first and the
+last body are the rope ends; every body in between acts as an ideal frictionless pulley, so a single
+tension acts along the whole rope. The routing points are defined in the local spaces of the bodies
+by the rows of the <code class="phx-inline">Points</code> matrix. A body may appear in the chain more
+than once with different routing points &mdash; for example the moving block of a tackle that the
+rope wraps twice.</p>
+
+<p>The rope transfers tension only: it behaves as a spring&ndash;damper when stretched beyond its
+free length and goes slack otherwise. The free length is measured from the initial configuration
+(<code class="phx-inline">InitialLength</code>) and can be changed while the simulation runs through
+the <code class="phx-inline">Displacement</code> property &mdash; positive values pay the rope out,
+negative values winch it in. <code class="phx-inline">Displacement</code> can be driven by a
+<code class="phx-inline">phx.Script</code>, and <code class="phx-inline">Length</code> and
+<code class="phx-inline">Force</code> can be recorded by a <code class="phx-inline">phx.Logger</code>.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">rope = phx.Rope(bodies)</span>
+<span class="phx-syntax">rope = phx.Rope(___,Name,Value)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">rope = phx.Rope(bodies)</code> routes a rope through the origins of the
+given bodies (at least two). Set the routing with <code class="phx-inline">Points</code> (one row
+per body).</p>
+</div>
+
+<h3 class="phx-h3">Input Arguments</h3>
+<table class="phx-tbl">
+<tr><th>Argument</th><th>Type</th><th>Description</th></tr>
+<tr><td class="name">bodies</td><td class="type">phx.Body (1&times;n, n&ge;2)</td><td>Bodies forming the rope chain, in routing order.</td></tr>
+</table>
+
+<h2 class="phx-h2">Properties</h2>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">Points</td><td class="type">n&times;3 double</td><td>Routing points in the local space of each body (one row per body).</td></tr>
+<tr><td class="name">InitialLength</td><td class="dflt">NaN</td><td>Unstretched length; <code class="phx-inline">NaN</code> measures it from the initial configuration.</td></tr>
+<tr><td class="name">Displacement</td><td class="dflt">0</td><td>Free-length change: positive pays out, negative winches in, <span class="phx-unit">m</span>.</td></tr>
+<tr><td class="name">Stiffness</td><td class="dflt">1000</td><td>Stiffness of the stretched rope, <span class="phx-unit">N/m</span>.</td></tr>
+<tr><td class="name">Damping</td><td class="dflt">10</td><td>Damping of the stretched rope, <span class="phx-unit">N&middot;s/m</span>.</td></tr>
+<tr><td class="name">Colormap</td><td class="dflt">"none"</td><td>Colormap used to color the rope by tension.</td></tr>
+<tr><td class="name">ColorRange</td><td class="dflt">[0 100]</td><td>Tension range mapped across the whole colormap, <span class="phx-unit">N</span>.</td></tr>
+<tr><td class="name">Overlay</td><td class="dflt">false</td><td>Draw the rope as an overlay (always on top).</td></tr>
+<tr><td class="name">FreeLength</td><td class="type">double (read-only)</td><td><code class="phx-inline">InitialLength + Displacement</code> (dependent).</td></tr>
+<tr><td class="name">Length</td><td class="type">double (read-only)</td><td>Current total length of the rope, <span class="phx-unit">m</span>.</td></tr>
+<tr><td class="name">Force</td><td class="type">double (read-only)</td><td>Current tension in the rope, <span class="phx-unit">N</span>.</td></tr>
+<tr><td class="name">Energy</td><td class="type">double (read-only)</td><td>Elastic energy stored in the stretched rope, <span class="phx-unit">J</span> (dependent).</td></tr>
+</table>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">Hang a load from a fixed anchor</h4>
+<pre class="phx-code">anchor = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Position"</span>, [0 0 5]);
+load   = phx.Body(<span class="str">"Position"</span>, [0 0 3], <span class="str">"Mass"</span>, 10);
+
+rope = phx.Rope([anchor load], <span class="str">"Stiffness"</span>, 5e3, <span class="str">"Damping"</span>, 50, ...
+    <span class="str">"Colormap"</span>, <span class="str">"hot"</span>, <span class="str">"ColorRange"</span>, [0 200]);
+
+sim = phx.Simulation;
+sim.step(4, 800, 5);</pre>
+
+<h4 class="phx-h4">Winch the rope in with a script</h4>
+<pre class="phx-code">phx.Script(rope, {<span class="str">'Displacement'</span>, [0 2], [0 -1], <span class="str">'linear'</span>, <span class="str">'nearest'</span>});
+phx.Logger(rope, <span class="str">"Frequency"</span>, 50, <span class="str">"Parameters"</span>, [<span class="str">"Length"</span> <span class="str">"Force"</span>]);</pre>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.Spring.html">phx.Spring</a>,
+<a href="phx.Body.html">phx.Body</a>,
+<a href="phx.base.Object.html">phx.base.Object</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

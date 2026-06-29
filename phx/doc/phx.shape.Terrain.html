@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.shape.Terrain</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.shape.Terrain</div>
+
+<h1 class="phx-title">phx.shape.Terrain</h1>
+<p class="phx-purpose">Terrain heightfield</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.shape.Terrain &nbsp;|&nbsp; Superclasses: <a href="phx.base.Shape.html">phx.base.Shape</a>, <a href="phx.base.ShapeMesh.html">phx.base.ShapeMesh</a></p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.shape.Terrain</code> is a surface generated from the
+<code class="phx-inline">Height</code> matrix sampled over a rectangle of the given
+<code class="phx-inline">Size</code>, optionally textured. The collision shape is a heightfield built
+in the engine from the same data. A terrain is typically used as a static body.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">shape = phx.shape.Terrain</span>
+<span class="phx-syntax">shape = phx.shape.Terrain(Name,Value)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">shape = phx.shape.Terrain(Name,Value)</code> creates a terrain from a
+<code class="phx-inline">Height</code> matrix sampled over a <code class="phx-inline">Size</code> rectangle.</p>
+</div>
+
+<h2 class="phx-h2">Properties</h2>
+<h3 class="phx-h3">Geometry</h3>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">Size</td><td class="dflt">[10 10]</td><td>Length and width of the terrain rectangle, <span class="phx-unit">m</span>.</td></tr>
+<tr><td class="name">Height</td><td class="dflt">zeros(10)</td><td>Height matrix sampled over the rectangle, <span class="phx-unit">m</span>.</td></tr>
+</table>
+
+<p>Appearance properties are inherited from <a href="phx.base.ShapeMesh.html">phx.base.ShapeMesh</a>
+and skeletal properties from <a href="phx.base.Shape.html">phx.base.Shape</a>.</p>
+
+<div class="phx-note">
+<span class="lbl">Tip.</span> Use a terrain as a <code class="phx-inline">"static"</code> body so it stays
+fixed while dynamic bodies collide with it.
+</div>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">A rolling-hills ground</h4>
+<pre class="phx-code">[X, Y] = meshgrid(linspace(-5, 5, 40));
+H = 0.6*sin(X).*cos(Y);
+
+ground = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, ...
+    <span class="str">"Shape"</span>, phx.shape.Terrain(<span class="str">"Size"</span>, [10 10], <span class="str">"Height"</span>, H));
+ball   = phx.Body(<span class="str">"Position"</span>, [0 0 4], <span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>, <span class="str">"Diameter"</span>, 0.5});
+
+sim = phx.Simulation;
+sim.step(4, 400, 1);</pre>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.Body.html">phx.Body</a>,
+<a href="phx.shape.Box.html">phx.shape.Box</a>,
+<a href="phx.base.Shape.html">phx.base.Shape</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

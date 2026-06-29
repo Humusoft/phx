@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.base.Shape</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.base.Shape</div>
+
+<h1 class="phx-title">phx.base.Shape</h1>
+<p class="phx-purpose">Shape superclass</p>
+<p class="phx-classref">Abstract class&nbsp;&nbsp;phx.base.Shape</p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.base.Shape</code> is the abstract superclass for all shapes that define
+the visual and collision geometry of a <a href="phx.Body.html">phx.Body</a>. Concrete shapes in the
+<code class="phx-inline">phx.shape.*</code> package derive from this class and implement how they are
+drawn and how their mass and moments of inertia are computed. The class also provides an optional
+skeletal representation through the <code class="phx-inline">Skelet*</code> properties.</p>
+
+<p>You normally do not instantiate this class directly; you assign a concrete shape to a body's
+<code class="phx-inline">Shape</code> property, either as an object or as a cell array.</p>
+
+<h2 class="phx-h2">Properties</h2>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">SkeletPoints</td><td class="type">n&times;3 double</td><td>Points defining the skeletal structure of the shape.</td></tr>
+<tr><td class="name">SkeletColor</td><td class="dflt">[NaN NaN NaN]</td><td>Skeleton color. <code class="phx-inline">NaN</code> uses the body's main color.</td></tr>
+<tr><td class="name">SkeletStyle</td><td class="dflt">"rays"</td><td>Skeleton style: <code class="phx-inline">"rays"</code>, <code class="phx-inline">"line"</code>, <code class="phx-inline">"chain"</code> or <code class="phx-inline">"points"</code>.</td></tr>
+</table>
+
+<h2 class="phx-h2">Abstract Methods</h2>
+<table class="phx-tbl">
+<tr><th>Method</th><th>Role</th></tr>
+<tr><td class="name">drawTo(obj,target)</td><td>Draw the shape into the target axes or <code class="phx-inline">hgtransform</code>.</td></tr>
+<tr><td class="name">[mass,inertia] = computeMass(obj)</td><td>Compute the mass and principal moments of inertia of the shape.</td></tr>
+</table>
+
+<h2 class="phx-h2">Concrete Shapes</h2>
+<p>The <code class="phx-inline">phx.shape.*</code> package provides the ready-to-use geometry a body
+can wear, including:</p>
+<p><code class="phx-inline">Box</code>, <code class="phx-inline">Sphere</code>,
+<code class="phx-inline">Cylinder</code>, <code class="phx-inline">Cone</code>,
+<code class="phx-inline">Capsule</code>, <code class="phx-inline">Globe</code>,
+<code class="phx-inline">Mesh</code>, <code class="phx-inline">Extrusion</code>,
+<code class="phx-inline">Revolution</code>, <code class="phx-inline">Rock</code>,
+<code class="phx-inline">Terrain</code>, <code class="phx-inline">OBJ</code> and
+<code class="phx-inline">STL</code>.</p>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">Assign a shape to a body</h4>
+<pre class="phx-code"><span class="cmt">% As a cell array: shape name followed by its name-value pairs</span>
+b1 = phx.Body(<span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [2 1 1], <span class="str">"Color"</span>, [0.4 0.6 1]});
+
+<span class="cmt">% As a shape object</span>
+b2 = phx.Body(<span class="str">"Shape"</span>, phx.shape.Sphere(<span class="str">"Diameter"</span>, 0.5, <span class="str">"Density"</span>, 50));</pre>
+
+<h4 class="phx-h4">Add a skeleton to a shape</h4>
+<pre class="phx-code">A = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, ...
+    <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"SkeletPoints"</span>, [1.5 0 0], <span class="str">"SkeletStyle"</span>, <span class="str">"rays"</span>});</pre>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.base.ShapeMesh.html">phx.base.ShapeMesh</a>,
+<a href="phx.Body.html">phx.Body</a>,
+<a href="phx.base.Object.html">phx.base.Object</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

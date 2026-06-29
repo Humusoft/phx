@@ -1,0 +1,241 @@
+# PHX PREVIEW LICENSE
+
+**Version 1.0 — Effective 30 June 2026**
+
+---
+
+## Plain-language summary (non-binding)
+
+This summary is provided for convenience only and has no legal effect. If it
+conflicts with the terms below, the terms below govern.
+
+- This is a **preview** release. It may be incomplete, may change, and may be
+  withdrawn.
+- You may **use it for free, including at work and for commercial purposes**,
+  and you may **read and adapt the included MATLAB (.m) source**.
+- You may **use it throughout your own organization**; anyone else should get
+  it **directly from us**, not redistributed by you.
+- You may **not sell it**, **not reverse-engineer the compiled (binary)
+  parts**, and **not use it — or what you learn from its source — to build, or
+  as a basis for, a product that competes with it**.
+- Anything you *produce* with the software (your own models, results, work
+  product) is yours and is not restricted by this license.
+- We keep all other rights, and **commercial terms are available separately**.
+
+---
+
+## 1. Definitions
+
+**1.1 "Licensor"** means HUMUSOFT s.r.o., Pobřežní 224/20, 186 00 Praha 8,
+Czech Republic.
+
+**1.2 "Software"** means the preview release of PHX that Licensor
+makes available under this License, including the MATLAB M-file source files,
+the compiled Binary Components (including MEX-files), and any accompanying
+documentation, data, and example files, in each case as provided by Licensor.
+
+**1.3 "M-File Source"** means the human-readable MATLAB (`.m`) source files
+included in the Software.
+
+**1.4 "Binary Components"** means the compiled, non-source portions of the
+Software, including MEX-files and any libraries linked into them.
+
+**1.5 "You" / "Your"** means the individual or legal entity exercising rights
+under this License, together with all entities that control, are controlled by,
+or are under common control with that entity.
+
+**1.6 "Preview"** means the pre-release status of the Software: it is provided
+for early evaluation and use, may be incomplete or contain defects, and may be
+changed, superseded, or withdrawn.
+
+**1.7 "Competing Product"** means a product, library, tool, package, or service
+that is derived from the Software, or that serves as a substitute for the
+Software, and is made available to third parties. Such a product may compete
+regardless of its interface, platform, programming language, or price
+(including if offered free of charge).
+
+**1.8 "Third-Party Components"** means software not authored by Licensor that is
+included in or distributed with the Software under its own license terms, as
+identified in the accompanying NOTICE file.
+
+**1.9 "Your Work Product"** means designs, models, simulations, data, analyses,
+reports, or other outputs that You create through use of the Software and that
+are not themselves a Competing Product or a copy of or derivative of the
+Software.
+
+## 2. License Grant
+
+Subject to Your compliance with this License, Licensor grants You a worldwide,
+royalty-free, non-exclusive, non-transferable, non-sublicensable, revocable
+license, for the duration of the Preview, to:
+
+(a) install, run, and use the Software for any purpose, including internal
+business and commercial purposes, and including installing copies on devices
+within Your organization;
+
+(b) read, study, and analyze the M-File Source;
+
+(c) create modifications of, and works based on, the M-File Source for use as
+permitted under this License.
+
+**2.1 Recipients license directly from Licensor.** Each person who receives a
+copy of any part of the Software automatically receives a license from Licensor
+under this License, provided they accept and comply with it. You are not granted
+any right to sublicense.
+
+**2.2 Your Work Product.** Using the Software to create Your Work Product is
+permitted without restriction under this License, and Your Work Product is not
+subject to this License.
+
+## 3. Conditions on Copies
+
+Any copy of the Software that You make or share within Your organization (whether
+modified or not) must:
+
+(a) include a complete, unmodified copy of this License and the accompanying
+NOTICE file;
+
+(b) retain all copyright, attribution, and license notices, and not misrepresent
+the origin of the Software; and
+
+(c) plainly mark any portion You have changed as modified by You, with the date,
+and not present any modified version as the original Software.
+
+## 4. Restrictions
+
+You may not:
+
+(a) use the Software, or any part of it — including reading, studying, or
+analyzing the M-File Source — to design, develop, train, or build a Competing
+Product, or as a basis for, or a step toward, a Competing Product;
+
+(b) distribute, publish, sublicense, or otherwise make the Software available to
+any third party; anyone outside Your organization must obtain the Software
+directly from Licensor (this does not restrict internal use within Your
+organization under Section 2(a));
+
+(c) sell, rent, lease, or otherwise charge a fee for the Software;
+
+(d) reverse engineer, decompile, disassemble, or otherwise attempt to derive the
+source code, underlying ideas, or internal design of any Binary Component,
+**except** to the extent this restriction cannot be excluded under applicable
+mandatory law (for example, decompilation strictly necessary for
+interoperability where permitted by law);
+
+(e) remove, alter, or obscure any copyright, attribution, license, or other
+notice; or
+
+(f) use Licensor's names, trademarks, service marks, or logos, except as
+required for the factual attribution in Section 3.
+
+## 5. Preview Status; No Obligation
+
+The Software is a Preview. Licensor may modify, suspend, supersede, or
+discontinue the Software or the Preview at any time, and may offer future
+versions under different terms or not at all. Licensor has no obligation to
+provide updates, support, maintenance, bug fixes, or any general-availability or
+commercial release.
+
+## 6. Third-Party Components
+
+The Software includes Third-Party Components, including a library licensed under
+the **zlib License**, which Licensor has modified. Each Third-Party Component is
+provided under its own license terms, copies of which are included in the NOTICE
+file, and those terms govern Your use of that Component. Nothing in this License
+limits — and this License is not intended to limit — any rights You may have
+under those third-party terms. Licensor has marked modified Third-Party
+Components as altered from the originals where required.
+
+## 7. Ownership; Reservation of Rights
+
+The Software is licensed, not sold. Licensor and its licensors retain all right,
+title, and interest in and to the Software, including all intellectual property
+rights. All rights not expressly granted in this License are reserved. No rights
+are granted by implication, estoppel, or otherwise.
+
+## 8. Patent License and Defensive Termination
+
+Subject to the terms and conditions of this License, Licensor hereby grants You a
+royalty-free, non-exclusive, worldwide patent license under Licensor's essential
+patent claims, to make, use, offer for sale, sell, import, and otherwise run,
+modify and propagate your Work Product. If You or Your affiliate initiate, assert,
+or knowingly join any claim or proceeding alleging that the Software infringes or
+contributes to infringement of a patent, all licenses granted to You under this
+License (including this patent license) terminate immediately.
+
+## 9. Termination
+
+This License and all rights granted under it terminate automatically if You
+breach any of its terms.
+
+**9.1 Cure.** For a first breach, Your license is reinstated if You
+cure the breach and take reasonable steps to remedy its effects within 30 days
+after You become aware of, or are notified of, the breach.
+
+Upon termination, You must stop using and distributing the Software and destroy
+all copies in Your possession or control. Recipients who received the Software
+from You in compliance with this License, and who remain in compliance, keep
+their own licenses. Sections 1, 4, 7, 10, 11, 12, and 13 survive termination.
+
+## 10. Disclaimer of Warranty
+
+THE SOFTWARE IS PROVIDED "AS IS" AND "AS AVAILABLE", WITH ALL FAULTS AND WITHOUT
+WARRANTY OF ANY KIND. TO THE MAXIMUM EXTENT PERMITTED BY LAW, LICENSOR DISCLAIMS
+ALL WARRANTIES AND CONDITIONS, WHETHER EXPRESS, IMPLIED, OR STATUTORY, INCLUDING
+ANY IMPLIED WARRANTIES OR CONDITIONS OF MERCHANTABILITY, SATISFACTORY QUALITY,
+FITNESS FOR A PARTICULAR PURPOSE, ACCURACY, AND NON-INFRINGEMENT. YOU BEAR THE
+ENTIRE RISK ARISING OUT OF USE OF THE SOFTWARE. THE SOFTWARE IS A PREVIEW AND MAY
+CONTAIN DEFECTS.
+
+## 11. Limitation of Liability
+
+TO THE MAXIMUM EXTENT PERMITTED BY LAW, LICENSOR WILL NOT BE LIABLE FOR ANY
+INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, EXEMPLARY, OR PUNITIVE DAMAGES, OR
+FOR ANY LOSS OF PROFITS, REVENUE, DATA, USE, OR GOODWILL, ARISING OUT OF OR
+RELATED TO THIS LICENSE OR THE SOFTWARE, UNDER ANY THEORY OF LIABILITY, EVEN IF
+ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. LICENSOR'S TOTAL AGGREGATE LIABILITY
+ARISING OUT OF OR RELATED TO THIS LICENSE OR THE SOFTWARE WILL NOT EXCEED THE
+AMOUNT YOU PAID LICENSOR FOR THE SOFTWARE (WHICH, FOR THE PREVIEW, IS ZERO).
+
+**11.1 Mandatory law.** Nothing in Sections 10 or 11 excludes or limits any
+liability that cannot be excluded or limited under applicable mandatory law
+(for example, liability for death or personal injury caused by negligence, or
+for fraud or fraudulent misrepresentation).
+
+## 12. Commercial Licensing
+
+Uses outside the scope of this License — including developing or providing a
+Competing Product, distributing the Software for a fee, or any other terms You
+require — are available only under a separate written commercial license from
+Licensor. To request commercial terms, contact: phx@humusoft.cz.
+
+## 13. General
+
+**13.1 Governing law and venue.** This License is governed by the laws of
+the Czech Republic, excluding its conflict-of-laws rules and excluding the United
+Nations Convention on Contracts for the International Sale of Goods.
+The Municipal Court in Prague, Czech Republic has exclusive jurisdiction, subject
+to any mandatory rights You have under the law of Your place of residence.
+
+**13.2 Export and sanctions.** You will comply with all applicable
+export-control, sanctions, and trade laws in Your use and distribution of the
+Software.
+
+**13.3 Entire agreement.** This License is the entire agreement between You and
+Licensor regarding the Software preview and supersedes any prior or
+contemporaneous understandings, except for any separate written agreement signed
+by Licensor.
+
+**13.4 Severability.** If any provision is held unenforceable, it will be
+modified to the minimum extent necessary to make it enforceable, or severed, and
+the remaining provisions remain in full force.
+
+**13.5 No waiver.** Licensor's failure to enforce any provision is not a waiver
+of its right to do so later.
+
+**13.6 Assignment.** You may not assign or transfer this License without
+Licensor's prior written consent; any attempt to do so is void. Licensor may
+assign this License freely.
+
+**13.7 Language.** This License is provided in English. If Licensor provides a
+translation, the English version governs in case of any conflict.
