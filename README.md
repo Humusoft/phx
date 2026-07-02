@@ -24,6 +24,8 @@ cones, capsules, meshes, terrain, imported OBJ/STL, …)
 * Simulink block for closed-loop co-simulation
 * Headless stepping for batch runs and experiments
 
+PHX Toolbox also includes a set of AI skills for use with common AI agents.
+
 ![PHX demo](doc/phx-demo.gif)
 
 ## Requirements
