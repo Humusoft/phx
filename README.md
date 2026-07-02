@@ -9,6 +9,8 @@ It allows you to built models from physical objects such as bodies with differen
 shapes, joints, springs, ropes, force fields or custom elements.  The model is drawn
 directly into MATLAB axes and can be simulated immediately with one command.
 
+[![Open in MATLAB Online](https://www.mathworks.com/images/responsive/global/open-in-matlab-online.svg)](https://matlab.mathworks.com/open/github/v1?repo=Humusoft/phx&project=PHXToolbox.prj&file=examples/phxex_buggy.m)
+
 > ⚠️ **Technical preview.** PHX is published as a technical preview for evaluation
 > and feedback. APIs may change between releases.
 
