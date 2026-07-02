@@ -10,6 +10,10 @@ springs, force fields — that draw directly into MATLAB axes, are stepped by a
 > ⚠️ **Technical preview.** PHX is published as a technical preview for evaluation
 > and feedback. APIs may change between releases.
 
+## Demo
+
+![PHX demo](doc/phx-demo.gif)
+
 ## Features
 
 - Rigid-body dynamics with collisions and contacts (boxes, spheres, cylinders,
