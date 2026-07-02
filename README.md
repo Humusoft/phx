@@ -1,34 +1,34 @@
-# PHX
+# PHX Toolbox
 
 **Object-oriented MATLAB API for 3D rigid-body physics.**
 
-PHX is a MATLAB toolbox layered over the [Bullet](https://github.com/bulletphysics/bullet3)
-physics engine. Scenes are built from `phx.*` objects — bodies, shapes, joints,
-springs, force fields — that draw directly into MATLAB axes, are stepped by a
-`phx.Simulation`, and can be driven from Simulink.
+PHX Toolbox is a rigid-body physics extension layered over the [Bullet](https://github.com/bulletphysics/bullet3)
+physics engine. 
+
+It allows you to built models from physical objects such as bodies with different
+shapes, joints, springs, ropes, force fields or custom elements.  The model is drawn
+directly into MATLAB axes and can be simulated immediately with one command.
 
 > ⚠️ **Technical preview.** PHX is published as a technical preview for evaluation
 > and feedback. APIs may change between releases.
 
-## Demo
+## Features
+
+* Rigid-body dynamics with collisions and contacts (boxes, spheres, cylinders,
+cones, capsules, meshes, terrain, imported OBJ/STL, …)
+* Joints (revolute, spherical, gear, …), springs and ropes
+* Force and field elements (thrusters, resistance, dipole/monopole fields)
+* Logging, tracing and measurement tools, interactive viewer
+* Simulink block for closed-loop co-simulation
+* Headless stepping for batch runs and experiments
 
 ![PHX demo](doc/phx-demo.gif)
 
-## Features
-
-- Rigid-body dynamics with collisions and contacts (boxes, spheres, cylinders,
-  cones, capsules, meshes, terrain, imported OBJ/STL, …)
-- Joints (revolute, spherical, gear, …), springs and ropes
-- Force and field elements (thrusters, resistance, dipole/monopole fields)
-- Logging, tracing and measurement tools, interactive viewer
-- Simulink block for closed-loop co-simulation
-- Headless stepping for batch runs and experiments
-
 ## Requirements
 
-- MATLAB **R2025a or newer**
-- Simulink (only for the Simulink block)
-- Windows, Linux, or macOS (prebuilt engine binaries are bundled for all three)
+* MATLAB **R2025a or newer**
+* Simulink (only for the Simulink block)
+* Windows, Linux, or macOS (prebuilt engine binaries are bundled for all three)
 
 ## Installation
 
@@ -74,3 +74,4 @@ tracker, but we are not yet accepting external code contributions. See
 ## About
 
 PHX is developed by [HUMUSOFT s.r.o.](https://www.humusoft.cz).
+
