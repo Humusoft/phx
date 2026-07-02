@@ -26,7 +26,10 @@ cones, capsules, meshes, terrain, imported OBJ/STL, …)
 
 PHX Toolbox also includes a set of AI skills for use with common AI agents.
 
-![PHX demo](doc/phx-demo.gif)
+<p align="center">
+  <img src="doc/phx-demo.gif" width="380" alt="PHX demo">
+  <img src="doc/phx-demo-app.gif" width="380" alt="PHX app demo">
+</p>
 
 ▶ [Watch the demo video](https://humusoft.cz/videos/blog/phx-preview/phx_demos.mp4)
 
