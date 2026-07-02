@@ -28,6 +28,8 @@ PHX Toolbox also includes a set of AI skills for use with common AI agents.
 
 ![PHX demo](doc/phx-demo.gif)
 
+▶ [Watch the demo video](https://humusoft.cz/videos/blog/phx-preview/phx_demos.mp4)
+
 ## Requirements
 
 * MATLAB **R2025a or newer**
