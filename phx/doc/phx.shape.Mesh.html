@@ -54,7 +54,9 @@ and skeletal properties from <a href="phx.base.Shape.html">phx.base.Shape</a>.
 
 <h2 class="phx-h2">Examples</h2>
 <h4 class="phx-h4">A body from a custom triangulation</h4>
-<pre class="phx-code">[X, Y, Z] = sphere(16);
+<pre class="phx-code">phx.extra.Viewer(<span class="str">"clear"</span>, <span class="str">"DefaultCameraPosition"</span>, [10 10 10]);
+
+[X, Y, Z] = sphere(16);
 fv = surf2patch(X, Y, Z, <span class="str">"triangles"</span>);
 
 b = phx.Body(<span class="str">"Shape"</span>, phx.shape.Mesh(<span class="str">"Vertices"</span>, fv.vertices, <span class="str">"Faces"</span>, fv.faces));

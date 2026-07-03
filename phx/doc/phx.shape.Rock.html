@@ -50,7 +50,9 @@ and skeletal properties from <a href="phx.base.Shape.html">phx.base.Shape</a>.
 
 <h2 class="phx-h2">Examples</h2>
 <h4 class="phx-h4">A scattering of boulders</h4>
-<pre class="phx-code">for k = 1:5
+<pre class="phx-code">phx.extra.Viewer(<span class="str">"clear"</span>, <span class="str">"DefaultCameraPosition"</span>, [10 10 10]);
+
+for k = 1:5
     phx.Body(<span class="str">"Position"</span>, [k 0 3], ...
         <span class="str">"Shape"</span>, {<span class="str">"Rock"</span>, <span class="str">"Diameter"</span>, 0.8, <span class="str">"Roundness"</span>, 0.6, <span class="str">"Color"</span>, [0.5 0.45 0.4]});
 end

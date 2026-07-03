@@ -47,12 +47,14 @@ ideal sphere. For an untextured sphere, prefer the lighter <a href="phx.shape.Sp
 and skeletal properties from <a href="phx.base.Shape.html">phx.base.Shape</a>.</p>
 
 <h2 class="phx-h2">Examples</h2>
-<h4 class="phx-h4">A textured planet</h4>
-<pre class="phx-code">b = phx.Body(<span class="str">"Shape"</span>, {<span class="str">"Globe"</span>, <span class="str">"Diameter"</span>, 2, <span class="str">"Segments"</span>, 48, <span class="str">"Texture"</span>, <span class="str">"earth.jpg"</span>});
+<h4 class="phx-h4">A textured ball</h4>
+<pre class="phx-code">phx.extra.Viewer(<span class="str">"clear"</span>, <span class="str">"DefaultCameraPosition"</span>, [10 10 10]);
+
+b = phx.Body(<span class="str">"Shape"</span>, {<span class="str">"Globe"</span>, <span class="str">"Diameter"</span>, 2, <span class="str">"Segments"</span>, 48, <span class="str">"Texture"</span>, <span class="str">"peppers.png"</span>});
 
 sim = phx.Simulation(gca, <span class="str">"Gravity"</span>, [0 0 0]);
-b.AngularVelocity = [0 0 0.5];
-sim.step(6, 600, 5);</pre>
+b.AngularVelocity = [0 0 0.8];
+sim.step(6, 600, 1);</pre>
 
 <div class="phx-seealso">
 <span class="lbl">See also</span>

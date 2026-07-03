@@ -52,7 +52,9 @@ as an object or as a cell array <code class="phx-inline">{"Box",Name,Value,&hell
 
 <h2 class="phx-h2">Examples</h2>
 <h4 class="phx-h4">A colored block as a body</h4>
-<pre class="phx-code">b = phx.Body(<span class="str">"Position"</span>, [0 0 3], ...
+<pre class="phx-code">phx.extra.Viewer(<span class="str">"clear"</span>, <span class="str">"DefaultCameraPosition"</span>, [10 10 10]);
+
+b = phx.Body(<span class="str">"Position"</span>, [0 0 3], ...
     <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [2 1 0.5], <span class="str">"Color"</span>, [0.4 0.6 1]});
 
 sim = phx.Simulation;

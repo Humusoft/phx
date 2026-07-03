@@ -54,7 +54,9 @@ and skeletal properties from <a href="phx.base.Shape.html">phx.base.Shape</a>.</
 
 <h2 class="phx-h2">Examples</h2>
 <h4 class="phx-h4">Import a decimated part with a convex hull</h4>
-<pre class="phx-code">shape = phx.shape.STL(<span class="str">"Source"</span>, <span class="str">"bracket.stl"</span>, <span class="str">"Details"</span>, 0.5, ...
+<pre class="phx-code">phx.extra.Viewer(<span class="str">"clear"</span>, <span class="str">"DefaultCameraPosition"</span>, [10 10 10]);
+
+shape = phx.shape.STL(<span class="str">"Source"</span>, <span class="str">"bracket.stl"</span>, <span class="str">"Details"</span>, 0.5, ...
     <span class="str">"Scale"</span>, [1 1 1]*0.01, <span class="str">"Envelope"</span>, <span class="str">"convex"</span>, <span class="str">"Density"</span>, 7800);
 
 b = phx.Body(<span class="str">"Position"</span>, [0 0 3], <span class="str">"Shape"</span>, shape);

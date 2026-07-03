@@ -51,7 +51,9 @@ and skeletal properties from <a href="phx.base.Shape.html">phx.base.Shape</a>.</
 
 <h2 class="phx-h2">Examples</h2>
 <h4 class="phx-h4">Extrude a square profile along a straight spine</h4>
-<pre class="phx-code">profile = [-0.5 -0.5; 0.5 -0.5; 0.5 0.5; -0.5 0.5; -0.5 -0.5];
+<pre class="phx-code">phx.extra.Viewer(<span class="str">"clear"</span>, <span class="str">"DefaultCameraPosition"</span>, [10 10 10]);
+
+profile = [-0.5 -0.5; 0.5 -0.5; 0.5 0.5; -0.5 0.5; -0.5 -0.5];
 spine   = [0 0 0; 0 0 2];
 
 b = phx.Body(<span class="str">"Shape"</span>, phx.shape.Extrusion(<span class="str">"Spine"</span>, spine, <span class="str">"Profile"</span>, profile));

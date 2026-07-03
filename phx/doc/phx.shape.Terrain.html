@@ -51,7 +51,9 @@ fixed while dynamic bodies collide with it.
 
 <h2 class="phx-h2">Examples</h2>
 <h4 class="phx-h4">A rolling-hills ground</h4>
-<pre class="phx-code">[X, Y] = meshgrid(linspace(-5, 5, 40));
+<pre class="phx-code">phx.extra.Viewer(<span class="str">"clear"</span>, <span class="str">"DefaultCameraPosition"</span>, [10 10 10]);
+
+[X, Y] = meshgrid(linspace(-5, 5, 40));
 H = 0.6*sin(X).*cos(Y);
 
 ground = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, ...

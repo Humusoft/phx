@@ -46,8 +46,10 @@ modeled as an ideal sphere independent of the visual detail.</p>
 and skeletal properties from <a href="phx.base.Shape.html">phx.base.Shape</a>.</p>
 
 <h2 class="phx-h2">Examples</h2>
-<h4 class="phx-h4">A dense ball</h4>
-<pre class="phx-code">b = phx.Body(<span class="str">"Position"</span>, [0 0 3], ...
+<h4 class="phx-h4">Simple falling sphere</h4>
+<pre class="phx-code">phx.extra.Viewer(<span class="str">"clear"</span>, <span class="str">"DefaultCameraPosition"</span>, [10 10 10]);
+
+b = phx.Body(<span class="str">"Position"</span>, [0 0 3], ...
     <span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>, <span class="str">"Diameter"</span>, 0.5, <span class="str">"Division"</span>, 4, <span class="str">"Density"</span>, 2700});
 
 sim = phx.Simulation;

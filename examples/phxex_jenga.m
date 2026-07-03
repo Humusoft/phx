@@ -1,5 +1,9 @@
 function phxex_jenga(n, s)
-% PHXEX_JENGA Simulates a Jenga-like stacking game
+% PHXEX_JENGA Simulates an interactive Jenga-like stacking game
+%
+% Double-click the mouse to pull out the brick from the stacked tower.
+% You can undo the move and the tower's status using the button in the
+% lower left corner of the window.
 %
 % Input Arguments:
 %     n - number of blocks to stack (default: 15)
@@ -12,13 +16,16 @@ function phxex_jenga(n, s)
         s (1, 3) double = [2 6 1]
     end
 
+    % Resources directory
+    resdir = fullfile(fileparts(mfilename("fullpath")), "res", " ");
+
     % Figure setup
-    [viewer, ax] = phx.extra.Viewer("clear", "DefaultCameraTarget", [0 0 10], "Texture", "defaultNebula");
+    [viewer, ax] = phx.extra.Viewer("clear", "DefaultCameraTarget", [0 0 8], "DefaultCameraPosition", [22 -30 17], "Texture", resdir+"HumusoftHall.png");
 
     % Physical model
     ground = phx.Body(ax, "Type", "static", "Position", [0 0 0], "Shape", {"Box", "Size", [50 50 1], "Color", [1 1 1]});
-    shpA = phx.shape.Box("Size", s, "Style", "edged", "ForcePatch", true);
-    shpB = phx.shape.Box("Size", s([2 1 3]), "Style", "edged", "ForcePatch", true);
+    shpA = phx.shape.Box("Size", s, "Texture", resdir+"woodtile.jpg", "TextureBlend", 0.5);
+    shpB = phx.shape.Box("Size", s([2 1 3]), "Texture", resdir+"woodtile.jpg", "TextureBlend", 0.5);
     clr = (jet(n) + 1)/2; % Generate colors for the blocks
     % Create layers with three blocks each
     for i = 1:n

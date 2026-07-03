@@ -49,8 +49,10 @@ name-value arguments.</p>
 and skeletal properties from <a href="phx.base.Shape.html">phx.base.Shape</a>.</p>
 
 <h2 class="phx-h2">Examples</h2>
-<h4 class="phx-h4">A rolling wheel along the X axis</h4>
-<pre class="phx-code">w = phx.Body(<span class="str">"Position"</span>, [0 0 1], ...
+<h4 class="phx-h4">Simple falling body</h4>
+<pre class="phx-code">phx.extra.Viewer(<span class="str">"clear"</span>, <span class="str">"DefaultCameraPosition"</span>, [10 10 10]);
+
+w = phx.Body(<span class="str">"Position"</span>, [0 0 1], ...
     <span class="str">"Shape"</span>, {<span class="str">"Cylinder"</span>, <span class="str">"Radius"</span>, 1, <span class="str">"Height"</span>, 0.3, <span class="str">"Axis"</span>, <span class="str">"x"</span>});
 
 sim = phx.Simulation;

@@ -49,7 +49,9 @@ and skeletal properties from <a href="phx.base.Shape.html">phx.base.Shape</a>.</
 
 <h2 class="phx-h2">Examples</h2>
 <h4 class="phx-h4">Revolve a profile into a vase</h4>
-<pre class="phx-code">t = linspace(0, 1, 20)';
+<pre class="phx-code">phx.extra.Viewer(<span class="str">"clear"</span>, <span class="str">"DefaultCameraPosition"</span>, [10 10 10]);
+
+t = linspace(0, 1, 20)';
 profile = [t, 0.3 + 0.2*sin(t*pi)];     <span class="cmt">% [axial, radial]</span>
 
 b = phx.Body(<span class="str">"Shape"</span>, phx.shape.Revolution(<span class="str">"Profile"</span>, profile, <span class="str">"Envelope"</span>, <span class="str">"concave"</span>));
