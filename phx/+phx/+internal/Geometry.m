@@ -230,14 +230,18 @@ classdef Geometry
                 Spine = [Spine; Spine(end, :) + ecShift; Spine(end, :) + 2*ecShift];
             end
 
-            % Prepare profile
-            Segments = size(Profile, 1) - 1;
+            % Prepare segment profile
             v0 = [Profile(:, 1)*0 Profile(:, 1:2)];
-            n0 = diff(v0);
-            n0(end + 1, :) = v0(1, :) - v0(end, :);
-            for i = 1:Segments + 1
+
+            % Compute segment normals
+            n0 = v0 - circshift(v0, [2 0]);
+            n0 = [n0(:, 1) n0(:, 3) -n0(:, 2)];
+            for i = 1:size(n0, 1)
                 n0(i, :) = n0(i, :)/norm(n0(i, :));
             end
+
+            % Compute segment texture coordinates
+            Segments = size(Profile, 1) - 1;
             t0 = [linspace(0, 1, Segments + 1)', v0(:, 1)];
 
             % Face indexes for first part

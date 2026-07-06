@@ -104,8 +104,8 @@ classdef Body < phx.base.Object
         % Body inertia tensor (kg*m^2)
         Inertia (1, 3) double = [1 1 1]
 
-        % Friction coefficients (0-1) [drag roll spin]
-        Friction (1, 3) double {mustBeInRange(Friction, 0, 1)} = [0.5 0 0]
+        % Friction coefficients [drag roll spin]
+        Friction (1, 3) double {mustBeGreaterThanOrEqual(Friction, 0)} = [0.5 0 0]
 
         % Collisions 
         Collisions (1, 1) logical = true

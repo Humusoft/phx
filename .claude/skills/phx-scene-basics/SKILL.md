@@ -59,7 +59,7 @@ b = phx.Body(ax, ...
     "Position", [0 0 2], ...
     "EulerAngles", [0 0 pi/3], ...           % z->y->x order; or Quaternion / AxisAngle / Orientation
     "Mass", 50, "Inertia", [40 40 10], ...   % set explicitly, or let the shape's density compute it
-    "Friction", [0.5 0 0], ...               % [drag roll spin], each 0..1
+    "Friction", [0.5 0 0], ...               % [drag roll spin], each >= 0 (no upper bound)
     "Shape", {"Box", "Size", [4 3 0.1], "Color", [1 1 1]});
 ```
 
@@ -148,8 +148,9 @@ building a scene from scratch:
   `r` rests with its centre at `z_s + r`). If exact contact is fiddly, place the body
   a little above and run a short **settle phase** (a few `step` calls) before the main
   action, letting it drop into contact.
-- **Friction `[drag roll spin]`, each 0..1.** `drag` is the sliding/contact friction
-  (≈0.5–0.8 for grippy contact, 0 for near-frictionless). `roll`/`spin` resist rolling
+- **Friction `[drag roll spin]`, each `>= 0` (no upper bound).** `drag` is the sliding/contact
+  friction (≈0.5–0.8 for grippy contact, 0 for near-frictionless; values above 1 are allowed for
+  very grippy contact). `roll`/`spin` resist rolling
   and spinning of rounded shapes; leave them at 0 and a ball or sphere will roll/spin
   forever. Give them a small value (≈0.05–0.2) when you need rolling or spin energy to
   dissipate (e.g. bodies that should come to rest instead of ringing).

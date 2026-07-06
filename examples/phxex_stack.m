@@ -25,7 +25,7 @@ function phxex_stack(n, mu, tiltRate)
 
     arguments
         n (1, 1) double = 6
-        mu (1, 1) double {mustBeInRange(mu, 0, 1)} = 0.5
+        mu (1, 1) double {mustBeGreaterThanOrEqual(mu, 0)} = 0.5
         tiltRate (1, 1) double = 5
     end
 
@@ -80,7 +80,7 @@ function phxex_stack(n, mu, tiltRate)
     dt = 0.02;                       % time step
     nSteps = 300;                    % total tilt steps
     collapseAngle = NaN;             % tilt angle at which the stack lets go
-    driftThreshold = s(1);          % drift of one box width counts as collapse
+    driftThreshold = drift.Distance*1.1;  % 110 % of initial distance counts as collapse
     for k = 1:nSteps
         tiltDeg = tiltRate * (k*dt);
         tiltRad = tiltDeg * pi/180;
@@ -117,7 +117,7 @@ function phxex_stack(n, mu, tiltRate)
     grid on; xlabel("time [s]"); ylabel("pallet tilt [deg]");
     title(sprintf("Box stack on tilting pallet (mu = %.2f, n = %d)", mu, n));
     if ~isnan(collapseAngle)
-        yline(collapseAngle*180/pi, "--y", "collapse");
+        yline(collapseAngle, "--r", "collapse");
     end
 
 end
