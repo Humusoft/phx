@@ -1,13 +1,12 @@
 # PHX Toolbox
 
-**Object-oriented MATLAB API for 3D rigid-body physics.**
+**Object-oriented MATLAB API and Simulink blocks for 3D rigid-body physics.**
 
-PHX Toolbox is a rigid-body physics extension layered over the [Bullet](https://github.com/bulletphysics/bullet3)
-physics engine. 
-
-It allows you to built models from physical objects such as bodies with different
-shapes, joints, springs, ropes, force fields or custom elements.  The model is drawn
-directly into MATLAB axes and can be simulated immediately with one command.
+PHX Toolbox allows you to build models from physical objects such as bodies with different
+shapes, joints, springs, ropes, force fields, or custom elements. The model is drawn
+directly into MATLAB axes and can be simulated immediately with one command. Simulation is
+powered by the [Bullet](https://github.com/bulletphysics/bullet3) physics engine, enhanced
+to allow co-simulation with custom MATLAB elements. 
 
 [![Open in MATLAB Online](https://www.mathworks.com/images/responsive/global/open-in-matlab-online.svg)](https://matlab.mathworks.com/open/github/v1?repo=Humusoft/phx&project=PHXToolbox.prj&file=examples/phxex_buggy.m)
 
