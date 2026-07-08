@@ -27,6 +27,7 @@ PHX Toolbox also includes a set of AI skills for use with common AI agents.
 
 ![PHX demo 1](doc/phx-demo-1.gif) ![PHX demo 2](doc/phx-demo-2.gif)
 ![PHX demo 3](doc/phx-demo-3.gif) ![PHX demo 4](doc/phx-demo-4.gif)
+![PHX demo 5](doc/phx-demo-5.gif)
 
 ## Requirements
 
