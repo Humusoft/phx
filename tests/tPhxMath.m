@@ -56,11 +56,7 @@ classdef tPhxMath < matlab.unittest.TestCase
             expected = (M(1:3, 1:3)*p' + [1; 2; 3])';
             tc.verifyEqual(P, expected, "AbsTol", 1e-12);
         end
-    end
 
-    methods (Test, TestTags = {'Toolbox'})
-        % Decomposition helpers rely on robotics.internal.* (Robotics System
-        % Toolbox / Navigation Toolbox). Tagged so they can be excluded.
         function euler321RoundTrip(tc)
             xyz = [0.2 -0.3 0.5];
             R = phx.internal.Math.rot321(xyz);
@@ -72,6 +68,40 @@ classdef tPhxMath < matlab.unittest.TestCase
             aa = phx.internal.Math.decompAA(R);
             R2 = phx.internal.Math.rotAA(aa(1:3), aa(4));
             tc.verifyEqual(R2, R, "AbsTol", 1e-9);
+        end
+
+        function euler321GimbalLockRoundTrip(tc)
+            % Y = pi/2 makes X and Z coupled; any decomposition must still
+            % reproduce the original matrix.
+            R = phx.internal.Math.rot321([0.4 pi/2 -0.3]);
+            xyz = phx.internal.Math.decomp321(R);
+            tc.verifyEqual(phx.internal.Math.rot321(xyz), R, "AbsTol", 1e-9);
+        end
+
+        function axisAngleHalfTurnRoundTrip(tc)
+            % A 180-degree rotation is the singular case of the extraction.
+            R = phx.internal.Math.rotAA([0.3 -0.5 0.8], pi);
+            aa = phx.internal.Math.decompAA(R);
+            tc.verifyEqual(phx.internal.Math.rotAA(aa(1:3), aa(4)), R, "AbsTol", 1e-9);
+        end
+
+        function axisAngleIdentityConvention(tc)
+            tc.verifyEqual(phx.internal.Math.decompAA(eye(3)), [0 0 1 0]);
+        end
+
+        function quaternionRoundTrip(tc)
+            R = phx.internal.Math.rotAA([0.3 0.2 0.9], 0.8);
+            q = phx.internal.Math.decompQ(R);
+            tc.verifyEqual(norm(q), 1, "AbsTol", 1e-12);
+            tc.verifyGreaterThanOrEqual(q(1), 0);
+            tc.verifyEqual(phx.internal.Math.rotQ(q), R, "AbsTol", 1e-12);
+        end
+
+        function quaternionKnownZRotation(tc)
+            a = pi/3;
+            R = phx.internal.Math.rotAA([0 0 1], a);
+            expected = [cos(a/2) 0 0 sin(a/2)];
+            tc.verifyEqual(phx.internal.Math.decompQ(R), expected, "AbsTol", 1e-12);
         end
     end
 

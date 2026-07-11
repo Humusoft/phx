@@ -294,11 +294,11 @@ classdef Body < phx.base.Object
         end
 
         function value = get.Quaternion(obj)
-            value = rotm2quat(obj.Matrix(1:3, 1:3));
+            value = phx.internal.Math.decompQ(obj.Matrix(1:3, 1:3));
         end
 
         function set.Quaternion(obj, value)
-            obj.Matrix(1:3, 1:3) = quat2rotm(value);
+            obj.Matrix(1:3, 1:3) = phx.internal.Math.rotQ(value);
             obj.matrixUpdated;
         end
 

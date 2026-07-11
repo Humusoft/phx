@@ -45,6 +45,7 @@ function phxex_jenga(n, s)
 
     % UI
     uibutton(gcf, "Text", "↺", "Position", [50, 100, 50, 50], "FontSize", 24, "ButtonPushedFcn", @goBack);
+    uialert(gcf, "Double-click on a brick to pull it out.", "Jenga", "Icon", "info");
 
     % Callbacks
     function moveOut(body, event)

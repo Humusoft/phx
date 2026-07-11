@@ -8,7 +8,7 @@ Class-based `matlab.unittest` tests for the Handle Physics API.
 cd tests
 runtests_phx            % everything
 runtests_phx("noengine")% skip the MEX integration tests
-runtests_phx("pure")    % headless: no engine, no graphics, no add-on toolboxes
+runtests_phx("pure")    % headless: no engine, no graphics
 ```
 
 `runtests_phx` adds `../phx` to the path for the duration of the run.
@@ -17,13 +17,13 @@ runtests_phx("pure")    % headless: no engine, no graphics, no add-on toolboxes
 
 | File | Needs | Tag | What it locks in |
 |------|-------|-----|------------------|
-| `tPhxMath` | nothing | — / `Toolbox` | rotation matrices, point transform, decomposition round-trips |
+| `tPhxMath` | nothing | — | rotation matrices, point transform, decomposition round-trips |
 | `tShapeMass` | nothing | — | analytic mass & inertia of Box/Sphere/Cylinder |
-| `tBodyKinematics` | graphics | `Graphics`, `Toolbox` | pose property round-trips, input validation |
+| `tBodyKinematics` | graphics | `Graphics` | pose property round-trips, input validation |
+| `tInternals` | nothing (one `Graphics` case) | — / `Graphics` | the undocumented MATLAB internals PHX deliberately uses (perf) still exist and behave |
 | `tSimulation` | engine + graphics | `Engine` | free fall, static bodies, time accumulation, determinism |
 | `tBuoyancy` | engine + graphics (floating tests only) | — / `Engine` | voxel volume vs analytic, sampling determinism, floating equilibrium, sinking |
 
-- **`Toolbox`** — relies on `robotics.internal.*` (Robotics System / Navigation Toolbox).
 - **`Graphics`** — a body owns an `hgtransform`, so a display-capable session is needed (invisible figures are used).
 - **`Engine`** — needs the `phx.engine.io` MEX; gracefully *assumed away* (filtered, not failed) when absent.
 

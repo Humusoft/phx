@@ -44,13 +44,65 @@ classdef Math
 
         % Decomposition of transformation matrix for rotations in order Z -> Y -> X
         function xyz = decomp321(R)
-            zyx = robotics.internal.rotm2eul(R, "ZYX");
-            xyz = zyx([3 2 1]);
+            sy = min(max(-R(3, 1), -1), 1);
+
+            if abs(sy) < 1 - 1e-10
+                xyz = [atan2(R(3, 2), R(3, 3)), asin(sy), atan2(R(2, 1), R(1, 1))];
+            else
+                % gimbal lock (Y = +/-pi/2): X and Z are coupled, choose X = 0
+                xyz = [0, asin(sy), atan2(-R(1, 2), R(2, 2))];
+            end
+        end
+
+        % Transformation matrix for quaternion rotation [w x y z]
+        function M = rotQ(Q)
+            Q = Q/norm(Q);
+            w = Q(1); x = Q(2); y = Q(3); z = Q(4);
+
+            M = [1 - 2*(y*y + z*z), 2*(x*y - w*z),     2*(x*z + w*y); ...
+                 2*(x*y + w*z),     1 - 2*(x*x + z*z), 2*(y*z - w*x); ...
+                 2*(x*z - w*y),     2*(y*z + w*x),     1 - 2*(x*x + y*y)];
+        end
+
+        % Decomposition of transformation matrix for quaternion rotation [w x y z]
+        function q = decompQ(R)
+            % Shepperd's method: pivot on the largest of trace and diagonal
+            % elements so the square root argument stays well away from zero
+            [~, i] = max([trace(R), R(1, 1), R(2, 2), R(3, 3)]);
+            switch i
+                case 1
+                    r = sqrt(1 + R(1, 1) + R(2, 2) + R(3, 3));
+                    s = 0.5/r;
+                    q = [0.5*r, (R(3, 2) - R(2, 3))*s, (R(1, 3) - R(3, 1))*s, (R(2, 1) - R(1, 2))*s];
+                case 2
+                    r = sqrt(1 + R(1, 1) - R(2, 2) - R(3, 3));
+                    s = 0.5/r;
+                    q = [(R(3, 2) - R(2, 3))*s, 0.5*r, (R(1, 2) + R(2, 1))*s, (R(1, 3) + R(3, 1))*s];
+                case 3
+                    r = sqrt(1 - R(1, 1) + R(2, 2) - R(3, 3));
+                    s = 0.5/r;
+                    q = [(R(1, 3) - R(3, 1))*s, (R(1, 2) + R(2, 1))*s, 0.5*r, (R(2, 3) + R(3, 2))*s];
+                case 4
+                    r = sqrt(1 - R(1, 1) - R(2, 2) + R(3, 3));
+                    s = 0.5/r;
+                    q = [(R(2, 1) - R(1, 2))*s, (R(1, 3) + R(3, 1))*s, (R(2, 3) + R(3, 2))*s, 0.5*r];
+            end
+
+            if q(1) < 0
+                q = -q;
+            end
         end
 
         % Decomposition of transformation matrix for axis-angle rotation
         function aa = decompAA(R)
-            aa = robotics.internal.rotm2axang(R);
+            q = phx.internal.Math.decompQ(R);
+            sinHalf = norm(q(2:4));
+
+            if sinHalf > 1e-12
+                aa = [q(2:4)/sinHalf, 2*atan2(sinHalf, q(1))];
+            else
+                aa = [0 0 1 0];
+            end
         end
     end
 

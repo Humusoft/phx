@@ -4,8 +4,8 @@ function results = runtests_phx(scope)
 %   runtests_phx() runs every test in the tests folder.
 %
 %   runtests_phx("pure") runs only tests that need neither the physics
-%   engine nor a graphics session nor add-on toolboxes (tags Engine,
-%   Graphics, Toolbox are excluded). Useful for headless CI.
+%   engine nor a graphics session (tags Engine and Graphics are excluded).
+%   Useful for headless CI.
 %
 %   runtests_phx("noengine") runs everything except the Engine-tagged
 %   integration tests.
@@ -34,7 +34,7 @@ function results = runtests_phx(scope)
 
     switch scope
         case "pure"
-            suite = suite.selectIf(~HasTag("Engine") & ~HasTag("Graphics") & ~HasTag("Toolbox"));
+            suite = suite.selectIf(~HasTag("Engine") & ~HasTag("Graphics"));
         case "noengine"
             suite = suite.selectIf(~HasTag("Engine"));
     end

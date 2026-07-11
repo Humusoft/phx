@@ -28,6 +28,7 @@
 %   phx.RevoluteJoint      - Revolute joint
 %   phx.SphericalJoint     - Spherical joint
 %   phx.GearJoint          - Gear joint
+%   phx.FixedJoint         - Fixed joint
 %
 % Springs and ropes
 %   phx.Spring             - Spring

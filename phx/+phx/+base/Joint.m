@@ -25,16 +25,16 @@ classdef Joint < phx.base.Object
 
     properties (Dependent)
         % Force acting on the body A
-        ForceA
+        ForceA (1, 3) double
 
         % Torque acting on the body A
-        TorqueA
+        TorqueA (1, 3) double
 
         % Force acting on the body B
-        ForceB
+        ForceB (1, 3) double
 
         % Torque acting on the body B
-        TorqueB
+        TorqueB (1, 3) double
     end
 
     methods

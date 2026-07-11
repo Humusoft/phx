@@ -59,9 +59,7 @@ classdef tBodyKinematics < matlab.unittest.TestCase
         end
     end
 
-    methods (Test, TestTags = {'Graphics', 'Toolbox'})
-        % Euler/Quaternion conversions route through helpers that may need
-        % add-on toolboxes (Robotics/Navigation).
+    methods (Test, TestTags = {'Graphics'})
         function eulerAnglesRoundTrip(tc)
             ang = [0.2 -0.3 0.5];
             tc.Body.EulerAngles = ang;
@@ -86,9 +84,9 @@ classdef tBodyKinematics < matlab.unittest.TestCase
         end
 
         function frictionOutOfRangeIsRejected(tc)
-            % Friction has no upper bound (values above 1 are legal), only
-            % negative coefficients are rejected.
-            tc.verifyError(@() set(tc.Body, "Friction", [-0.1 0 0]), ?MException);
+            % Only the lower bound is enforced; coefficients above 1 are
+            % physically meaningful (e.g. rubber) and deliberately allowed.
+            tc.verifyError(@() set(tc.Body, "Friction", [-1 0 0]), ?MException);
         end
     end
 

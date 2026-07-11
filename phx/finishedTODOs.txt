@@ -17,6 +17,8 @@ PhxModel.m
 % DONE model from MAT file
 % DONE always define signal size for ports
 % DONE default camera settings
+% DONE some way to remove objects
+% DONE some way to create objects
 
 Resistance.m
 % DONE add EnvironmentVelocity

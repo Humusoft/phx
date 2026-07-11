@@ -23,12 +23,18 @@ function phxex_joints(showGraphs)
     % Create dynamic body C
     C = phx.Body("Position", [4 -2 0], "Shape", {"Box", "SkeletPoints", [0 1.5 0]});
 
+    % Create dynamic body C
+    D = phx.Body("Position", [4 -2 -1.5], "Shape", {"Box", "SkeletPoints", [0 0 1.5]});
+
     % Create a revolute joint between bodies A and B
     phx.RevoluteJoint(A, B, "PointA", [1.5 0 0], "PointB", [-1.5 0 0], "Color", 0.5);
 
     % Create a spherical joint between bodies B and C
     S = phx.SphericalJoint(B, C, "PointA", [0 -1.5 0], "PointB", [0 1.5 0], "Color", 0.5);
     L2 = phx.Logger(S, "Frequency", 100, "Parameters", ["ForceA", "ForceB"]);
+
+    % Create a fixed joint between bodies C and D
+    phx.FixedJoint(C, D, "PointA", [0 0 -1.5], "Visible", false);
 
     % Logger to record the linear velocity of body B
     L = phx.Logger(B, "Parameters", "LinearVelocity", "Frequency", 100);

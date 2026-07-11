@@ -23,8 +23,8 @@ function phxex_buggy(showGraphs)
     speed = uigauge(gcf, "Limits", [0 5], "Position", [10 10 120 120]);
 
     % Create ground
-    phx.Body(ax, "Type", "static", "Position", [0 0 -5], "Shape", {"Box", "Size", [50 50 1], "Color", [1 1 0.8]}, "EulerAngles", [0 -0.12 0]);
-    phx.Body(ax, "Type", "static", "Position", [-50 0 -8], "Shape", {"Box", "Size", [50 50 1], "Color", [1 1 0.8]});
+    phx.Body(ax, "Type", "static", "Position", [0 0 -5], "Shape", {"Box", "Size", [50 50 1], "Texture", resdir+"tiles.jpg"}, "EulerAngles", [0 -0.12 0]);
+    phx.Body(ax, "Type", "static", "Position", [-50 0 -8], "Shape", {"Box", "Size", [50 50 1], "Texture", resdir+"tiles.jpg"});
 
     % Load buggy model and show it in the current axes
     buggy = load("saved_buggy.mat");
@@ -55,6 +55,9 @@ function phxex_buggy(showGraphs)
     if showGraphs
         figure(2);
         plot(log.Time, log.Data);
+        title("Spring lengths");
+        legend(get([log.Parents{:}], "Name"))
+        grid("on");
     end
 
 end

@@ -6,9 +6,6 @@ function PhxModel(block, varargin)
 %   Licensed under the PHX Preview License v1.0; see LICENSE and NOTICE.
 %   ^..^
 
-% TODO some way to remove objects
-% TODO some way to create objects
-
     if ischar(block)
         feval(block, varargin{:});
     else

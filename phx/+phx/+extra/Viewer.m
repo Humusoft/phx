@@ -35,11 +35,6 @@ classdef Viewer < handle
 %#ok<*MCSUP> OK to access other properties in setters
 %#ok<*INUSD> OK to see the full list of arguments for callbacks
 
-    properties (Access = private, WeakHandle)
-        hF matlab.ui.Figure
-        hA matlab.graphics.axis.Axes
-    end
-
     properties (Access = private)
         ContextMenu
 
@@ -64,6 +59,14 @@ classdef Viewer < handle
         % Timers and menus
         AnimationTimer = []
         FreerunTimer = []
+    end
+
+    properties (SetAccess = private, WeakHandle)
+        % Viewer figure
+        Figure matlab.ui.Figure
+
+        % Viewer axes
+        Axes matlab.graphics.axis.Axes
     end
 
     properties (SetAccess = private)
@@ -145,52 +148,52 @@ classdef Viewer < handle
                 ParentAxes = uiaxes(uifigure, 'Units', 'normalized', 'Position', [0.1 0.1 0.8 0.8]);
             end
 
-            obj.hA = ParentAxes;
+            obj.Axes = ParentAxes;
 
             % Find the very top parent (e.g. in apps)
             parentFigure = ParentAxes.Parent;
             while ~isa(parentFigure, 'matlab.ui.Figure')
                 parentFigure = parentFigure.Parent;
             end
-            obj.hF = parentFigure;
+            obj.Figure = parentFigure;
 
             % Store viewer object
-            delete(getappdata(obj.hF, 'phxViewer'));
-            setappdata(obj.hF, 'phxViewer', obj);
-            setappdata(obj.hA, 'phxAxes', true); 
+            delete(getappdata(obj.Figure, 'phxViewer'));
+            setappdata(obj.Figure, 'phxViewer', obj);
+            setappdata(obj.Axes, 'phxAxes', true); 
 
             % Assign navigation callbacks
-            obj.hF.WindowButtonDownFcn = @obj.navBtnDown;
-            obj.hF.WindowButtonUpFcn = @obj.navBtnUp;
-            obj.hF.WindowButtonMotionFcn = [];
-            obj.hF.WindowKeyPressFcn = @obj.navKeyPress;
-            obj.hF.WindowKeyReleaseFcn = @obj.navKeyRelease;
-            obj.hF.WindowScrollWheelFcn = @obj.navScrollWheel;
+            obj.Figure.WindowButtonDownFcn = @obj.navBtnDown;
+            obj.Figure.WindowButtonUpFcn = @obj.navBtnUp;
+            obj.Figure.WindowButtonMotionFcn = [];
+            obj.Figure.WindowKeyPressFcn = @obj.navKeyPress;
+            obj.Figure.WindowKeyReleaseFcn = @obj.navKeyRelease;
+            obj.Figure.WindowScrollWheelFcn = @obj.navScrollWheel;
 
             % Get "default default" camera settings
-            if ~isempty(obj.hA.Children)
+            if ~isempty(obj.Axes.Children)
                 obj.DefaultCameraTarget = obj.CameraTarget;
                 obj.DefaultCameraPosition = obj.CameraPosition;
-                obj.DefaultCameraViewAngle = obj.hA.CameraViewAngle_I;
+                obj.DefaultCameraViewAngle = obj.Axes.CameraViewAngle_I;
             end
 
             % Set default 3D view settings
-            obj.hA.Interactions = [];
-            obj.hA.Toolbar = []; %obj.hA.Toolbar.Visible = "off";
-            obj.hA.Visible = false;
-            obj.hA.NextPlot = 'add';
-            obj.hA.Clipping = false;
-            obj.hA.DataAspectRatio = [1 1 1]; %axis(obj.hA, "equal");
-            obj.hA.XGrid = true;
-            obj.hA.YGrid = true;
-            obj.hA.ZGrid = true;
-            obj.hA.XLimitMethod = 'tight';
-            obj.hA.YLimitMethod = 'tight';
-            obj.hA.ZLimitMethod = 'tight';
-            obj.hA.Projection = 'perspective';
+            obj.Axes.Interactions = [];
+            obj.Axes.Toolbar = []; %obj.hA.Toolbar.Visible = "off";
+            obj.Axes.Visible = false;
+            obj.Axes.NextPlot = 'add';
+            obj.Axes.Clipping = false;
+            obj.Axes.DataAspectRatio = [1 1 1]; %axis(obj.hA, "equal");
+            obj.Axes.XGrid = true;
+            obj.Axes.YGrid = true;
+            obj.Axes.ZGrid = true;
+            obj.Axes.XLimitMethod = 'tight';
+            obj.Axes.YLimitMethod = 'tight';
+            obj.Axes.ZLimitMethod = 'tight';
+            obj.Axes.Projection = 'perspective';
 
             % Prepare context menu
-            obj.ContextMenu = uicontextmenu(obj.hF);
+            obj.ContextMenu = uicontextmenu(obj.Figure);
             uimenu(obj.ContextMenu, 'Text', 'Look At', 'MenuSelectedFcn', @obj.menuLookAt);
             sub = uimenu(obj.ContextMenu, 'Text', 'View');
                 uimenu(sub, 'Text', 'Take snapshot', 'MenuSelectedFcn', @obj.menuSnapshot);
@@ -210,7 +213,7 @@ classdef Viewer < handle
                 uimenu(sub, 'Text', 'Change environment...', 'Separator', 'on', 'MenuSelectedFcn', @obj.menuChangeTexture);
 
             % Sky sphere
-            obj.SkySphere = hgtransform(obj.hA, 'Tag', 'phxViewer');
+            obj.SkySphere = hgtransform(obj.Axes, 'Tag', 'phxViewer');
             obj.SkySphere.Matrix([1 6 11]) = norm(obj.CameraPosition)*obj.SkySphereSize;
             [V, N, F, T] = phx.internal.Geometry.sphere(2, 48);
             vertices = single(V');
@@ -221,7 +224,7 @@ classdef Viewer < handle
             matlab.graphics.primitive.world.TriangleStrip('Parent', obj.SkySphere, 'VertexIndices', faces(:)', 'VertexData', vertices, 'NormalData', normals, 'ColorData', uvs, 'ColorType', 'texturemapped', 'ColorBinding', 'interpolated', 'Texture', tx, 'NormalBinding', 'interpolated', 'AmbientStrength', 1, 'DiffuseStrength', 1, 'SpecularStrength', 0, 'HitTest', 'on', 'Layer', 'back');
 
             % Triad
-            obj.Triad = hgtransform(obj.hA, 'Visible', false, 'Tag', 'phxViewer');
+            obj.Triad = hgtransform(obj.Axes, 'Visible', false, 'Tag', 'phxViewer');
             matlab.graphics.primitive.world.LineStrip('Parent', obj.Triad, 'ColorData', uint8([255 255 255 255]'), 'ColorBinding', 'object', 'LineWidth', 4, 'VertexData', single([0 1 0 0 0 0; 0 0 0 1 0 0; 0 0 0 0 0 1]), 'Layer', 'front');
             matlab.graphics.primitive.world.LineStrip('Parent', obj.Triad, 'ColorData', uint8([255 0 0 255]'), 'ColorBinding', 'object', 'LineWidth', 2, 'VertexData', single([0.02 0.98; 0 0; 0 0]), 'Layer', 'front');
             matlab.graphics.primitive.world.LineStrip('Parent', obj.Triad, 'ColorData', uint8([0 204 0 255]'), 'ColorBinding', 'object', 'LineWidth', 2, 'VertexData', single([0 0; 0.02 0.98; 0 0]), 'Layer', 'front');
@@ -235,10 +238,10 @@ classdef Viewer < handle
             phx.internal.applyArguments(Options, obj);
 
             % Axes delete callback
-            obj.hA.DeleteFcn = @obj.axesDeleted;
+            obj.Axes.DeleteFcn = @obj.axesDeleted;
 
             % Tweaks
-            obj.hA.Camera.DepthSort = 'on'; % can be off when there are only lowlevel objects in the scene
+            obj.Axes.Camera.DepthSort = 'on'; % can be off when there are only lowlevel objects in the scene
 
             % Apply initial view settings
             obj.ViewMode = obj.ViewMode;
@@ -322,26 +325,26 @@ classdef Viewer < handle
                 case 0
                     obj.CameraTarget = obj.DefaultCameraTarget;
                     obj.CameraPosition = obj.DefaultCameraPosition;
-                    obj.hA.CameraUpVector = [0 0 1];
-                    obj.hA.CameraViewAngle = obj.DefaultCameraViewAngle;
+                    obj.Axes.CameraUpVector = [0 0 1];
+                    obj.Axes.CameraViewAngle = obj.DefaultCameraViewAngle;
                 case 1
                     obj.CameraPosition = obj.CameraTarget + [0 -len 0];
-                    obj.hA.CameraUpVector = [0 0 1];
+                    obj.Axes.CameraUpVector = [0 0 1];
                 case 2
                     obj.CameraPosition = obj.CameraTarget + [len 0 0];
-                    obj.hA.CameraUpVector = [0 0 1];
+                    obj.Axes.CameraUpVector = [0 0 1];
                 case 3
                     obj.CameraPosition = obj.CameraTarget + [0 len 0];
-                    obj.hA.CameraUpVector = [0 0 1];
+                    obj.Axes.CameraUpVector = [0 0 1];
                 case 4
                     obj.CameraPosition = obj.CameraTarget + [-len 0 0];
-                    obj.hA.CameraUpVector = [0 0 1];
+                    obj.Axes.CameraUpVector = [0 0 1];
                 case 5
                     obj.CameraPosition = obj.CameraTarget + [0 0 len];
-                    obj.hA.CameraUpVector = [0 1 0];
+                    obj.Axes.CameraUpVector = [0 1 0];
                 case 6
                     obj.CameraPosition = obj.CameraTarget + [0 0 -len];
-                    obj.hA.CameraUpVector = [0 1 0];
+                    obj.Axes.CameraUpVector = [0 1 0];
             end
         end
 
@@ -369,36 +372,36 @@ classdef Viewer < handle
             obj.ViewMode = mode;
             switch mode
                 case "plain"
-                    obj.hA.Visible = false;
+                    obj.Axes.Visible = false;
                     obj.SkySphere.Visible = false;
-                    set(obj.hA, "XLimMode", "manual", "YLimMode", "manual", "ZLimMode", "manual");
+                    set(obj.Axes, "XLimMode", "manual", "YLimMode", "manual", "ZLimMode", "manual");
                 case "axis"
-                    obj.hA.Visible = true;
+                    obj.Axes.Visible = true;
                     obj.SkySphere.Visible = false;
-                    set(obj.hA, "XLimMode", "auto", "YLimMode", "auto", "ZLimMode", "auto");
+                    set(obj.Axes, "XLimMode", "auto", "YLimMode", "auto", "ZLimMode", "auto");
                 case "texture"
-                    obj.hA.Visible = false;
+                    obj.Axes.Visible = false;
                     obj.SkySphere.Visible = true;
-                    set(obj.hA, "XLimMode", "manual", "YLimMode", "manual", "ZLimMode", "manual");
+                    set(obj.Axes, "XLimMode", "manual", "YLimMode", "manual", "ZLimMode", "manual");
             end
             
             unknownLimits = true;
             if obj.ViewMode == "axis"
-                bodies = phx.Simulation.findBodies(obj.hA);
+                bodies = phx.Simulation.findBodies(obj.Axes);
                 if ~isempty(bodies)
                     bbox = bodies.boundingBox;
-                    obj.hA.XLim = bbox(1:2);
-                    obj.hA.YLim = bbox(3:4);
-                    obj.hA.ZLim = bbox(5:6);
+                    obj.Axes.XLim = bbox(1:2);
+                    obj.Axes.YLim = bbox(3:4);
+                    obj.Axes.ZLim = bbox(5:6);
                     unknownLimits = false;
                 end
             end
 
             if unknownLimits
                 r = norm(obj.CameraPosition)*obj.SkySphereSize;
-                obj.hA.XLim = [-1 1]*r;
-                obj.hA.YLim = [-1 1]*r;
-                obj.hA.ZLim = [-1 1]*r;
+                obj.Axes.XLim = [-1 1]*r;
+                obj.Axes.YLim = [-1 1]*r;
+                obj.Axes.ZLim = [-1 1]*r;
             end
         end
 
@@ -439,7 +442,7 @@ classdef Viewer < handle
         function set.Headlight(obj, enable)
             % Check the headlight object
             if isempty(obj.CamLight) || ~isvalid(obj.CamLight)
-                obj.CamLight = light(obj.hA, 'Style', 'local', 'Tag', 'phxViewer');
+                obj.CamLight = light(obj.Axes, 'Style', 'local', 'Tag', 'phxViewer');
                 %obj.CamLight = matlab.graphics.primitive.world.LightSource('Parent', obj.hA, 'Style', 'local');
             end
 
@@ -448,11 +451,11 @@ classdef Viewer < handle
         end
 
         function pos = get.CameraPosition(obj)
-            pos = obj.hA.CameraPosition_I;
+            pos = obj.Axes.CameraPosition_I;
         end
 
         function set.CameraPosition(obj, pos)
-            obj.hA.CameraPosition = pos;
+            obj.Axes.CameraPosition = pos;
             obj.CamLight.Position = pos;
 
             % Update sky sphere scale and axes limits
@@ -461,51 +464,51 @@ classdef Viewer < handle
         end
 
         function pos = get.CameraTarget(obj)
-            pos = obj.hA.CameraTarget_I;
+            pos = obj.Axes.CameraTarget_I;
         end
 
         function set.CameraTarget(obj, pos)
             %disp("Target"+mat2str(pos));
-            obj.hA.CameraTarget = pos;
+            obj.Axes.CameraTarget = pos;
 
             % Update triad scale and position
-            u = obj.hA.CameraTarget_I - obj.hA.CameraPosition_I;
+            u = obj.Axes.CameraTarget_I - obj.Axes.CameraPosition_I;
             scl = [1 1 1]*0.05*norm(u);
             obj.Triad.Matrix([1 6 11 13 14 15]) = [scl pos];
         end
 
         function pos = get.Position(obj)
-            pos = obj.hF.Position;
+            pos = obj.Figure.Position;
         end
 
         function set.Position(obj, pos)
-            obj.hF.Position = pos;
+            obj.Figure.Position = pos;
         end
 
         function cla(obj)
-            n = numel(obj.hA.Children);
+            n = numel(obj.Axes.Children);
             id = true(1, n);
             for i = 1:n
-                id(i) = obj.hA.Children(i).Tag ~= "phxViewer";
+                id(i) = obj.Axes.Children(i).Tag ~= "phxViewer";
             end
-            delete(obj.hA.Children(id));
+            delete(obj.Axes.Children(id));
             obj.LastHitObject = [];
             obj.SelectedBody = [];
         end
 
         function delete(obj)
-            if isvalid(obj.hF)
+            if isvalid(obj.Figure)
                 % Remove mouse callbacks
-                obj.hF.WindowButtonDownFcn = [];
-                obj.hF.WindowButtonUpFcn = [];
-                obj.hF.WindowButtonMotionFcn = [];
-                obj.hF.WindowScrollWheelFcn = [];
+                obj.Figure.WindowButtonDownFcn = [];
+                obj.Figure.WindowButtonUpFcn = [];
+                obj.Figure.WindowButtonMotionFcn = [];
+                obj.Figure.WindowScrollWheelFcn = [];
 
                 % Remove keyboard callbacks
-                obj.hF.WindowKeyPressFcn = [];
-                obj.hF.WindowKeyReleaseFcn = [];
-                obj.hF.KeyPressFcn = [];
-                obj.hF.KeyReleaseFcn = [];
+                obj.Figure.WindowKeyPressFcn = [];
+                obj.Figure.WindowKeyReleaseFcn = [];
+                obj.Figure.KeyPressFcn = [];
+                obj.Figure.KeyReleaseFcn = [];
 
                 % Delete internal objects
                 delete(obj.SkySphere);
@@ -555,13 +558,13 @@ classdef Viewer < handle
             % Create uilabel object if not exist
             if isempty(obj.HUD)
                 drawnow;
-                if obj.hA.Parent == obj.hF
+                if obj.Axes.Parent == obj.Figure
                     posInFig = [20 20 1 1];
                 else
-                    posInFig = getpixelposition(obj.hA, true);
+                    posInFig = getpixelposition(obj.Axes, true);
                     posInFig(3:4) = [1 1];
                 end
-                obj.HUD = uilabel(obj.hF, "Text", "", "Position", posInFig, "FontSize", fontSize, "FontName", "Consolas", "FontColor", fontColor, "VerticalAlignment", "bottom");
+                obj.HUD = uilabel(obj.Figure, "Text", "", "Position", posInFig, "FontSize", fontSize, "FontName", "Consolas", "FontColor", fontColor, "VerticalAlignment", "bottom");
             end
 
             % Update text
@@ -595,7 +598,7 @@ classdef Viewer < handle
             % Navigate only when cursor is inside axes region
             if obj.RestrictedNavigation
                 cp = event.Point;
-                ar = getpixelposition(obj.hA, true);
+                ar = getpixelposition(obj.Axes, true);
                 ar(3:4) = ar(3:4) + ar(1:2);
                 if cp(1) < ar(1) || cp(1) > ar(3) || cp(2) < ar(2) || cp(2) > ar(4)
                     return
@@ -622,7 +625,7 @@ classdef Viewer < handle
             end
 
             % Perform actions by a mouse button
-            switch obj.hF.SelectionType
+            switch obj.Figure.SelectionType
                 case 'open'
                     % double click
                     if ~isempty(body)
@@ -648,7 +651,7 @@ classdef Viewer < handle
                     else
                         obj.NavMode = "movebody";
                     end
-                    obj.hF.WindowButtonMotionFcn = @obj.navBtnMotion;
+                    obj.Figure.WindowButtonMotionFcn = @obj.navBtnMotion;
                 case 'alt'
                     % right button
                     obj.ContextMenu.open(event.Point(1), event.Point(2));
@@ -659,7 +662,7 @@ classdef Viewer < handle
                     else
                         obj.NavMode = "rotatebody";
                     end
-                    obj.hF.WindowButtonMotionFcn = @obj.navBtnMotion;
+                    obj.Figure.WindowButtonMotionFcn = @obj.navBtnMotion;
             end
 
             obj.Triad.Matrix(13:15) = obj.CameraPosition; % put triad at invisible place (so it appears only during movement)
@@ -668,7 +671,7 @@ classdef Viewer < handle
 
         function navBtnUp(obj, source, event)
             obj.NavMode = "none";
-            obj.hF.WindowButtonMotionFcn = [];
+            obj.Figure.WindowButtonMotionFcn = [];
             obj.Triad.Visible = "off";
         end
 
@@ -678,7 +681,7 @@ classdef Viewer < handle
                 case "pan"
                     dp = dp*0.002;
                     v = obj.CameraTarget - obj.CameraPosition;
-                    xa = cross(obj.hA.CameraUpVector, v);
+                    xa = cross(obj.Axes.CameraUpVector, v);
                     M = makehgtform("zrotate", dp(1), "axisrotate", xa, dp(2));
                     obj.CameraTarget = obj.CameraPosition + v*M(1:3, 1:3);
                 case "orbit"
@@ -690,13 +693,13 @@ classdef Viewer < handle
                     end
                     t = obj.CameraTarget;
                     p = obj.CameraPosition;
-                    xa = cross(obj.hA.CameraUpVector, (t - p));
+                    xa = cross(obj.Axes.CameraUpVector, (t - p));
                     M = makehgtform("zrotate", -dp(1), "axisrotate", xa, -dp(2));
                     obj.CameraTarget = C + (t - C)*M(1:3, 1:3);
                     obj.CameraPosition = C + (p - C)*M(1:3, 1:3);
                 case "movebody"
                     len = norm(obj.CameraPosition - obj.LastInteresctionPoint)*0.01;
-                    m = view(obj.hA);
+                    m = view(obj.Axes);
                     m = m(1:3, 1:3);
                     dp3 = [dp(1) 0 dp(2)];
                     if isempty(obj.DragAxis)
@@ -725,9 +728,9 @@ classdef Viewer < handle
         function navScrollWheel(obj, source, event)
             if obj.Shift
                 if event.VerticalScrollCount > 0
-                    obj.hA.CameraViewAngle = min(obj.hA.CameraViewAngle + 5, 90);
+                    obj.Axes.CameraViewAngle = min(obj.Axes.CameraViewAngle + 5, 90);
                 else
-                    obj.hA.CameraViewAngle = max(obj.hA.CameraViewAngle - 5, 5);
+                    obj.Axes.CameraViewAngle = max(obj.Axes.CameraViewAngle - 5, 5);
                 end
             else
                 p = obj.CameraPosition;
@@ -750,7 +753,7 @@ classdef Viewer < handle
                     obj.CameraPosition = p - dp*0.1 + do*0.1;
                     obj.CameraTarget = t + do*0.1;
                 end
-                obj.hA.CameraUpVector = [0 0 1];
+                obj.Axes.CameraUpVector = [0 0 1];
             end
         end
 
@@ -775,7 +778,7 @@ classdef Viewer < handle
                 case 'shift'
                     obj.Shift = true;
                 case 'f1'
-                    uialert(obj.hF, evalc("help phx.extra.Viewer"), "Help", "Icon", "info", "Interpreter", "html");
+                    uialert(obj.Figure, evalc("help phx.extra.Viewer"), "Help", "Icon", "info", "Interpreter", "html");
                 case 'f2'
                     obj.Headlight = ~obj.Headlight;
                 case 'f3'
@@ -789,7 +792,7 @@ classdef Viewer < handle
                     end
                 case 'f5'
                     if strcmp(obj.FreerunTimer.Running, 'off')
-                        obj.FreerunSim = phx.Simulation(obj.hA);
+                        obj.FreerunSim = phx.Simulation(obj.Axes);
                         obj.FreerunTimer.start;
                     else
                         obj.FreerunTimer.stop;
@@ -850,7 +853,7 @@ classdef Viewer < handle
             if obj.WASDEnable && (mf ~= 0 || ms ~= 0)
                 d = (obj.CameraTarget - obj.CameraPosition);
                 dpf = d*mf*0.02;
-                dps = cross(obj.hA.CameraUpVector, d)*ms*0.02;
+                dps = cross(obj.Axes.CameraUpVector, d)*ms*0.02;
                 obj.CameraTarget = obj.CameraTarget+dpf+dps;
                 obj.CameraPosition = obj.CameraPosition+dpf+dps;
             end
@@ -873,21 +876,21 @@ classdef Viewer < handle
             p1 = obj.CameraTarget;
             p2 = obj.LastInteresctionPoint;
             for i = 0:0.05:1
-                obj.hA.CameraTarget = p1 + (p2 - p1)*i;
-                obj.hA.CameraUpVector = [0 0 1];
+                obj.Axes.CameraTarget = p1 + (p2 - p1)*i;
+                obj.Axes.CameraUpVector = [0 0 1];
                 drawnow;
             end
-            obj.hA.CameraTarget = obj.LastInteresctionPoint;
+            obj.Axes.CameraTarget = obj.LastInteresctionPoint;
         end
 
         function menuSnapshot(obj, source, event)
-            copygraphics(obj.hA);
-            uialert(obj.hF, "The snapshot has been copied to the clipboard.", source.Text, "Icon", "success");
+            copygraphics(obj.Axes);
+            uialert(obj.Figure, "The snapshot has been copied to the clipboard.", source.Text, "Icon", "success");
         end
 
         function menuCamera(obj, source, event)
             txt = ["Camera target: "+mat2str(round(obj.CameraTarget, 2)); "Camera position: "+mat2str(round(obj.CameraPosition, 2))];
-            uialert(obj.hF, txt, source.Text, "Icon", "info");
+            uialert(obj.Figure, txt, source.Text, "Icon", "info");
         end
 
         function menuChangeColor(obj, source, event)
@@ -911,7 +914,7 @@ classdef Viewer < handle
             end
 
             txt = ["Object structure"; string(strsplit(evalc("phxObj.dispStructure"), newline))'];
-            uialert(obj.hF, txt, source.Text, "Icon", "info");
+            uialert(obj.Figure, txt, source.Text, "Icon", "info");
         end
 
         function menuProps(obj, source, event)
@@ -955,7 +958,7 @@ classdef Viewer < handle
             if ischar(file)
                 obj.cla;
                 sim = phx.Simulation(fullfile(folder, file));
-                sim.propagate("ParentAxes", obj.hA);
+                sim.propagate("ParentAxes", obj.Axes);
                 delete(sim);
             end
         end
@@ -963,7 +966,7 @@ classdef Viewer < handle
         function menuSave(obj, source, event)
             [file, folder] = uiputfile("*.mat", source.Text, "model.mat");
             if ischar(file)
-                bodies = phx.Simulation.findBodies(obj.hA);
+                bodies = phx.Simulation.findBodies(obj.Axes);
                 save(fullfile(folder, file), "bodies");
             end
         end

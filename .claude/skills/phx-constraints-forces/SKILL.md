@@ -30,7 +30,8 @@ phx.SphericalJoint(B, C, "PointA", [0 -1.5 0], "PointB", [0 1.5 0]);
 ```
 
 Joint classes:
-- `phx.FixedJoint` — rigidly weld two bodies.
+- `phx.FixedJoint` — rigidly weld two bodies; joint frames via `TransformA/B` (4×4)
+  or the dependent `PointA/B` + `EulerAnglesA/B` (z→y→x) views into them.
 - `phx.RevoluteJoint` — hinge; 1 rotational DOF (`PointA/B`, `AxisA/B`, dependent `Angle`).
 - `phx.SphericalJoint` — ball; 3 rotational DOF.
 - `phx.GearJoint` — couples the rotation of two bodies by a ratio.

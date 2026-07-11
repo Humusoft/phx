@@ -12,14 +12,9 @@
 
 <div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.FixedJoint</div>
 
-<h1 class="phx-title">phx.FixedJoint <span class="phx-tag dev">under development</span></h1>
+<h1 class="phx-title">phx.FixedJoint</h1>
 <p class="phx-purpose">Fixed joint</p>
 <p class="phx-classref">Class&nbsp;&nbsp;phx.FixedJoint &nbsp;|&nbsp; Superclass: <a href="phx.base.Joint.html">phx.base.Joint</a></p>
-
-<div class="phx-note">
-<span class="lbl">Under development.</span> This class is functional but still evolving; its API and
-behaviour may change in a future release.
-</div>
 
 <h2 class="phx-h2">Description</h2>
 <p><code class="phx-inline">phx.FixedJoint</code> realizes a kinematic constraint with zero degrees
@@ -35,14 +30,19 @@ connection points.</p>
 <div class="phx-desc">
 <p><code class="phx-inline">joint = phx.FixedJoint(bodyA,bodyB)</code> rigidly connects two bodies at
 their origins. Set custom connection points with <code class="phx-inline">PointA</code> and
-<code class="phx-inline">PointB</code>.</p>
+<code class="phx-inline">PointB</code>, or the full joint frames with
+<code class="phx-inline">TransformA</code> and <code class="phx-inline">TransformB</code>.</p>
 </div>
 
 <h2 class="phx-h2">Properties</h2>
 <table class="phx-tbl">
 <tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
-<tr><td class="name">PointA</td><td class="dflt">[0 0 0]</td><td>Connection point in the local space of body A.</td></tr>
-<tr><td class="name">PointB</td><td class="dflt">[0 0 0]</td><td>Connection point in the local space of body B.</td></tr>
+<tr><td class="name">TransformA</td><td class="dflt">eye(4)</td><td>Homogeneous transformation of the joint frame relative to body A.</td></tr>
+<tr><td class="name">TransformB</td><td class="dflt">eye(4)</td><td>Homogeneous transformation of the joint frame relative to body B.</td></tr>
+<tr><td class="name">PointA</td><td class="dflt">[0 0 0]</td><td>Connection point in the local space of body A; the translation part of <code class="phx-inline">TransformA</code> (dependent).</td></tr>
+<tr><td class="name">PointB</td><td class="dflt">[0 0 0]</td><td>Connection point in the local space of body B; the translation part of <code class="phx-inline">TransformB</code> (dependent).</td></tr>
+<tr><td class="name">EulerAnglesA</td><td class="dflt">[0 0 0]</td><td>Euler angles (z&rarr;y&rarr;x order) of the joint frame relative to body A; the rotation part of <code class="phx-inline">TransformA</code> (dependent).</td></tr>
+<tr><td class="name">EulerAnglesB</td><td class="dflt">[0 0 0]</td><td>Euler angles (z&rarr;y&rarr;x order) of the joint frame relative to body B; the rotation part of <code class="phx-inline">TransformB</code> (dependent).</td></tr>
 </table>
 <p>Reaction feedback is inherited from <a href="phx.base.Joint.html">phx.base.Joint</a>.</p>
 
