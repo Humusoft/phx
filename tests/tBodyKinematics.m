@@ -86,7 +86,9 @@ classdef tBodyKinematics < matlab.unittest.TestCase
         end
 
         function frictionOutOfRangeIsRejected(tc)
-            tc.verifyError(@() set(tc.Body, "Friction", [2 0 0]), ?MException);
+            % Friction has no upper bound (values above 1 are legal), only
+            % negative coefficients are rejected.
+            tc.verifyError(@() set(tc.Body, "Friction", [-0.1 0 0]), ?MException);
         end
     end
 

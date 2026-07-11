@@ -36,6 +36,7 @@
 % Forces and fields
 %   phx.Thruster           - Thrust actuator
 %   phx.Resistance         - Resistance
+%   phx.Buoyancy           - Buoyancy and hydrodynamic damping
 %   phx.Dipole             - Dipole interaction
 %   phx.Monopole           - Monopole interaction
 %

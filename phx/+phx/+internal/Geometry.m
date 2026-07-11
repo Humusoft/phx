@@ -36,6 +36,78 @@ classdef Geometry
             Icm = I0 - Mass * (dot(cm, cm) * eye(3) - cm' * cm);
         end
 
+        function [points, dV] = voxelize(vertices, faces, resolution)
+        %voxelize Deterministic interior sampling of a closed triangle mesh.
+        %
+        %   [points, dV] = voxelize(vertices, faces, resolution) covers the
+        %   axis-aligned bounding box of the mesh with a regular grid of
+        %   resolution^3 cell centers and keeps the points lying inside the
+        %   mesh. points is an Nx3 matrix of interior points and dV is the
+        %   volume represented by each of them (total mesh volume divided
+        %   by the number of interior points), so N*dV equals the exact
+        %   signed-tetrahedron volume of the mesh. The grid depends only on
+        %   the mesh and the resolution, so the result is fully reproducible.
+
+            [bmin, bmax] = bounds(vertices);
+            span = bmax - bmin;
+            if any(span <= 0)
+                points = zeros(0, 3);
+                dV = 0;
+                return
+            end
+
+            % Cell centers of a resolution^3 grid over the bounding box
+            cellSize = span/resolution;
+            x = bmin(1) + ((1:resolution) - 0.5)*cellSize(1);
+            y = bmin(2) + ((1:resolution) - 0.5)*cellSize(2);
+            z = bmin(3) + ((1:resolution) - 0.5)*cellSize(3);
+            [gx, gy, gz] = ndgrid(x, y, z);
+            grid = [gx(:) gy(:) gz(:)];
+
+            inside = phx.internal.Geometry.pointsInMesh(grid, vertices, faces);
+            points = grid(inside, :);
+
+            volume = phx.internal.Geometry.meshMass(vertices, faces, 1);
+            dV = volume/max(size(points, 1), 1);
+        end
+
+        function inside = pointsInMesh(points, vertices, faces)
+        %pointsInMesh Inside test of points against a closed triangle mesh.
+        %
+        %   inside = pointsInMesh(points, vertices, faces) returns a logical
+        %   column marking the points (Nx3) that lie inside the mesh. A ray
+        %   is cast from every point in a fixed skewed direction and the
+        %   crossing parity is counted (Moller-Trumbore), so non-convex
+        %   meshes work too. Open meshes give undefined results.
+
+            % Fixed non-axis-aligned direction avoids grazing axis-aligned
+            % edges and keeps the test deterministic
+            dir = [0.2810846 0.5389028 0.7940817];
+            dir = dir/norm(dir);
+
+            v0 = vertices(faces(:, 1), :);
+            e1 = vertices(faces(:, 2), :) - v0;
+            e2 = vertices(faces(:, 3), :) - v0;
+
+            count = zeros(size(points, 1), 1);
+            for k = 1:size(faces, 1)
+                h = cross(dir, e2(k, :));
+                det = e1(k, :)*h';
+                if abs(det) < 1e-12
+                    continue % ray parallel to the triangle
+                end
+                s = points - v0(k, :);
+                u = (s*h')/det;
+                q = [s(:, 2)*e1(k, 3) - s(:, 3)*e1(k, 2), ...
+                     s(:, 3)*e1(k, 1) - s(:, 1)*e1(k, 3), ...
+                     s(:, 1)*e1(k, 2) - s(:, 2)*e1(k, 1)];
+                v = (q*dir')/det;
+                t = (q*e2(k, :)')/det;
+                count = count + (u >= 0 & v >= 0 & u + v <= 1 & t > 0);
+            end
+            inside = mod(count, 2) == 1;
+        end
+
         function [V, N] = switchZAxis(axis, V, N)
             switch axis
                 case "x"

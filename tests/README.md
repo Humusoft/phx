@@ -21,6 +21,7 @@ runtests_phx("pure")    % headless: no engine, no graphics, no add-on toolboxes
 | `tShapeMass` | nothing | — | analytic mass & inertia of Box/Sphere/Cylinder |
 | `tBodyKinematics` | graphics | `Graphics`, `Toolbox` | pose property round-trips, input validation |
 | `tSimulation` | engine + graphics | `Engine` | free fall, static bodies, time accumulation, determinism |
+| `tBuoyancy` | engine + graphics (floating tests only) | — / `Engine` | voxel volume vs analytic, sampling determinism, floating equilibrium, sinking |
 
 - **`Toolbox`** — relies on `robotics.internal.*` (Robotics System / Navigation Toolbox).
 - **`Graphics`** — a body owns an `hgtransform`, so a display-capable session is needed (invisible figures are used).
