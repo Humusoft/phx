@@ -54,7 +54,7 @@ function phxex_capsize(duration, maxAmplitude)
     beamScale = [0.5 0.85 1 1 0.8 0.45 0.12]';
     hullShape = phx.shape.Extrusion("Spine", [spineX zeros(numel(spineX), 2)], ...
         "Profile", profile, "Scale", [beamScale ones(size(beamScale))], ...
-        "Density", 500, "Style", "edged", "Color", [0.45 0.5 0.6]);
+        "Density", 500, "Style", "flat", "Color", [0.45 0.5 0.6]);
 
     % Crates: same size and weight, only the deck friction differs
     crateSize = 0.5;
@@ -82,10 +82,13 @@ function phxex_capsize(duration, maxAmplitude)
     wave = @(x, y, t) amp(t).*reshape( ...
         sum(wt.*sin(kx.*x(:)' + ky.*y(:)' - ww*t + ph), 1), size(x));
 
+    % Resources directory
+    resdir = fullfile(fileparts(mfilename("fullpath")), "res", " ");
+
     % Figure setup
     figure(1);
     [viewer, ax] = phx.extra.Viewer("clear", "DefaultCameraTarget", [0 0 0], ...
-        "DefaultCameraPosition", [8 -9 4]);
+        "DefaultCameraPosition", [6 -7 3]);
 
     hull = phx.Body(ax, "Position", [0 0 0], "Shape", hullShape, ...
         "Friction", [1 0 0]);
@@ -94,7 +97,7 @@ function phxex_capsize(duration, maxAmplitude)
     for i = 1:4
         crates(i) = phx.Body(ax, "Position", [crateX(i) 0 deckTop + crateSize/2], ...
             "Shape", {"Box", "Size", crateSize*[1 1 1], "Density", 400, ...
-            "Style", "edged", "Color", crateColor(i, :)}, ...
+            "Style", "edged", "Color", crateColor(i, :), "Texture", resdir+"woodtile.jpg", "TextureBlend", 0.5}, ...
             "Friction", [crateMu(i) 0 0]);
     end
 
@@ -160,7 +163,7 @@ function phxex_capsize(duration, maxAmplitude)
     ylabel("wave amplitude [m]");
     hold on
     for i = find(fallen)
-        xline(fallTime(i), ":", sprintf("\\mu = %.2f", crateMu(i)), ...
+        xline(fallTime(i), "-k", sprintf("\\mu = %.2f", crateMu(i)), ...
             "LabelVerticalAlignment", "bottom");
     end
     grid on; xlabel("time [s]");
