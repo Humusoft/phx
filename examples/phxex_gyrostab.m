@@ -24,26 +24,26 @@ function phxex_gyrostab(duration, spinRate, maxAmplitude)
 % reports the roll of both platforms and the fate of all eight crates.
 %
 % Input Arguments:
-%     duration     - simulated time in seconds (default 60)
+%     duration     - simulated time in seconds (default 30)
 %     spinRate     - initial disk angular velocity in rad/s (default 150)
-%     maxAmplitude - wave amplitude reached at the end of the run (default 0.3)
+%     maxAmplitude - wave amplitude reached at the end of the run (default 0.1)
 %
 % Example:
 %     phxex_gyrostab            % default run
-%     phxex_gyrostab(60, 0)     % disk parked -> both platforms lose cargo
+%     phxex_gyrostab(30, 0)     % disk parked -> both platforms lose cargo
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 
     arguments
-        duration (1, 1) double {mustBePositive} = 60
+        duration (1, 1) double {mustBePositive} = 30
         spinRate (1, 1) double {mustBeNonnegative} = 150
-        maxAmplitude (1, 1) double {mustBePositive} = 0.3
+        maxAmplitude (1, 1) double {mustBePositive} = 0.1
     end
 
     platSize = [2 2 0.4];       % platform, density 500 -> floats half draft
     gyroZ = 0.5;                % gimbal center above the platform center
     diskR = 0.4;
-    offset = 2.5;               % platform distance from the scene center
+    offset = 1.5;               % platform distance from the scene center
 
     % Cargo: four crates on the deck corners, same relative positions and
     % friction on both platforms (clear of the spinning disk in the middle)
@@ -57,16 +57,16 @@ function phxex_gyrostab(duration, spinRate, maxAmplitude)
     % Figure setup
     figure(1);
     [viewer, ax] = phx.extra.Viewer("clear", "DefaultCameraTarget", [0 0 0.3], ...
-        "DefaultCameraPosition", [1 -9 4]);
+        "DefaultCameraPosition", [1 -7 3]);
 
     % Two identical platforms; the waves travel along y, so both see the
     % same wave phase and roll about their x axis
     platA = phx.Body(ax, "Position", [-offset 0 0], ...
         "Shape", {"Box", "Size", platSize, "Density", 500, ...
-        "Style", "edged", "Color", [0.75 0.75 0.75]}, "Friction", [1 0 0]);
+        "Style", "edged", "Color", [1 1 1]}, "Friction", [0.5 0 0]);
     platB = phx.Body(ax, "Position", [offset 0 0], ...
         "Shape", {"Box", "Size", platSize, "Density", 500, ...
-        "Style", "edged", "Color", [0.55 0.65 0.85]}, "Friction", [1 0 0]);
+        "Style", "edged", "Color", [1 1 1], "SkeletPoints", [0 -0.6 gyroZ; 0 0.6 gyroZ]}, "Friction", [0.5 0 0]);
     plats = [platA platB];
     platName = ["bare", "gyro"];
 
@@ -86,13 +86,12 @@ function phxex_gyrostab(duration, spinRate, maxAmplitude)
     % the transverse y axis (gimbal), spinning disk hinged to the shaft
     % about its z axis; neither part collides with anything
     shaft = phx.Body(ax, "Position", [offset 0 gyroZ], ...
-        "Shape", {"Cylinder", "Axis", "y", "Radius", 0.04, "Height", 0.55, ...
-        "Density", 2000, "Color", [0.3 0.3 0.35], "Material", "metal"}, ...
+        "Shape", {"Cylinder", "Axis", "z", "Radius", 0.04, "Height", 0.55, ...
+        "Density", 2000, "Color", [0.4 0.4 0.4], "SkeletPoints", [0 -0.6 0; 0 0.6 0], "SkeletStyle", "line"}, ...
         "Collisions", false);
     disk = phx.Body(ax, "Position", [offset 0 gyroZ], ...
         "Shape", {"Cylinder", "Radius", diskR, "Height", 0.06, ...
-        "Density", 7800, "Color", [0.85 0.35 0.3], "Material", "metal"}, ...
-        "Collisions", false);
+        "Density", 7800, "Color", [0.95 0.55 0.5], "Texture", resdir+"checker2.png", "TextureBlend", 0.5});
 
     gimbal = phx.RevoluteJoint(platB, shaft, "PointA", [0 0 gyroZ], ...
         "PointB", [0 0 0], "AxisA", [0 1 0], "AxisB", [0 1 0]);
@@ -103,14 +102,14 @@ function phxex_gyrostab(duration, spinRate, maxAmplitude)
 
     % Beam sea along y with a linearly growing amplitude; fallen crates
     % float, so they get the same buoyancy as the platforms
-    kw = 2*pi/6;
+    kw = 4*pi/6;
     ww = sqrt(9.81*kw);
     rampRate = maxAmplitude/duration;
     amp = @(t) min(rampRate*t, maxAmplitude);
     wave = @(x, y, t) amp(t).*sin(kw*y - ww*t);
     phx.Buoyancy([plats crates(:)'], "LevelFunction", wave, ...
-        "LinearDamping", 400, "AngularDamping", 100, ...
-        "SurfaceSize", [12 12], "SurfaceStep", 0.25);
+        "LinearDamping", 400, "AngularDamping", 20, ...
+        "SurfaceSize", [8 8], "SurfaceStep", 0.25);
 
     % Sleeping must stay disabled: the stabilizer works purely through
     % the spinning disk, which must never be deactivated
@@ -168,6 +167,7 @@ function phxex_gyrostab(duration, spinRate, maxAmplitude)
 
     % Roll history of both platforms and the gimbal precession
     figure(2);
+    clf;
     subplot(2, 1, 1);
     plot(hist.t, rad2deg(hist.rollA), hist.t, rad2deg(hist.rollB), "LineWidth", 1.2);
     hold on
