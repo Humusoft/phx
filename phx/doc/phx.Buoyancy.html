@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.Buoyancy</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.Buoyancy</div>
+
+<h1 class="phx-title">phx.Buoyancy</h1>
+<p class="phx-purpose">Buoyancy and hydrodynamic damping</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.Buoyancy &nbsp;|&nbsp; Superclass: <a href="phx.base.Object.html">phx.base.Object</a></p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.Buoyancy</code> lets one or more bodies float in a liquid. The
+interior of each assigned body is sampled once by a deterministic regular grid of volume points.
+At every simulation step the points below the liquid level produce a buoyant force (Archimedes'
+principle) applied at the center of buoyancy &mdash; the centroid of the submerged sample points &mdash;
+so partially submerged bodies also receive the correct righting moment: a heeled hull rights
+itself, and bodies float at the draft given by their density ratio.</p>
+<p>The liquid level is a horizontal plane at height <code class="phx-inline">Level</code>, or an
+arbitrary time-varying surface defined by <code class="phx-inline">LevelFunction</code> (e.g. waves).
+Optional velocity-proportional damping, scaled by the submerged volume fraction, approximates the
+hydrodynamic resistance of the liquid. A translucent, animated liquid surface can be drawn
+automatically.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">buo = phx.Buoyancy(bodies)</span>
+<span class="phx-syntax">buo = phx.Buoyancy(___,Name,Value)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">buo = phx.Buoyancy(bodies)</code> creates a buoyancy element and
+assigns it to all given bodies. All assigned bodies float in the same liquid.</p>
+</div>
+
+<h3 class="phx-h3">Input Arguments</h3>
+<table class="phx-tbl">
+<tr><th>Argument</th><th>Type</th><th>Description</th></tr>
+<tr><td class="name">bodies</td><td class="type">phx.Body (1&times;n)</td><td>Bodies the buoyancy acts on.</td></tr>
+</table>
+
+<h2 class="phx-h2">Properties</h2>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">Density</td><td class="dflt">1000</td><td>Density of the liquid, <span class="phx-unit">kg/m&sup3;</span> (default is water).</td></tr>
+<tr><td class="name">Level</td><td class="dflt">0</td><td>Height of the liquid level, <span class="phx-unit">m</span>.</td></tr>
+<tr><td class="name">LevelFunction</td><td class="dflt">[]</td><td>Function handle <code class="phx-inline">@(x, y, t)</code> returning the level height; overrides <code class="phx-inline">Level</code> when set. Must accept arrays elementwise (use it e.g. for waves).</td></tr>
+<tr><td class="name">LinearDamping</td><td class="dflt">0</td><td>Linear damping factor, <span class="phx-unit">N&middot;s/m</span>, scaled by the submerged volume fraction.</td></tr>
+<tr><td class="name">AngularDamping</td><td class="dflt">0</td><td>Angular damping factor, <span class="phx-unit">N&middot;m&middot;s/rad</span>, scaled by the submerged volume fraction.</td></tr>
+<tr><td class="name">Resolution</td><td class="dflt">8</td><td>Number of sampling grid cells per axis of each body. Takes effect when the simulation pipelines are (re)built.</td></tr>
+<tr><td class="name">SurfaceCenter</td><td class="dflt">[0 0]</td><td>Center of the drawn liquid surface, <code class="phx-inline">[x y]</code>.</td></tr>
+<tr><td class="name">SurfaceSize</td><td class="dflt">[10 10]</td><td>Size of the drawn liquid surface, <code class="phx-inline">[x y]</code>; set <code class="phx-inline">[0 0]</code> to hide it.</td></tr>
+<tr><td class="name">SurfaceStep</td><td class="dflt">0.5</td><td>Grid step of the drawn liquid surface.</td></tr>
+<tr><td class="name">SurfaceAlpha</td><td class="dflt">0.35</td><td>Transparency of the drawn liquid surface (0 = invisible, 1 = opaque).</td></tr>
+</table>
+
+<h2 class="phx-h2">Limitations</h2>
+<p>The volume sampling sees only the outer visual mesh, so thin-walled or hollow shapes behave as
+if they were solid &mdash; model a boat hull as its solid (convex) shape. Open meshes (e.g.
+<a href="phx.shape.Terrain.html">phx.shape.Terrain</a>) are not supported. Bodies that are small
+compared to the sampling grid resolve the submerged volume in coarse steps and may bob between
+discrete equilibria; increase <code class="phx-inline">Resolution</code> for them.</p>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">Floating and sinking bodies</h4>
+<pre class="phx-code"><span class="cmt">% Half the water density -> floats half submerged; denser -> sinks</span>
+b1 = phx.Body(<span class="str">"Position"</span>, [0 0 1], <span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>, <span class="str">"Radius"</span>, 0.5, <span class="str">"Density"</span>, 500});
+b2 = phx.Body(<span class="str">"Position"</span>, [2 0 1], <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [0.5 0.5 0.5], <span class="str">"Density"</span>, 3000});
+
+phx.Buoyancy([b1 b2], <span class="str">"Level"</span>, 0, <span class="str">"LinearDamping"</span>, 200, <span class="str">"AngularDamping"</span>, 30);
+
+sim = phx.Simulation;
+sim.step(5, 1000, 10);</pre>
+
+<h4 class="phx-h4">Waves through a level function</h4>
+<pre class="phx-code"><span class="cmt">% Travelling wave; the drawn surface animates along with it</span>
+phx.Buoyancy(b1, <span class="str">"LevelFunction"</span>, @(x, y, t) 0.15*sin(1.4*x + 1.9*t), ...
+    <span class="str">"LinearDamping"</span>, 150, <span class="str">"SurfaceSize"</span>, [12 12], <span class="str">"SurfaceStep"</span>, 0.25);</pre>
+
+<p>See the <code class="phx-inline">phxex_buoyancy</code> and <code class="phx-inline">phxex_capsize</code>
+examples for a floating-bodies pool and a deck-cargo stability study.</p>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.Resistance.html">phx.Resistance</a>,
+<a href="phx.Body.html">phx.Body</a>,
+<a href="phx.Simulation.html">phx.Simulation</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

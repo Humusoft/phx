@@ -30,6 +30,7 @@
     <tocitem target="phx.Thruster.html" image="$toolbox/matlab/icons/reficon.gif">Force &amp; Field Elements
         <tocitem target="phx.Thruster.html">phx.Thruster</tocitem>
         <tocitem target="phx.Resistance.html">phx.Resistance</tocitem>
+        <tocitem target="phx.Buoyancy.html">phx.Buoyancy</tocitem>
         <tocitem target="phx.Monopole.html">phx.Monopole</tocitem>
         <tocitem target="phx.Dipole.html">phx.Dipole</tocitem>
     </tocitem>
