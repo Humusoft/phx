@@ -21,11 +21,17 @@
 connecting two bodies, referred to as body&nbsp;A and body&nbsp;B. Concrete joints derive from it
 and define the actual constraint; this class provides the reaction force and torque feedback common
 to all of them through the <code class="phx-inline">ForceA</code>, <code class="phx-inline">TorqueA</code>,
-<code class="phx-inline">ForceB</code> and <code class="phx-inline">TorqueB</code> properties.</p>
+<code class="phx-inline">ForceB</code> and <code class="phx-inline">TorqueB</code> properties, and the
+<code class="phx-inline">MutualCollisions</code> switch controlling whether the two connected bodies
+collide with each other.</p>
 
 <h2 class="phx-h2">Properties</h2>
 <table class="phx-tbl">
-<tr><th>Property</th><th>Type</th><th>Description</th></tr>
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">MutualCollisions</td><td class="dflt">false</td><td>Enable collisions between
+the two connected bodies. By default the bodies of a joint pass through each other; set
+<code class="phx-inline">true</code> to let them collide. Applied when the joint is initialized
+in a simulation.</td></tr>
 <tr><td class="name">ForceA</td><td class="type">1&times;3 double (read-only)</td><td>Reaction force acting on body A, <span class="phx-unit">N</span>.</td></tr>
 <tr><td class="name">TorqueA</td><td class="type">1&times;3 double (read-only)</td><td>Reaction torque acting on body A, <span class="phx-unit">N&middot;m</span>.</td></tr>
 <tr><td class="name">ForceB</td><td class="type">1&times;3 double (read-only)</td><td>Reaction force acting on body B, <span class="phx-unit">N</span>.</td></tr>
@@ -48,7 +54,9 @@ to all of them through the <code class="phx-inline">ForceA</code>, <code class="
 
 <h2 class="phx-h2">Examples</h2>
 <h4 class="phx-h4">Record joint reaction forces with a logger</h4>
-<pre class="phx-code">A = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Position"</span>, [1 1 0]);
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+A = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Position"</span>, [1 1 0]);
 B = phx.Body(<span class="str">"Position"</span>, [4 1 0]);
 C = phx.Body(<span class="str">"Position"</span>, [4 -2 0]);
 
@@ -69,6 +77,11 @@ plot(log.Time, log.getChannel(1));     <span class="cmt">% reaction force on bod
 <a href="phx.SphericalJoint.html">phx.SphericalJoint</a>,
 <a href="phx.GearJoint.html">phx.GearJoint</a>,
 <a href="phx.base.Object.html">phx.base.Object</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_joints.html">Joints, springs and ropes</a>
 </div>
 
 <div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>

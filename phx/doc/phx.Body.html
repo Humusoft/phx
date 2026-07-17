@@ -67,6 +67,10 @@ arguments, for example <code class="phx-inline">phx.Body("Type","static","Positi
 <td>Principal moments of the inertia tensor, <span class="phx-unit">kg&middot;m&sup2;</span>.</td></tr>
 <tr><td class="name">Friction</td><td class="dflt">[0.5 0 0]</td>
 <td>Friction coefficients (&ge;&nbsp;0) as <code class="phx-inline">[drag roll spin]</code>.</td></tr>
+<tr><td class="name">Restitution</td><td class="dflt">0</td>
+<td>Restitution (bounciness) coefficient (&ge;&nbsp;0); 0&nbsp;=&nbsp;no bounce. The resulting
+bounce of a contact combines the values of <em>both</em> colliding bodies, so both must be
+nonzero for the contact to bounce.</td></tr>
 <tr><td class="name">Collisions</td><td class="dflt">true</td>
 <td>Enable or disable collisions for this body.</td></tr>
 <tr><td class="name">Shape</td><td class="type">phx.shape.* | cell (write-only)</td>
@@ -155,6 +159,11 @@ box    = phx.Body(<span class="str">"Position"</span>, [0 0 3], ...
 sim = phx.Simulation;
 sim.step(2, 200, 1);</pre>
 
+<figure class="phx-fig">
+<img src="img/body.png" alt="Box falling onto the ground body">
+<figcaption>The dynamic box drops onto the static ground body below.</figcaption>
+</figure>
+
 <h4 class="phx-h4">Drive a body with a transient force</h4>
 <pre class="phx-code">box.applyForce([0 0 50]);              <span class="cmt">% upward kick, world frame</span>
 box.applyForce([10 0 0], [0 0 0.5]);   <span class="cmt">% off-centre push, local point</span>
@@ -178,6 +187,11 @@ conditions without rebuilding it.
 <a href="phx.Spring.html">phx.Spring</a>,
 <a href="phx.RevoluteJoint.html">phx.RevoluteJoint</a>,
 <a href="phx.Thruster.html">phx.Thruster</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_bodies.html">Bodies and shapes</a>
 </div>
 
 <div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>

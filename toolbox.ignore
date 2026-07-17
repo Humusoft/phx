@@ -34,7 +34,6 @@ examples/res/Buggy*.*
 .git/
 PHX Toolbox/
 publications/
-manual_build/
 tests/
 work/
 

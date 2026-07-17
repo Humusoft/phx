@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.assembly.scatter</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.assembly.scatter</div>
+
+<h1 class="phx-title">phx.assembly.scatter</h1>
+<p class="phx-purpose">Bodies scattered randomly inside a box region</p>
+<p class="phx-classref">Function&nbsp;&nbsp;phx.assembly.scatter &nbsp;|&nbsp; Package: phx.assembly</p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.assembly.scatter</code> creates n dynamic bodies with the given
+shape at uniformly random positions inside a box region. The region spans &minus;x/2..x/2 and
+&minus;y/2..y/2 in the ground plane and 0..z upwards (the same convention as the inner space of
+<a href="phx.assembly.arena.html">phx.assembly.arena</a>). With a positive
+<code class="phx-inline">Spacing</code> the positions are sampled by rejection, so the bodies do
+not overlap at the start. Random numbers are drawn from the global generator (like
+<code class="phx-inline">rand</code>), so a layout is reproduced by seeding it first with
+<code class="phx-inline">rng</code>.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">bodies = phx.assembly.scatter(shape,n)</span>
+<span class="phx-syntax">bodies = phx.assembly.scatter(shape,n,Name,Value)</span>
+<span class="phx-syntax">bodies = phx.assembly.scatter(ax,___)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">bodies = phx.assembly.scatter(shape,n)</code> creates the bodies in
+the current axes and returns them as a 1&times;n <a href="phx.Body.html">phx.Body</a> array. The
+shape is either a cell array of a phx.shape.* class name and constructor arguments &mdash; a new
+shape is then created for every body, so shapes with random geometry such as
+<a href="phx.shape.Rock.html">phx.shape.Rock</a> give natural variety &mdash; or a phx.shape.*
+object shared by all bodies.</p>
+<p><code class="phx-inline">bodies = phx.assembly.scatter(ax,___)</code> draws into the given
+axes instead of the current axes; an empty target (<code class="phx-inline">[]</code>) creates
+the bodies without graphics.</p>
+</div>
+
+<h2 class="phx-h2">Options</h2>
+<table class="phx-tbl">
+<tr><th>Option</th><th>Default</th><th>Description</th></tr>
+<tr><td class="name">Region</td><td class="dflt">[2 2 1]</td><td>Dimensions [x y z] of the box that the body centres are drawn from.</td></tr>
+<tr><td class="name">Spacing</td><td class="dflt">0</td><td>Minimum distance between body centres (0 = no limit). When the requested count does not fit, the error <code class="phx-inline">phx:scatter:regionFull</code> is raised.</td></tr>
+<tr><td class="name">RandomOrientation</td><td class="dflt">false</td><td>Give every body a uniformly random orientation.</td></tr>
+<tr><td class="name">Color</td><td class="dflt">&mdash;</td><td>Body colors: one common 1&times;3 RGB color or an n&times;3 matrix with one color per body. Applied over the shape color.</td></tr>
+<tr><td class="name">Friction</td><td class="dflt">[0.5 0 0]</td><td>Friction coefficients of all bodies.</td></tr>
+<tr><td class="name">Position</td><td class="dflt">[0 0 0]</td><td>World position of the region frame.</td></tr>
+<tr><td class="name">Orientation</td><td class="dflt">eye(3)</td><td>World rotation of the region as a 3&times;3 rotation matrix.</td></tr>
+<tr><td class="name">EulerAngles</td><td class="dflt">[0 0 0]</td><td>World rotation of the region as Euler angles (z&rarr;y&rarr;x order), an alternative to <code class="phx-inline">Orientation</code>.</td></tr>
+</table>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">A pile of rocks dropped into an arena</h4>
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+phx.assembly.arena(<span class="str">"Size"</span>, [8 8 1]);
+
+rng(0);
+rocks = phx.assembly.scatter({<span class="str">"Rock"</span>, <span class="str">"Radius"</span>, 0.4}, 30, ...
+    <span class="str">"Region"</span>, [7 7 4], <span class="str">"Spacing"</span>, 0.8, <span class="str">"Position"</span>, [0 0 1]);
+
+sim = phx.Simulation;
+sim.step(3, 600, 6);
+delete(sim);</pre>
+
+<figure class="phx-fig">
+<img src="img/scatter.png" alt="Rocks scattered in an arena">
+<figcaption>Thirty rocks scattered without overlaps and dropped into the arena.</figcaption>
+</figure>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.assembly.arena.html">phx.assembly.arena</a>,
+<a href="phx.assembly.chain.html">phx.assembly.chain</a>,
+<a href="phx.assembly.import.html">phx.assembly.import</a>,
+<a href="phx.Body.html">phx.Body</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_assemblies.html">Prefab assemblies</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

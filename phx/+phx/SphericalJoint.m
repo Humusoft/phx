@@ -67,7 +67,7 @@ classdef SphericalJoint < phx.base.Joint
             valid = numel(obj.Parents) == 2 && all(cellfun(@isvalid, obj.Parents));
             if valid
                 obj.WorldHandle = world;
-                obj.ObjectHandle = phx.engine.io('add', world, 'pointtopointconstraint', obj.Parents{1}.ObjectHandle, obj.Parents{2}.ObjectHandle, obj.PointA, obj.PointB);
+                obj.ObjectHandle = phx.engine.io('add', world, 'pointtopointconstraint', obj.Parents{1}.ObjectHandle, obj.Parents{2}.ObjectHandle, obj.PointA, obj.PointB, ~obj.MutualCollisions);
             end
         end
 

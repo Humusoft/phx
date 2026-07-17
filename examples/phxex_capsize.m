@@ -2,14 +2,11 @@ function phxex_capsize(duration, maxAmplitude)
 % PHXEX_CAPSIZE Deck cargo in growing seas - when do the crates go overboard?
 %
 % A small boat carries four crates on an open deck. The hull is a solid
-% phx.shape.Extrusion: a chined boat cross-section swept along the length,
-% with the per-point Scale tapering the beam toward a pointed bow and a
-% narrower stern. The crates are not lashed down - they are held only by
-% friction, and each crate has a different friction coefficient,
-% representing a different quality of securing (red = slippery, green =
-% grippy). The sea state slowly builds up: the phx.Buoyancy LevelFunction
-% is a small directional wave spectrum (a dominant beam sea, a long swell
-% and two short chop components, all deep-water dispersed) whose overall
+% phx.shape.Extrusion of a boat cross-section. The crates are not lashed
+% down - they are held only by friction, and each crate has a different
+% friction coefficient, representing a different quality of securing
+% (red = slippery, green = grippy). The sea state slowly builds up: the
+% phx.Buoyancy LevelFunction is a directional wave spectrum whose overall
 % amplitude ramps from calm to maxAmplitude over the run.
 %
 % The buoyancy element gives the hull a physical righting moment (the
@@ -18,13 +15,12 @@ function phxex_capsize(duration, maxAmplitude)
 % starts to slide, which shifts the load and heels the barge further -
 % the crates depart one by one, in the order of their friction. The demo
 % reports the time and wave amplitude at which each crate went overboard,
-% i.e. the sea state each level of securing can survive. This coupled
+% i.e. the sea state each level of securing can survive. The coupled
 % roll <-> sliding-cargo feedback needs contacts, friction and buoyancy
-% in one simulation - none of it can be read from a static formula.
+% in one simulation.
 %
-% Note the hull is modeled as a solid shape: the buoyancy sampling sees
-% only the outer mesh, so a hollow hull would not displace any extra
-% water anyway (see the phx.Buoyancy limitations).
+% (The hull is solid on purpose: the buoyancy sampling sees only the outer
+% mesh, so a hollow hull would displace no extra water - see phx.Buoyancy.)
 %
 % Input Arguments:
 %     duration     - simulated time in seconds (default 60)
@@ -97,7 +93,7 @@ function phxex_capsize(duration, maxAmplitude)
     for i = 1:4
         crates(i) = phx.Body(ax, "Position", [crateX(i) 0 deckTop + crateSize/2], ...
             "Shape", {"Box", "Size", crateSize*[1 1 1], "Density", 400, ...
-            "Style", "edged", "Color", crateColor(i, :), "Texture", resdir+"woodtile.jpg", "TextureBlend", 0.5}, ...
+            "Color", crateColor(i, :), "Texture", resdir+"woodtile.jpg", "TextureBlend", 0.5}, ...
             "Friction", [crateMu(i) 0 0]);
     end
 

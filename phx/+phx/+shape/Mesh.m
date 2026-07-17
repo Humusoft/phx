@@ -39,7 +39,7 @@ classdef Mesh < phx.base.Shape & phx.base.ShapeMesh
         % Matrix Nx2 of vertex texture coordinates
         UV (:, 2) double
 
-        % Scale
+        % Scale factors [x y z], or a scalar for uniform scaling
         Scale (1, 3) double = [1 1 1]
         
         % Volumetric density (kg/m^3)

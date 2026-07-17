@@ -108,7 +108,7 @@ the scene so you can add input and output references without typing them by hand
 <p>1.&nbsp;Write a scene source. A model script names the objects it wants to expose:</p>
 <pre class="phx-code"><span class="cmt">% model_pendulum.m &mdash; build a scene and name the objects to expose</span>
 <span class="kw">function</span> bodies = model_pendulum
-    ax = cla(clf); view(3); axis equal; grid on;
+    ax = cla(clf); view(3); axis equal; grid on; camlight headlight;
 
     anchor = phx.Body(ax, <span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Name"</span>, <span class="str">"Anchor"</span>);
     bob    = phx.Body(ax, <span class="str">"Position"</span>, [1 0 0], <span class="str">"Name"</span>, <span class="str">"Bob"</span>);

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Automation and Control</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; User Guide &rsaquo; Automation and control</div>
+
+<h1 class="phx-title">Automation and Control: Script and Function</h1>
+<p class="phx-purpose">Inserting your own logic into the simulation loop</p>
+
+<p>A scene need not just fall passively &mdash; you can insert your own logic that runs at every
+step. Two add-on objects exist for this.</p>
+
+<h2 class="phx-h2">phx.Script &mdash; a prescribed profile over time</h2>
+<p>Declarative (feedforward) control: to each property you assign either an <b>interpolated
+curve</b> (times + values), or a <b>function of time</b> given as a string. This is ideal for moving
+kinematic bodies &mdash; conveyors, arms, drive cams.</p>
+
+<pre class="phx-code"><span class="cmt">% steady rotation of a screw: EulerAngles as a function of time t</span>
+phx.Script(screw, {<span class="str">"EulerAngles"</span>, <span class="str">"[2*pi*t*0.5 0 0]"</span>});
+
+<span class="cmt">% prescribed path of an arm: interpolation of given points (pchip method)</span>
+phx.Script(arm, {<span class="str">"Position"</span>, time, position, <span class="str">"pchip"</span>}, ...
+                {<span class="str">"EulerAngles"</span>, time, angle});</pre>
+
+<h2 class="phx-h2">phx.Function &mdash; a custom computation at every step</h2>
+<p>Inserts an arbitrary computation into the simulation loop without writing a custom class. The
+supplied callback is called every (sub)step with the signature
+<code class="phx-inline">fcn(obj, parents, dt, time)</code> and acts by modifying the bound bodies
+directly. State between steps can be kept in <code class="phx-inline">obj.UserData</code>. It is the
+ideal tool for <b>feedback control</b>, custom force laws or filters.</p>
+
+<pre class="phx-code"><span class="cmt">% a time-dependent periodic force</span>
+phx.Function(body, @(obj, p, dt, t) p{1}.applyForce([0 0 50]*sin(t)));
+
+<span class="cmt">% a controller reading the scene state and driving several bodies (feedback)</span>
+phx.Function({ball, plate}, @(obj, p, dt, t) balanceLaw(p, Kp, Kd));</pre>
+
+<div class="phx-note">
+<span class="lbl">Which one when.</span> Use <code class="phx-inline">phx.Script</code> when you
+know the profile in advance. Use <code class="phx-inline">phx.Function</code> when you need to react
+to the current state (read position/velocity and compute a control action). This exact feedback
+pattern is used by the <a href="phx_ug_examples.html">self-balancing robot example</a>.
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_logging.html">Measuring and logging</a>,
+<a href="phx_ug_examples.html">Examples and larger scenes</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox User Guide</div>
+
+</div>
+</body>
+</html>

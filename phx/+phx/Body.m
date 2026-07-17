@@ -107,7 +107,11 @@ classdef Body < phx.base.Object
         % Friction coefficients [drag roll spin]
         Friction (1, 3) double {mustBeGreaterThanOrEqual(Friction, 0)} = [0.5 0 0]
 
-        % Collisions 
+        % Restitution (bounciness) coefficient, 0 = no bounce; the resulting
+        % bounce of a contact combines the values of both colliding bodies
+        Restitution (1, 1) double {mustBeGreaterThanOrEqual(Restitution, 0)} = 0
+
+        % Enable collision response for this body
         Collisions (1, 1) logical = true
 
         % Collision group
@@ -368,6 +372,13 @@ classdef Body < phx.base.Object
                 phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'friction', coeffs(1));
                 phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'rollfriction', coeffs(2));
                 phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'spinfriction', coeffs(3));
+            end
+        end
+
+        function set.Restitution(obj, value)
+            obj.Restitution = value;
+            if ~isempty(obj.ObjectHandle)
+                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'restitution', value);
             end
         end
 
@@ -768,6 +779,7 @@ classdef Body < phx.base.Object
                 
                 obj.stateTransfer(state);
                 obj.Friction = obj.Friction;
+                obj.Restitution = obj.Restitution;
                 obj.Collisions = obj.Collisions;
             else
                 valid = true;

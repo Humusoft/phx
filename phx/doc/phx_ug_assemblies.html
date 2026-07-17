@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prefab Assemblies</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; User Guide &rsaquo; Prefab assemblies</div>
+
+<h1 class="phx-title">Prefab Assemblies</h1>
+<p class="phx-purpose">Building whole groups of parts with one call</p>
+
+<p>The <code class="phx-inline">phx.assembly</code> package holds prefab builders &mdash; functions
+that create a whole group of ordinary <code class="phx-inline">phx.*</code> parts at once. The
+returned bodies and joints are in no way special: you can restyle, retexture or delete them
+afterwards exactly as if you had built them by hand.</p>
+
+<table class="phx-tbl">
+<tr><th>Builder</th><th>What it creates</th></tr>
+<tr><td class="name"><a href="phx.assembly.arena.html">phx.assembly.arena</a></td>
+    <td>A static floor plate enclosed by four walls &mdash; keeps dynamic bodies from escaping the
+    scene.</td></tr>
+<tr><td class="name"><a href="phx.assembly.chain.html">phx.assembly.chain</a></td>
+    <td>A chain of rigid links jointed along a polyline &mdash; pendulums, hanging chains,
+    cables.</td></tr>
+<tr><td class="name"><a href="phx.assembly.scatter.html">phx.assembly.scatter</a></td>
+    <td>A given number of bodies scattered without overlaps inside a box region &mdash; piles of
+    rocks, granular material.</td></tr>
+<tr><td class="name"><a href="phx.assembly.import.html">phx.assembly.import</a></td>
+    <td>A robot or mechanism imported from a URDF file &mdash; bodies plus the joints connecting
+    them.</td></tr>
+</table>
+
+<h2 class="phx-h2">Shared conventions</h2>
+<ul>
+<li>An optional leading axes argument selects where to draw,
+    e.g. <code class="phx-inline">phx.assembly.arena(ax, &hellip;)</code>; an empty target
+    (<code class="phx-inline">[]</code>) creates the parts without graphics for headless
+    simulations.</li>
+<li>Every builder takes the base-pose options <code class="phx-inline">Position</code> and
+    <code class="phx-inline">Orientation</code> (or <code class="phx-inline">EulerAngles</code>)
+    that place the whole assembly in the world.</li>
+<li>The result is a struct or an array of plain parts &mdash; e.g. the arena returns
+    <code class="phx-inline">parts.floor</code> and <code class="phx-inline">parts.walls</code>.</li>
+</ul>
+
+<h2 class="phx-h2">Examples</h2>
+
+<h3 class="phx-h3">A pile of rocks dropped into an arena</h3>
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+phx.assembly.arena(<span class="str">"Size"</span>, [8 8 1]);
+
+rng(0);
+rocks = phx.assembly.scatter({<span class="str">"Rock"</span>, <span class="str">"Radius"</span>, 0.4}, 30, ...
+    <span class="str">"Region"</span>, [7 7 4], <span class="str">"Spacing"</span>, 0.8, <span class="str">"Position"</span>, [0 0 1]);
+
+sim = phx.Simulation;
+sim.step(3, 600, 6);
+delete(sim);</pre>
+
+<figure class="phx-fig">
+<img src="img/scatter.png" alt="Rocks scattered in an arena">
+<figcaption>A pile of rocks dropped into an arena. See <a href="phx.assembly.scatter.html">phx.assembly.scatter</a>.</figcaption>
+</figure>
+
+<h3 class="phx-h3">Double pendulum swinging in the x-z plane</h3>
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+parts = phx.assembly.chain([0 0 0; 0.4 0 0; 0.8 0 0], ...
+    <span class="str">"Anchor"</span>, <span class="str">"start"</span>, <span class="str">"Axis"</span>, [0 1 0]);
+
+sim = phx.Simulation;
+sim.step(5, 2000, 5);
+delete(sim);</pre>
+
+<figure class="phx-fig">
+<img src="img/chain.png" alt="Two-link chain pendulum">
+<figcaption>The double pendulum after a few swings. See <a href="phx.assembly.chain.html">phx.assembly.chain</a>.</figcaption>
+</figure>
+
+<h3 class="phx-h3">Import a robot and anchor its base</h3>
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+[bodies, joints] = phx.assembly.import(<span class="str">"robot.urdf"</span>);
+bodies.base.Type = <span class="str">"static"</span>;
+
+sim = phx.Simulation(bodies);
+sim.step(1, 500, 5);
+delete(sim);</pre>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.assembly.arena.html">phx.assembly.arena</a>,
+<a href="phx.assembly.chain.html">phx.assembly.chain</a>,
+<a href="phx.assembly.scatter.html">phx.assembly.scatter</a>,
+<a href="phx.assembly.import.html">phx.assembly.import</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_bodies.html">Bodies and shapes</a>,
+<a href="phx_ug_joints.html">Joints, springs and ropes</a>,
+<a href="phx_ug_examples.html">Examples and larger scenes</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox User Guide</div>
+
+</div>
+</body>
+</html>

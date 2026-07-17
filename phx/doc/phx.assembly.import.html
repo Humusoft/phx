@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.assembly.import</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.assembly.import</div>
+
+<h1 class="phx-title">phx.assembly.import</h1>
+<p class="phx-purpose">Robot model imported from a URDF file</p>
+<p class="phx-classref">Function&nbsp;&nbsp;phx.assembly.import &nbsp;|&nbsp; Package: phx.assembly</p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.assembly.import</code> reads a robot description from a URDF
+(Unified Robot Description Format) file and creates a <a href="phx.Body.html">phx.Body</a> for
+every link and a joint for every revolute, continuous or fixed joint of the robot. Despite the
+name of the format, URDF files describe more than robots &mdash; ragdolls, vehicles, furniture
+and single-body props from public model libraries import the same way. The assembled model is
+placed in its zero (home) configuration with the base (root link frame) at the world origin,
+unless a pose is given by the <code class="phx-inline">Position</code> and
+<code class="phx-inline">Orientation</code> or <code class="phx-inline">EulerAngles</code>
+options.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">bodies = phx.assembly.import(file)</span>
+<span class="phx-syntax">[bodies,joints] = phx.assembly.import(file)</span>
+<span class="phx-syntax">[___] = phx.assembly.import(___,Name,Value)</span>
+<span class="phx-syntax">[___] = phx.assembly.import(ax,___)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">bodies = phx.assembly.import(file)</code> creates the bodies in the
+current axes and returns them in a struct whose field names are the link names (made valid MATLAB
+identifiers; the original URDF name is preserved in the <code class="phx-inline">Name</code>
+property). <code class="phx-inline">[bodies,joints] = phx.assembly.import(file)</code> also
+returns all created joints in a struct keyed by the joint names.</p>
+<p><code class="phx-inline">[___] = phx.assembly.import(ax,___)</code> draws into the given axes
+instead of the current axes; an empty target (<code class="phx-inline">[]</code>) creates the
+bodies without graphics for headless simulations.</p>
+</div>
+
+<h2 class="phx-h2">Options</h2>
+<table class="phx-tbl">
+<tr><th>Option</th><th>Default</th><th>Description</th></tr>
+<tr><td class="name">Position</td><td class="dflt">[0 0 0]</td><td>World position of the base (root link frame).</td></tr>
+<tr><td class="name">Orientation</td><td class="dflt">eye(3)</td><td>World rotation of the base as a 3&times;3 rotation matrix. Same convention as <code class="phx-inline">phx.Body.Orientation</code>.</td></tr>
+<tr><td class="name">EulerAngles</td><td class="dflt">[0 0 0]</td><td>World rotation of the base as Euler angles (z&rarr;y&rarr;x order), an alternative to <code class="phx-inline">Orientation</code>.</td></tr>
+<tr><td class="name">MeshPath</td><td class="dflt">""</td><td>Root folder used to resolve <code class="phx-inline">package://</code> URIs and relative file names of mesh geometries. Meshes are always searched relative to the folder of the URDF file as well.</td></tr>
+</table>
+
+<h2 class="phx-h2">URDF to PHX mapping</h2>
+<p>Every link becomes a phx.Body with the body frame at the origin of the link's first visual
+geometry (PHX shapes are always centred at the body origin). Geometries map to
+<a href="phx.shape.Box.html">Box</a>, <a href="phx.shape.Cylinder.html">Cylinder</a>,
+<a href="phx.shape.Sphere.html">Sphere</a>, <a href="phx.shape.Capsule.html">Capsule</a>
+(a common vendor extension) and <a href="phx.shape.STL.html">STL</a> /
+<a href="phx.shape.OBJ.html">OBJ</a> meshes with the convex collision envelope. Joints of type
+revolute and continuous become <a href="phx.RevoluteJoint.html">phx.RevoluteJoint</a>, fixed
+joints become <a href="phx.FixedJoint.html">phx.FixedJoint</a>; prismatic, planar and floating
+joints are substituted by a fixed joint with a warning. Joint limits are ignored and all joints
+are passive &mdash; no motors are created. Masses come from the inertial elements; only the
+diagonal of the inertia tensor expressed in body axes is used.</p>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">Import a robot and anchor its base</h4>
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+[bodies, joints] = phx.assembly.import(<span class="str">"robot.urdf"</span>);
+bodies.base.Type = <span class="str">"static"</span>;
+
+sim = phx.Simulation(bodies);
+sim.step(1, 500, 5);
+delete(sim);</pre>
+
+<h4 class="phx-h4">Place a ragdoll leaning over an edge</h4>
+<pre class="phx-code">[bodies, joints] = phx.assembly.import(<span class="str">"human.urdf"</span>, ...
+    <span class="str">"Position"</span>, [-0.16 0 2.6], <span class="str">"EulerAngles"</span>, [0 0.66 0]);</pre>
+
+<figure class="phx-fig">
+<img src="img/import.png" alt="Imported humanoid model">
+<figcaption>The humanoid model imported from a URDF file and placed with the base-pose options.</figcaption>
+</figure>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.assembly.arena.html">phx.assembly.arena</a>,
+<a href="phx.assembly.chain.html">phx.assembly.chain</a>,
+<a href="phx.assembly.scatter.html">phx.assembly.scatter</a>,
+<a href="phx.RevoluteJoint.html">phx.RevoluteJoint</a>,
+<a href="phx.FixedJoint.html">phx.FixedJoint</a>,
+<a href="phx.Simulation.html">phx.Simulation</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_assemblies.html">Prefab assemblies</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

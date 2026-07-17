@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.Function</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.Function</div>
+
+<h1 class="phx-title">phx.Function</h1>
+<p class="phx-purpose">Custom computation in the simulation pipeline</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.Function &nbsp;|&nbsp; Superclass: <a href="phx.base.Object.html">phx.base.Object</a></p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.Function</code> inserts an arbitrary computation into the simulation
+pipeline without writing a custom <a href="phx.base.Object.html">phx.base.Object</a> subclass. It is
+the lightweight middle ground between <a href="phx.Script.html">phx.Script</a> (declarative,
+feedforward value profiles) and a full custom class: use it to apply custom force laws, feedback
+control, filters or any per-step logic to one or more bodies.</p>
+<p>The supplied callback is called at every simulation step (including substeps) with the
+signature</p>
+<span class="phx-syntax">fcn(obj, parents, dt, time)</span>
+<p>where <code class="phx-inline">obj</code> is the <code class="phx-inline">phx.Function</code>
+instance (use its <code class="phx-inline">UserData</code> property to keep internal state between
+steps), <code class="phx-inline">parents</code> is the cell array of the bound objects (same as
+<code class="phx-inline">obj.Parents</code>) and <code class="phx-inline">dt</code>,
+<code class="phx-inline">time</code> are the substep size and the current simulation time. The
+callback has no return value &mdash; it acts by modifying the bound objects directly.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">f = phx.Function(parents,fcn)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">f = phx.Function(parents,fcn)</code> creates the object, binds it to the
+given objects (array or cell array) and assigns the callback.</p>
+</div>
+
+<h3 class="phx-h3">Input Arguments</h3>
+<table class="phx-tbl">
+<tr><th>Argument</th><th>Type</th><th>Description</th></tr>
+<tr><td class="name">parents</td><td class="type">phx object array or cell array</td><td>The objects passed to the callback. A cell array may mix objects of different classes.</td></tr>
+<tr><td class="name">fcn</td><td class="type">function_handle (scalar)</td><td>Callback executed each simulation step: <code class="phx-inline">fcn(obj, parents, dt, time)</code>.</td></tr>
+</table>
+
+<h2 class="phx-h2">Properties</h2>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">Callback</td><td class="type">function_handle</td><td>Callback executed each simulation step: <code class="phx-inline">fcn(obj, parents, dt, time)</code>.</td></tr>
+</table>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">Apply a time-dependent periodic force</h4>
+<pre class="phx-code">phx.Function(body, @(obj, p, dt, t) p{1}.applyForce([0 0 50]*sin(t)));</pre>
+
+<h4 class="phx-h4">Feedback control reading the scene state</h4>
+<pre class="phx-code"><span class="cmt">% a controller reading the scene state and driving several bodies</span>
+phx.Function({ball, plate}, @(obj, p, dt, t) balanceLaw(p, Kp, Kd));
+
+sim = phx.Simulation;
+sim.step(5, 1000, 2);</pre>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.Script.html">phx.Script</a>,
+<a href="phx.Measure.html">phx.Measure</a>,
+<a href="phx.base.Object.html">phx.base.Object</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_control.html">Automation and control</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

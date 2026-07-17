@@ -76,7 +76,7 @@ classdef GenericSpring < phx.base.Joint
                 ta(13:15) = obj.PointA;
                 tb = eye(4);
                 tb(13:15) = obj.PointB;
-                obj.ObjectHandle = phx.engine.io('add', world, 'generic6dofspringconstraint', obj.Parents{1}.ObjectHandle, obj.Parents{2}.ObjectHandle, ta(:), tb(:), 'xyz');
+                obj.ObjectHandle = phx.engine.io('add', world, 'generic6dofspringconstraint', obj.Parents{1}.ObjectHandle, obj.Parents{2}.ObjectHandle, ta(:), tb(:), 'xyz', ~obj.MutualCollisions);
                 isOnLinear = [1 1 1];
                 isOnAngular = [1 1 1]*0;
                 linDamping = [1 1 1]*100;

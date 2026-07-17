@@ -70,14 +70,21 @@ discrete equilibria; increase <code class="phx-inline">Resolution</code> for the
 
 <h2 class="phx-h2">Examples</h2>
 <h4 class="phx-h4">Floating and sinking bodies</h4>
-<pre class="phx-code"><span class="cmt">% Half the water density -> floats half submerged; denser -> sinks</span>
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+<span class="cmt">% Half the water density -> floats half submerged; denser -> sinks</span>
 b1 = phx.Body(<span class="str">"Position"</span>, [0 0 1], <span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>, <span class="str">"Radius"</span>, 0.5, <span class="str">"Density"</span>, 500});
-b2 = phx.Body(<span class="str">"Position"</span>, [2 0 1], <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [0.5 0.5 0.5], <span class="str">"Density"</span>, 3000});
+b2 = phx.Body(<span class="str">"Position"</span>, [2 0 1], <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [0.5 0.5 0.5], <span class="str">"Density"</span>, 1100});
 
 phx.Buoyancy([b1 b2], <span class="str">"Level"</span>, 0, <span class="str">"LinearDamping"</span>, 200, <span class="str">"AngularDamping"</span>, 30);
 
 sim = phx.Simulation;
 sim.step(5, 1000, 10);</pre>
+
+<figure class="phx-fig">
+<img src="img/buoyancy.png" alt="Sphere floating on the water surface, denser box sinking below">
+<figcaption>The half-density sphere floats half-submerged on the drawn water surface; the denser box slowly sinks.</figcaption>
+</figure>
 
 <h4 class="phx-h4">Waves through a level function</h4>
 <pre class="phx-code"><span class="cmt">% Travelling wave; the drawn surface animates along with it</span>
@@ -92,6 +99,11 @@ examples for a floating-bodies pool and a deck-cargo stability study.</p>
 <a href="phx.Resistance.html">phx.Resistance</a>,
 <a href="phx.Body.html">phx.Body</a>,
 <a href="phx.Simulation.html">phx.Simulation</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_forces.html">Forces, actuators and fields</a>
 </div>
 
 <div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>

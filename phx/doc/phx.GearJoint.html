@@ -48,24 +48,40 @@ rotation axes aligned to the local Z axis of each body and a unit gear ratio. Se
 <tr><td class="name">Ratio</td><td class="dflt">1</td><td>Gear ratio between the angular velocities of the two bodies.</td></tr>
 <tr><td class="name">Overlay</td><td class="dflt">false</td><td>Draw the joint as an overlay (always on top).</td></tr>
 </table>
+<p>Reaction feedback and the <code class="phx-inline">MutualCollisions</code> switch (collisions
+between the connected bodies, default <code class="phx-inline">false</code>) are inherited from
+<a href="phx.base.Joint.html">phx.base.Joint</a>.</p>
 
 <h2 class="phx-h2">Examples</h2>
 <h4 class="phx-h4">Couple two wheels with a 2:1 ratio</h4>
-<pre class="phx-code">w1 = phx.Body(<span class="str">"Position"</span>, [0 0 0], <span class="str">"Shape"</span>, {<span class="str">"Cylinder"</span>, <span class="str">"Radius"</span>, 1, <span class="str">"Length"</span>, 0.3});
-w2 = phx.Body(<span class="str">"Position"</span>, [1.5 0 0], <span class="str">"Shape"</span>, {<span class="str">"Cylinder"</span>, <span class="str">"Radius"</span>, 0.5, <span class="str">"Length"</span>, 0.3});
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+w1 = phx.Body(<span class="str">"Position"</span>, [0 0 0], <span class="str">"Shape"</span>, {<span class="str">"Cylinder"</span>, <span class="str">"Radius"</span>, 1, <span class="str">"Height"</span>, 0.3});
+w2 = phx.Body(<span class="str">"Position"</span>, [1.5 0 0], <span class="str">"Shape"</span>, {<span class="str">"Cylinder"</span>, <span class="str">"Radius"</span>, 0.5, <span class="str">"Height"</span>, 0.3});
 
 phx.RevoluteJoint(phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>), w1);
 phx.GearJoint(w1, w2, <span class="str">"Ratio"</span>, 2);
 
-sim = phx.Simulation;
+sim = phx.Simulation(gca, <span class="str">"Gravity"</span>, [0 0 0]);   <span class="cmt">% no gravity - the free wheel keeps its place</span>
 w1.AngularVelocity = [0 0 5];
-sim.step(4, 400, 1);</pre>
+sim.step(4, 400, 1);
+delete(sim);</pre>
+
+<figure class="phx-fig">
+<img src="img/gearjoint.png" alt="A large and a small wheel coupled by a gear joint">
+<figcaption>The hinged wheel drives the smaller free wheel at twice its rate through the gear coupling.</figcaption>
+</figure>
 
 <div class="phx-seealso">
 <span class="lbl">See also</span>
 <a href="phx.RevoluteJoint.html">phx.RevoluteJoint</a>,
 <a href="phx.base.Joint.html">phx.base.Joint</a>,
 <a href="phx.Body.html">phx.Body</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_joints.html">Joints, springs and ropes</a>
 </div>
 
 <div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>

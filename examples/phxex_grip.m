@@ -4,13 +4,9 @@ function phxex_grip(mu, squeeze)
 % Two parallel jaws (kinematic bodies) close on a free object and then lift
 % it. Nothing connects the object to the jaws - it is held up purely by the
 % friction in the two contact patches balancing gravity. Whether the object
-% is lifted or slips out of the grip depends only on the clamping force
-% (how hard the jaws squeeze) and the friction coefficient of the contacts.
-%
-% This is a classic robotic grasping problem that has no meaning without a
-% contact/collision solver: the grip force is transmitted entirely through
-% body-to-body contact, and slipping is decided by the Coulomb friction
-% condition at those contacts.
+% is lifted or slips out of the grip is decided by the Coulomb friction
+% condition at those contacts: it depends only on the clamping force (how
+% hard the jaws squeeze) and the friction coefficient.
 %
 % The object's vertical position is measured against the (rising) jaws with
 % phx.Measure and logged, so a slip shows up directly as the object falling
@@ -53,7 +49,7 @@ function phxex_grip(mu, squeeze)
 
     % The object to be grasped (free dynamic body, friction on all faces)
     obj = phx.Body(ax, "Position", [0 0 objH/2], ...
-        "Shape", {"Cylinder", "Diameter", objW, "Height", objH, "Style", "edged", ...
+        "Shape", {"Cylinder", "Diameter", objW, "Height", objH, ...
                   "Color", [0.4 0.6 1]}, ...
         "Mass", 0.5, "Friction", [mu 0 0]);
 

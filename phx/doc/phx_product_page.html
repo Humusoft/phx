@@ -34,6 +34,37 @@ phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>);   
 sim = phx.Simulation;                  <span class="cmt">% collect all bodies in the axes</span>
 sim.step(1, 100, 1);                   <span class="cmt">% 1 s, 100 substeps, redraw every step</span></pre>
 
+<h2 class="phx-h2">User Guide</h2>
+
+<p>New to PHX? Start with <a href="phx_ug_gettingstarted.html">Getting Started</a> &mdash; what PHX
+is, installation and your first scene. The topic pages then walk through the toolbox one concept at
+a time:</p>
+
+<div class="phx-cards">
+
+<div class="phx-card">
+<h3>Building scenes</h3>
+<ul>
+<li><a href="phx_ug_concepts.html">Core concepts</a> &mdash; object types and the <code class="phx-inline">step</code> loop</li>
+<li><a href="phx_ug_bodies.html">Bodies and shapes</a> &mdash; geometry, appearance, motion</li>
+<li><a href="phx_ug_joints.html">Joints, springs and ropes</a> &mdash; connecting bodies</li>
+<li><a href="phx_ug_forces.html">Forces, actuators and fields</a> &mdash; thrust, drag, buoyancy, magnetism</li>
+<li><a href="phx_ug_assemblies.html">Prefab assemblies</a> &mdash; arenas, chains, URDF import</li>
+</ul>
+</div>
+
+<div class="phx-card">
+<h3>Running and observing</h3>
+<ul>
+<li><a href="phx_ug_logging.html">Measuring and logging</a> &mdash; Logger, Trace, Measure</li>
+<li><a href="phx_ug_control.html">Automation and control</a> &mdash; Script and Function</li>
+<li><a href="phx_ug_viewer.html">Interactive viewer</a> &mdash; sky, camera, mouse editing</li>
+<li><a href="phx_ug_examples.html">Examples and larger scenes</a> &mdash; demos and a full walkthrough</li>
+</ul>
+</div>
+
+</div>
+
 <h2 class="phx-h2">Classes</h2>
 
 <div class="phx-cards">
@@ -99,6 +130,28 @@ sim.step(1, 100, 1);                   <span class="cmt">% 1 s, 100 substeps, re
 <li><a href="phx.shape.Terrain.html">phx.shape.Terrain</a> &mdash; terrain heightfield</li>
 <li><a href="phx.shape.OBJ.html">phx.shape.OBJ</a> &mdash; OBJ imported shape</li>
 <li><a href="phx.shape.STL.html">phx.shape.STL</a> &mdash; STL imported shape</li>
+</ul>
+</div>
+
+<div class="phx-card">
+<h3>Assemblies</h3>
+<ul>
+<li><a href="phx.assembly.arena.html">phx.assembly.arena</a> &mdash; floor plate enclosed by four walls</li>
+<li><a href="phx.assembly.chain.html">phx.assembly.chain</a> &mdash; chain of rigid links along a polyline</li>
+<li><a href="phx.assembly.scatter.html">phx.assembly.scatter</a> &mdash; bodies scattered inside a box region</li>
+<li><a href="phx.assembly.import.html">phx.assembly.import</a> &mdash; robot model imported from URDF</li>
+</ul>
+</div>
+
+<div class="phx-card">
+<h3>Observers &amp; automation</h3>
+<ul>
+<li><a href="phx.Logger.html">phx.Logger</a> &mdash; record properties over time</li>
+<li><a href="phx.Trace.html">phx.Trace</a> &mdash; trail of a body point</li>
+<li><a href="phx.Measure.html">phx.Measure</a> &mdash; distance and relative velocity</li>
+<li><a href="phx.Script.html">phx.Script</a> &mdash; prescribed value profiles</li>
+<li><a href="phx.Function.html">phx.Function</a> &mdash; custom per-step callback</li>
+<li><a href="phx.Camera.html">phx.Camera</a> &mdash; camera attached to bodies</li>
 </ul>
 </div>
 

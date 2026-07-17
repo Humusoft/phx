@@ -64,7 +64,9 @@ attached at their origins. Use <code class="phx-inline">PointA</code> and
 
 <h2 class="phx-h2">Examples</h2>
 <h4 class="phx-h4">Connect a chain of boxes with colored springs</h4>
-<pre class="phx-code">a = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Position"</span>, [-3 0 10], <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [4 2 1]});
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+a = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Position"</span>, [-3 0 10], <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [4 2 1]});
 b = phx.Body(<span class="str">"Position"</span>, [3 0 10], <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [4 2 1]});
 
 phx.Spring(a, b, <span class="str">"Stiffness"</span>, 3e5, <span class="str">"Damping"</span>, 2e3, ...
@@ -73,6 +75,11 @@ phx.Spring(a, b, <span class="str">"Stiffness"</span>, 3e5, <span class="str">"D
 
 sim = phx.Simulation;
 sim.step(5, 500, 5);</pre>
+
+<figure class="phx-fig">
+<img src="img/spring.png" alt="Two boxes connected by a spring">
+<figcaption>The dynamic box swings below the static one; the spring color maps the instantaneous force.</figcaption>
+</figure>
 
 <h4 class="phx-h4">Inspect the spring characteristic</h4>
 <pre class="phx-code">s = phx.Spring(a, b, <span class="str">"Stiffness"</span>, 1e4, <span class="str">"Damping"</span>, 50);
@@ -84,6 +91,11 @@ s.showCharacteristic(0.2, [0 1 10]);   <span class="cmt">% +-0.2 m travel, 3 vel
 <a href="phx.GenericSpring.html">phx.GenericSpring</a>,
 <a href="phx.SphericalJoint.html">phx.SphericalJoint</a>,
 <a href="phx.Body.html">phx.Body</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_joints.html">Joints, springs and ropes</a>
 </div>
 
 <div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>

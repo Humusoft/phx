@@ -3,63 +3,95 @@
 
 <tocitem target="phx_product_page.html">PHX Toolbox
 
-    <tocitem target="phx_product_page.html" image="$toolbox/matlab/icons/book_mat.gif">Getting Started
+    <tocitem target="phx_ug_gettingstarted.html" image="$toolbox/matlab/icons/greenarrowicon.gif">Getting Started
     </tocitem>
 
-    <tocitem target="phx.Simulation.html" image="$toolbox/matlab/icons/reficon.gif">Core
-        <tocitem target="phx.Simulation.html">phx.Simulation</tocitem>
-        <tocitem target="phx.Body.html">phx.Body</tocitem>
-        <tocitem target="phx.base.Object.html">phx.base.Object</tocitem>
+    <tocitem target="phx_ug_concepts.html" image="$toolbox/matlab/icons/book_mat.gif">User Guide
+        <tocitem target="phx_ug_concepts.html">Core concepts</tocitem>
+        <tocitem target="phx_ug_bodies.html">Bodies and shapes</tocitem>
+        <tocitem target="phx_ug_joints.html">Joints, springs and ropes</tocitem>
+        <tocitem target="phx_ug_forces.html">Forces, actuators and fields</tocitem>
+        <tocitem target="phx_ug_assemblies.html">Prefab assemblies</tocitem>
+        <tocitem target="phx_ug_logging.html">Measuring and logging</tocitem>
+        <tocitem target="phx_ug_control.html">Automation and control</tocitem>
+        <tocitem target="phx_ug_viewer.html">Interactive viewer</tocitem>
+        <tocitem target="phx_ug_examples.html">Examples and larger scenes</tocitem>
     </tocitem>
 
-    <tocitem target="phx.base.Joint.html" image="$toolbox/matlab/icons/reficon.gif">Joints
-        <tocitem target="phx.RevoluteJoint.html">phx.RevoluteJoint</tocitem>
-        <tocitem target="phx.SphericalJoint.html">phx.SphericalJoint</tocitem>
-        <tocitem target="phx.GearJoint.html">phx.GearJoint</tocitem>
-        <tocitem target="phx.FixedJoint.html">phx.FixedJoint</tocitem>
-        <tocitem target="phx.GenericJoint.html">phx.GenericJoint</tocitem>
-        <tocitem target="phx.base.Joint.html">phx.base.Joint</tocitem>
-    </tocitem>
+    <tocitem target="phx_product_page.html" image="$toolbox/matlab/icons/reficon.gif">Reference
 
-    <tocitem target="phx.Spring.html" image="$toolbox/matlab/icons/reficon.gif">Springs &amp; Ropes
-        <tocitem target="phx.Spring.html">phx.Spring</tocitem>
-        <tocitem target="phx.Rope.html">phx.Rope</tocitem>
-        <tocitem target="phx.GenericSpring.html">phx.GenericSpring</tocitem>
-    </tocitem>
+        <tocitem target="phx.Simulation.html">Core
+            <tocitem target="phx.Simulation.html">phx.Simulation</tocitem>
+            <tocitem target="phx.Body.html">phx.Body</tocitem>
+            <tocitem target="phx.base.Object.html">phx.base.Object</tocitem>
+        </tocitem>
 
-    <tocitem target="phx.Thruster.html" image="$toolbox/matlab/icons/reficon.gif">Force &amp; Field Elements
-        <tocitem target="phx.Thruster.html">phx.Thruster</tocitem>
-        <tocitem target="phx.Resistance.html">phx.Resistance</tocitem>
-        <tocitem target="phx.Buoyancy.html">phx.Buoyancy</tocitem>
-        <tocitem target="phx.Monopole.html">phx.Monopole</tocitem>
-        <tocitem target="phx.Dipole.html">phx.Dipole</tocitem>
-    </tocitem>
+        <tocitem target="phx.base.Joint.html">Joints
+            <tocitem target="phx.RevoluteJoint.html">phx.RevoluteJoint</tocitem>
+            <tocitem target="phx.SphericalJoint.html">phx.SphericalJoint</tocitem>
+            <tocitem target="phx.GearJoint.html">phx.GearJoint</tocitem>
+            <tocitem target="phx.FixedJoint.html">phx.FixedJoint</tocitem>
+            <tocitem target="phx.GenericJoint.html">phx.GenericJoint</tocitem>
+            <tocitem target="phx.base.Joint.html">phx.base.Joint</tocitem>
+        </tocitem>
 
-    <tocitem target="phx.base.Shape.html" image="$toolbox/matlab/icons/reficon.gif">Geometry
-        <tocitem target="phx.shape.Box.html">phx.shape.Box</tocitem>
-        <tocitem target="phx.shape.Sphere.html">phx.shape.Sphere</tocitem>
-        <tocitem target="phx.shape.Cylinder.html">phx.shape.Cylinder</tocitem>
-        <tocitem target="phx.shape.Cone.html">phx.shape.Cone</tocitem>
-        <tocitem target="phx.shape.Capsule.html">phx.shape.Capsule</tocitem>
-        <tocitem target="phx.shape.Globe.html">phx.shape.Globe</tocitem>
-        <tocitem target="phx.shape.Mesh.html">phx.shape.Mesh</tocitem>
-        <tocitem target="phx.shape.Extrusion.html">phx.shape.Extrusion</tocitem>
-        <tocitem target="phx.shape.Revolution.html">phx.shape.Revolution</tocitem>
-        <tocitem target="phx.shape.Rock.html">phx.shape.Rock</tocitem>
-        <tocitem target="phx.shape.Terrain.html">phx.shape.Terrain</tocitem>
-        <tocitem target="phx.shape.OBJ.html">phx.shape.OBJ</tocitem>
-        <tocitem target="phx.shape.STL.html">phx.shape.STL</tocitem>
-        <tocitem target="phx.base.Shape.html">phx.base.Shape</tocitem>
-        <tocitem target="phx.base.ShapeMesh.html">phx.base.ShapeMesh</tocitem>
-    </tocitem>
+        <tocitem target="phx.Spring.html">Springs &amp; Ropes
+            <tocitem target="phx.Spring.html">phx.Spring</tocitem>
+            <tocitem target="phx.Rope.html">phx.Rope</tocitem>
+            <tocitem target="phx.GenericSpring.html">phx.GenericSpring</tocitem>
+        </tocitem>
 
-    <tocitem target="phx.extra.Viewer.html" image="$toolbox/matlab/icons/reficon.gif">Viewer
-        <tocitem target="phx.extra.Viewer.html">phx.extra.Viewer</tocitem>
-    </tocitem>
+        <tocitem target="phx.Thruster.html">Force &amp; Field Elements
+            <tocitem target="phx.Thruster.html">phx.Thruster</tocitem>
+            <tocitem target="phx.Resistance.html">phx.Resistance</tocitem>
+            <tocitem target="phx.Buoyancy.html">phx.Buoyancy</tocitem>
+            <tocitem target="phx.Monopole.html">phx.Monopole</tocitem>
+            <tocitem target="phx.Dipole.html">phx.Dipole</tocitem>
+        </tocitem>
 
-    <tocitem target="PhxModel.html" image="$toolbox/matlab/icons/simulink_icon.gif">Simulink
-        <tocitem target="PhxModel.html">PhxModel</tocitem>
-        <tocitem target="PhxAction.html">PhxAction</tocitem>
+        <tocitem target="phx.base.Shape.html">Geometry
+            <tocitem target="phx.shape.Box.html">phx.shape.Box</tocitem>
+            <tocitem target="phx.shape.Sphere.html">phx.shape.Sphere</tocitem>
+            <tocitem target="phx.shape.Cylinder.html">phx.shape.Cylinder</tocitem>
+            <tocitem target="phx.shape.Cone.html">phx.shape.Cone</tocitem>
+            <tocitem target="phx.shape.Capsule.html">phx.shape.Capsule</tocitem>
+            <tocitem target="phx.shape.Globe.html">phx.shape.Globe</tocitem>
+            <tocitem target="phx.shape.Mesh.html">phx.shape.Mesh</tocitem>
+            <tocitem target="phx.shape.Extrusion.html">phx.shape.Extrusion</tocitem>
+            <tocitem target="phx.shape.Revolution.html">phx.shape.Revolution</tocitem>
+            <tocitem target="phx.shape.Rock.html">phx.shape.Rock</tocitem>
+            <tocitem target="phx.shape.Terrain.html">phx.shape.Terrain</tocitem>
+            <tocitem target="phx.shape.OBJ.html">phx.shape.OBJ</tocitem>
+            <tocitem target="phx.shape.STL.html">phx.shape.STL</tocitem>
+            <tocitem target="phx.base.Shape.html">phx.base.Shape</tocitem>
+            <tocitem target="phx.base.ShapeMesh.html">phx.base.ShapeMesh</tocitem>
+        </tocitem>
+
+        <tocitem target="phx.assembly.arena.html">Assemblies
+            <tocitem target="phx.assembly.arena.html">phx.assembly.arena</tocitem>
+            <tocitem target="phx.assembly.chain.html">phx.assembly.chain</tocitem>
+            <tocitem target="phx.assembly.scatter.html">phx.assembly.scatter</tocitem>
+            <tocitem target="phx.assembly.import.html">phx.assembly.import</tocitem>
+        </tocitem>
+
+        <tocitem target="phx.Logger.html">Observers &amp; Automation
+            <tocitem target="phx.Logger.html">phx.Logger</tocitem>
+            <tocitem target="phx.Trace.html">phx.Trace</tocitem>
+            <tocitem target="phx.Measure.html">phx.Measure</tocitem>
+            <tocitem target="phx.Script.html">phx.Script</tocitem>
+            <tocitem target="phx.Function.html">phx.Function</tocitem>
+            <tocitem target="phx.Camera.html">phx.Camera</tocitem>
+        </tocitem>
+
+        <tocitem target="phx.extra.Viewer.html">Viewer
+            <tocitem target="phx.extra.Viewer.html">phx.extra.Viewer</tocitem>
+        </tocitem>
+
+        <tocitem target="PhxModel.html" image="$toolbox/matlab/icons/simulink_icon.gif">Simulink
+            <tocitem target="PhxModel.html">PhxModel</tocitem>
+            <tocitem target="PhxAction.html">PhxAction</tocitem>
+        </tocitem>
+
     </tocitem>
 
 </tocitem>

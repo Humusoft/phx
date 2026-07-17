@@ -1,21 +1,15 @@
 function phxex_balance(Kp, Kd)
 % PHXEX_BALANCE Balancing a ball on a tilting plate (ball-and-plate)
 %
-% A ball is dropped from a random position onto a square plate. The plate
-% is a kinematic body that we tilt about its X and Y axes. A PD controller
-% reads the ball's position and velocity each step and computes the plate
-% tilt that drives the ball back toward the centre - a closed control loop
-% running in MATLAB around the physics engine.
+% A ball is dropped onto a square plate. The plate is a kinematic body that
+% we tilt about its X and Y axes. A PD controller reads the ball's position
+% and velocity each step and computes the plate tilt that drives the ball
+% back toward the centre - a closed control loop running in MATLAB around
+% the physics engine.
 %
 % The ball is not constrained to the plate in any way: it stays on the
-% surface purely through contact, and it rolls because of the contact
-% between ball and plate as the plate tilts. Without a contact/collision
-% solver there would be no ball-plate interaction to control at all, so
-% this example combines collision handling with feedback control.
-%
-% The control law maps the desired in-plane acceleration to a small plate
-% tilt (a ball on an incline accelerates as a = (5/7) g sin(theta), so the
-% needed tilt is roughly theta = a / ((5/7) g) for small angles).
+% surface and rolls purely through contact as the plate tilts, so this
+% example combines collision handling with feedback control.
 %
 % Input Arguments:
 %     Kp - proportional gain on ball position error
@@ -51,12 +45,10 @@ function phxex_balance(Kp, Kd)
 
     % Kinematic plate - we drive its tilt; the ball only feels it via contact
     plate = phx.Body(ax, "Type", "kinematic", "Position", [0 0 0], ...
-        "Shape", {"Box", "Size", plateSize, "Style", "edged", ...
-                  "Color", [0.6 0.7 0.8], "Texture", resdir+"checker4.png", ...
-                  "TextureBlend", 0.3});
+        "Shape", {"Box", "Size", plateSize, "Color", [0.6 0.7 0.8], ...
+        "Texture", resdir+"checker4.png", "TextureBlend", 0.3});
 
-    % Ball dropped from a random in-plane position above the plate
-    %p0 = (rand(1, 2) - 0.5) .* (plateSize(1:2) - 4*ballR);
+    % Ball dropped from a position above the plate
     p0 = [1.5 1.5];
     ball = phx.Body(ax, "Position", [p0, 2.0], ...
         "Shape", {"Globe", "Radius", ballR, "Color", [1 0.5 0.2], ...
@@ -74,10 +66,8 @@ function phxex_balance(Kp, Kd)
     label = uilabel(gcf, "FontSize", 18, "FontColor", [1 1 1], ...
         "Position", [20 20 380 40], "Text", "Dropping ball...");
 
-    % Closed-loop balancing: the PD control law lives in the simulation
-    % pipeline as a phx.Function bound to the ball (sensor) and the plate
-    % (actuator), so it runs every (sub)step. The run loop below only
-    % advances the simulation and updates the on-screen readout.
+    % Closed-loop balancing: the PD control law runs every (sub)step as a
+    % phx.Function bound to the ball (sensor) and the plate (actuator)
     g = 9.81;
     maxTilt = 0.25;            % clamp the plate tilt for realism [rad]
     dt = 0.01;

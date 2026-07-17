@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Interactive Viewer</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; User Guide &rsaquo; Interactive viewer</div>
+
+<h1 class="phx-title">Interactive Viewer</h1>
+<p class="phx-purpose">A ready-made 3-D window with a sky, camera and mouse editing</p>
+
+<p>Instead of bare axes you can use the enhanced viewer
+<a href="phx.extra.Viewer.html">phx.extra.Viewer</a> with a sky, a movable camera and the ability
+to edit the scene with the mouse:</p>
+
+<pre class="phx-code">[~, ax] = phx.extra.Viewer(<span class="str">"clear"</span>, <span class="str">"ViewMode"</span>, <span class="str">"sky"</span>);
+<span class="cmt">% then add bodies into the ax axes as usual</span>
+phx.Body(ax, <span class="str">"Position"</span>, [0 0 2], <span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>});</pre>
+
+<table class="phx-tbl">
+<tr><th>Control</th><th>Action</th></tr>
+<tr><td>Left mouse button</td><td>Pan the camera.</td></tr>
+<tr><td>Middle button</td><td>Orbit the camera.</td></tr>
+<tr><td>Wheel</td><td>Zoom; with Shift, the field of view.</td></tr>
+<tr><td>Arrows / WASD</td><td>Pan and move the camera.</td></tr>
+<tr><td>Double-click</td><td>Select / activate a body (edit mode).</td></tr>
+<tr><td>F1 &hellip; F5, Home</td><td>Help, light, view mode, free run, reset.</td></tr>
+</table>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.extra.Viewer.html">phx.extra.Viewer</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_logging.html">Measuring and logging</a>,
+<a href="phx_ug_examples.html">Examples and larger scenes</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox User Guide</div>
+
+</div>
+</body>
+</html>

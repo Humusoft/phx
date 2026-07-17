@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.Trace</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.Trace</div>
+
+<h1 class="phx-title">phx.Trace</h1>
+<p class="phx-purpose">Motion trace</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.Trace &nbsp;|&nbsp; Superclass: <a href="phx.base.Object.html">phx.base.Object</a></p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.Trace</code> draws the trail of a moving body into the scene as a
+fading curve of recent positions. The traced point is given in the local space of the body, so any
+point of the body (not just its origin) can be followed. The color of the trace, the number of
+curve points and overlay drawing are configurable.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">trace = phx.Trace(body)</span>
+<span class="phx-syntax">trace = phx.Trace(___,Name,Value)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">trace = phx.Trace(body)</code> creates a tracer attached to the point of
+origin of the given body. Use <code class="phx-inline">Point</code> to trace a different point of
+the body.</p>
+</div>
+
+<h3 class="phx-h3">Input Arguments</h3>
+<table class="phx-tbl">
+<tr><th>Argument</th><th>Type</th><th>Description</th></tr>
+<tr><td class="name">body</td><td class="type">phx.Body (scalar)</td><td>The body whose motion is traced.</td></tr>
+</table>
+
+<h2 class="phx-h2">Properties</h2>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">Point</td><td class="dflt">[0 0 0]</td><td>Point in the local frame of the body to be traced.</td></tr>
+<tr><td class="name">TracePoints</td><td class="dflt">100</td><td>Number of points of the tracing curve.</td></tr>
+<tr><td class="name">Overlay</td><td class="dflt">false</td><td>Draw the trace as an overlay (always on top).</td></tr>
+</table>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">Trace the corner of a tumbling box</h4>
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+b = phx.Body(<span class="str">"Position"</span>, [-2 0 1], <span class="str">"LinearVelocity"</span>, [3 0 3.5], ...
+    <span class="str">"AngularVelocity"</span>, [8 3 0], <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [1 1 1]});
+phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [6 6 0.3]});
+
+phx.Trace(b, <span class="str">"Point"</span>, [0.5 0.5 0.5], <span class="str">"TracePoints"</span>, 400, <span class="str">"Color"</span>, [1 0 0]);
+
+sim = phx.Simulation;
+sim.step(2, 400, 2);
+delete(sim);</pre>
+
+<figure class="phx-fig">
+<img src="img/trace.png" alt="Red trace following a tumbling box">
+<figcaption>The red trace follows the box corner as the spinning box flies over the plate.</figcaption>
+</figure>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.Logger.html">phx.Logger</a>,
+<a href="phx.Measure.html">phx.Measure</a>,
+<a href="phx.Body.html">phx.Body</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_logging.html">Measuring and logging</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

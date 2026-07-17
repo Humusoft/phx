@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bodies and Shapes</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; User Guide &rsaquo; Bodies and shapes</div>
+
+<h1 class="phx-title">Bodies and Shapes</h1>
+<p class="phx-purpose">Giving a body its geometry, appearance and physical properties</p>
+
+<h2 class="phx-h2">Body shapes</h2>
+<p>A shape (<code class="phx-inline">Shape</code>) determines how a body looks <i>and</i> how it
+behaves in collisions. It is given either as a <code class="phx-inline">phx.shape.*</code> object,
+or in shorthand as a cell array <code class="phx-inline">{"Box", "Size", &hellip;}</code>.</p>
+
+<table class="phx-tbl">
+<tr><th>Shape</th><th>Main options</th><th>Note</th></tr>
+<tr><td class="name"><a href="phx.shape.Box.html">Box</a></td>
+    <td><code class="phx-inline">Size [x y z]</code></td><td>Rectangular box.</td></tr>
+<tr><td class="name"><a href="phx.shape.Sphere.html">Sphere</a> /
+    <a href="phx.shape.Globe.html">Globe</a></td>
+    <td><code class="phx-inline">Diameter</code>, <code class="phx-inline">Division</code></td>
+    <td>Sphere (Globe has better texture mapping).</td></tr>
+<tr><td class="name"><a href="phx.shape.Cylinder.html">Cylinder</a></td>
+    <td><code class="phx-inline">Diameter</code>, <code class="phx-inline">Height</code>,
+    <code class="phx-inline">Axis</code></td><td>Cylinder.</td></tr>
+<tr><td class="name"><a href="phx.shape.Cone.html">Cone</a></td>
+    <td><code class="phx-inline">Diameter</code>, <code class="phx-inline">Height</code>,
+    <code class="phx-inline">Axis</code></td><td>Cone.</td></tr>
+<tr><td class="name"><a href="phx.shape.Capsule.html">Capsule</a></td>
+    <td><code class="phx-inline">Diameter</code>, <code class="phx-inline">Height</code>,
+    <code class="phx-inline">Axis</code></td><td>Cylinder with rounded caps.</td></tr>
+<tr><td class="name"><a href="phx.shape.STL.html">STL</a> /
+    <a href="phx.shape.OBJ.html">OBJ</a></td>
+    <td><code class="phx-inline">Source</code>, <code class="phx-inline">Scale</code>,
+    <code class="phx-inline">Envelope</code></td><td>Import a model from a file.</td></tr>
+<tr><td class="name"><a href="phx.shape.Mesh.html">Mesh</a></td>
+    <td>vertices / faces</td><td>Custom mesh with texture support.</td></tr>
+<tr><td class="name"><a href="phx.shape.Terrain.html">Terrain</a>,
+    <a href="phx.shape.Rock.html">Rock</a>,<br>
+    <a href="phx.shape.Extrusion.html">Extrusion</a>,
+    <a href="phx.shape.Revolution.html">Revolution</a></td>
+    <td>height field / profile</td><td>Terrain, rock and profile-based shapes.</td></tr>
+</table>
+
+<p>Appearance is tuned with <code class="phx-inline">Color</code>,
+<code class="phx-inline">Style</code> (<code class="phx-inline">smooth</code>,
+<code class="phx-inline">edged</code>, <code class="phx-inline">wireframe</code>,
+<code class="phx-inline">flat</code>), <code class="phx-inline">Material</code> and
+<code class="phx-inline">Texture</code>:</p>
+
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+phx.Body(<span class="str">"Position"</span>, [0.5 0 2],   <span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>, <span class="str">"Style"</span>, <span class="str">"wireframe"</span>});
+phx.Body(<span class="str">"Position"</span>, [0 0 0.5],   <span class="str">"Shape"</span>, {<span class="str">"Cylinder"</span>, <span class="str">"Axis"</span>, <span class="str">"y"</span>, <span class="str">"Style"</span>, <span class="str">"edged"</span>});
+phx.Body(<span class="str">"Position"</span>, [2.5 0 0.5], <span class="str">"Shape"</span>, {<span class="str">"Cone"</span>, <span class="str">"Axis"</span>, <span class="str">"z"</span>});
+phx.Body(<span class="str">"Position"</span>, [2.5 0 2],   <span class="str">"Shape"</span>, {<span class="str">"Capsule"</span>, <span class="str">"Axis"</span>, <span class="str">"z"</span>});
+phx.Body(<span class="str">"Position"</span>, [1 -1.8 1],  <span class="str">"Shape"</span>, {<span class="str">"STL"</span>, <span class="str">"Source"</span>, <span class="str">"res/cat.stl"</span>, ...
+         <span class="str">"Scale"</span>, 0.025, <span class="str">"Material"</span>, <span class="str">"shiny"</span>});</pre>
+
+<figure class="phx-fig">
+<img src="img/shapes.png" alt="Shape gallery">
+<figcaption>Primitive shapes and an imported STL model. The same notation drives both appearance
+and collision geometry. See <code>phxex_shapes</code>.</figcaption>
+</figure>
+
+<h2 class="phx-h2">Body properties and motion</h2>
+<p><a href="phx.Body.html">phx.Body</a> is the most important object. Its properties can be both
+read and written &mdash; even during the simulation (they read/write the engine directly).</p>
+
+<table class="phx-tbl">
+<tr><th>Property</th><th>Meaning</th></tr>
+<tr><td class="name">Position</td>
+    <td>Position [x y z] in global coordinates.</td></tr>
+<tr><td class="name">Orientation / EulerAngles / Quaternion</td>
+    <td>Body orientation (rotation matrix, Euler angles or quaternion).</td></tr>
+<tr><td class="name">LinearVelocity / AngularVelocity</td>
+    <td>Linear and angular velocity.</td></tr>
+<tr><td class="name">Type</td>
+    <td><code class="phx-inline">"dynamic"</code> &middot; <code class="phx-inline">"static"</code>
+    &middot; <code class="phx-inline">"kinematic"</code>.</td></tr>
+<tr><td class="name">Mass</td>
+    <td>Mass [kg]. Can also be derived from the shape density
+    (<code class="phx-inline">Density</code>).</td></tr>
+<tr><td class="name">Friction</td>
+    <td>Friction coefficients [slide &middot; roll &middot; spin].</td></tr>
+<tr><td class="name">TotalForce / TotalTorque / Energy</td>
+    <td>Current force, torque and kinetic energy (read-only).</td></tr>
+</table>
+
+<p>A body can also be acted on directly with a force or a torque:</p>
+
+<pre class="phx-code">body.applyForce([0 0 50]);      <span class="cmt">% a 50 N force along +z</span>
+body.applyTorque([0 0 60]);     <span class="cmt">% a torque about the z axis</span>
+body.LinearVelocity = [2 0 0];  <span class="cmt">% set velocity at runtime</span></pre>
+
+<div class="phx-note">
+<span class="lbl">Coordinate system.</span> PHX uses the <b>z</b> axis pointing up by default; the
+default gravity is <code class="phx-inline">[0 0 -9.81]</code> m/s&sup2;. You change it when
+creating the simulation: <code class="phx-inline">phx.Simulation("Gravity", [0 0 0])</code> for
+weightlessness.
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.Body.html">phx.Body</a>,
+<a href="phx.shape.Box.html">phx.shape.Box</a>,
+<a href="phx.shape.Sphere.html">phx.shape.Sphere</a>,
+<a href="phx.shape.STL.html">phx.shape.STL</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_concepts.html">Core concepts</a>,
+<a href="phx_ug_joints.html">Joints, springs and ropes</a>,
+<a href="phx_ug_assemblies.html">Prefab assemblies</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox User Guide</div>
+
+</div>
+</body>
+</html>

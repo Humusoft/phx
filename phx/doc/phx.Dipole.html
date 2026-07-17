@@ -62,20 +62,32 @@ all given bodies, forming a mutually interacting group. Provide one charge per b
 
 <h2 class="phx-h2">Examples</h2>
 <h4 class="phx-h4">Two interacting magnetic dipoles</h4>
-<pre class="phx-code">clf; view(3); axis equal; grid on;
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
 a = phx.Body(<span class="str">"Position"</span>, [-2 0 0]);
 b = phx.Body(<span class="str">"Position"</span>, [ 2 0 0]);
 
 phx.Dipole([a b], <span class="str">"Charge"</span>, [1; 1], <span class="str">"Axis"</span>, [1 0 0; 1 0 0]);
 
 sim = phx.Simulation(gca, <span class="str">"Gravity"</span>, [0 0 0]);
-sim.step(4, 800, 5);</pre>
+sim.step(4, 800, 5);
+delete(sim);</pre>
+
+<figure class="phx-fig">
+<img src="img/dipole.png" alt="Two boxes with drawn dipole axes">
+<figcaption>Two bodies carrying dipoles aligned along the x axis; the lines mark the dipole axes.</figcaption>
+</figure>
 
 <div class="phx-seealso">
 <span class="lbl">See also</span>
 <a href="phx.Monopole.html">phx.Monopole</a>,
 <a href="phx.Resistance.html">phx.Resistance</a>,
 <a href="phx.Body.html">phx.Body</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_forces.html">Forces, actuators and fields</a>
 </div>
 
 <div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Forces, Actuators and Fields</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; User Guide &rsaquo; Forces, actuators and fields</div>
+
+<h1 class="phx-title">Forces, Actuators and Fields</h1>
+<p class="phx-purpose">Ready-made force elements beyond gravity and contacts</p>
+
+<p>Beyond gravity and contacts, PHX offers ready-made elements for common types of interaction.</p>
+
+<table class="phx-tbl">
+<tr><th>Element</th><th>What it does</th><th>Key options</th></tr>
+<tr><td class="name"><a href="phx.Thruster.html">Thruster</a></td>
+    <td>An actuator rigidly attached to a body (rocket, propeller).</td>
+    <td><code class="phx-inline">Direction</code>, <code class="phx-inline">MaxThrust</code>,
+    <code class="phx-inline">Throttle</code> (&minus;1&hellip;1)</td></tr>
+<tr><td class="name"><a href="phx.Resistance.html">Resistance</a></td>
+    <td>Velocity-dependent environmental drag (air, water).</td>
+    <td><code class="phx-inline">VelocityFactors</code></td></tr>
+<tr><td class="name"><a href="phx.Buoyancy.html">Buoyancy</a></td>
+    <td>Floating in a liquid &mdash; buoyancy and hydrodynamic damping.</td>
+    <td><code class="phx-inline">Density</code>, <code class="phx-inline">Level</code>,
+    <code class="phx-inline">LinearDamping</code></td></tr>
+<tr><td class="name"><a href="phx.Monopole.html">Monopole</a></td>
+    <td>Pairwise interaction of charges (gravity, electrostatics).</td>
+    <td><code class="phx-inline">Charge</code>, <code class="phx-inline">Attractivity</code></td></tr>
+<tr><td class="name"><a href="phx.Dipole.html">Dipole</a></td>
+    <td>Pairwise dipole interaction (magnets).</td>
+    <td><code class="phx-inline">Charge</code>, <code class="phx-inline">Axis</code>,
+    <code class="phx-inline">Attractivity</code></td></tr>
+</table>
+
+<h2 class="phx-h2">Actuator &mdash; Thruster</h2>
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+body = phx.Body(<span class="str">"Position"</span>, [0 0 1], <span class="str">"Shape"</span>, {<span class="str">"Capsule"</span>, <span class="str">"Axis"</span>, <span class="str">"z"</span>, <span class="str">"Density"</span>, 80});
+phx.Thruster(body, <span class="str">"Point"</span>, [0 0 -0.9], <span class="str">"Direction"</span>, [0 0 1], ...
+             <span class="str">"MaxThrust"</span>, 900, <span class="str">"Throttle"</span>, 1);
+phx.Trace(body, <span class="str">"TracePoints"</span>, 240);   <span class="cmt">% motion trail</span></pre>
+
+<h2 class="phx-h2">Gravitational/electric field &mdash; Monopole</h2>
+<pre class="phx-code"><span class="cmt">% mutual gravity of a group of bodies, the built-in gravity is turned off</span>
+phx.Monopole(planets, <span class="str">"Attractivity"</span>, 6.6743e-11, <span class="str">"Charge"</span>, [planets.Mass]);
+sim = phx.Simulation(planets, <span class="str">"Gravity"</span>, 0);</pre>
+
+<div class="phx-figrow">
+<figure class="phx-fig">
+<img src="img/thruster.png" alt="Rocket with a thruster">
+<figcaption>The thruster overcomes gravity and the body climbs; orange is the motion trail, the
+thrust vector is drawn below.</figcaption>
+</figure>
+<figure class="phx-fig">
+<img src="img/orbit.png" alt="Orbits">
+<figcaption>Bodies attracted by a central mass (<code>Monopole</code>) trace out orbits. The trails
+are drawn by <code>phx.Trace</code>. See <code>phxex_gravity</code>.</figcaption>
+</figure>
+</div>
+
+<div class="phx-note">
+<span class="lbl">Tip.</span> For floating bodies see <code class="phx-inline">phxex_buoyancy</code>
+and <code class="phx-inline">phxex_capsize</code>; for magnets
+<code class="phx-inline">phxex_magnets</code> and <code class="phx-inline">phxex_maglev</code>.
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.Thruster.html">phx.Thruster</a>,
+<a href="phx.Resistance.html">phx.Resistance</a>,
+<a href="phx.Buoyancy.html">phx.Buoyancy</a>,
+<a href="phx.Monopole.html">phx.Monopole</a>,
+<a href="phx.Dipole.html">phx.Dipole</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_joints.html">Joints, springs and ropes</a>,
+<a href="phx_ug_control.html">Automation and control</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox User Guide</div>
+
+</div>
+</body>
+</html>

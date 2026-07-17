@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Examples and Larger Scenes</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; User Guide &rsaquo; Examples and larger scenes</div>
+
+<h1 class="phx-title">Examples and Larger Scenes</h1>
+<p class="phx-purpose">The shipped demos and a complete self-balancing robot walkthrough</p>
+
+<h2 class="phx-h2">Richer scenes</h2>
+<p>The same building blocks scale up to large scenes. Two examples from the shipped demos:</p>
+
+<div class="phx-figrow">
+<figure class="phx-fig">
+<img src="img/tower.png" alt="Tower of boxes">
+<figcaption>A tower of stacked boxes (friction and contacts). See
+<code>phxex_jenga</code>.</figcaption>
+</figure>
+<figure class="phx-fig">
+<img src="img/gears.png" alt="Gears">
+<figcaption>Two gears made from STL models mesh through their actual teeth. See
+<code>phxex_gears</code>.</figcaption>
+</figure>
+</div>
+
+<p>Other possibilities include several independent simulations side by side, multiple views of a
+single scene, textures and a sky, terrain, conveyors, suspended vehicles, feedback controllers, or
+optimization running without rendering (<i>headless</i>).</p>
+
+<h2 class="phx-h2">Ready-made examples (demos)</h2>
+<p>The examples are the best way to learn &mdash; you run them with a single command and study the
+source code. Recommended to begin with:</p>
+
+<table class="phx-tbl">
+<tr><th>Command</th><th>What it shows</th></tr>
+<tr><td class="name">phxex_minimal</td><td>The bare minimum &mdash; a body and a floor.</td></tr>
+<tr><td class="name">phxex_shapes</td><td>A gallery of all primitive shapes.</td></tr>
+<tr><td class="name">phxex_joints</td><td>A hinge and a ball joint.</td></tr>
+<tr><td class="name">phxex_springs</td><td>A spring system with bodies added and removed at
+    runtime.</td></tr>
+<tr><td class="name">phxex_gravity</td><td>Particles orbiting a star.</td></tr>
+<tr><td class="name">phxex_gears</td><td>Two meshing gears.</td></tr>
+<tr><td class="name">phxex_jenga</td><td>An interactive Jenga tower &mdash; friction and
+    contacts.</td></tr>
+<tr><td class="name">phxex_terrain, phxex_textures</td><td>Terrain and textures.</td></tr>
+<tr><td class="name">phxex_buggy, phxex_conveyors</td><td>A suspended vehicle, conveyors.</td></tr>
+</table>
+
+<p>The same folder also holds more advanced scenes: <code class="phx-inline">phxex_segway</code>
+(a self-balancing robot), <code class="phx-inline">phxex_drone</code> (a quadcopter),
+<code class="phx-inline">phxex_rocket</code>, <code class="phx-inline">phxex_galton</code>
+(a Galton board), <code class="phx-inline">phxex_magnets</code> (magnetic self-assembly),
+<code class="phx-inline">phxex_buoyancy</code> (floating bodies),
+<code class="phx-inline">phxex_gyrostab</code> (a passive gyro stabilizer),
+<code class="phx-inline">phxex_antisway</code> (a crane anti-sway controller) or
+<code class="phx-inline">phxex_optimize</code> (optimization without rendering).</p>
+
+<h2 class="phx-h2">A complete example: self-balancing robot</h2>
+<p>An example that combines almost everything from the previous topics into one working whole
+&mdash; a self-balancing two-wheeled robot (a segway). It shows what more complex work with PHX can
+look like.</p>
+
+<p>The scene is built from ordinary building blocks:</p>
+<ul>
+<li><b>Bodies</b> &mdash; a tall block (the body) and two wheels (cylinders), with the center of
+    mass placed high above; the assembly is therefore an <i>unstable inverted pendulum</i> and
+    would topple on its own.</li>
+<li><b>Joints</b> &mdash; each wheel is connected to the body by a hinge
+    (<a href="phx.RevoluteJoint.html">RevoluteJoint</a>).</li>
+<li><b>Contacts and friction</b> &mdash; the wheels propel the robot solely through frictional
+    contact with the ground.</li>
+<li><b>Feedback control</b> &mdash; at every step the body tilt and angular rate are read and a PD
+    controller computes the wheel drive torque (exactly the pattern from
+    <a href="phx_ug_control.html">Automation and control</a>).</li>
+<li><b>Logging</b> &mdash; <code class="phx-inline">phx.Logger</code> records the body tilt for a
+    later plot.</li>
+</ul>
+
+<pre class="phx-code"><span class="cmt">% --- core of the control loop (runs with a 5 ms step) ---</span>
+Kp = 4000; Kd = 380; dt = 0.005;
+sim = phx.Simulation;
+<span class="kw">for</span> k = 1:500
+    pitch     = body.EulerAngles(2);        <span class="cmt">% sensor: body tilt</span>
+    pitchRate = body.AngularVelocity(2);    <span class="cmt">% sensor: tilt rate</span>
+    tau = Kp*pitch + Kd*pitchRate;          <span class="cmt">% PD controller</span>
+    wheelL.applyTorque(-[0 0 tau], <span class="kw">true</span>);   <span class="cmt">% control action on the wheels</span>
+    wheelR.applyTorque(-[0 0 tau], <span class="kw">true</span>);
+    sim.step(dt, 1, 1);                     <span class="cmt">% one simulation step</span>
+<span class="kw">end</span></pre>
+
+<figure class="phx-fig">
+<img src="img/segway.jpg" alt="Self-balancing robot">
+<figcaption>The shipped <code>phxex_segway</code> shown directly in the interactive PHX viewer
+(sky mode). The robot actively keeps itself upright; an obstacle (a ramp) included in the scene
+sits in the foreground.</figcaption>
+</figure>
+
+<p>The same approach &mdash; bodies &times; joints &times; sensors &times; a
+<code class="phx-inline">phx.Function</code>/control loop &mdash; is behind advanced examples such
+as <code class="phx-inline">phxex_drone</code> (a quadcopter),
+<code class="phx-inline">phxex_balance</code> (balancing a ball on a plate) or
+<code class="phx-inline">phxex_rocket</code>. Once you master this skeleton, you can build
+practically any controlled mechanism in PHX.</p>
+
+<div class="phx-note">
+<span class="lbl">Where to look next.</span> Every class has help in MATLAB &mdash; try
+<code class="phx-inline">help phx.Body</code>, <code class="phx-inline">phxdoc phx.Simulation</code>
+or <code class="phx-inline">methods phx.Spring</code>. The fastest path to understanding, though, is
+to open and tweak one of the examples in the <code class="phx-inline">examples/</code> folder.
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_gettingstarted.html">Getting started</a>,
+<a href="phx_ug_control.html">Automation and control</a>,
+<a href="phx_ug_viewer.html">Interactive viewer</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox User Guide</div>
+
+</div>
+</body>
+</html>

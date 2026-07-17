@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.Script</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.Script</div>
+
+<h1 class="phx-title">phx.Script</h1>
+<p class="phx-purpose">Automation script</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.Script &nbsp;|&nbsp; Superclass: <a href="phx.base.Object.html">phx.base.Object</a></p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.Script</code> controls the values of selected parameters of other
+objects during the simulation. The value profile for each parameter is defined either as an
+<em>interpolated curve</em> (a vector of times and a matching array of values) or as a
+<em>time-dependent expression</em> given as a string. The profiles are evaluated before every
+simulation substep and written to the given property of every parent object &mdash; declarative,
+feedforward control ideal for kinematic bodies such as conveyors, arms or drive cams. For feedback
+control that reacts to the scene state, use <a href="phx.Function.html">phx.Function</a> instead.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">script = phx.Script(parents,curve)</span>
+<span class="phx-syntax">script = phx.Script(parents,curve1,...,curveN)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">script = phx.Script(parents,curve)</code> creates a script driving one
+parameter of all parent objects. Any number of curves can follow, each driving one parameter.
+Each curve is a cell array in one of two forms:</p>
+<p><code class="phx-inline">{"ParamName", timeVector, values}</code> &mdash; an interpolated curve.
+Optionally append an interpolation method and an extrapolation method
+(<code class="phx-inline">{"ParamName", time, values, "pchip", "repeat"}</code>); both default to
+<code class="phx-inline">"linear"</code>. The special extrapolation method
+<code class="phx-inline">"repeat"</code> loops the curve periodically.</p>
+<p><code class="phx-inline">{"ParamName", "expression of t"}</code> &mdash; a function of the
+simulation time <code class="phx-inline">t</code>, e.g.
+<code class="phx-inline">{"EulerAngles", "[2*pi*t 0 0]"}</code>.</p>
+</div>
+
+<h3 class="phx-h3">Input Arguments</h3>
+<table class="phx-tbl">
+<tr><th>Argument</th><th>Type</th><th>Description</th></tr>
+<tr><td class="name">parents</td><td class="type">phx object array or cell array</td><td>The objects whose parameters are driven. A cell array may mix objects of different classes.</td></tr>
+<tr><td class="name">curve1, ..., curveN</td><td class="type">cell (repeating)</td><td>One profile per parameter, in either of the two forms above.</td></tr>
+</table>
+
+<h2 class="phx-h2">Properties</h2>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">Curves</td><td class="type">N&times;5 cell</td><td>Interpolation curves as <code class="phx-inline">{'ParamName', timeVector, valuesVector, 'interpolation_method', 'extrapolation_method'}</code> rows (filled from the constructor arguments).</td></tr>
+</table>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">Rotate a screw steadily by an expression of time</h4>
+<pre class="phx-code">phx.Script(screw, {<span class="str">"EulerAngles"</span>, <span class="str">"[2*pi*t*0.5 0 0]"</span>});</pre>
+
+<h4 class="phx-h4">Prescribe the path of an arm by interpolated points</h4>
+<pre class="phx-code">time     = [0 1 2 3];
+position = [0 0 1; 1 0 1; 1 1 1; 0 1 1];
+angle    = [0 0 0; 0 0 pi/2; 0 0 pi; 0 0 3*pi/2];
+
+phx.Script(arm, {<span class="str">"Position"</span>, time, position, <span class="str">"pchip"</span>}, ...
+                {<span class="str">"EulerAngles"</span>, time, angle});
+
+sim = phx.Simulation;
+sim.step(3, 600, 2);</pre>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.Function.html">phx.Function</a>,
+<a href="phx.Logger.html">phx.Logger</a>,
+<a href="phx.Body.html">phx.Body</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_control.html">Automation and control</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

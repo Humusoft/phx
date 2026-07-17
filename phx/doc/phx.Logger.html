@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.Logger</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.Logger</div>
+
+<h1 class="phx-title">phx.Logger</h1>
+<p class="phx-purpose">Data logger</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.Logger &nbsp;|&nbsp; Superclass: <a href="phx.base.Object.html">phx.base.Object</a></p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.Logger</code> records the progress of any property of any physical
+object during the simulation. One logger can record one property of multiple objects, multiple
+properties of one object, or multiple properties of multiple objects &mdash; in the last case all
+objects must have that set of properties. Each unique object&ndash;property combination becomes a
+<em>channel</em>: read all recorded data from the <code class="phx-inline">Data</code> property, or
+one channel at a time with <code class="phx-inline">getChannel</code>. List the channels and their
+IDs with <code class="phx-inline">dispChannels</code>.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">logger = phx.Logger(parents,"Parameters",params)</span>
+<span class="phx-syntax">logger = phx.Logger(___,Name,Value)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">logger = phx.Logger(parents,"Parameters",params)</code> creates a logger
+which records the progress of the properties named in <code class="phx-inline">params</code> for all
+objects given by <code class="phx-inline">parents</code>.</p>
+</div>
+
+<h3 class="phx-h3">Input Arguments</h3>
+<table class="phx-tbl">
+<tr><th>Argument</th><th>Type</th><th>Description</th></tr>
+<tr><td class="name">parents</td><td class="type">phx object array or cell array</td><td>The objects whose properties are recorded. A cell array may mix objects of different classes.</td></tr>
+</table>
+
+<h2 class="phx-h2">Properties</h2>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">Parameters</td><td class="type">1&times;N string</td><td>List of object properties to record during the simulation.</td></tr>
+<tr><td class="name">Frequency</td><td class="dflt">10</td><td>Desired recording frequency, <span class="phx-unit">Hz</span> (the resulting frequency may be limited by the simulation step).</td></tr>
+<tr><td class="name">Time</td><td class="type">M&times;1 double (read-only)</td><td>Time axis of the recorded channels (the time step may be irregular if the simulation step and the recording frequency are not divisible).</td></tr>
+<tr><td class="name">Data</td><td class="type">M&times;K double (read-only)</td><td>Common matrix of values of all channels, one row per sample.</td></tr>
+</table>
+
+<h2 class="phx-h2">Object Functions</h2>
+<table class="phx-tbl">
+<tr><th>Function</th><th>Description</th></tr>
+<tr><td class="name">getChannel</td><td>Return the recorded data of one channel: <code class="phx-inline">y = getChannel(logger, channID)</code>.</td></tr>
+<tr><td class="name">dispChannels</td><td>Display the list of channels and their IDs for use with <code class="phx-inline">getChannel</code>.</td></tr>
+</table>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">Log the position of a falling ball and plot it</h4>
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+b = phx.Body(<span class="str">"Position"</span>, [0 0 5], <span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>});
+phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [6 6 0.3]});
+
+log1 = phx.Logger(b, <span class="str">"Parameters"</span>, <span class="str">"Position"</span>, <span class="str">"Frequency"</span>, 100);
+
+sim = phx.Simulation;
+sim.step(3, 600, 1);
+
+plot(log1.Time, log1.Data);
+xlabel(<span class="str">"time [s]"</span>); ylabel(<span class="str">"position [m]"</span>); legend(<span class="str">"x"</span>,<span class="str">"y"</span>,<span class="str">"z"</span>);</pre>
+
+<figure class="phx-fig">
+<img src="img/logger.png" alt="Plot of the logged ball position">
+<figcaption>Logged vertical position of the falling ball: free fall and then rest on the floor.</figcaption>
+</figure>
+
+<h4 class="phx-h4">Record several properties and read them by channel</h4>
+<pre class="phx-code">log2 = phx.Logger(b, <span class="str">"Parameters"</span>, [<span class="str">"Position"</span>, <span class="str">"LinearVelocity"</span>]);
+
+sim.step(2, 400, 1);
+
+log2.dispChannels;          <span class="cmt">% 1 - Object1.Position, 2 - Object1.LinearVelocity</span>
+v = log2.getChannel(2);     <span class="cmt">% velocity samples only</span>
+delete(sim);</pre>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.Trace.html">phx.Trace</a>,
+<a href="phx.Measure.html">phx.Measure</a>,
+<a href="phx.Simulation.html">phx.Simulation</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_logging.html">Measuring and logging</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

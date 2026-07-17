@@ -8,11 +8,9 @@ function phxex_segway(Kp, Kd, push)
 % centre of mass and stays upright, exactly like a real self-balancing
 % scooter.
 %
-% This couples feedback control with contact physics: the wheels propel the
-% robot only through their friction contact with the ground, and the body
-% can topple, roll, or fall off only because those contacts are resolved by
-% the collision solver. The wheel torque is applied with phx.Body.applyTorque,
-% which acts for one step and then resets - a natural control input.
+% The wheels propel the robot only through their friction contact with the
+% ground. The wheel torque is applied with phx.Body.applyTorque, which acts
+% for one step and then resets - a natural control input.
 %
 % Halfway through, an external disturbance push is applied to the body to
 % show the controller recovering from a kick.
@@ -59,8 +57,7 @@ function phxex_segway(Kp, Kd, push)
     % Body: a tall block whose centre of mass sits well above the axle,
     % which is what makes the system an unstable inverted pendulum.
     body = phx.Body(ax, "Position", [0 0 axleZ + bodyH/2], ...
-        "Shape", {"Box", "Size", [0.5 track-wheelW-0.1 bodyH], "Style", "edged", ...
-                  "Color", [0.3 0.5 0.9]});
+        "Shape", {"Box", "Size", [0.5 track-wheelW-0.1 bodyH], "Color", [0.3 0.5 0.9]});
 
     % Obstacle
     phx.Body(ax, "Position", [-4 0 1], ...
@@ -105,7 +102,6 @@ function phxex_segway(Kp, Kd, push)
         % Driving the wheels forward pulls the base under the body and
         % corrects a forward lean (sign tuned for this convention).
         tau = Kp*pitch + Kd*pitchRate;
-        %tau = max(min(tau, 100), -100);       % torque limit
 
         % --- actuation: equal torque on both wheels (about their spin axis Z
         % in local frame, since wheels were rotated by pi/2 about X) ---

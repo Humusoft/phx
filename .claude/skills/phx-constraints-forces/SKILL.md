@@ -4,7 +4,8 @@ description: >
   Connect and actuate PHX bodies — joints (Fixed/Revolute/Spherical/Gear/Generic),
   springs and ropes (Spring/GenericSpring/Rope), and force/field elements
   (Thruster, Resistance, Dipole, Monopole). Also covers driving parameters over
-  time with phx.Script and the read-state / set-actuator / step control loop. Use
+  time with phx.Script and the read-state / set-actuator / step control loop.
+  Whole jointed chains/pendulums come prefabricated from phx.assembly.chain. Use
   after phx-scene-basics when bodies must be linked, sprung, thrust, or controlled.
 ---
 
@@ -40,6 +41,20 @@ Joint classes:
 
 Axes default to local Z (`AxisA = AxisB = [0 0 1]`); set them when the hinge isn't
 on Z. `Overlay` (logical) draws the joint glyph on top of geometry.
+
+**Prefab chains:** a whole chain of jointed links (pendulum, hanging chain, rope
+with collisions) is one call — `phx.assembly.chain(points, "Axis", [0 1 0],
+"Anchor", "start")`. Non-zero axis rows make RevoluteJoints, zero rows (the
+default) SphericalJoints; `Anchor` pins an end to a static mount ball. It returns
+the links, the joints (a cell array — the classes may mix) and the anchors, all
+ordinary objects you can retune. Details in **phx-scene-basics**.
+
+**MutualCollisions** (logical, default `false`) — inherited by **all** joints (and
+`phx.GenericSpring`) from `phx.base.Joint`. Bodies connected by a joint **pass through
+each other by default**; pass `"MutualCollisions", true` to let them collide (e.g. a
+hinged lid that must rest on its box). The flag is handed to the engine when the joint
+initializes, so changing it mid-run only takes effect after a pipeline rebuild
+(an add/delete of any object).
 
 ## Springs & ropes (compliant elements)
 

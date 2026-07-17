@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.assembly.chain</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.assembly.chain</div>
+
+<h1 class="phx-title">phx.assembly.chain</h1>
+<p class="phx-purpose">Chain of rigid links along a polyline</p>
+<p class="phx-classref">Function&nbsp;&nbsp;phx.assembly.chain &nbsp;|&nbsp; Package: phx.assembly</p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.assembly.chain</code> stretches a link body between every two
+consecutive rows of an N&times;3 points matrix and connects the neighbouring links by joints at
+the interior points &mdash; a revolute joint around a given axis, or a spherical joint for a zero
+axis. With N points the chain has N&minus;1 links and N&minus;2 interior joints; pendulums, ropes
+with collisions and hanging chains are all special cases. Neighbouring links do not collide with
+each other (the connecting joint disables their mutual collisions), but the rest of the chain
+does collide with itself, so it can be piled up.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">parts = phx.assembly.chain(points)</span>
+<span class="phx-syntax">parts = phx.assembly.chain(points,Name,Value)</span>
+<span class="phx-syntax">parts = phx.assembly.chain(ax,___)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">parts = phx.assembly.chain(points)</code> creates the chain in the
+current axes and returns a struct with the fields <code class="phx-inline">links</code>
+(1&times;(N&minus;1) <a href="phx.Body.html">phx.Body</a>, the link body frame sits at the segment
+centre with its z axis along the segment), <code class="phx-inline">joints</code> (cell row of the
+joints, interior joints first, then the anchor joints) and <code class="phx-inline">anchors</code>
+(static mount bodies created by the <code class="phx-inline">Anchor</code> option).</p>
+<p><code class="phx-inline">parts = phx.assembly.chain(ax,___)</code> draws into the given axes
+instead of the current axes; an empty target (<code class="phx-inline">[]</code>) creates the
+parts without graphics.</p>
+</div>
+
+<h2 class="phx-h2">Options</h2>
+<table class="phx-tbl">
+<tr><th>Option</th><th>Default</th><th>Description</th></tr>
+<tr><td class="name">Shape</td><td class="dflt">"capsule"</td><td>Link geometry: <code class="phx-inline">"capsule"</code>, <code class="phx-inline">"cylinder"</code> or <code class="phx-inline">"box"</code>. A capsule is shortened by one diameter so that its rounded tips meet exactly at the joint points.</td></tr>
+<tr><td class="name">Diameter</td><td class="dflt">0.1</td><td>Thickness of the links (the side length of a box link).</td></tr>
+<tr><td class="name">Axis</td><td class="dflt">[0 0 0]</td><td>Rotation axis of the joints: a single 1&times;3 vector for all joints, or an N&times;3 matrix with one row per point (rows 1 and N are used only by the anchor joints). A non-zero row creates a <a href="phx.RevoluteJoint.html">phx.RevoluteJoint</a>, a zero row a <a href="phx.SphericalJoint.html">phx.SphericalJoint</a>. Expressed in the same frame as the points.</td></tr>
+<tr><td class="name">Anchor</td><td class="dflt">"none"</td><td>Pins an end of the chain to a static mount ball: <code class="phx-inline">"none"</code>, <code class="phx-inline">"start"</code>, <code class="phx-inline">"end"</code> or <code class="phx-inline">"both"</code>.</td></tr>
+<tr><td class="name">Density</td><td class="dflt">1000</td><td>Density of the link material (kg/m&sup3;); masses and inertias follow from the geometry.</td></tr>
+<tr><td class="name">Color</td><td class="dflt">[1 1 1]</td><td>Common color of all parts.</td></tr>
+<tr><td class="name">Friction</td><td class="dflt">[0.5 0 0]</td><td>Friction coefficients of all links.</td></tr>
+<tr><td class="name">Position</td><td class="dflt">[0 0 0]</td><td>World position of the chain frame (in which the points and axes are expressed).</td></tr>
+<tr><td class="name">Orientation</td><td class="dflt">eye(3)</td><td>World rotation of the chain as a 3&times;3 rotation matrix.</td></tr>
+<tr><td class="name">EulerAngles</td><td class="dflt">[0 0 0]</td><td>World rotation of the chain as Euler angles (z&rarr;y&rarr;x order), an alternative to <code class="phx-inline">Orientation</code>.</td></tr>
+</table>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">Double pendulum swinging in the x-z plane</h4>
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+parts = phx.assembly.chain([0 0 0; 0.4 0 0; 0.8 0 0], ...
+    <span class="str">"Anchor"</span>, <span class="str">"start"</span>, <span class="str">"Axis"</span>, [0 1 0]);
+
+sim = phx.Simulation;
+sim.step(5, 2000, 5);
+delete(sim);</pre>
+
+<figure class="phx-fig">
+<img src="img/chain.png" alt="Two-link chain pendulum">
+<figcaption>The double pendulum built from two links, anchored at the first point.</figcaption>
+</figure>
+
+<h4 class="phx-h4">Free chain of spherical joints dropped on the ground</h4>
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+pts = [zeros(10, 1), zeros(10, 1), (9:-1:0)'*0.2 + 0.5];
+phx.assembly.chain(pts, <span class="str">"Diameter"</span>, 0.06);
+
+phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Position"</span>, [0 0 -0.05], ...
+    <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [4 4 0.1]});
+
+sim = phx.Simulation;
+sim.step(3, 1200, 6);
+delete(sim);</pre>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.assembly.arena.html">phx.assembly.arena</a>,
+<a href="phx.assembly.scatter.html">phx.assembly.scatter</a>,
+<a href="phx.assembly.import.html">phx.assembly.import</a>,
+<a href="phx.RevoluteJoint.html">phx.RevoluteJoint</a>,
+<a href="phx.SphericalJoint.html">phx.SphericalJoint</a>,
+<a href="phx.Rope.html">phx.Rope</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_assemblies.html">Prefab assemblies</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

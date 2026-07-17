@@ -1,5 +1,5 @@
 % PHX
-% Version 1.0.3 (R2026a) 12-Jul-2026
+% Version 1.0.4 (R2026a) 17-Jul-2026
 %
 % PHX is an object-oriented physics toolbox for MATLAB, layered over the
 % Bullet physics engine. Scenes are built from phx.* objects that draw into
@@ -23,6 +23,12 @@
 %   phx.shape.Terrain      - Terrain heightfield
 %   phx.shape.OBJ          - OBJ imported shape
 %   phx.shape.STL          - STL imported shape
+%
+% Assemblies
+%   phx.assembly.arena     - Static arena - a floor plate enclosed by four walls
+%   phx.assembly.chain     - Chain of rigid links along a polyline
+%   phx.assembly.scatter   - Bodies scattered randomly inside a box region
+%   phx.assembly.import    - Robot model imported from a URDF file
 %
 % Joints
 %   phx.RevoluteJoint      - Revolute joint

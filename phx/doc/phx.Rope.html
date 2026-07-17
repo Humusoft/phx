@@ -69,14 +69,22 @@ per body).</p>
 
 <h2 class="phx-h2">Examples</h2>
 <h4 class="phx-h4">Hang a load from a fixed anchor</h4>
-<pre class="phx-code">anchor = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Position"</span>, [0 0 5]);
-load   = phx.Body(<span class="str">"Position"</span>, [0 0 3], <span class="str">"Mass"</span>, 10);
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+anchor = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Position"</span>, [0 0 5]);
+load   = phx.Body(<span class="str">"Position"</span>, [0 0 3], ...
+    <span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>, <span class="str">"Radius"</span>, 0.2, <span class="str">"Density"</span>, 300});   <span class="cmt">% a 10 kg ball</span>
 
 rope = phx.Rope([anchor load], <span class="str">"Stiffness"</span>, 5e3, <span class="str">"Damping"</span>, 50, ...
     <span class="str">"Colormap"</span>, <span class="str">"hot"</span>, <span class="str">"ColorRange"</span>, [0 200]);
 
 sim = phx.Simulation;
 sim.step(4, 800, 5);</pre>
+
+<figure class="phx-fig">
+<img src="img/rope.png" alt="Load hanging on a rope">
+<figcaption>The load hangs from the static anchor; the rope color visualizes the tension force.</figcaption>
+</figure>
 
 <h4 class="phx-h4">Winch the rope in with a script</h4>
 <pre class="phx-code">phx.Script(rope, {<span class="str">'Displacement'</span>, [0 2], [0 -1], <span class="str">'linear'</span>, <span class="str">'nearest'</span>});
@@ -87,6 +95,11 @@ phx.Logger(rope, <span class="str">"Frequency"</span>, 50, <span class="str">"Pa
 <a href="phx.Spring.html">phx.Spring</a>,
 <a href="phx.Body.html">phx.Body</a>,
 <a href="phx.base.Object.html">phx.base.Object</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_joints.html">Joints, springs and ropes</a>
 </div>
 
 <div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>

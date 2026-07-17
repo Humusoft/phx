@@ -5,17 +5,14 @@ function phxex_gyrostab(duration, spinRate, maxAmplitude)
 % each loaded with four cargo crates on the corners of its deck, held only
 % by friction. The left platform is bare; the right one carries a passive
 % gyroscopic stabilizer of the kind used on ships: a fast-spinning steel
-% disk on a central shaft (a revolute joint about the local z axis,
-% collisions disabled), whose shaft is in turn hinged to the platform by a
-% second revolute joint about the transverse y axis - the gimbal. The disk
-% gets only an initial angular velocity and is never driven afterwards.
+% disk whose shaft is gimballed to the platform by two revolute joints.
+% The disk gets only an initial angular velocity and is never driven
+% afterwards.
 %
 % When a wave rolls the platform, the roll rate crosses the disk's angular
 % momentum and the gyroscopic torque swings the gimbal; the reaction of
 % that precession opposes the roll. Everything emerges from rigid-body
-% dynamics alone - the engine integrates the full Euler equations, so the
-% precession and the stabilizing reaction appear without a single line of
-% control code.
+% dynamics alone, without a single line of control code.
 %
 % The sea builds up: the wave amplitude ramps from calm to maxAmplitude
 % over the run. Once the roll of the bare platform exceeds the friction
@@ -63,10 +60,10 @@ function phxex_gyrostab(duration, spinRate, maxAmplitude)
     % same wave phase and roll about their x axis
     platA = phx.Body(ax, "Position", [-offset 0 0], ...
         "Shape", {"Box", "Size", platSize, "Density", 500, ...
-        "Style", "edged", "Color", [1 1 1]}, "Friction", [0.5 0 0]);
+        "Color", [1 1 1]}, "Friction", [0.5 0 0]);
     platB = phx.Body(ax, "Position", [offset 0 0], ...
         "Shape", {"Box", "Size", platSize, "Density", 500, ...
-        "Style", "edged", "Color", [1 1 1], "SkeletPoints", [0 -0.6 gyroZ; 0 0.6 gyroZ]}, "Friction", [0.5 0 0]);
+        "Color", [1 1 1], "SkeletPoints", [0 -0.6 gyroZ; 0 0.6 gyroZ]}, "Friction", [0.5 0 0]);
     plats = [platA platB];
     platName = ["bare", "gyro"];
 
@@ -76,8 +73,7 @@ function phxex_gyrostab(duration, spinRate, maxAmplitude)
             crates(p, i) = phx.Body(ax, ...
                 "Position", plats(p).Position + [cratePos(i, :), platSize(3)/2 + crateSize/2], ...
                 "Shape", {"Box", "Size", crateSize*[1 1 1], "Density", 400, ...
-                "Style", "edged", "Color", [0.85 0.7 0.5], ...
-                "Texture", resdir+"woodtile.jpg", "TextureBlend", 0.5}, ...
+                "Color", [0.85 0.7 0.5], "Texture", resdir+"woodtile.jpg", "TextureBlend", 0.5}, ...
                 "Friction", [crateMu 0 0]);
         end
     end

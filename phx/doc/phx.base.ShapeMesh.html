@@ -70,8 +70,15 @@ normalized to the full range of the colormap.</p>
 
 <h2 class="phx-h2">Examples</h2>
 <h4 class="phx-h4">Material and style</h4>
-<pre class="phx-code">b = phx.Body(<span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>, <span class="str">"Diameter"</span>, 1, ...
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+b = phx.Body(<span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>, <span class="str">"Diameter"</span>, 1, ...
     <span class="str">"Material"</span>, <span class="str">"metal"</span>, <span class="str">"Style"</span>, <span class="str">"smooth"</span>, <span class="str">"Color"</span>, [0.7 0.7 0.75]});</pre>
+
+<figure class="phx-fig">
+<img src="img/shapemesh.png" alt="Sphere with a metallic material">
+<figcaption>The metal material adds specular highlights to the smooth sphere.</figcaption>
+</figure>
 
 <h4 class="phx-h4">Texture from an image</h4>
 <pre class="phx-code">earth = phx.shape.Globe(<span class="str">"Diameter"</span>, 2, <span class="str">"Texture"</span>, <span class="str">"earth.jpg"</span>);
@@ -81,6 +88,11 @@ b = phx.Body(<span class="str">"Shape"</span>, earth);</pre>
 <span class="lbl">See also</span>
 <a href="phx.base.Shape.html">phx.base.Shape</a>,
 <a href="phx.Body.html">phx.Body</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_bodies.html">Bodies and shapes</a>
 </div>
 
 <div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>

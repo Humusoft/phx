@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Core Concepts</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; User Guide &rsaquo; Core concepts</div>
+
+<h1 class="phx-title">How PHX Thinks &mdash; Core Concepts</h1>
+<p class="phx-purpose">The handful of object types every scene is built from</p>
+
+<p>Every scene is built from just a handful of object types. Once you understand them, the rest is
+only a matter of combining them.</p>
+
+<table class="phx-tbl">
+<tr><th>Object</th><th>What it represents</th></tr>
+<tr><td class="name"><a href="phx.Simulation.html">phx.Simulation</a></td>
+    <td>The whole scene and its &ldquo;engine&rdquo;. Holds time and gravity, and steps the
+    computation.</td></tr>
+<tr><td class="name"><a href="phx.Body.html">phx.Body</a></td>
+    <td>A rigid body &mdash; it has a position, mass, velocity and a shape. The basic building
+    block.</td></tr>
+<tr><td class="name">phx.shape.*</td>
+    <td>The geometry a body &ldquo;wears&rdquo; &mdash; box, sphere, cylinder, STL model&nbsp;&hellip;
+    See <a href="phx_ug_bodies.html">Bodies and shapes</a>.</td></tr>
+<tr><td class="name">phx.*Joint</td>
+    <td>A connection of two bodies with restricted motion (hinge, ball joint, gear). See
+    <a href="phx_ug_joints.html">Joints, springs and ropes</a>.</td></tr>
+<tr><td class="name">Forces and fields</td>
+    <td><a href="phx.Spring.html">Spring</a>, <a href="phx.Rope.html">Rope</a>,
+    <a href="phx.Thruster.html">Thruster</a>, <a href="phx.Resistance.html">Resistance</a>,
+    <a href="phx.Buoyancy.html">Buoyancy</a>, <a href="phx.Monopole.html">Monopole</a>,
+    <a href="phx.Dipole.html">Dipole</a> &mdash; springs, actuators, environmental drag, floating,
+    gravitational/magnetic interaction.</td></tr>
+<tr><td class="name">Assemblies</td>
+    <td><code class="phx-inline">phx.assembly.*</code> &mdash; prefab builders that create whole
+    groups of parts at once (an arena, a jointed chain, scattered bodies, a URDF robot). See
+    <a href="phx_ug_assemblies.html">Prefab assemblies</a>.</td></tr>
+<tr><td class="name">Observers</td>
+    <td><code class="phx-inline">Logger</code> (data logging), <code class="phx-inline">Trace</code>
+    (motion trail), <code class="phx-inline">Measure</code> (distances and velocities). See
+    <a href="phx_ug_logging.html">Measuring and logging</a>.</td></tr>
+<tr><td class="name">Automation</td>
+    <td><code class="phx-inline">Script</code> (prescribed value profiles over time),
+    <code class="phx-inline">Function</code> (custom computation/control at every step). See
+    <a href="phx_ug_control.html">Automation and control</a>.</td></tr>
+</table>
+
+<h2 class="phx-h2">Three steps of every scene</h2>
+<ol>
+<li><b>Build</b> &mdash; create the bodies and their links (in any MATLAB axes).</li>
+<li><b>Run</b> &mdash; create a <a href="phx.Simulation.html">phx.Simulation</a> and call
+    <code class="phx-inline">step</code>.</li>
+<li><b>Evaluate</b> &mdash; read body properties or data from a
+    <code class="phx-inline">Logger</code>.</li>
+</ol>
+
+<pre class="phx-code"><span class="cmt">% the skeleton of every scene</span>
+clf; view(3); axis equal; grid on; camlight headlight;   <span class="cmt">% scene</span>
+phx.Body(...);                                           <span class="cmt">% bodies</span>
+phx.Body(...);
+sim = phx.Simulation;                                    <span class="cmt">% engine</span>
+sim.step(interval, substeps, redrawStep);                <span class="cmt">% run</span>
+delete(sim);                                             <span class="cmt">% cleanup</span></pre>
+
+<h2 class="phx-h2">Stepping &mdash; the step method</h2>
+<p>The most important simulation command:</p>
+<span class="phx-syntax">sim.step(interval, substeps, redrawStep)</span>
+<div class="phx-desc">
+<ul>
+<li><b>interval</b> &mdash; how many seconds to simulate,</li>
+<li><b>substeps</b> &mdash; into how many sub-steps the interval is split (computation
+    granularity),</li>
+<li><b>redrawStep</b> &mdash; how often the view is redrawn (1 = every step).</li>
+</ul>
+</div>
+
+<div class="phx-note">
+<span class="lbl">Note.</span> A smaller step (more <i>substeps</i>) = a more stable but slower
+computation. Tightly coupled scenes &mdash; joint networks, stacks in contact &mdash; call for a
+finer step. Bodies can also be added to a running simulation with
+<code class="phx-inline">sim.addObjects(b)</code>.
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.Simulation.html">phx.Simulation</a>,
+<a href="phx.Body.html">phx.Body</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_gettingstarted.html">Getting started</a>,
+<a href="phx_ug_bodies.html">Bodies and shapes</a>,
+<a href="phx_ug_joints.html">Joints, springs and ropes</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox User Guide</div>
+
+</div>
+</body>
+</html>

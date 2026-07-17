@@ -145,7 +145,8 @@ classdef ShapeMesh
         end
 
         function go = drawMesh(obj, target, vertices, normals, faces, uvs, texture)
-            if obj.ForcePatch || isempty(target.Parent) || ~isfield(target.Parent.ApplicationData, "phxAxes")
+            if obj.ForcePatch || (~isempty(target.Parent) && ~isfield(target.Parent.ApplicationData, "phxAxes"))
+                vertices = double(single(vertices)); % keep the patch geometry identical to the world-primitive path
                 if size(normals) == size(vertices)
                     go = patch(target, 'Faces', faces, 'Vertices', vertices, 'VertexNormals', normals);
                 else

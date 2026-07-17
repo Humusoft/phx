@@ -3,16 +3,10 @@ function phxex_droptest(dropH, stiffness, damping)
 %
 % A package is dropped onto a hard floor. Inside the outer shell, a
 % "product" mass is suspended on a spring-damper that represents the
-% cushioning of the packaging. When the shell hits the floor, the impact
-% is resolved as a contact between the falling body and the static floor,
-% and the resulting shock travels through the cushioning spring into the
+% cushioning of the packaging. The impact itself is resolved as a sudden,
+% non-penetrating contact between the shell and the static floor; only
+% then does the spring transmit a (hopefully reduced) shock into the
 % product.
-%
-% The event that drives the whole experiment - the collision of the shell
-% with the floor - cannot be modelled without a contact/collision solver:
-% it is a sudden, non-penetrating impact that abruptly changes the shell's
-% velocity, and only then does the spring transmit a (hopefully reduced)
-% force to the protected mass.
 %
 % phx.Logger records the force in the cushioning spring and the height of
 % both bodies, so the peak load delivered to the product can be read off
@@ -50,7 +44,7 @@ function phxex_droptest(dropH, stiffness, damping)
     shellMass = 0.5;
     shellZ = dropH + shellSize(3)/2;
     shell = phx.Body(ax, "Position", [0 0 shellZ], ...
-        "Shape", {"Box", "Size", shellSize, "Style", "edged", "Color", [0.8 0.6 0.4]}, ...
+        "Shape", {"Box", "Size", shellSize, "Color", [0.8 0.6 0.4]}, ...
         "Mass", shellMass, "Friction", [0.8 0 0]);
 
     % Protected product mass suspended inside the shell. It does NOT collide
@@ -59,7 +53,7 @@ function phxex_droptest(dropH, stiffness, damping)
     prodSize = [0.4 0.4 0.4];
     prodZ = shellZ + 0.5;          % sits above, spring pre-stretched a little
     product = phx.Body(ax, "Position", [0 0 prodZ], ...
-        "Shape", {"Box", "Size", prodSize, "Style", "edged", "Color", [0.4 0.6 1]}, ...
+        "Shape", {"Box", "Size", prodSize, "Color", [0.4 0.6 1]}, ...
         "Mass", 1, "Collisions", false);
 
     % Cushioning element between shell and product (spring + damper).

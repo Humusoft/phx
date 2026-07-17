@@ -10,14 +10,11 @@ function phxex_sorter(nBalls, fieldStrength, seed)
 % The same principle drives a mass spectrometer or an electrostatic
 % precipitator.
 %
-% Each ball gets its own phx.Monopole group consisting of the plate
-% electrodes and the ball itself, so the balls interact with the plates
-% but not with each other; the groups are created on the fly while the
-% simulation runs, together with the balls (phx.Simulation.addObjects).
-% A separate Monopole with the electrodes only draws the field lines
-% between the plates. After all balls settle, the landing position is
-% compared with the known charge - the final scatter plot shows the
-% linear charge-to-deflection relation and the sorting accuracy.
+% Each ball gets its own phx.Monopole group, so it interacts with the
+% plates but not with the other balls; a separate Monopole draws the
+% field lines between the plates. After all balls settle, the landing
+% position is compared with the known charge - the final scatter plot
+% shows the linear charge-to-deflection relation and the sorting accuracy.
 %
 % Input Arguments:
 %     nBalls        - number of dropped balls, a multiple of 3 (default 45)

@@ -63,7 +63,8 @@ through the properties below.</p>
 
 <h2 class="phx-h2">Examples</h2>
 <h4 class="phx-h4">Full-throttle thruster in zero gravity</h4>
-<pre class="phx-code">clf; ax = gca; view(3); axis equal; grid on;
+<pre class="phx-code">clf; ax = gca; view(3); axis equal; grid on; camlight headlight;
+
 b = phx.Body(ax, <span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>, <span class="str">"Diameter"</span>, 0.5, <span class="str">"Density"</span>, 50});
 
 phx.Thruster(b, <span class="str">"MaxThrust"</span>, 10, <span class="str">"Throttle"</span>, 1);
@@ -82,6 +83,11 @@ lg = phx.Logger(th, <span class="str">"Frequency"</span>, 100, <span class="str"
 <a href="phx.Resistance.html">phx.Resistance</a>,
 <a href="phx.Spring.html">phx.Spring</a>,
 <a href="phx.Body.html">phx.Body</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_forces.html">Forces, actuators and fields</a>
 </div>
 
 <div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>

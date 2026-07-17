@@ -34,7 +34,7 @@ classdef Revolution < phx.base.Shape & phx.base.ShapeMesh
         % Volumetric density (kg/m^3)
         Density (1, 1) double = 1000
 
-        % Envelope
+        % Collision envelope: "convex" hull or "concave" triangle mesh
         Envelope {mustBeMember(Envelope, ["convex", "concave"])} = "convex"
     end
 

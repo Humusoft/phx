@@ -44,23 +44,38 @@ their origins. Set custom connection points with <code class="phx-inline">PointA
 <tr><td class="name">EulerAnglesA</td><td class="dflt">[0 0 0]</td><td>Euler angles (z&rarr;y&rarr;x order) of the joint frame relative to body A; the rotation part of <code class="phx-inline">TransformA</code> (dependent).</td></tr>
 <tr><td class="name">EulerAnglesB</td><td class="dflt">[0 0 0]</td><td>Euler angles (z&rarr;y&rarr;x order) of the joint frame relative to body B; the rotation part of <code class="phx-inline">TransformB</code> (dependent).</td></tr>
 </table>
-<p>Reaction feedback is inherited from <a href="phx.base.Joint.html">phx.base.Joint</a>.</p>
+<p>Reaction feedback and the <code class="phx-inline">MutualCollisions</code> switch (collisions
+between the connected bodies, default <code class="phx-inline">false</code>) are inherited from
+<a href="phx.base.Joint.html">phx.base.Joint</a>.</p>
 
 <h2 class="phx-h2">Examples</h2>
 <h4 class="phx-h4">Rigidly weld two bodies</h4>
-<pre class="phx-code">a = phx.Body(<span class="str">"Position"</span>, [0 0 2]);
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+a = phx.Body(<span class="str">"Position"</span>, [0 0 2]);
 b = phx.Body(<span class="str">"Position"</span>, [1 0 2]);
 
 phx.FixedJoint(a, b, <span class="str">"PointA"</span>, [0.5 0 0], <span class="str">"PointB"</span>, [-0.5 0 0]);
 
 sim = phx.Simulation;
-sim.step(2, 200, 1);</pre>
+sim.step(2, 200, 1);
+delete(sim);</pre>
+
+<figure class="phx-fig">
+<img src="img/fixedjoint.png" alt="Two boxes rigidly joined">
+<figcaption>The two boxes fall as a single rigid pair, glued together by the fixed joint.</figcaption>
+</figure>
 
 <div class="phx-seealso">
 <span class="lbl">See also</span>
 <a href="phx.SphericalJoint.html">phx.SphericalJoint</a>,
 <a href="phx.GenericJoint.html">phx.GenericJoint</a>,
 <a href="phx.base.Joint.html">phx.base.Joint</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_joints.html">Joints, springs and ropes</a>
 </div>
 
 <div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>

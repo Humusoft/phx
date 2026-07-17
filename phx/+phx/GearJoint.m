@@ -73,7 +73,7 @@ classdef GearJoint < phx.base.Joint
             valid = numel(obj.Parents) == 2 && all(cellfun(@isvalid, obj.Parents));
             if valid
                 obj.ObjectHandle = phx.engine.io('add', world, 'gearconstraint', obj.Parents{1}.ObjectHandle, obj.Parents{2}.ObjectHandle, ...
-                    obj.AxisA, obj.AxisB, obj.Ratio);
+                    obj.AxisA, obj.AxisB, obj.Ratio, ~obj.MutualCollisions);
             end
         end
 

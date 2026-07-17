@@ -75,7 +75,7 @@ classdef GenericJoint < phx.base.Joint
                 ta(13:15) = obj.PointA;
                 tb = eye(4);
                 tb(13:15) = obj.PointB;
-                obj.ObjectHandle = phx.engine.io('add', world, 'generic6dofconstraint', obj.Parents{1}.ObjectHandle, obj.Parents{2}.ObjectHandle, ta(:), tb(:), 'xyz');
+                obj.ObjectHandle = phx.engine.io('add', world, 'generic6dofconstraint', obj.Parents{1}.ObjectHandle, obj.Parents{2}.ObjectHandle, ta(:), tb(:), 'xyz', ~obj.MutualCollisions);
                 phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'linlimits', obj.LinearLimits(1, :), obj.LinearLimits(2, :));
                 phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'anglimits', obj.AngularLimits(1, :), obj.AngularLimits(2, :));
             end

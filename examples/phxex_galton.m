@@ -117,24 +117,21 @@ function phxex_galton(nBalls, nRows, seed)
     % Phase 1 - release the balls one by one above the top pin and let the
     % board do its work; each ball is spawned into the running simulation
     shp = phx.shape.Sphere("Diameter", d, "Division", 2);
-    releasePeriod = 0.7;             % time between two released balls
-                                     % (long enough so the balls do not
-                                     % collide with each other in the grid)
-    dt = 0.05;                       % outer simulation step
+    releasePeriod = 0.7; % time between two released balls
+    dt = 0.05;           % outer simulation step
     released = 0;
     while released < nBalls
         if sim.Time >= released*releasePeriod
-            jit = (rand(1, 1) - 0.5)*1.0;    % entry jitter randomizes the path
-                                             % (the ball still hits the top pin)
+            jit = (rand(1, 1) - 0.5)*1.0;    % entry jitter randomizes the path (the ball still hits the top pin)
+
             shp = shp.nextColor;
             balls(released + 1) = phx.Body(ax, "Position", [jit 0 zDrop], ...
                 "Shape", shp, "Friction", mu, "Mass", 1, "Inertia", 0.1); %#ok<AGROW> unknown rate
-            % Mild air drag damps the sideways motion between pin rows, so
-            % the ball makes a proper left/right decision at every row
-            % phx.Resistance(balls(released + 1), "VelocityFactors", [0 2]);
+
             if released == 0
                 phx.Trace(balls(1), "TracePoints", 600, "Overlay", true);
             end
+            
             sim.addObjects(balls(released + 1));
             released = released + 1;
             viewer.displayText(sprintf("Released: %d / %d", released, nBalls));

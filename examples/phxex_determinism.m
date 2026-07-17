@@ -23,21 +23,16 @@ function phxex_determinism(numOfBalls)
     [~, ax] = phx.extra.Viewer("clear", "DefaultCameraPosition", [50, 22, 89], "Texture", "defaultChecker"); % Set camera position and view mode
 
     % Physical model: Create static ground bodies
-    ground(1) = phx.Body(ax, "Type", "static", "Position", [0 0 0], "Shape", {"Box", "Size", [50 50 1], "Color", [1 1 1]});
-    ground(2) = phx.Body(ax, "Type", "static", "Position", [25.5 0 1], "Shape", {"Box", "Size", [1 50 2]});
-    ground(3) = phx.Body(ax, "Type", "static", "Position", [-25.5 0 1], "Shape", {"Box", "Size", [1 50 2]});
-    ground(4) = phx.Body(ax, "Type", "static", "Position", [0 25.5 1], "Shape", {"Box", "Size", [52 1 2]});
-    ground(5) = phx.Body(ax, "Type", "static", "Position", [0 -25.5 1], "Shape", {"Box", "Size", [52 1 2]});
+    phx.assembly.arena("Size", [50 50 2], "Thickness", 1);
 
-    % Create dynamic balls with random positions
-    shp = phx.shape.Sphere("Diameter", 1.41, "Division", 2);
-    for i = 1:numOfBalls
-        balls(i) = phx.Body(ax, "Position", [rand*40-20 rand*40-20 10+i*0.1], "Shape", shp.nextColor);
-    end
+    % Create dynamic balls scattered in a tall column above the arena
+    ballShape = phx.shape.Sphere("Diameter", 1.41, "Division", 2);
+    balls = phx.assembly.scatter(ballShape, numOfBalls, "Region", [40 40 numOfBalls*0.1], ...
+        "Spacing", 1.41, "Position", [0 0 10], "Color", hsv(numOfBalls));
     balls.storeState("initial_state"); % Store the initial state of the balls
 
     % Simulation I: Run the first simulation
-    sim = phx.Simulation([ground balls]); % Create simulation with ground and balls
+    sim = phx.Simulation; % Create simulation with ground and balls
     sim.step(10, 1000, 10); % Step the simulation
     delete(sim); % Clean up the simulation object
 
@@ -54,7 +49,7 @@ function phxex_determinism(numOfBalls)
     balls.restoreState("initial_state"); % Restore the initial state of the balls
 
     % Simulation II: Run the second simulation
-    sim = phx.Simulation([ground balls]); % Create a new simulation for the second run
+    sim = phx.Simulation; % Create a new simulation for the second run
     sim.step(10, 1000, 10); % Step the simulation
     delete(sim); % Clean up the simulation object
 

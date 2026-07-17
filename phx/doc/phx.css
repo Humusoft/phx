@@ -225,3 +225,31 @@ a:hover { text-decoration: underline; }
     vertical-align: middle;
 }
 .phx-tag.dev { background: #fdecec; border-color: #f3c6c6; color: #b03030; }
+
+/* ---- user guide figures ---- */
+figure.phx-fig {
+    margin: 16px 0;
+    text-align: center;
+}
+figure.phx-fig img {
+    max-width: 100%;
+    border: 1px solid var(--phx-rule);
+    border-radius: 4px;
+}
+figure.phx-fig figcaption {
+    font-size: 12.5px;
+    color: var(--phx-muted);
+    font-style: italic;
+    margin-top: 5px;
+}
+.phx-figrow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    align-items: flex-start;
+}
+.phx-figrow figure.phx-fig {
+    flex: 1 1 300px;
+    min-width: 0;
+    margin: 16px 0 0 0;
+}

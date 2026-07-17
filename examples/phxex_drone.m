@@ -8,13 +8,8 @@ function phxex_drone(wpScale)
 % are visual-only kinematic bodies that follow the frame.
 %
 % A cascade controller runs at the full simulation rate: a position PD
-% loop converts the waypoint error into a desired acceleration, which
-% defines the required total thrust and the desired tilt of the frame;
-% a geometric attitude PD loop turns the tilt error into body torques;
-% and an exact allocation matrix distributes [thrust, roll, pitch, yaw]
-% into the four motor throttles - the only actuation the drone has. The
-% frame is longitudinally asymmetric (the rear arms are longer), so the
-% allocation also balances the unequal lever arms.
+% loop, a geometric attitude PD loop and an exact allocation into the
+% four motor throttles - the only actuation the drone has.
 %
 % The drone takes off from the pad, flies a rectangle of waypoints with
 % altitude changes, returns and lands. A ball resting on a slim column
@@ -61,7 +56,7 @@ function phxex_drone(wpScale)
 
     % Ground and the landing pad
     phx.Body(ax, "Type", "static", "Position", [wpScale/2 wpScale/2 -0.5], ...
-        "Shape", {"Box", "Size", [4*wpScale, 4*wpScale, 1], "Color", [1 1 1]});
+        "Shape", {"Box", "Size", [4*wpScale, 4*wpScale, 1], "Color", [1 1 1]}, "Restitution", 0.5);
     phx.Body(ax, "Type", "static", "Position", [0 0 0.05], ...
         "Shape", {"Box", "Size", [1.6 1.6 0.1], "Color", [0.2 0.8 0.9]});
 
@@ -72,7 +67,7 @@ function phxex_drone(wpScale)
         "Color", [0.6 0.6 0.65]});
     ball = phx.Body(ax, "Position", [wpScale/2, -0.5, zBall], ...
         "Shape", {"Sphere", "Diameter", 0.36, "Density", 20, ...
-        "Color", [0.7 0.2 0.5]}, "Friction", 0.2);
+        "Color", [0.7 0.2 0.5]}, "Friction", 0.2, "Restitution", 1);
 
     % The quadcopter frame; mass properties are set explicitly
     drone = phx.Body(ax, "Position", [0 0 0.36], ...
@@ -100,7 +95,8 @@ function phxex_drone(wpScale)
 
     phx.Trace(drone, "TracePoints", 1500, "Overlay", true, "Color", [0.3 0.3 0.3]);
 
-    % Exact thrust allocation: [T tauX tauY tauZ]' = A*f -> f = A\...
+    % Exact thrust allocation: [T tauX tauY tauZ]' = A*f -> f = A\...; the
+    % rear arms are longer, so the allocation balances the unequal lever arms
     A = [ones(1, 4); mounts(:, 2)'; -mounts(:, 1)'; spins*kQ];
     Ainv = inv(A); %#ok<MINV> precomputed once, used every substep
 
@@ -113,10 +109,8 @@ function phxex_drone(wpScale)
     subSteps = 10;
     tMax = 60;
 
-    % Cascade flight controller as a pipeline element.
-    % It reads the drone state and drives the four thruster throttles every
-    % substep, keeping its waypoint/landing state in UserData. The run loop
-    % below only advances the engine and updates the propeller visuals.
+    % The flight controller runs as a pipeline element, driving the four
+    % thruster throttles every substep (see droneControl below)
     prm.th = th;  prm.wp = wp;  prm.Ainv = Ainv;
     prm.mDrone = mDrone;  prm.grav = grav;  prm.maxThrust = maxThrust;
     prm.KpP = KpP;  prm.KdP = KdP;

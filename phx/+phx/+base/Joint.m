@@ -23,6 +23,11 @@ classdef Joint < phx.base.Object
         WorldHandle = []
     end
 
+    properties
+        % Enable mutual collisions of connected bodies
+        MutualCollisions (1, 1) logical = false
+    end
+
     properties (Dependent)
         % Force acting on the body A
         ForceA (1, 3) double

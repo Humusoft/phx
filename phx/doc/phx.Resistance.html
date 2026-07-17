@@ -53,14 +53,21 @@ assigns it to all given bodies. All assigned bodies share the same environment p
 
 <h2 class="phx-h2">Examples</h2>
 <h4 class="phx-h4">Quadratic air drag on falling bodies</h4>
-<pre class="phx-code">b1 = phx.Body(<span class="str">"Position"</span>, [0 0 20]);
-b2 = phx.Body(<span class="str">"Position"</span>, [2 0 20], <span class="str">"Mass"</span>, 5);
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+b1 = phx.Body(<span class="str">"Position"</span>, [0 0 20], <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Density"</span>, 1});   <span class="cmt">% 1 kg</span>
+b2 = phx.Body(<span class="str">"Position"</span>, [2 0 20], <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Density"</span>, 5});   <span class="cmt">% 5 kg</span>
 
 <span class="cmt">% Drag proportional to v^2 (f0 = 0, f1 = 0, f2 = 0.5)</span>
 phx.Resistance([b1 b2], <span class="str">"VelocityFactors"</span>, [0 0 0.5]);
 
 sim = phx.Simulation;
 sim.step(3, 300, 1);</pre>
+
+<figure class="phx-fig">
+<img src="img/resistance.png" alt="Two boxes falling with air drag">
+<figcaption>Quadratic drag caps each body at its terminal velocity: the heavier box falls ahead of the lighter one.</figcaption>
+</figure>
 
 <h4 class="phx-h4">Constant wind</h4>
 <pre class="phx-code">phx.Resistance([b1 b2], <span class="str">"VelocityFactors"</span>, [0 2], ...
@@ -71,6 +78,11 @@ sim.step(3, 300, 1);</pre>
 <a href="phx.Thruster.html">phx.Thruster</a>,
 <a href="phx.Spring.html">phx.Spring</a>,
 <a href="phx.Body.html">phx.Body</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_forces.html">Forces, actuators and fields</a>
 </div>
 
 <div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>

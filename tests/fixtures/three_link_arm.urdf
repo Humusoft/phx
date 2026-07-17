@@ -1,0 +1,101 @@
+<?xml version="1.0"?>
+<!-- Test fixture for phx.assembly.import: a small arm exercising box/cylinder/sphere
+     geometries, non-trivial origins and rpy rotations, named and inline
+     materials, a revolute + fixed + prismatic joint (the prismatic one is
+     deliberately present to test its substitution by a fixed joint), link
+     names that need sanitization, and a geometry-less dummy link. -->
+<robot name="three_link_arm">
+
+  <material name="steel">
+    <color rgba="0.6 0.6 0.7 1.0"/>
+  </material>
+
+  <link name="base">
+    <inertial>
+      <origin xyz="0 0 0.01" rpy="0 0 0"/>
+      <mass value="5.0"/>
+      <inertia ixx="0.04" ixy="0" ixz="0" iyy="0.04" iyz="0" izz="0.075"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0.05" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.3 0.3 0.1"/>
+      </geometry>
+      <material name="steel"/>
+    </visual>
+  </link>
+
+  <joint name="shoulder-joint" type="revolute">
+    <origin xyz="0 0 0.1" rpy="0.1 0.2 0.3"/>
+    <parent link="base"/>
+    <child link="upper-arm"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.57" upper="1.57" effort="10" velocity="1"/>
+  </joint>
+
+  <link name="upper-arm">
+    <inertial>
+      <origin xyz="0 0 0.2" rpy="0 0 0"/>
+      <mass value="1.2"/>
+      <inertia ixx="0.017" ixy="0.001" ixz="0" iyy="0.017" iyz="0" izz="0.0015"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0.2" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.05" length="0.4"/>
+      </geometry>
+      <material name="steel"/>
+    </visual>
+  </link>
+
+  <joint name="elbow.fix" type="fixed">
+    <origin xyz="0 0 0.4" rpy="0 -0.4 0"/>
+    <parent link="upper-arm"/>
+    <child link="forearm"/>
+  </joint>
+
+  <link name="forearm">
+    <inertial>
+      <mass value="0.8"/>
+      <inertia ixx="0.005" ixy="0" ixz="0" iyy="0.005" iyz="0" izz="0.001"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <sphere radius="0.08"/>
+      </geometry>
+      <material>
+        <color rgba="0.8 0.2 0.2 1.0"/>
+      </material>
+    </visual>
+  </link>
+
+  <joint name="wrist_slide" type="prismatic">
+    <origin xyz="0.1 0 0" rpy="0 0 1.0"/>
+    <parent link="forearm"/>
+    <child link="hand"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="0" upper="0.1" effort="5" velocity="0.5"/>
+  </joint>
+
+  <link name="hand">
+    <inertial>
+      <mass value="0.5"/>
+      <inertia ixx="0.002" ixy="0" ixz="0" iyy="0.002" iyz="0" izz="0.002"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.05 0 0" rpy="0 1.5707963 0"/>
+      <geometry>
+        <box size="0.1 0.06 0.06"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <joint name="tool_mount" type="fixed">
+    <origin xyz="0.1 0 0"/>
+    <parent link="hand"/>
+    <child link="tool-frame"/>
+  </joint>
+
+  <link name="tool-frame"/>
+
+</robot>

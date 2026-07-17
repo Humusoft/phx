@@ -92,7 +92,7 @@ classdef RevoluteJoint < phx.base.Joint
             if valid
                 obj.WorldHandle = world;
                 obj.ObjectHandle = phx.engine.io('add', world, 'hingeconstraint', obj.Parents{1}.ObjectHandle, obj.Parents{2}.ObjectHandle, ...
-                    obj.PointA, obj.PointB, obj.AxisA, obj.AxisB, true);
+                    obj.PointA, obj.PointB, obj.AxisA, obj.AxisB, true, ~obj.MutualCollisions);
             end
         end
 

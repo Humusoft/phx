@@ -34,7 +34,7 @@ classdef OBJ < phx.base.Shape & phx.base.ShapeMesh
     end
 
     properties
-        % Scale
+        % Scale factors [x y z], or a scalar for uniform scaling
         Scale (1, 3) double = [1 1 1]
 
         % Move the origin to the centre of the shape
@@ -43,7 +43,8 @@ classdef OBJ < phx.base.Shape & phx.base.ShapeMesh
         % Volumetric density (kg/m^3)
         Density (1, 1) double = 1000
 
-        % Envelope
+        % Collision envelope: bounding "box", "cylinder" or "sphere",
+        % "convex" hull, or "concave" triangle mesh
         Envelope {mustBeMember(Envelope, ["box", "cylinder", "sphere", "convex", "concave"])} = "box"
     end
 

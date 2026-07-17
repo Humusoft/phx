@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.Measure</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.Measure</div>
+
+<h1 class="phx-title">phx.Measure</h1>
+<p class="phx-purpose">Measure</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.Measure &nbsp;|&nbsp; Superclass: <a href="phx.base.Object.html">phx.base.Object</a></p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.Measure</code> measures mutual kinematic quantities between two
+moving bodies: the distance, the relative position and the relative velocity of two measuring
+points, expressed in the global frame or in the local frame of either body. The quantities are
+intended to be read immediately during the simulation (e.g. from a
+<a href="phx.Function.html">phx.Function</a> controller or a
+<a href="phx.Logger.html">phx.Logger</a>). The measure is drawn into the scene as a dashed line
+between the two points.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">m = phx.Measure(bodyA,bodyB)</span>
+<span class="phx-syntax">m = phx.Measure(___,Name,Value)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">m = phx.Measure(bodyA,bodyB)</code> creates a measuring object between
+the points of origin of the two bodies. Use <code class="phx-inline">PointA</code> and
+<code class="phx-inline">PointB</code> for custom measuring points.</p>
+</div>
+
+<h3 class="phx-h3">Input Arguments</h3>
+<table class="phx-tbl">
+<tr><th>Argument</th><th>Type</th><th>Description</th></tr>
+<tr><td class="name">bodyA, bodyB</td><td class="type">phx.Body (scalar)</td><td>The two bodies between which the quantities are measured.</td></tr>
+</table>
+
+<h2 class="phx-h2">Properties</h2>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">PointA</td><td class="dflt">[0 0 0]</td><td>Measuring point in the local frame of the first body.</td></tr>
+<tr><td class="name">PointB</td><td class="dflt">[0 0 0]</td><td>Measuring point in the local frame of the second body.</td></tr>
+<tr><td class="name">Overlay</td><td class="dflt">false</td><td>Draw the measure as an overlay (always on top).</td></tr>
+<tr><td class="name">Distance</td><td class="type">double (read-only)</td><td>Scalar distance between both measuring points, <span class="phx-unit">m</span>.</td></tr>
+<tr><td class="name">Position</td><td class="type">1&times;3 double (read-only)</td><td>Position vector between both measuring points in the global frame, <span class="phx-unit">m</span>.</td></tr>
+<tr><td class="name">PositionInA</td><td class="type">1&times;3 double (read-only)</td><td>Position vector of the second measuring point in the local frame of the first body, <span class="phx-unit">m</span>.</td></tr>
+<tr><td class="name">PositionInB</td><td class="type">1&times;3 double (read-only)</td><td>Position vector of the first measuring point in the local frame of the second body, <span class="phx-unit">m</span>.</td></tr>
+<tr><td class="name">Velocity</td><td class="type">1&times;3 double (read-only)</td><td>Velocity vector between both measuring points in the global frame, <span class="phx-unit">m/s</span>.</td></tr>
+<tr><td class="name">VelocityInA</td><td class="type">1&times;3 double (read-only)</td><td>Velocity vector of the second measuring point in the local frame of the first body, <span class="phx-unit">m/s</span>.</td></tr>
+<tr><td class="name">VelocityInB</td><td class="type">1&times;3 double (read-only)</td><td>Velocity vector of the first measuring point in the local frame of the second body, <span class="phx-unit">m/s</span>.</td></tr>
+</table>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">Measure the distance between a falling ball and the ground</h4>
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+ball  = phx.Body(<span class="str">"Position"</span>, [0 0 5], <span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>});
+floor = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [6 6 0.3]});
+
+m = phx.Measure(ball, floor, <span class="str">"PointB"</span>, [0 0 0.15]);
+
+sim = phx.Simulation;
+sim.step(1, 200, 1);
+
+disp(m.Distance);      <span class="cmt">% current gap between ball center and floor surface</span>
+disp(m.Velocity);      <span class="cmt">% relative velocity in the global frame</span>
+delete(sim);</pre>
+
+<figure class="phx-fig">
+<img src="img/measure.png" alt="Ball resting on a floor plate">
+<figcaption>The ball at rest on the floor plate; <code class="phx-inline">Distance</code> and <code class="phx-inline">Velocity</code> keep reporting the gap and the relative velocity.</figcaption>
+</figure>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.Logger.html">phx.Logger</a>,
+<a href="phx.Trace.html">phx.Trace</a>,
+<a href="phx.Body.html">phx.Body</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_logging.html">Measuring and logging</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

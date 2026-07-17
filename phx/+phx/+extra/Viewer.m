@@ -179,11 +179,11 @@ classdef Viewer < handle
 
             % Set default 3D view settings
             obj.Axes.Interactions = [];
-            obj.Axes.Toolbar = []; %obj.hA.Toolbar.Visible = "off";
+            obj.Axes.Toolbar = []; %obj.Axes.Toolbar.Visible = "off";
             obj.Axes.Visible = false;
             obj.Axes.NextPlot = 'add';
             obj.Axes.Clipping = false;
-            obj.Axes.DataAspectRatio = [1 1 1]; %axis(obj.hA, "equal");
+            obj.Axes.DataAspectRatio = [1 1 1]; %axis(obj.Axes, "equal");
             obj.Axes.XGrid = true;
             obj.Axes.YGrid = true;
             obj.Axes.ZGrid = true;
@@ -248,7 +248,7 @@ classdef Viewer < handle
             if obj.Texture == ""
                 obj.Texture = strrep(mfilename("fullpath"), mfilename, "defaultSky.jpg");
             end
-            %obj.hA.CameraViewAngle = obj.DefaultCameraViewAngle;
+            %obj.Axes.CameraViewAngle = obj.DefaultCameraViewAngle;
             obj.Headlight = obj.Headlight;
             obj.basicView("home");
         end
@@ -259,7 +259,7 @@ classdef Viewer < handle
             end
 
             for obj = objs
-                close(obj.hF);
+                close(obj.Figure);
                 delete(obj);
             end
         end
@@ -443,7 +443,7 @@ classdef Viewer < handle
             % Check the headlight object
             if isempty(obj.CamLight) || ~isvalid(obj.CamLight)
                 obj.CamLight = light(obj.Axes, 'Style', 'local', 'Tag', 'phxViewer');
-                %obj.CamLight = matlab.graphics.primitive.world.LightSource('Parent', obj.hA, 'Style', 'local');
+                %obj.CamLight = matlab.graphics.primitive.world.LightSource('Parent', obj.Axes, 'Style', 'local');
             end
 
             obj.Headlight = enable;
@@ -720,7 +720,7 @@ classdef Viewer < handle
                     m = makehgtform("axisrotate", a, -dp(1)*0.01);
                     obj.SelectedBody.Orientation = obj.SelectedBody.Orientation*m(1:3, 1:3);
             end
-            %obj.hA.CameraUpVector = [0 0 1];
+            %obj.Axes.CameraUpVector = [0 0 1];
             %obj.CamLight.Position = obj.CameraPosition;
             obj.LastHitPoint = event.Point;
         end
@@ -735,14 +735,14 @@ classdef Viewer < handle
             else
                 p = obj.CameraPosition;
                 t = obj.CameraTarget;
-                %t = (obj.hA.CameraTarget + obj.LastInteresctionPoint)/2;
-                %obj.hA.CameraTarget = t;
+                %t = (obj.Axes.CameraTarget + obj.LastInteresctionPoint)/2;
+                %obj.Axes.CameraTarget = t;
                 dp = p - t;
                 if any(isnan(obj.LastInteresctionPoint))
                     do = [0 0 0] - t;
                 else
-                    % cp = obj.hF.CurrentPoint;
-                    % do = matlab.graphics.interaction.internal.calculateIntersectionPoint(cp, obj.hA) - t;
+                    % cp = obj.Figure.CurrentPoint;
+                    % do = matlab.graphics.interaction.internal.calculateIntersectionPoint(cp, obj.Axes) - t;
                     do = obj.LastInteresctionPoint - t;
                 end
 

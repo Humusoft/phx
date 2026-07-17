@@ -109,7 +109,7 @@ classdef FixedJoint < phx.base.Joint
             valid = numel(obj.Parents) == 2 && all(cellfun(@isvalid, obj.Parents));
             if valid
                 obj.WorldHandle = world;
-                obj.ObjectHandle = phx.engine.io('add', world, 'fixedconstraint', obj.Parents{1}.ObjectHandle, obj.Parents{2}.ObjectHandle, obj.TransformA(:), obj.TransformB(:));
+                obj.ObjectHandle = phx.engine.io('add', world, 'fixedconstraint', obj.Parents{1}.ObjectHandle, obj.Parents{2}.ObjectHandle, obj.TransformA(:), obj.TransformB(:), ~obj.MutualCollisions);
                 phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'error', 0.1, 0.00001);
             end
         end

@@ -24,19 +24,16 @@ function phxbench(group)
     if g1, phxex_gravity(100, 128, false); end
     if g1, phxex_charges(50); end
     if g2, phxex_joints(false); end
-    if g1, phxex_load; end
-    if g2, phxex_minimal2; end
-    if g2, phxex_multisim1; end
-    if g2, phxex_multiview1; end
+    if g2, phxex_multisim; end
+    if g2, phxex_multiview; end
     if g2, phxex_noview; end
-    if g1, phxex_relative; end
     if g1, phxex_rotmagdip; end
     if g2, phxex_shapes; end
     if g1, phxex_slide; end
     if g1, phxex_soil; end
     if g1, phxex_springs(false); end
     if g1, phxex_terrain; end
-    if g1, phxex_textures1; end
+    if g1, phxex_textures; end
     if g2, phxex_trainwheel; end
     if g1, phxex_wankel(false); end
 

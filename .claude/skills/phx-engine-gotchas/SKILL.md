@@ -33,6 +33,12 @@ shapes in each `phx.shape.*` class's `initObject` (`'box'`, `'cylinder'`,
 in the joint classes. Enum-like inputs (`Type`→`TypeID`, axes, solver) **are**
 validated MATLAB-side; field names and payloads are not.
 
+**All six `'*constraint'` add verbs require a trailing `disableCollisions` logical**
+(since the 2026-07 MEX; without it the call fails with "ArgumentList index out of
+range"). The joint classes pass `~obj.MutualCollisions` there. Body-level knobs that
+write straight through to the engine: `'restitution'` (Body.Restitution, contact
+bounciness combined from both bodies) alongside the existing `'friction'`/`'collisions'`.
+
 ## Engine variants (internal)
 
 The active MEX can be swapped for an alternate build (`debug`, `verbose`, `time`,

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Getting Started with PHX</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; Getting Started</div>
+
+<h1 class="phx-title">Getting Started with PHX</h1>
+<p class="phx-purpose">What PHX is, how to install it and your first running scene</p>
+
+<h2 class="phx-h2">What PHX is</h2>
+<p><b>PHX</b> is a MATLAB&reg; toolbox that lets you assemble a physical scene from rigid bodies,
+joints and forces, run it in time, and watch the result directly in a MATLAB 3-D plot.</p>
+
+<p>Under the hood the motion is computed by the well-known <b>Bullet</b> physics engine, but as a
+user you never touch it directly. You work only with the clean <code class="phx-inline">phx.*</code>
+objects &mdash; you create a body, give it a shape, optionally link it to other bodies, and run the
+simulation. The toolbox takes care of collisions, gravity, friction and rendering.</p>
+
+<p>What PHX is good for:</p>
+<ul>
+<li><b>Mechanics and robotics</b> &mdash; pendulums, manipulators, chassis, gear trains, conveyors.</li>
+<li><b>Teaching and demonstrations</b> &mdash; gravity, orbits, collisions, stack stability.</li>
+<li><b>Control design and testing</b> &mdash; a scene can be driven from a script or from
+    Simulink&reg;; sensors and actuators are built in.</li>
+<li><b>Rapid prototypes</b> &mdash; a typical scene is 5&ndash;10 lines of code.</li>
+</ul>
+
+<h2 class="phx-h2">Installation and first run</h2>
+<p>PHX is provided as a MATLAB toolbox (it requires <b>MATLAB R2025a or newer</b>). Once it is
+installed, the <code class="phx-inline">phx</code> package is on the path and ready to use &mdash;
+just run one of the ready-made examples:</p>
+
+<pre class="phx-code"><span class="cmt">% run one of the ready-made examples</span>
+phxex_minimal</pre>
+
+<p>All examples live in the <code class="phx-inline">examples/</code> folder, from minimal scenes to
+advanced ones (control, optimization, magnetism); they are all named
+<code class="phx-inline">phxex_*</code>. Some examples expect to be run from their own folder
+(because of textures and STL models) &mdash; in that case switch the working directory first, e.g.
+<code class="phx-inline">cd examples</code>.</p>
+
+<h2 class="phx-h2">Your first scene: a falling ball</h2>
+<p>The simplest meaningful scene: a ball drops onto a solid floor. It shows everything essential
+&mdash; a dynamic body, a static body, a shape and how to run things.</p>
+
+<pre class="phx-code"><span class="cmt">% 3-D view and lighting</span>
+clf; view(3); axis equal; grid on; camlight headlight;
+
+<span class="cmt">% falling ball (dynamic and massive by default)</span>
+phx.Body(<span class="str">"Position"</span>, [0 0 3], <span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>, <span class="str">"Color"</span>, [.2 .5 .9]});
+
+<span class="cmt">% static floor (never moves, only there for collisions)</span>
+phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Position"</span>, [0 0 0], ...
+         <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [6 6 0.3]});
+
+<span class="cmt">% assemble and run: 1.5 s in 150 steps</span>
+sim = phx.Simulation;
+sim.step(1.5, 150, 1);</pre>
+
+<figure class="phx-fig">
+<img src="img/drop.png" alt="Ball falling onto a floor">
+<figcaption>After landing, the ball comes to rest on the static floor. Gravity and collisions are
+handled automatically.</figcaption>
+</figure>
+
+<div class="phx-note">
+<span class="lbl">Tip.</span> If you do not set a body's <code class="phx-inline">Type</code>, it is
+<i>dynamic</i> &mdash; it falls, collides and responds to forces. A
+<code class="phx-inline">static</code> body never moves (floors, walls, frames). A
+<code class="phx-inline">kinematic</code> body moves only in the way you prescribe (conveyors, arms).
+</div>
+
+<h2 class="phx-h2">Where to go next</h2>
+<ul>
+<li><a href="phx_ug_concepts.html">Core concepts</a> &mdash; the handful of object types every scene
+    is built from, and how the <code class="phx-inline">step</code> method works.</li>
+<li><a href="phx_ug_examples.html">Examples and larger scenes</a> &mdash; the shipped demos and a
+    complete self-balancing robot walkthrough.</li>
+<li>The <a href="phx_product_page.html">reference pages</a> of the individual classes, also
+    available with the <code class="phx-inline">phxdoc</code> command, e.g.
+    <code class="phx-inline">phxdoc phx.Body</code>.</li>
+</ul>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_concepts.html">Core concepts</a>,
+<a href="phx_ug_bodies.html">Bodies and shapes</a>,
+<a href="phx_ug_examples.html">Examples and larger scenes</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox User Guide</div>
+
+</div>
+</body>
+</html>

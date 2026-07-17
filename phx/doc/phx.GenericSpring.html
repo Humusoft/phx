@@ -47,23 +47,34 @@ the generic spring constrains the full relative pose with per-axis stiffness and
 <tr><td class="name">LinearLimits</td><td class="dflt">[0 0 0; 0 0 0]</td><td>Lower and upper linear limits per axis (2&times;3).</td></tr>
 <tr><td class="name">AngularLimits</td><td class="dflt">[0 0 0; 0 0 0]</td><td>Lower and upper angular limits per axis (2&times;3), <span class="phx-unit">rad</span>.</td></tr>
 </table>
+<p>Reaction feedback and the <code class="phx-inline">MutualCollisions</code> switch (collisions
+between the connected bodies, default <code class="phx-inline">false</code>) are inherited from
+<a href="phx.base.Joint.html">phx.base.Joint</a>.</p>
 
 <h2 class="phx-h2">Examples</h2>
 <h4 class="phx-h4">Compliant mount between two bodies</h4>
-<pre class="phx-code">a = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Position"</span>, [0 0 2]);
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+a = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Position"</span>, [0 0 2]);
 b = phx.Body(<span class="str">"Position"</span>, [0 0 2]);
 
 phx.GenericSpring(a, b);
 
 sim = phx.Simulation;
 b.applyForce([0 0 -30]);
-sim.step(3, 600, 5);</pre>
+sim.step(3, 600, 5);
+delete(sim);</pre>
 
 <div class="phx-seealso">
 <span class="lbl">See also</span>
 <a href="phx.Spring.html">phx.Spring</a>,
 <a href="phx.GenericJoint.html">phx.GenericJoint</a>,
 <a href="phx.base.Joint.html">phx.base.Joint</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_joints.html">Joints, springs and ropes</a>
 </div>
 
 <div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>

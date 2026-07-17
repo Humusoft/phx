@@ -13,12 +13,11 @@ function phxex_charges(drawSteps)
     % Figure setup
     [~, ax] = phx.extra.Viewer("clear", "DefaultCameraPosition", [1, 0, 100], "Texture", "defaultChecker"); % Set camera position and view mode
 
-    % Physical model: Create static ground bodies
-    phx.Body(ax, "Type", "static", "Position", [0 0 0], "Shape", {"Box", "Size", [50 50 1], "Color", 1}, "Friction", 0.01);
-    phx.Body(ax, "Type", "static", "Position", [25.5 0 1], "Shape", {"Box", "Size", [1 50 2], "Color", 0.8});
-    phx.Body(ax, "Type", "static", "Position", [-25.5 0 1], "Shape", {"Box", "Size", [1 50 2], "Color", 0.8});
-    phx.Body(ax, "Type", "static", "Position", [0 25.5 1], "Shape", {"Box", "Size", [52 1 2], "Color", 0.8});
-    phx.Body(ax, "Type", "static", "Position", [0 -25.5 1], "Shape", {"Box", "Size", [52 1 2], "Color", 0.8});
+    % Physical model: an arena keeps the cubes in; its origin is lifted so
+    % that the floor surface stays at z = 0.5, where the cubes rest
+    parts = phx.assembly.arena("Size", [50 50 1.5], "Thickness", 1, "Position", [0 0 0.5], "Color", [1 1 1]);
+    parts.floor.Friction = 0.01;
+    set(parts.walls, "Color", [0.8 0.8 0.8]);
 
     % Create dynamic objects
     cubes(1) = phx.Body(ax, "Position", [-6 -6 3], "Shape", {"Box", "Size", 5, "Color", [0.5 0.5 1]});

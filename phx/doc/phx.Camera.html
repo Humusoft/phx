@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.Camera</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.Camera</div>
+
+<h1 class="phx-title">phx.Camera</h1>
+<p class="phx-purpose">Camera</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.Camera &nbsp;|&nbsp; Superclass: <a href="phx.base.Object.html">phx.base.Object</a></p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.Camera</code> attaches the camera position and target of the scene
+view to selected bodies. The camera looks from the first body towards the second body, following
+both as they move &mdash; e.g. a chase camera mounted on a vehicle, or a fixed observer tracking a
+flying object. The camera drives either a <a href="phx.extra.Viewer.html">phx.extra.Viewer</a> or a
+plain axes (whichever is found in the current figure, or set explicitly via
+<code class="phx-inline">Viewer</code>). It can also record the view into a video file
+(MPEG&#8209;4) at a frame rate based on simulation time.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">cam = phx.Camera(bodyA,bodyB)</span>
+<span class="phx-syntax">cam = phx.Camera(___,Name,Value)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">cam = phx.Camera(bodyA,bodyB)</code> creates a camera looking from body A
+to body B, respecting their points of origin. A custom offset to both points of origin can be set
+using the <code class="phx-inline">PointA</code> and <code class="phx-inline">PointB</code>
+properties.</p>
+</div>
+
+<h3 class="phx-h3">Input Arguments</h3>
+<table class="phx-tbl">
+<tr><th>Argument</th><th>Type</th><th>Description</th></tr>
+<tr><td class="name">bodyA</td><td class="type">phx.Body (scalar)</td><td>The body the camera position is attached to.</td></tr>
+<tr><td class="name">bodyB</td><td class="type">phx.Body (scalar)</td><td>The body the camera target is attached to.</td></tr>
+</table>
+
+<h2 class="phx-h2">Properties</h2>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">PointA</td><td class="dflt">[0 0 0]</td><td>Connecting point in the local space of the first body (camera position offset).</td></tr>
+<tr><td class="name">PointB</td><td class="dflt">[0 0 0]</td><td>Connecting point in the local space of the second body (camera target offset).</td></tr>
+<tr><td class="name">Viewer</td><td class="dflt">[]</td><td>PHX viewer or axes to drive. Empty picks the <a href="phx.extra.Viewer.html">phx.extra.Viewer</a> of the current figure, or the current axes.</td></tr>
+<tr><td class="name">RecordFile</td><td class="type">string</td><td>Video file name. When set, the view is recorded to an MPEG&#8209;4 file during the simulation.</td></tr>
+<tr><td class="name">RecordFPS</td><td class="dflt">30</td><td>Video frame rate based on simulation time, <span class="phx-unit">frames/s</span>.</td></tr>
+</table>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">Camera following a falling ball</h4>
+<pre class="phx-code">phx.extra.Viewer(<span class="str">"clear"</span>);
+
+ball  = phx.Body(<span class="str">"Position"</span>, [0 0 3], <span class="str">"LinearVelocity"</span>, [0.5 0 0], <span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>});
+chase = phx.Body(<span class="str">"Position"</span>, [4 4 8], <span class="str">"Visible"</span>, false);
+phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>);
+
+phx.Camera(chase, ball);
+
+sim = phx.Simulation;
+sim.step(3, 600, 2);
+delete(sim);</pre>
+
+<figure class="phx-fig">
+<img src="img/camera.jpg" alt="Camera view of the ball on the ground body against the sky">
+<figcaption>The view through the body-mounted camera: looking down from the chase body at the ball
+resting on the ground body.</figcaption>
+</figure>
+
+<h4 class="phx-h4">Record the view to a video file</h4>
+<pre class="phx-code">phx.Camera(chase, ball, <span class="str">"RecordFile"</span>, <span class="str">"flight.mp4"</span>, <span class="str">"RecordFPS"</span>, 60);</pre>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.extra.Viewer.html">phx.extra.Viewer</a>,
+<a href="phx.Trace.html">phx.Trace</a>,
+<a href="phx.Body.html">phx.Body</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_viewer.html">Interactive viewer</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

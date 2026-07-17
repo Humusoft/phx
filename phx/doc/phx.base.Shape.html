@@ -54,7 +54,9 @@ can wear, including:</p>
 
 <h2 class="phx-h2">Examples</h2>
 <h4 class="phx-h4">Assign a shape to a body</h4>
-<pre class="phx-code"><span class="cmt">% As a cell array: shape name followed by its name-value pairs</span>
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+<span class="cmt">% As a cell array: shape name followed by its name-value pairs</span>
 b1 = phx.Body(<span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [2 1 1], <span class="str">"Color"</span>, [0.4 0.6 1]});
 
 <span class="cmt">% As a shape object</span>
@@ -69,6 +71,11 @@ b2 = phx.Body(<span class="str">"Shape"</span>, phx.shape.Sphere(<span class="st
 <a href="phx.base.ShapeMesh.html">phx.base.ShapeMesh</a>,
 <a href="phx.Body.html">phx.Body</a>,
 <a href="phx.base.Object.html">phx.base.Object</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_bodies.html">Bodies and shapes</a>
 </div>
 
 <div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>

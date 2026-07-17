@@ -35,7 +35,6 @@ function phxex_springs(showGraphs)
     % Data logging
     log1 = phx.Logger(boxes(4), "Frequency", 20, "Parameters", "Position");
     log2 = phx.Logger(boxes(4).Children([1 3]), "Frequency", 10, "Parameters", "Force");
-    %log2.dispChannels;
 
     % Simulation
     sim = phx.Simulation(boxes, "HideInvalid", true);

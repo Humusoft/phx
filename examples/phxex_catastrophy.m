@@ -26,20 +26,15 @@ function phxex_catastrophy
         phx.Trace(boxes(i), "TracePoints", 50, "Point", scl/2, "Color", clr);
     end
 
-    % Load a shape from an STL file for the cats
+    % Load a cat shape from an STL file and create scattered bodies above the ground
     catShape = phx.shape.STL("Source", resdir+"cat.stl", "Scale", 0.1, "Details", 0.5, "Color", [1 1 1], "Envelope", "convex");
-
-    % Create dynamic cat bodies at random positions
-    for i = 1:10
-        cats(i) = phx.Body(ax, "Position", [rand*40-20 rand*40-20 5], "Shape", catShape);
-    end
+    cats = phx.assembly.scatter(catShape, 10, "Region", [40 40 0], "Spacing", 6, "Position", [0 0 5]);
 
     % Initialize the simulation with the ground, boxes, and cats
     sim = phx.Simulation([ground boxes cats]);
 
     % Step the simulation forward and update the figure each 10 iterations
-    %sim.step(3, 300, 10); % for saved_catastrophy.mat
-    sim.step(20, 2000, 10); 
+    sim.step(20, 2000, 10);
 
     % Clean up the simulation object
     delete(sim); 

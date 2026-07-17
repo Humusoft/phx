@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.assembly.arena</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.assembly.arena</div>
+
+<h1 class="phx-title">phx.assembly.arena</h1>
+<p class="phx-purpose">Static arena &mdash; a floor plate enclosed by four walls</p>
+<p class="phx-classref">Function&nbsp;&nbsp;phx.assembly.arena &nbsp;|&nbsp; Package: phx.assembly</p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.assembly.arena</code> builds a static floor with four walls around
+it, ready to keep dynamic bodies from escaping the scene. The arena origin lies at the middle of
+the floor surface, so by default the inner space spans &minus;x/2..x/2 and &minus;y/2..y/2 in the
+ground plane and 0..z upwards around the world origin. The parts are ordinary static bodies, so
+they can be restyled or retextured afterwards through the returned struct.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">parts = phx.assembly.arena()</span>
+<span class="phx-syntax">parts = phx.assembly.arena(Name,Value)</span>
+<span class="phx-syntax">parts = phx.assembly.arena(ax,___)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">parts = phx.assembly.arena()</code> creates the arena in the current
+axes and returns a struct with the fields <code class="phx-inline">floor</code> (the floor body)
+and <code class="phx-inline">walls</code> (1&times;4 <a href="phx.Body.html">phx.Body</a>, in the
+order &minus;x, +x, &minus;y, +y).</p>
+<p><code class="phx-inline">parts = phx.assembly.arena(ax,___)</code> draws into the given axes
+instead of the current axes; an empty target (<code class="phx-inline">[]</code>) creates the
+parts without graphics for headless simulations.</p>
+</div>
+
+<h2 class="phx-h2">Options</h2>
+<table class="phx-tbl">
+<tr><th>Option</th><th>Default</th><th>Description</th></tr>
+<tr><td class="name">Size</td><td class="dflt">[2 2 0.5]</td><td>Inner dimensions [x y z] of the arena &mdash; the usable floor area x-by-y and the inner height z of the walls.</td></tr>
+<tr><td class="name">Thickness</td><td class="dflt">0.1</td><td>Thickness of the floor and wall plates.</td></tr>
+<tr><td class="name">Color</td><td class="dflt">[1 1 1]</td><td>Common color of all parts.</td></tr>
+<tr><td class="name">Friction</td><td class="dflt">[0.5 0 0]</td><td>Friction coefficients of all parts.</td></tr>
+<tr><td class="name">Position</td><td class="dflt">[0 0 0]</td><td>World position of the arena origin (the middle of the floor surface).</td></tr>
+<tr><td class="name">Orientation</td><td class="dflt">eye(3)</td><td>World rotation of the arena as a 3&times;3 rotation matrix. Same convention as <code class="phx-inline">phx.Body.Orientation</code>.</td></tr>
+<tr><td class="name">EulerAngles</td><td class="dflt">[0 0 0]</td><td>World rotation of the arena as Euler angles (z&rarr;y&rarr;x order), an alternative to <code class="phx-inline">Orientation</code>.</td></tr>
+</table>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">Keep a bouncing ball in a box</h4>
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+parts = phx.assembly.arena(<span class="str">"Size"</span>, [4 3 0.3]);
+set(parts.walls, <span class="str">"Color"</span>, [0.4 0.55 0.7]);
+
+phx.Body(<span class="str">"Position"</span>, [0 0 1], <span class="str">"LinearVelocity"</span>, [3 2 0], ...
+    <span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>, <span class="str">"Diameter"</span>, 0.3});
+
+sim = phx.Simulation;
+sim.step(5, 1000, 5);
+delete(sim);</pre>
+
+<figure class="phx-fig">
+<img src="img/arena.png" alt="Arena with walls and a ball">
+<figcaption>The arena walls keep the bouncing ball inside the floor plate.</figcaption>
+</figure>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.assembly.chain.html">phx.assembly.chain</a>,
+<a href="phx.assembly.scatter.html">phx.assembly.scatter</a>,
+<a href="phx.assembly.import.html">phx.assembly.import</a>,
+<a href="phx.Body.html">phx.Body</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_assemblies.html">Prefab assemblies</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

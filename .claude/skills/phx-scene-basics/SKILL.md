@@ -3,8 +3,9 @@ name: phx-scene-basics
 description: >
   Build and run a physics scene with the PHX MATLAB toolbox (phx.* objects over
   the Bullet engine). Use when creating phx.Body objects, attaching phx.shape.*
-  geometry, setting pose/mass/type, stepping a phx.Simulation, or running a PHX
-  scene headlessly. Start here before the other phx-* skills.
+  geometry, setting pose/mass/type, using the phx.assembly prefab builders
+  (arena, chain, scatter, URDF import), stepping a phx.Simulation, or running a
+  PHX scene headlessly. Start here before the other phx-* skills.
 ---
 
 # PHX scene basics
@@ -22,10 +23,10 @@ from `examples/`:
 
 ```powershell
 # Headless: -batch exits MATLAB when done and returns non-zero on error
-& "C:\Program Files\MATLAB\R2026a\bin\matlab" -sd "examples" -batch "phxex_minimal1"
+& "C:\Program Files\MATLAB\R2026a\bin\matlab" -sd "examples" -batch "phxex_minimal"
 
 # Or put phx on the path yourself
-& "C:\Program Files\MATLAB\R2026a\bin\matlab" -batch "addpath('phx'); cd examples; phxex_minimal1"
+& "C:\Program Files\MATLAB\R2026a\bin\matlab" -batch "addpath('phx'); cd examples; phxex_minimal"
 ```
 
 Wrap long runs with a timeout — engine demos can take minutes. Graphics-dependent
@@ -73,6 +74,12 @@ b = phx.Body(ax, ...
   `updateView` never runs for it until a pipeline rebuild) — the object falls
   invisibly. `kinematic` bodies are in the redraw pipeline, so they render correctly
   through the switch.
+- **Restitution (bounciness)**: `Restitution` (scalar ≥ 0, default **0** = dead contact),
+  settable live mid-run. The bounce of a contact **combines the values of both colliding
+  bodies** (product-like): a bouncy ball dropped on a default floor does **not** bounce —
+  give the floor nonzero `Restitution` too. Realized bounce heights come out noticeably
+  below the ideal `e²·h` (solver losses at contact), so tune `e` empirically against the
+  bounce you want rather than computing it.
 - **Pose** is read/written through these *dependent* properties (they hit the engine
   live): `Position`, `Orientation` (3x3), `Quaternion`, `AxisAngle`, `EulerAngles`,
   `Transform` (4x4). Reading `b.Position` mid-simulation returns the current state.
@@ -86,6 +93,12 @@ b = phx.Body(ax, ...
   if you set `Mass` to 4). To stay consistent either (a) control the mass through the
   shape's `Density` and let `Inertia` follow, or (b) set `Inertia` explicitly together
   with `Mass`. The demos do (b), e.g. `"Mass", 8, "Inertia", 10`.
+- **Worse: constructor `Mass` without an explicit `Shape` is a silent no-op.** The
+  constructor applies your name-value options first and assigns the default unit
+  `Box` *afterwards*, and `set.Shape` recomputes `Mass` from the shape's `Density` —
+  so `phx.Body("Mass", 10)` actually weighs **1000 kg** (readback `b.Mass` confirms).
+  Give the body a real `Shape` (with `Density` sized for the mass you want) or set
+  `b.Mass` after construction.
 - Change `b.Type = "static"` etc. at runtime. Adding (`sim.addObjects`) or deleting
   (`delete(obj)`) objects mid-run rebuilds the simulation pipelines automatically —
   no manual rebuild needed (see phx-engine-gotchas).
@@ -112,6 +125,51 @@ shape-specific — `Box` uses `Size`; round shapes accept **`Radius`** *or* `Dia
 `Density` (auto-computes mass/inertia if you don't set them), and texture/material
 options. `SkeletPoints` adds attachment points used by joints/springs:
 `{"Box", "SkeletPoints", [1.5 0 0; -1.5 0 0]}`.
+
+## Prefab assemblies (`phx.assembly.*`)
+
+Package functions that build common multi-body setups in one call. Shared
+conventions across all four: an optional **leading axes** target like `phx.Body`
+(omitted → `gca`; explicit `[]` → headless, no graphics); the base-pose options
+**`Position`** / **`Orientation`** (3×3) / **`EulerAngles`** (z→y→x, alternative
+to `Orientation` — combining both errors) that rigidly place the whole assembly
+(default: world origin); and plain `phx.Body`/joint objects as return values, so
+parts can be restyled or retuned afterwards. Error IDs are per function
+(`phx:arena:*`, `phx:chain:*`, `phx:scatter:*`, `phx:import:*`).
+
+```matlab
+% Arena: floor + 4 walls. Size = INNER dims [x y z]; origin = middle of the
+% floor TOP surface (floor plate below z = 0, walls stand on it).
+parts = phx.assembly.arena("Size", [8 8 1], "Thickness", 0.2);
+set(parts.walls, "Color", [0.4 0.55 0.7]);   % parts.floor + parts.walls (-x,+x,-y,+y)
+
+% Chain of rigid links along an N×3 polyline; joints sit at the points.
+% Shape "capsule" (default, shortened by one diameter so tips meet) |
+% "cylinder" | "box". Axis: 1×3 for all joints or N×3 per point; a zero row
+% gives a SphericalJoint (default), non-zero a RevoluteJoint about that axis.
+% Anchor "none"|"start"|"end"|"both" pins ends to static mount balls.
+p = phx.assembly.chain([0 0 0; 0.4 0 0; 0.8 0 0], "Anchor", "start", "Axis", [0 1 0]);
+% p.links (Body array), p.joints (CELL array — joint classes may mix), p.anchors
+
+% Scatter n bodies uniformly in Region [x y z] (spans ±x/2, ±y/2, 0..z — same
+% convention as the arena inner space). Spacing > 0 = overlap-free rejection
+% sampling (error phx:scatter:regionFull when it does not fit). Draws from the
+% GLOBAL rng like rand — reproduce with rng(seed), no state is saved/restored.
+% A cell shape spec builds a new shape per body (phx.shape.Rock => variety);
+% a shape object is shared by all bodies.
+rocks = phx.assembly.scatter({"Rock", "Radius", 0.4}, 30, ...
+    "Region", [7 7 4], "Spacing", 0.8, "Position", [0 0 1], ...
+    "RandomOrientation", true, "Color", hsv(30));
+
+% URDF import (robots, but also ragdolls, vehicles, furniture, single-body
+% props): links -> Bodies (struct by link name), revolute/continuous -> 
+% RevoluteJoint, fixed -> FixedJoint (prismatic/planar/floating substituted by
+% FixedJoint + warning). Joints are passive (no motors); MeshPath resolves
+% package:// mesh URIs.
+[bodies, joints] = phx.assembly.import("human.urdf", ...
+    "Position", [0 0 1], "EulerAngles", [0 0.6 0]);
+bodies.base.Type = "static";                 % anchor the base when needed
+```
 
 ## phx.Simulation — lifecycle
 
@@ -148,6 +206,9 @@ building a scene from scratch:
   `r` rests with its centre at `z_s + r`). If exact contact is fiddly, place the body
   a little above and run a short **settle phase** (a few `step` calls) before the main
   action, letting it drop into contact.
+- **Placing many bodies at random.** Don't hand-roll `rand` loops with z-stagger
+  tricks against initial overlap — `phx.assembly.scatter` places n bodies in a
+  region overlap-free (`Spacing`) in one call.
 - **Friction `[drag roll spin]`, each `>= 0` (no upper bound).** `drag` is the sliding/contact
   friction (≈0.5–0.8 for grippy contact, 0 for near-frictionless; values above 1 are allowed for
   very grippy contact). `roll`/`spin` resist rolling

@@ -47,10 +47,15 @@ origins with all six degrees of freedom locked. Open them with
 <tr><td class="name">LinearLimits</td><td class="dflt">[0 0 0; 0 0 0]</td><td>Lower and upper linear limits per axis (2&times;3): <code class="phx-inline">[min; max]</code> for <code class="phx-inline">x y z</code>.</td></tr>
 <tr><td class="name">AngularLimits</td><td class="dflt">[0 0 0; 0 0 0]</td><td>Lower and upper angular limits per axis (2&times;3), <span class="phx-unit">rad</span>.</td></tr>
 </table>
+<p>Reaction feedback and the <code class="phx-inline">MutualCollisions</code> switch (collisions
+between the connected bodies, default <code class="phx-inline">false</code>) are inherited from
+<a href="phx.base.Joint.html">phx.base.Joint</a>.</p>
 
 <h2 class="phx-h2">Examples</h2>
 <h4 class="phx-h4">Allow sliding along the local X axis</h4>
-<pre class="phx-code">a = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Position"</span>, [0 0 2]);
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+a = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Position"</span>, [0 0 2]);
 b = phx.Body(<span class="str">"Position"</span>, [0 0 2]);
 
 <span class="cmt">% Free translation along x in [-1, 1]; everything else locked</span>
@@ -58,13 +63,19 @@ phx.GenericJoint(a, b, <span class="str">"LinearLimits"</span>, [-1 0 0; 1 0 0])
 
 sim = phx.Simulation;
 b.applyForce([20 0 0]);
-sim.step(2, 200, 1);</pre>
+sim.step(2, 200, 1);
+delete(sim);</pre>
 
 <div class="phx-seealso">
 <span class="lbl">See also</span>
 <a href="phx.FixedJoint.html">phx.FixedJoint</a>,
 <a href="phx.GenericSpring.html">phx.GenericSpring</a>,
 <a href="phx.base.Joint.html">phx.base.Joint</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_joints.html">Joints, springs and ropes</a>
 </div>
 
 <div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Joints, Springs and Ropes</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; User Guide &rsaquo; Joints, springs and ropes</div>
+
+<h1 class="phx-title">Joints, Springs and Ropes</h1>
+<p class="phx-purpose">Connecting bodies with constraints and elastic links</p>
+
+<h2 class="phx-h2">Joints and constraints</h2>
+<p>Joints connect two bodies and restrict their relative motion. They are created by writing
+<code class="phx-inline">phx.<i>Type</i>Joint(bodyA, bodyB, &hellip;)</code>; the attachment points
+are given in the local coordinates of each body (<code class="phx-inline">PointA</code>,
+<code class="phx-inline">PointB</code>).</p>
+
+<table class="phx-tbl">
+<tr><th>Joint</th><th>Degrees of freedom</th><th>Use</th></tr>
+<tr><td class="name"><a href="phx.FixedJoint.html">FixedJoint</a></td>
+    <td>0 &mdash; rigid connection</td><td>Gluing two bodies together.</td></tr>
+<tr><td class="name"><a href="phx.RevoluteJoint.html">RevoluteJoint</a></td>
+    <td>1 &mdash; rotation about an axis</td>
+    <td>Hinge, pin, pendulum (<code class="phx-inline">AxisA</code>,
+    <code class="phx-inline">AxisB</code>).</td></tr>
+<tr><td class="name"><a href="phx.SphericalJoint.html">SphericalJoint</a></td>
+    <td>3 &mdash; rotation about all axes</td><td>Ball joint.</td></tr>
+<tr><td class="name"><a href="phx.GearJoint.html">GearJoint</a></td>
+    <td>velocity coupling</td><td>Gear train with a <code class="phx-inline">Ratio</code>.</td></tr>
+<tr><td class="name"><a href="phx.GenericJoint.html">GenericJoint</a>
+    <span class="phx-tag dev">dev</span></td>
+    <td>6 &mdash; with limits</td>
+    <td>General constraint with translation/rotation limits.</td></tr>
+</table>
+
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+A = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Position"</span>, [1 1 0], <span class="str">"Shape"</span>, {<span class="str">"Box"</span>});
+B = phx.Body(<span class="str">"Position"</span>, [4 1 0],  <span class="str">"Shape"</span>, {<span class="str">"Box"</span>});
+C = phx.Body(<span class="str">"Position"</span>, [4 -2 0], <span class="str">"Shape"</span>, {<span class="str">"Box"</span>});
+
+<span class="cmt">% a hinge between A and B</span>
+phx.RevoluteJoint(A, B, <span class="str">"PointA"</span>, [1.5 0 0], <span class="str">"PointB"</span>, [-1.5 0 0]);
+<span class="cmt">% a ball joint between B and C</span>
+phx.SphericalJoint(B, C, <span class="str">"PointA"</span>, [0 -1.5 0], <span class="str">"PointB"</span>, [0 1.5 0]);</pre>
+
+<figure class="phx-fig">
+<img src="img/joints.png" alt="Joints">
+<figcaption>A chain of two joints (hinge + ball joint). The red line is the trail of the chain's
+end (<code>phx.Trace</code>). See <code>phxex_joints</code>.</figcaption>
+</figure>
+
+<div class="phx-note">
+<span class="lbl">Tip.</span> Whole jointed chains &mdash; pendulums, hanging ropes of links &mdash;
+can be created in one call with <a href="phx.assembly.chain.html">phx.assembly.chain</a>; see
+<a href="phx_ug_assemblies.html">Prefab assemblies</a>.
+</div>
+
+<h2 class="phx-h2">Springs and dampers</h2>
+<p><a href="phx.Spring.html">phx.Spring</a> links two bodies with an ideal spring and a damper. You
+set the stiffness (<code class="phx-inline">Stiffness</code>), damping
+(<code class="phx-inline">Damping</code>) and attachment points. The force can even be visualized
+in color.</p>
+
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+boxes(1) = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Position"</span>, [-18 0 10], <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [4 2 1]});
+<span class="kw">for</span> i = 2:7
+    boxes(i) = phx.Body(<span class="str">"Position"</span>, [(i-1)*6-18 0 10], <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [4 2 1]});
+    phx.Spring(boxes(i-1), boxes(i), <span class="str">"Stiffness"</span>, 3e5, <span class="str">"Damping"</span>, 2e3, ...
+               <span class="str">"PointA"</span>, [2 0 0], <span class="str">"PointB"</span>, [-2 0 0], <span class="str">"Colormap"</span>, <span class="str">"jet"</span>);
+<span class="kw">end</span>
+boxes(<span class="kw">end</span>).Type = <span class="str">"static"</span>;       <span class="cmt">% anchor the far end too</span></pre>
+
+<figure class="phx-fig">
+<img src="img/springs.png" alt="Spring chain">
+<figcaption>A chain of boxes joined by springs, anchored at both ends. The springs sag under their
+own weight. See <code>phxex_springs</code>.</figcaption>
+</figure>
+
+<h2 class="phx-h2">Ropes and generic couplings</h2>
+<p><a href="phx.Rope.html">phx.Rope</a> connects two bodies with an inextensible rope that can be
+routed over pulleys &mdash; hoists, tackles and counterweights. For more complex couplings there is
+<a href="phx.GenericSpring.html">phx.GenericSpring</a> <span class="phx-tag dev">dev</span>
+(a spring/damper on all 6 axes with limits).</p>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.RevoluteJoint.html">phx.RevoluteJoint</a>,
+<a href="phx.SphericalJoint.html">phx.SphericalJoint</a>,
+<a href="phx.FixedJoint.html">phx.FixedJoint</a>,
+<a href="phx.GearJoint.html">phx.GearJoint</a>,
+<a href="phx.Spring.html">phx.Spring</a>,
+<a href="phx.Rope.html">phx.Rope</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_bodies.html">Bodies and shapes</a>,
+<a href="phx_ug_forces.html">Forces, actuators and fields</a>,
+<a href="phx_ug_assemblies.html">Prefab assemblies</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox User Guide</div>
+
+</div>
+</body>
+</html>

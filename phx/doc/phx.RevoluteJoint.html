@@ -54,7 +54,9 @@ axes with name-value arguments (<code class="phx-inline">PointA</code>, <code cl
 <tr><td class="name">Overlay</td><td class="dflt">false</td><td>Draw the joint as an overlay (always on top).</td></tr>
 </table>
 <p>Reaction feedback (<code class="phx-inline">ForceA</code>, <code class="phx-inline">TorqueA</code>,
-<code class="phx-inline">ForceB</code>, <code class="phx-inline">TorqueB</code>) is inherited from
+<code class="phx-inline">ForceB</code>, <code class="phx-inline">TorqueB</code>) and the
+<code class="phx-inline">MutualCollisions</code> switch (collisions between the connected bodies,
+default <code class="phx-inline">false</code>) are inherited from
 <a href="phx.base.Joint.html">phx.base.Joint</a>.</p>
 
 <h2 class="phx-h2">Examples</h2>
@@ -67,7 +69,13 @@ arm  = phx.Body(<span class="str">"Position"</span>, [1.5 0 0], <span class="str
 phx.RevoluteJoint(base, arm, <span class="str">"PointB"</span>, [-1.5 0 0], <span class="str">"AxisA"</span>, [0 1 0]);
 
 sim = phx.Simulation;
-sim.step(4, 400, 1);</pre>
+sim.step(4, 400, 1);
+delete(sim);</pre>
+
+<figure class="phx-fig">
+<img src="img/revolutejoint.png" alt="Arm hanging from a revolute joint">
+<figcaption>The arm swings from the hinge on the static base about the y axis.</figcaption>
+</figure>
 
 <div class="phx-seealso">
 <span class="lbl">See also</span>
@@ -75,6 +83,11 @@ sim.step(4, 400, 1);</pre>
 <a href="phx.GearJoint.html">phx.GearJoint</a>,
 <a href="phx.base.Joint.html">phx.base.Joint</a>,
 <a href="phx.Body.html">phx.Body</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_joints.html">Joints, springs and ropes</a>
 </div>
 
 <div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>

@@ -20,6 +20,7 @@ classdef Simulation < phx.base.Object
 %   ^..^
 
 %#ok<*INUSD> OK to see the full list of arguments for callbacks
+%#ok<*MCSUP> OK to access other properties in setters
 
     properties (Access = private)
         % Execution pipelines
@@ -194,6 +195,13 @@ classdef Simulation < phx.base.Object
             end
 
             obj.Time = obj.Time + interval;
+        end
+
+        function set.Gravity(obj, value)
+            obj.Gravity = value;
+            if ~isempty(obj.ObjectHandle)
+                phx.engine.io('set', obj.ObjectHandle, uint64(0), 'gravity', value);
+            end
         end
     end
 

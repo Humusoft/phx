@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Measuring and Logging Data</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; User Guide &rsaquo; Measuring and logging</div>
+
+<h1 class="phx-title">Measuring and Logging Data</h1>
+<p class="phx-purpose">Observing simulation results with Logger, Trace and Measure</p>
+
+<p>Simulation results are observed with three helpers:</p>
+<ul>
+<li><code class="phx-inline">phx.Logger</code> &mdash; records property values over time (position,
+    velocity, force&nbsp;&hellip;).</li>
+<li><code class="phx-inline">phx.Trace</code> &mdash; draws the trail of a chosen body point.</li>
+<li><code class="phx-inline">phx.Measure</code> &mdash; measures the distance and relative velocity
+    between two bodies.</li>
+</ul>
+
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+b = phx.Body(<span class="str">"Position"</span>, [0 0 5], <span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>});
+phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [6 6 0.3]});
+
+<span class="cmt">% log the position at 100 Hz</span>
+log1 = phx.Logger(b, <span class="str">"Parameters"</span>, <span class="str">"Position"</span>, <span class="str">"Frequency"</span>, 100);
+
+sim = phx.Simulation;
+sim.step(3, 600, 1);
+delete(sim);
+
+<span class="cmt">% plot the recording</span>
+plot(log1.Time, log1.Data);
+xlabel(<span class="str">"time [s]"</span>); ylabel(<span class="str">"position [m]"</span>); legend(<span class="str">"x"</span>,<span class="str">"y"</span>,<span class="str">"z"</span>);</pre>
+
+<figure class="phx-fig">
+<img src="img/logger.png" alt="Position log">
+<figcaption>Logged vertical position of the falling ball: free fall and then rest on the floor.
+Data is read from <code>log1.Time</code> and <code>log1.Data</code>.</figcaption>
+</figure>
+
+<p>With multiple channels, individual signals are selected with
+<code class="phx-inline">log.getChannel(k)</code>.</p>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_control.html">Automation and control</a>,
+<a href="phx_ug_viewer.html">Interactive viewer</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox User Guide</div>
+
+</div>
+</body>
+</html>

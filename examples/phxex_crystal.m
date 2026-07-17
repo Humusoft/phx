@@ -44,7 +44,7 @@ function phxex_crystal(nBalls, annealTime, seed)
                            % contact binding force, so the hot phase melts
                            % any clusters formed during the drop
     mu = [0.05 0.01 0];    % low friction lets the clusters rearrange
-    arena = 9;             % arena size
+    arena = 8.5;           % arena size
 
     nBalls = 2*ceil(nBalls/2);
 
@@ -54,17 +54,7 @@ function phxex_crystal(nBalls, annealTime, seed)
         "DefaultCameraPosition", [0 -12 9]);
 
     % Static arena: floor and low walls
-    phx.Body(ax, "Type", "static", "Position", [0 0 -0.5], ...
-        "Shape", {"Box", "Size", [arena + 2, arena + 2, 1], "Color", [1 1 1]}, ...
-        "Friction", mu);
-    for k = 1:4
-        a = k*pi/2;
-        phx.Body(ax, "Type", "static", ...
-            "Position", [cos(a), sin(a), 0]*arena/2 + [0 0 0.6], ...
-            "EulerAngles", [0 0 a], ...
-            "Shape", {"Box", "Size", [0.2, arena + 0.2, 1.2], "Color", [0.8 0.8 0.85]}, ...
-            "Friction", mu);
-    end
+    phx.assembly.arena("Size", [arena, arena, 0.8], "Thickness", 0.2, "Color", [1 1 1], "Friction", mu);
 
     % Charged balls: half positive (red), half negative (blue), spawned on
     % a jittered grid above the arena
