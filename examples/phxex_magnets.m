@@ -84,8 +84,7 @@ function phxex_magnets(nBalls, annealTime, seed)
 
     % Sleeping must stay disabled, otherwise slow magnets would stop
     % responding to the dipole field
-    sim = phx.Simulation(ax, "EngineSettings", ...
-        phx.engine.BulletSettings("AutoActivated", false));
+    sim = phx.Simulation(ax);
     dt = 0.005;
     subSteps = 10;
 

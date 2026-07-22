@@ -99,10 +99,10 @@ classdef Body < phx.base.Object
         Type {mustBeMember(Type, ["static", "kinematic", "dynamic"])} = "dynamic";
 
         % Body mass (kg)
-        Mass (1, 1) double = 1
+        Mass (1, 1) double = 0
 
         % Body inertia tensor (kg*m^2)
-        Inertia (1, 3) double = [1 1 1]
+        Inertia (1, 3) double = [0 0 0]
 
         % Friction coefficients [drag roll spin]
         Friction (1, 3) double {mustBeGreaterThanOrEqual(Friction, 0)} = [0.5 0 0]
@@ -145,7 +145,15 @@ classdef Body < phx.base.Object
 
             % Draw default shape
             if isempty(obj.Graphics.Children)
+                mass = obj.Mass;
+                inertia = obj.Inertia;
                 obj.Shape = phx.shape.Box;
+                if mass ~= 0
+                    obj.Mass = mass;
+                end
+                if sum(inertia) ~= 0
+                    obj.Inertia = inertia;
+                end
             end
         end
 

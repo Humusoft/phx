@@ -90,8 +90,7 @@ function phxex_maglev(kp, kd)
 
     % Sleeping must stay disabled: a hovering ball is almost at rest and
     % a deactivated body would ignore the magnetic force and disturbances
-    sim = phx.Simulation(ax, "EngineSettings", ...
-        phx.engine.BulletSettings("AutoActivated", false));
+    sim = phx.Simulation(ax);
     dt = 0.005;
     subSteps = 10;
     log = struct("t", [], "gap", [], "ref", [], "u", []);

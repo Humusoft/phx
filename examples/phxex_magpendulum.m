@@ -74,8 +74,7 @@ function phxex_magpendulum(nGrid, tMaxRun)
 
     % Sleeping must stay off: a slowly swinging or settled rod is near rest
     % and would otherwise freeze and ignore gravity and the dipole field
-    sim = phx.Simulation(ax, "EngineSettings", ...
-        phx.engine.BulletSettings("AutoActivated", false));
+    sim = phx.Simulation(ax);
     tLive = 12;
     nFrames = round(tLive/(5*dt));
     dist = zeros(1, nFrames);
@@ -97,8 +96,7 @@ function phxex_magpendulum(nGrid, tMaxRun)
     % simulation rebuild, then the orphaned objects can be deleted safely
     delete(sim);
     delete(dip2); delete(j2); delete(tr2); delete(rod2);
-    sim = phx.Simulation(ax, "EngineSettings", ...
-        phx.engine.BulletSettings("AutoActivated", false));
+    sim = phx.Simulation(ax);
 
     xs = linspace(-mapRange, mapRange, nGrid);
     basin = zeros(nGrid);          % 0 = not settled, 1..3 = magnet, 4 = center

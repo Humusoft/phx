@@ -34,8 +34,8 @@ in the joint classes. Enum-like inputs (`Type`→`TypeID`, axes, solver) **are**
 validated MATLAB-side; field names and payloads are not.
 
 **All six `'*constraint'` add verbs require a trailing `disableCollisions` logical**
-(since the 2026-07 MEX; without it the call fails with "ArgumentList index out of
-range"). The joint classes pass `~obj.MutualCollisions` there. Body-level knobs that
+— without it the call fails with "ArgumentList index out of range". The joint
+classes pass `~obj.MutualCollisions` there. Body-level knobs that
 write straight through to the engine: `'restitution'` (Body.Restitution, contact
 bounciness combined from both bodies) alongside the existing `'friction'`/`'collisions'`.
 
@@ -54,12 +54,15 @@ Pass engine-specific initial settings via the simulation's `EngineSettings`:
 
 ```matlab
 sim = phx.Simulation(ax, "EngineSettings", ...
-    phx.engine.BulletSettings("AutoActivated", false));
+    phx.engine.BulletSettings("AutoActivated", true));   % opt back INTO sleeping
 ```
 
-`AutoActivated = false` disables sleeping/auto-deactivation of resting bodies —
-needed for actively controlled vehicles (rockets, drones) that must keep responding
-to thrust even when momentarily near-still.
+`AutoActivated` controls Bullet's auto-deactivation of resting bodies. **It defaults
+to `false`** (bodies never sleep) — the predictable, no-surprises behavior you want
+out of the box. Set it to `true` only as a deliberate optimization for large,
+mostly-resting scenes; the speedup from sleeping is usually negligible, so leaving
+the default alone is almost always right. If you do opt into `true`, mind the
+wake-map quirk below.
 
 ## Error-ID convention
 
@@ -84,6 +87,17 @@ new code, follow the same namespace.
   move; `kinematic` bodies are driven by you and push dynamics but ignore forces;
   only `dynamic` bodies integrate forces. Set mass/inertia explicitly for controlled
   vehicles instead of relying on shape density.
+- **Body sleeping / the wake-map** (only relevant if you set `AutoActivated=true`;
+  the default `false` sidesteps all of this). A resting body auto-deactivates after
+  ~2 s (its `LinearVelocity` snaps to *exactly* 0 — a reliable "is it asleep?" probe).
+  A sleeper is re-activated when something touches it **directly**: any applied
+  force/torque (so all field/spring/rope/thruster elements are fine), a velocity or
+  transform write, or a new contact from a dynamic *or* kinematic body. It is **NOT**
+  woken by changes to its *environment*: changing world gravity (`sim.Gravity = …`)
+  or moving/removing the static support under it both leave the sleeper frozen (the
+  classic Bullet "body floating in mid-air"). There is no `activate`/`wake` method —
+  the only nudge is a self-write like `b.Position = b.Position`. The default `false`
+  avoids all of this.
 
 ## Tests — matlab.unittest suite
 

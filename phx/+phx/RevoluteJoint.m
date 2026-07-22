@@ -23,8 +23,6 @@ classdef RevoluteJoint < phx.base.Joint
 %#ok<*MCSUP> OK to access other properties in setters
 %#ok<*INUSD> OK to see the full list of arguments for callbacks
 
-% TODO motorized joint
-
     properties (Access = private)
         hL
         hM

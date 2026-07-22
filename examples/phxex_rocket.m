@@ -88,8 +88,7 @@ function phxex_rocket(hopHeight)
 
     viewer.displayText("Lift-off...");
 
-    sim = phx.Simulation(ax, "EngineSettings", ...
-        phx.engine.BulletSettings("AutoActivated", false));
+    sim = phx.Simulation(ax);
     dt = 0.005;
     subSteps = 10;
     tMax = 60;
@@ -175,7 +174,7 @@ function phxex_rocket(hopHeight)
         norm(pEnd(1:2) - [padBx 0]), vTouch));
 
     % Flight profile plots
-    figure(2);
+    clf(figure(2));
     subplot(2, 1, 1);
     plot(log.p(1, :), log.p(3, :), "LineWidth", 1.5); hold on
     plot([-1.5 1.5], [0.4 0.4], "Color", padA.Color, "LineWidth", 5);

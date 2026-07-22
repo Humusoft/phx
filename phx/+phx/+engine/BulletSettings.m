@@ -16,7 +16,8 @@ classdef BulletSettings
         SubstepLimit (1, 1) double = 10
 
         % Automatic activation of body objects
-        AutoActivated (1, 1) logical = true
+        % (true = objects can be put to sleep, false = objects are always active)
+        AutoActivated (1, 1) logical = false
         
         % Collision margin
         Margin (1, 1) double = 0.04

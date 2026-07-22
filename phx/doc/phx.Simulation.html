@@ -125,9 +125,9 @@ sim = phx.Simulation;                  <span class="cmt">% all bodies in the cur
 sim.step(1, 100, 1);                   <span class="cmt">% 1 s in 100 substeps, redraw each step</span></pre>
 
 <h4 class="phx-h4">Custom gravity and engine settings</h4>
-<pre class="phx-code"><span class="cmt">% Zero gravity, do not auto-deactivate resting bodies</span>
+<pre class="phx-code"><span class="cmt">% Zero gravity; let resting bodies sleep (opt-in optimization)</span>
 sim = phx.Simulation(gca, <span class="str">"Gravity"</span>, [0 0 0], <span class="str">"EngineSettings"</span>, ...
-    phx.engine.BulletSettings(<span class="str">"AutoActivated"</span>, false));
+    phx.engine.BulletSettings(<span class="str">"AutoActivated"</span>, true));
 sim.step(4, 800, -1);                  <span class="cmt">% run headless (no redraw)</span></pre>
 
 <h4 class="phx-h4">Add and delete objects between steps</h4>

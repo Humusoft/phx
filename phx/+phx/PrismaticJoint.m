@@ -1,16 +1,21 @@
-classdef FixedJoint < phx.base.Joint
-%phx.FixedJoint Fixed joint
+classdef PrismaticJoint < phx.base.Joint
+%phx.PrismaticJoint Prismatic joint
 %
-%   Fixed joint realizes a kinematic constraint with 0 degrees of freedom.
+%   Prismatic joint realizes a kinematic constraint with 1 degree of freedom
+%   specified as translation along the sliding axis. The sliding axis is the
+%   X axis of the joint coordinate systems of both connected bodies.
 %
-%   phx.FixedJoint(bodyA, bodyB) creates a joint between two bodies A and B
-%   attached to their points of origin.
-%   Custom connection points can be set using PointA, PointB properties.
+%   phx.PrismaticJoint(bodyA, bodyB) creates a joint between two bodies A and B
+%   attached to their points of origin, with the sliding axis aligned to axis X
+%   of the local coordinate system of each body.
+%   Custom joint coordinate systems can be set using the TransformA and TransformB
+%   properties, or via the PointA, PointB, EulerAnglesA and EulerAnglesB helpers;
+%   in every case the sliding axis is the local X axis of each coordinate system.
 %
-%   phx.FixedJoint(___, name, value, ...) creates a joint and sets properties
+%   phx.PrismaticJoint(___, name, value, ...) creates a joint and sets properties
 %   values according to given name-value pairs.
 %
-%   See also phx.SphericalJoint
+%   See also phx.RevoluteJoint, phx.FixedJoint
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 %   SPDX-License-Identifier: LicenseRef-PHX-Preview-1.0
@@ -22,6 +27,7 @@ classdef FixedJoint < phx.base.Joint
 
     properties (Access = private)
         hL
+        hM
     end
 
     properties
@@ -30,6 +36,9 @@ classdef FixedJoint < phx.base.Joint
 
         % Transformation matrix relative to the second body
         TransformB (4, 4) double = eye(4)
+
+        % Draw joint as overlay
+        Overlay (1, 1) logical = false
     end
 
     properties (Dependent)
@@ -47,11 +56,11 @@ classdef FixedJoint < phx.base.Joint
     end
 
     methods
-        function obj = FixedJoint(ParentA, ParentB, Options)
+        function obj = PrismaticJoint(ParentA, ParentB, Options)
             arguments
                 ParentA (1, 1) {mustBeA(ParentA, "phx.Body")}
                 ParentB (1, 1) {mustBeA(ParentB, "phx.Body")}
-                Options.?phx.FixedJoint
+                Options.?phx.PrismaticJoint
             end
 
             % Set default values
@@ -64,8 +73,10 @@ classdef FixedJoint < phx.base.Joint
             phx.internal.applyArguments(Options, obj);
 
             % Create graphics objects
-            obj.hL = line(obj.Graphics, [NaN NaN], [NaN NaN], [NaN NaN], "Color", [0.6 0.6 0.6], "LineWidth", 1.0, "Marker", "o", "MarkerSize", 10);
-            phx.FixedJoint.updateView({obj});
+            clr = uint8([obj.Color*255 255]');
+            obj.hL = matlab.graphics.primitive.world.LineStrip('Parent', obj.Graphics, 'LineWidth', 1.0, 'ColorBinding', 'object', 'ColorData', clr, 'Layer', phx.internal.choose({'middle', 'front'}, obj.Overlay + 1));
+            obj.hM = matlab.graphics.primitive.world.Marker('Parent', obj.Graphics, 'EdgeColorData', clr, 'Style', 'circle', 'Size', 10, 'Layer', phx.internal.choose({'middle', 'front'}, obj.Overlay + 1));
+            phx.PrismaticJoint.updateView({obj});
         end
 
         function set.PointA(obj, value)
@@ -106,8 +117,8 @@ classdef FixedJoint < phx.base.Joint
             valid = numel(obj.Parents) == 2 && all(cellfun(@isvalid, obj.Parents));
             if valid
                 obj.WorldHandle = world;
-                obj.ObjectHandle = phx.engine.io('add', world, 'fixedconstraint', obj.Parents{1}.ObjectHandle, obj.Parents{2}.ObjectHandle, obj.TransformA(:), obj.TransformB(:), ~obj.MutualCollisions);
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'error', 0.1, 0.00001);
+                obj.ObjectHandle = phx.engine.io('add', world, 'sliderconstraint', obj.Parents{1}.ObjectHandle, obj.Parents{2}.ObjectHandle, ...
+                    obj.TransformA(:), obj.TransformB(:), true, ~obj.MutualCollisions);
             end
         end
 
@@ -127,13 +138,12 @@ classdef FixedJoint < phx.base.Joint
             for i = 1:numel(cellObjs)
                 obj = cellObjs{i};
 
-                pa = phx.internal.transformPoint(obj.Parents{1}.Matrix, obj.TransformA(13:15));
-                pb = phx.internal.transformPoint(obj.Parents{2}.Matrix, obj.TransformB(13:15));
+                pa = phx.internal.transformPoint(obj.Parents{1}.Matrix, obj.PointA);
+                pb = phx.internal.transformPoint(obj.Parents{2}.Matrix, obj.PointB);
+                vd = single([pa' pb']);
 
-                hL = obj.hL;
-                hL.XData_I = [pa(1) pb(1)];
-                hL.YData_I = [pa(2) pb(2)];
-                hL.ZData_I = [pa(3) pb(3)];
+                obj.hL.VertexData = vd;
+                obj.hM.VertexData = vd;
             end
         end
     end

@@ -77,8 +77,7 @@ function phxex_tackle(mCrate)
 
     viewer.displayText("Settling...");
 
-    sim = phx.Simulation(ax, "EngineSettings", ...
-        phx.engine.BulletSettings("AutoActivated", false));
+    sim = phx.Simulation(ax);
     dt = 0.005;
     subSteps = 10;
 

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.PrismaticJoint</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.PrismaticJoint</div>
+
+<h1 class="phx-title">phx.PrismaticJoint</h1>
+<p class="phx-purpose">Prismatic joint</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.PrismaticJoint &nbsp;|&nbsp; Superclass: <a href="phx.base.Joint.html">phx.base.Joint</a></p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.PrismaticJoint</code> realizes a kinematic constraint with one degree
+of freedom: a translation along a shared sliding axis. The sliding axis is the local X axis of the
+joint frame of each connected body; the remaining five degrees of freedom are locked, so the bodies
+keep their relative orientation and slide without rotating.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">joint = phx.PrismaticJoint(bodyA,bodyB)</span>
+<span class="phx-syntax">joint = phx.PrismaticJoint(___,Name,Value)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">joint = phx.PrismaticJoint(bodyA,bodyB)</code> creates a joint between two
+bodies attached at their origins, with the sliding axis aligned to the local X axis of each body.
+Set custom joint frames with <code class="phx-inline">TransformA</code> and
+<code class="phx-inline">TransformB</code>, or the connection points and orientations with
+<code class="phx-inline">PointA</code>, <code class="phx-inline">PointB</code>,
+<code class="phx-inline">EulerAnglesA</code> and <code class="phx-inline">EulerAnglesB</code>; in every
+case the sliding axis is the local X axis of each frame.</p>
+</div>
+
+<h3 class="phx-h3">Input Arguments</h3>
+<table class="phx-tbl">
+<tr><th>Argument</th><th>Type</th><th>Description</th></tr>
+<tr><td class="name">bodyA, bodyB</td><td class="type">phx.Body (scalar)</td><td>The two bodies connected by the joint.</td></tr>
+</table>
+
+<h2 class="phx-h2">Properties</h2>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">TransformA</td><td class="dflt">eye(4)</td><td>Homogeneous transformation of the joint frame relative to body A; its local X axis is the sliding axis.</td></tr>
+<tr><td class="name">TransformB</td><td class="dflt">eye(4)</td><td>Homogeneous transformation of the joint frame relative to body B; its local X axis is the sliding axis.</td></tr>
+<tr><td class="name">PointA</td><td class="dflt">[0 0 0]</td><td>Connection point in the local space of body A; the translation part of <code class="phx-inline">TransformA</code> (dependent).</td></tr>
+<tr><td class="name">PointB</td><td class="dflt">[0 0 0]</td><td>Connection point in the local space of body B; the translation part of <code class="phx-inline">TransformB</code> (dependent).</td></tr>
+<tr><td class="name">EulerAnglesA</td><td class="dflt">[0 0 0]</td><td>Euler angles (z&rarr;y&rarr;x order) of the joint frame relative to body A; the rotation part of <code class="phx-inline">TransformA</code> (dependent).</td></tr>
+<tr><td class="name">EulerAnglesB</td><td class="dflt">[0 0 0]</td><td>Euler angles (z&rarr;y&rarr;x order) of the joint frame relative to body B; the rotation part of <code class="phx-inline">TransformB</code> (dependent).</td></tr>
+<tr><td class="name">Overlay</td><td class="dflt">false</td><td>Draw the joint as an overlay (always on top).</td></tr>
+</table>
+<p>Reaction feedback (<code class="phx-inline">ForceA</code>, <code class="phx-inline">TorqueA</code>,
+<code class="phx-inline">ForceB</code>, <code class="phx-inline">TorqueB</code>) and the
+<code class="phx-inline">MutualCollisions</code> switch (collisions between the connected bodies,
+default <code class="phx-inline">false</code>) are inherited from
+<a href="phx.base.Joint.html">phx.base.Joint</a>.</p>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">Bounce a slider down an inclined rail</h4>
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+base   = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Restitution"</span>, 0.5);
+slider = phx.Body(<span class="str">"Position"</span>, [-4 0 4], <span class="str">"EulerAngles"</span>, [0 pi/4 0], <span class="str">"Restitution"</span>, 1);
+
+<span class="cmt">% the sliding axis is the local X of the joint frame; tilting it 45 deg makes</span>
+<span class="cmt">% an inclined rail down which the slider slides and rebounds off the base</span>
+phx.PrismaticJoint(base, slider, <span class="str">"EulerAnglesA"</span>, [0 pi/4 0], <span class="str">"MutualCollisions"</span>, true);
+
+sim = phx.Simulation;
+sim.step(2, 200, 1);
+delete(sim);</pre>
+
+<figure class="phx-fig">
+<img src="img/prismaticjoint.png" alt="Slider bouncing down an inclined prismatic rail">
+<figcaption>The slider descends the inclined rail and rebounds off the base, kept aligned by the joint's locked rotation.</figcaption>
+</figure>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.RevoluteJoint.html">phx.RevoluteJoint</a>,
+<a href="phx.FixedJoint.html">phx.FixedJoint</a>,
+<a href="phx.base.Joint.html">phx.base.Joint</a>,
+<a href="phx.Body.html">phx.Body</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_joints.html">Joints, springs and ropes</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

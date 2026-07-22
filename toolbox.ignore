@@ -36,6 +36,8 @@ PHX Toolbox/
 publications/
 tests/
 work/
+.gitignore
+deploymentLog.html
 
 % Toolbox files and project files
 **/*.mltbx

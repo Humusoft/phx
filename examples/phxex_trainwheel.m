@@ -39,7 +39,7 @@ function phxex_trainwheel
     grid on;
 
     % Setup simulation with specific options
-    opt = phx.engine.BulletSettings("Margin", 0, "AutoActivated", false);
+    opt = phx.engine.BulletSettings("Margin", 0);
     sim = phx.Simulation(ax, "EngineSettings", opt);
 
     % video = VideoWriter("phxex_trainwheel.mp4", "MPEG-4");

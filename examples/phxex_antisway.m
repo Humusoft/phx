@@ -50,10 +50,8 @@ function phxex_antisway
     A = buildCrane(axA);
     B = buildCrane(axB);
 
-    simA = phx.Simulation(axA, "EngineSettings", ...
-        phx.engine.BulletSettings("AutoActivated", false));
-    simB = phx.Simulation(axB, "EngineSettings", ...
-        phx.engine.BulletSettings("AutoActivated", false));
+    simA = phx.Simulation(axA);
+    simB = phx.Simulation(axB);
 
     dt = 0.005;
     subSteps = 8;

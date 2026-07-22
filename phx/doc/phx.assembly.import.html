@@ -19,7 +19,7 @@
 <h2 class="phx-h2">Description</h2>
 <p><code class="phx-inline">phx.assembly.import</code> reads a robot description from a URDF
 (Unified Robot Description Format) file and creates a <a href="phx.Body.html">phx.Body</a> for
-every link and a joint for every revolute, continuous or fixed joint of the robot. Despite the
+every link and a joint for every revolute, continuous, prismatic or fixed joint of the robot. Despite the
 name of the format, URDF files describe more than robots &mdash; ragdolls, vehicles, furniture
 and single-body props from public model libraries import the same way. The assembled model is
 placed in its zero (home) configuration with the base (root link frame) at the world origin,
@@ -62,10 +62,11 @@ geometry (PHX shapes are always centred at the body origin). Geometries map to
 <a href="phx.shape.Sphere.html">Sphere</a>, <a href="phx.shape.Capsule.html">Capsule</a>
 (a common vendor extension) and <a href="phx.shape.STL.html">STL</a> /
 <a href="phx.shape.OBJ.html">OBJ</a> meshes with the convex collision envelope. Joints of type
-revolute and continuous become <a href="phx.RevoluteJoint.html">phx.RevoluteJoint</a>, fixed
-joints become <a href="phx.FixedJoint.html">phx.FixedJoint</a>; prismatic, planar and floating
-joints are substituted by a fixed joint with a warning. Joint limits are ignored and all joints
-are passive &mdash; no motors are created. Masses come from the inertial elements; only the
+revolute and continuous become <a href="phx.RevoluteJoint.html">phx.RevoluteJoint</a>, prismatic
+joints become <a href="phx.PrismaticJoint.html">phx.PrismaticJoint</a> (sliding along the joint
+axis) and fixed joints become <a href="phx.FixedJoint.html">phx.FixedJoint</a>; planar and
+floating joints are substituted by a fixed joint with a warning. Joint limits are ignored and all
+joints are passive &mdash; no motors are created. Masses come from the inertial elements; only the
 diagonal of the inertia tensor expressed in body axes is used.</p>
 
 <h2 class="phx-h2">Examples</h2>
@@ -94,6 +95,7 @@ delete(sim);</pre>
 <a href="phx.assembly.chain.html">phx.assembly.chain</a>,
 <a href="phx.assembly.scatter.html">phx.assembly.scatter</a>,
 <a href="phx.RevoluteJoint.html">phx.RevoluteJoint</a>,
+<a href="phx.PrismaticJoint.html">phx.PrismaticJoint</a>,
 <a href="phx.FixedJoint.html">phx.FixedJoint</a>,
 <a href="phx.Simulation.html">phx.Simulation</a>
 </div>

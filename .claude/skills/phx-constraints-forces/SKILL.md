@@ -151,6 +151,10 @@ end
 delete(sim);
 ```
 
+A controlled vehicle that momentarily hovers near-still keeps responding to thrust
+because Bullet sleeping is off by default (`BulletSettings.AutoActivated=false`);
+see **phx-engine-gotchas**.
+
 Keep `dt ≤ 5 ms` for tight constraint networks (joint chains, stacked contacts) or
 they destabilize. You can create or delete joints/springs mid-run freely:
 `delete(obj)` removes the engine constraint immediately and rebuilds the simulation

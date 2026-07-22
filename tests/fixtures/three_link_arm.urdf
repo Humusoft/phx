@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <!-- Test fixture for phx.assembly.import: a small arm exercising box/cylinder/sphere
      geometries, non-trivial origins and rpy rotations, named and inline
-     materials, a revolute + fixed + prismatic joint (the prismatic one is
-     deliberately present to test its substitution by a fixed joint), link
-     names that need sanitization, and a geometry-less dummy link. -->
+     materials, a revolute + fixed + prismatic joint (the prismatic one has a
+     non-trivial axis to exercise the slider-frame mapping), link names that
+     need sanitization, and a geometry-less dummy link. -->
 <robot name="three_link_arm">
 
   <material name="steel">

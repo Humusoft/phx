@@ -15,7 +15,7 @@ classdef Joint < phx.base.Object
 %   Licensed under the PHX Preview License v1.0; see LICENSE and NOTICE.
 %   ^..^
 
-% TODO slider constraint
+% TODO motorized joints
 % TODO cylindrical constraint
 % TODO general constraint
 

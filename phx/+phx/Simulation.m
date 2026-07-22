@@ -292,6 +292,7 @@ classdef Simulation < phx.base.Object
             if isempty(obj.ObjectHandle)
                 obj.ObjectHandle = phx.engine.io('setup', 2);
                 phx.engine.io('set', obj.ObjectHandle, uint64(0), 'gravity', obj.Gravity);
+                phx.engine.io('set', obj.ObjectHandle, uint64(0), 'autoactivated', false);
 
                 % Apply engine-specific settings
                 if ~isempty(obj.EngineSettings)

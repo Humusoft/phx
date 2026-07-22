@@ -53,7 +53,8 @@ function [bodies, joints] = import(varargin)
 %     <capsule radius="r" length="l"/> - a common vendor extension of the
 %     URDF format - maps to phx.shape.Capsule.
 %   - Joints of type "revolute" and "continuous" become phx.RevoluteJoint,
-%     joints of type "fixed" become phx.FixedJoint. Joint frames are derived
+%     "prismatic" joints become phx.PrismaticJoint (sliding along the joint
+%     axis) and "fixed" joints become phx.FixedJoint. Joint frames are derived
 %     from the initial link poses, so the assembled robot is in equilibrium
 %     at its zero configuration.
 %   - Masses are taken from the inertial elements; the inertia tensor is
@@ -61,8 +62,8 @@ function [bodies, joints] = import(varargin)
 %     the Inertia property.
 %
 %   Limitations of the importer:
-%   - Joint limits of revolute joints are ignored.
-%   - Joints of type "prismatic", "planar" and "floating" are replaced by a
+%   - Joint limits of revolute and prismatic joints are ignored.
+%   - Joints of type "planar" and "floating" are replaced by a
 %     phx.FixedJoint (their degrees of freedom are locked in the zero pose)
 %     and the warning phx:import:substitutedJoint is issued.
 %   - All joints are passive; no motors or transmissions are created.
@@ -75,7 +76,7 @@ function [bodies, joints] = import(varargin)
 %     reported by the warning phx:import:extraGeometry.
 %   - Of the material definitions only the diffuse color is applied.
 %
-%   See also phx.Body, phx.RevoluteJoint, phx.FixedJoint, phx.Simulation
+%   See also phx.Body, phx.RevoluteJoint, phx.PrismaticJoint, phx.FixedJoint, phx.Simulation
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 %   SPDX-License-Identifier: LicenseRef-PHX-Preview-1.0
@@ -105,26 +106,33 @@ function [bodies, joints] = build(ax, file, Options)
     end
     info = dir(file);
     urdfDir = string(info.folder);
+    fullFile = fullfile(info.folder, info.name);
 
+    % readstruct parses the XML natively (no JVM/Xerces start-up, unlike
+    % xmlread, which costs tens of seconds on its first call) into a MATLAB
+    % struct: element attributes become fields with an "Attribute" suffix and
+    % repeated child elements become struct arrays.
     try
-        dom = xmlread(fullfile(info.folder, info.name));
+        root = readstruct(fullFile, "FileType", "xml", "AttributeSuffix", "Attribute");
     catch err
         error("phx:import:parseError", "Could not parse '%s' as an XML document: %s", file, err.message);
     end
 
-    root = dom.getDocumentElement;
-    if string(root.getNodeName) ~= "robot"
-        error("phx:import:invalidRoot", "File '%s' is not a robot description (root element is <%s>, expected <robot>).", file, string(root.getNodeName));
+    % readstruct discards the root element's own tag name, so the <robot>
+    % check reads it back from the file text
+    rootName = rootElementName(fullFile);
+    if rootName ~= "robot"
+        error("phx:import:invalidRoot", "File '%s' is not a robot description (root element is <%s>, expected <robot>).", file, rootName);
     end
 
     % Parse materials, links and joints
     materials = parseMaterials(root);
 
-    linkEls = childElements(root, "link");
+    linkEls = getChildren(root, "link");
     nLinks = numel(linkEls);
     links = cell(1, nLinks);
     for i = 1:nLinks
-        links{i} = parseLink(linkEls{i}, materials);
+        links{i} = parseLink(linkEls(i), materials);
     end
     links = [links{:}];
 
@@ -134,11 +142,11 @@ function [bodies, joints] = build(ax, file, Options)
         return
     end
 
-    jointEls = childElements(root, "joint");
+    jointEls = getChildren(root, "joint");
     nJoints = numel(jointEls);
     jointDefs = cell(1, nJoints);
     for k = 1:nJoints
-        jointDefs{k} = parseJoint(jointEls{k});
+        jointDefs{k} = parseJoint(jointEls(k));
     end
     jointDefs = [jointDefs{:}];
 
@@ -236,10 +244,22 @@ function [bodies, joints] = build(ax, file, Options)
                     "PointA", TA(1:3, 4)', "PointB", TB(1:3, 4)', ...
                     "AxisA", (TA(1:3, 1:3)*axis')', "AxisB", (TB(1:3, 1:3)*axis')', ...
                     "Name", def.name);
+            case "prismatic"
+                if ~any(def.axis)
+                    error("phx:import:invalidAttribute", "Joint '%s' has a zero-length sliding axis.", def.name);
+                end
+                % The slider axis is the local X of both joint frames, so the
+                % frame is rebuilt with its X along the joint axis (fixed
+                % joints, in contrast, only need the two frames to coincide)
+                TS = sliderFrame(TJ, def.axis/norm(def.axis));
+                j = phx.PrismaticJoint(parentBody, childBody, ...
+                    "TransformA", cleanTransform(TBody{parentID(k)}\TS), ...
+                    "TransformB", cleanTransform(TBody{childID(k)}\TS), ...
+                    "Name", def.name);
             case "fixed"
                 j = phx.FixedJoint(parentBody, childBody, ...
                     "TransformA", TA, "TransformB", TB, "Name", def.name);
-            otherwise % prismatic, planar, floating
+            otherwise % planar, floating
                 warning("phx:import:substitutedJoint", "Joint '%s' of unsupported type '%s' was replaced by a fixed joint; its degrees of freedom are locked in the zero pose.", def.name, def.type);
                 j = phx.FixedJoint(parentBody, childBody, ...
                     "TransformA", TA, "TransformB", TB, "Name", def.name);
@@ -251,42 +271,62 @@ function [bodies, joints] = build(ax, file, Options)
 end
 
 %% XML helpers -----------------------------------------------------------
+% These navigate the struct produced by readstruct: a child element is a
+% (scalar or array) struct field, repeated children form a struct array and
+% an attribute "attr" is a field "attrAttribute". Because readstruct only
+% turns direct children into fields, nested elements (such as
+% <transmission>) do not leak into the sibling lists on their own.
 
-function els = childElements(node, name)
-% Direct child elements of the given name (unlike getElementsByTagName,
-% this does not descend into nested elements such as <transmission>)
-    els = {};
-    list = node.getChildNodes;
-    for i = 0:list.getLength - 1
-        item = list.item(i);
-        if item.getNodeType == 1 && string(item.getNodeName) == name
-            els{end + 1} = item; %#ok<AGROW> unknown count
-        end
+function name = rootElementName(file)
+% Name of the root element, read from the file text because readstruct
+% keeps only the root's contents, not its own tag name
+    txt = fileread(file);
+    txt = regexprep(txt, "(?s)<!--.*?-->", ""); % ignore commented-out markup
+    token = regexp(txt, "<([A-Za-z_][\w.:\-]*)", "tokens", "once");
+    if isempty(token)
+        name = "";
+    else
+        name = string(token{1});
+    end
+end
+
+function els = getChildren(node, name)
+% Direct child elements of the given name as a struct array (empty when
+% there are none, so numel/indexing behave uniformly)
+    if isstruct(node) && isfield(node, name) && isstruct(node.(name))
+        els = node.(name);
+    else
+        els = struct([]);
     end
 end
 
 function el = firstElement(node, name)
-    els = childElements(node, name);
+    els = getChildren(node, name);
     if isempty(els)
         el = [];
     else
-        el = els{1};
+        el = els(1);
     end
 end
 
+function tf = hasAttribute(el, name)
+    field = name + "Attribute";
+    tf = isstruct(el) && isfield(el, field) && ~ismissing(el.(field));
+end
+
 function value = attribute(el, name, default)
-    if el.hasAttribute(char(name))
-        value = string(el.getAttribute(char(name)));
+    if hasAttribute(el, name)
+        value = string(el.(name + "Attribute")); % readstruct may type single numbers as double
     else
         value = default;
     end
 end
 
 function value = requiredAttribute(el, name, context)
-    if ~el.hasAttribute(char(name))
+    if ~hasAttribute(el, name)
         error("phx:import:missingAttribute", "A <%s> element is missing the required '%s' attribute.", context, name);
     end
-    value = string(el.getAttribute(char(name)));
+    value = string(el.(name + "Attribute"));
 end
 
 function v = numbers(str, n, context)
@@ -314,12 +354,12 @@ end
 function materials = parseMaterials(root)
     materials.names = string.empty(1, 0);
     materials.colors = zeros(0, 3);
-    els = childElements(root, "material");
+    els = getChildren(root, "material");
     for i = 1:numel(els)
-        colorEl = firstElement(els{i}, "color");
-        if ~isempty(colorEl) && els{i}.hasAttribute('name')
+        colorEl = firstElement(els(i), "color");
+        if ~isempty(colorEl) && hasAttribute(els(i), "name")
             rgba = numbers(attribute(colorEl, "rgba", "0.5 0.5 0.5 1"), 4, "color rgba");
-            materials.names(end + 1) = string(els{i}.getAttribute('name'));
+            materials.names(end + 1) = attribute(els(i), "name", "");
             materials.colors(end + 1, :) = rgba(1:3);
         end
     end
@@ -350,15 +390,15 @@ function link = parseLink(el, materials)
 
     % The first visual geometry defines both the appearance and the
     % collision shape; collision elements are used only as a fallback
-    geometryEls = childElements(el, "visual");
+    geometryEls = getChildren(el, "visual");
     if isempty(geometryEls)
-        geometryEls = childElements(el, "collision");
+        geometryEls = getChildren(el, "collision");
     end
     if numel(geometryEls) > 1
         warning("phx:import:extraGeometry", "Link '%s' has %d geometry elements; only the first one is imported.", link.name, numel(geometryEls));
     end
     if ~isempty(geometryEls)
-        link.geometry = parseGeometry(geometryEls{1}, materials, link.name);
+        link.geometry = parseGeometry(geometryEls(1), materials, link.name);
     end
 end
 
@@ -378,8 +418,8 @@ function geom = parseGeometry(el, materials, linkName)
         if ~isempty(colorEl)
             rgba = numbers(attribute(colorEl, "rgba", "0.5 0.5 0.5 1"), 4, "color rgba");
             geom.color = rgba(1:3);
-        elseif matEl.hasAttribute('name')
-            id = find(materials.names == string(matEl.getAttribute('name')), 1);
+        elseif hasAttribute(matEl, "name")
+            id = find(materials.names == attribute(matEl, "name", ""), 1);
             if ~isempty(id)
                 geom.color = materials.colors(id, :);
             end
@@ -411,8 +451,8 @@ function geom = parseGeometry(el, materials, linkName)
         geom.kind = "mesh";
         geom.filename = requiredAttribute(meshEl, "filename", "mesh");
         geom.scale = [1 1 1];
-        if meshEl.hasAttribute('scale')
-            s = sscanf(char(string(meshEl.getAttribute('scale'))), '%f')';
+        if hasAttribute(meshEl, "scale")
+            s = sscanf(char(attribute(meshEl, "scale", "")), '%f')';
             if isscalar(s)
                 s = [s s s];
             end
@@ -542,4 +582,23 @@ end
 
 function T = cleanTransform(T)
     T(4, :) = [0 0 0 1];
+end
+
+function T = sliderFrame(TJ, axis)
+% World joint frame of a prismatic joint: the origin sits at the joint
+% point and the local X points along the sliding axis (URDF axis, given in
+% the joint frame); Y and Z complete a right-handed orthonormal basis. Both
+% body-side frames are later derived from this single world frame, so they
+% stay consistent and share the same sliding direction.
+    x = TJ(1:3, 1:3)*axis(:);
+    x = x/norm(x);
+    ref = [0; 0; 1];
+    if abs(x'*ref) > 0.9
+        ref = [1; 0; 0]; % avoid a degenerate cross product for a near-Z axis
+    end
+    y = cross(ref, x); y = y/norm(y);
+    z = cross(x, y);
+    T = eye(4);
+    T(1:3, 1:3) = [x y z];
+    T(1:3, 4) = TJ(1:3, 4);
 end

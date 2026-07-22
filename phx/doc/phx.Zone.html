@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.Zone</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.Zone</div>
+
+<h1 class="phx-title">phx.Zone</h1>
+<p class="phx-purpose">Spatial detection zone</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.Zone &nbsp;|&nbsp; Superclass: <a href="phx.base.Object.html">phx.base.Object</a></p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.Zone</code> monitors which bodies are located inside a box-shaped region
+of space. It reports the current occupants as an array of <a href="phx.Body.html">phx.Body</a>
+objects (<code class="phx-inline">Contents</code>) and their number (<code class="phx-inline">Count</code>),
+keeps cumulative <code class="phx-inline">EnteredCount</code> / <code class="phx-inline">ExitedCount</code>
+tallies, and can call user functions the moment a body enters or leaves the region.</p>
+
+<p>A zone is anchored to a parent body and defined relative to it, so a zone attached to a moving
+body travels with it. By default a zone watches every moving body in the simulation except its own
+anchor; static scenery (walls, floors) is skipped &mdash; unless the anchor itself moves, in which
+case static bodies move relative to the zone and stay detectable. Set
+<code class="phx-inline">Bodies</code> to restrict the watch set to an explicit list.</p>
+
+<p>Detection runs once per substep when the zone is active. For a pure end-of-run tally, create the
+zone with <code class="phx-inline">SimulationOrder&nbsp;=&nbsp;"none"</code>: it is then never evaluated
+during stepping (costing nothing per step) and is refreshed on demand with
+<a href="#update"><code class="phx-inline">update</code></a>.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">z = phx.Zone(body)</span>
+<span class="phx-syntax">z = phx.Zone(___,Name,Value)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">z = phx.Zone(body)</code> creates a unit-cube zone centered on the origin of
+the anchor <code class="phx-inline">body</code>. Use <code class="phx-inline">Position</code>,
+<code class="phx-inline">EulerAngles</code> and <code class="phx-inline">Size</code> to place and size the
+region relative to the anchor.</p>
+</div>
+
+<h3 class="phx-h3">Input Arguments</h3>
+<table class="phx-tbl">
+<tr><th>Argument</th><th>Type</th><th>Description</th></tr>
+<tr><td class="name">body</td><td class="type">phx.Body (scalar)</td><td>Anchor body defining the zone frame. The zone moves with it and never reports the anchor itself as content.</td></tr>
+</table>
+
+<h2 class="phx-h2">Properties</h2>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">Size</td><td class="dflt">[1 1 1]</td><td>Full box dimensions [x y z] in the local frame of the zone, <span class="phx-unit">m</span>.</td></tr>
+<tr><td class="name">Position</td><td class="dflt">[0 0 0]</td><td>Center offset in the local frame of the anchor body, <span class="phx-unit">m</span>.</td></tr>
+<tr><td class="name">EulerAngles</td><td class="dflt">[0 0 0]</td><td>Zone orientation relative to the anchor, following the <a href="phx.Body.html">phx.Body</a> Euler-angle convention.</td></tr>
+<tr><td class="name">Bodies</td><td class="dflt">[] (all)</td><td>Bodies to watch. Empty watches every non-static body except the anchor (static bodies are kept when the anchor itself moves); set it to restrict the watch set to an explicit list.</td></tr>
+<tr><td class="name">EnteredFcn</td><td class="dflt">[]</td><td>Function called as <code class="phx-inline">EnteredFcn(zone,body)</code> when a body enters the region.</td></tr>
+<tr><td class="name">ExitedFcn</td><td class="dflt">[]</td><td>Function called as <code class="phx-inline">ExitedFcn(zone,body)</code> when a body leaves the region.</td></tr>
+<tr><td class="name">Overlay</td><td class="dflt">false</td><td>Draw the region box as an overlay (always on top).</td></tr>
+<tr><td class="name">Count</td><td class="type">double (read-only)</td><td>Number of bodies currently inside the zone.</td></tr>
+<tr><td class="name">Contents</td><td class="type">phx.Body array (read-only)</td><td>Bodies currently inside the zone.</td></tr>
+<tr><td class="name">EnteredCount</td><td class="type">double (read-only)</td><td>Cumulative number of enter events since the last pipeline rebuild.</td></tr>
+<tr><td class="name">ExitedCount</td><td class="type">double (read-only)</td><td>Cumulative number of exit events since the last pipeline rebuild.</td></tr>
+</table>
+
+<p>The inherited <code class="phx-inline">SimulationOrder</code> property (from
+<a href="phx.base.Object.html">phx.base.Object</a>) selects when detection runs: <code class="phx-inline">"after"</code>
+(the default) evaluates the zone every substep after the solve; <code class="phx-inline">"none"</code>
+makes the zone passive, evaluated only on demand via <code class="phx-inline">update</code>.</p>
+
+<h2 class="phx-h2">Methods</h2>
+<table class="phx-tbl">
+<tr><th>Method</th><th>Description</th></tr>
+<tr><td class="name" id="update">update(z)</td><td>Recompute occupancy now and fire any enter/exit callbacks. Use it to read <code class="phx-inline">Count</code> / <code class="phx-inline">Contents</code> from a passive zone, which is not evaluated during stepping. Accepts an array of zones.</td></tr>
+</table>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">Report bodies entering a region as they fall in</h4>
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+floor = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [10 10 0.3]});
+for i = 1:5
+    phx.Body(<span class="str">"Position"</span>, [i-3 0 5+i], <span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>, <span class="str">"Diameter"</span>, 0.6});
+end
+
+<span class="cmt">% a box region above the floor; announce the running count on each entry</span>
+z = phx.Zone(floor, <span class="str">"Position"</span>, [0 0 1], <span class="str">"Size"</span>, [8 8 2], ...
+    <span class="str">"EnteredFcn"</span>, @(zone, body) disp(<span class="str">"inside: "</span> + zone.Count));
+
+sim = phx.Simulation;
+sim.step(3, 600, 1);
+disp(z.Count);          <span class="cmt">% bodies currently in the region</span>
+delete(sim);</pre>
+
+<figure class="phx-fig">
+<img src="img/zone.png" alt="Translucent box region with spheres resting inside">
+<figcaption>The box-shaped region drawn over the floor; the five spheres resting inside it are reported by <code class="phx-inline">Count</code> and <code class="phx-inline">Contents</code>.</figcaption>
+</figure>
+
+<h4 class="phx-h4">Passive zone tallied once at the end</h4>
+<pre class="phx-code"><span class="cmt">% a passive zone costs nothing per step; refresh it once when finished</span>
+z = phx.Zone(floor, <span class="str">"Position"</span>, [0 0 1], <span class="str">"Size"</span>, [10 10 2], ...
+    <span class="str">"SimulationOrder"</span>, <span class="str">"none"</span>);
+
+sim = phx.Simulation;
+sim.step(3, 600, -1);
+update(z);              <span class="cmt">% single on-demand tally</span>
+disp(z.Count);
+delete(sim);</pre>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.Measure.html">phx.Measure</a>,
+<a href="phx.Logger.html">phx.Logger</a>,
+<a href="phx.Trace.html">phx.Trace</a>,
+<a href="phx.Body.html">phx.Body</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_logging.html">Measuring and logging</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

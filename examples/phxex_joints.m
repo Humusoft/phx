@@ -12,19 +12,22 @@ function phxex_joints(showGraphs)
 
     % Clear the current figure, set 3D view, and configure lighting
     clf; view(3); axis("equal"); camlight("headlight"); grid("on");
-    xlim([0 6]); ylim([-3 3]); zlim([-3 3]);
+    xlim([-5 5]); ylim([-5 5]); zlim([-5 5]);
 
     % Create static body A
-    A = phx.Body("Type", "static", "Position", [1 1 0], "Shape", {"Box", "SkeletPoints", [1.5 0 0]});
+    A = phx.Body("Type", "static", "Shape", {"Box", "SkeletPoints", [1.5 0 0; -3 0 3]}, "Restitution", 0.5);
 
     % Create dynamic body B
-    B = phx.Body("Position", [4 1 0], "Shape", {"Box", "SkeletPoints", [-1.5 0 0; 0 -1.5 0]});
+    B = phx.Body("Position", [3 0 0], "Shape", {"Box", "SkeletPoints", [-1.5 0 0; 0 -1.5 0]});
 
     % Create dynamic body C
-    C = phx.Body("Position", [4 -2 0], "Shape", {"Box", "SkeletPoints", [0 1.5 0]});
+    C = phx.Body("Position", [3 -3 0], "Shape", {"Box", "SkeletPoints", [0 1.5 0]});
 
-    % Create dynamic body C
-    D = phx.Body("Position", [4 -2 -1.5], "Shape", {"Box", "SkeletPoints", [0 0 1.5]});
+    % Create dynamic body D
+    D = phx.Body("Position", [3 -3 -1.5], "Shape", {"Box", "SkeletPoints", [0 0 1.5]});
+
+    % Create dynamic body E
+    E = phx.Body("Position", [-3 0 3], "EulerAngles", [0 pi/4 0], "Shape", {"Box"}, "Restitution", 1);
 
     % Create a revolute joint between bodies A and B
     phx.RevoluteJoint(A, B, "PointA", [1.5 0 0], "PointB", [-1.5 0 0], "Color", 0.5);
@@ -35,6 +38,9 @@ function phxex_joints(showGraphs)
 
     % Create a fixed joint between bodies C and D
     phx.FixedJoint(C, D, "PointA", [0 0 -1.5], "Visible", false);
+
+    % Create a fixed joint between bodies A and E
+    phx.PrismaticJoint(A, E, "EulerAnglesA", [0 pi/4 0], "MutualCollisions", true);
 
     % Logger to record the linear velocity of body B
     L = phx.Logger(B, "Parameters", "LinearVelocity", "Frequency", 100);

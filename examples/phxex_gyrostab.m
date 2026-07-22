@@ -109,8 +109,7 @@ function phxex_gyrostab(duration, spinRate, maxAmplitude)
 
     % Sleeping must stay disabled: the stabilizer works purely through
     % the spinning disk, which must never be deactivated
-    sim = phx.Simulation(ax, "EngineSettings", ...
-        phx.engine.BulletSettings("AutoActivated", false));
+    sim = phx.Simulation(ax);
 
     % Fine time step: the fast-spinning disk inside a joint chain needs it
     dt = 0.002;

@@ -118,8 +118,7 @@ function phxex_drone(wpScale)
     ctrl = phx.Function(drone, @(o, p, ~, tm) droneControl(o, p, tm, prm));
     ctrl.UserData = struct("wpIdx", 1, "landed", false, "tLand", NaN);
 
-    sim = phx.Simulation(ax, "EngineSettings", ...
-        phx.engine.BulletSettings("AutoActivated", false));
+    sim = phx.Simulation(ax);
 
     log = struct("t", [], "p", [], "wp", [], "f", [], "pb", []);
     while sim.Time < tMax && (isnan(ctrl.UserData.tLand) || sim.Time < ctrl.UserData.tLand + 1.5)

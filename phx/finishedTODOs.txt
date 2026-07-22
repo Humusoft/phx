@@ -30,6 +30,7 @@ Spring.m
 % DONE method to plot spring characteristics
 
 Joint.m
+% DONE prismatic joint
 % DONE remove constraints in engine when MATLAB object is deleted
 % DONE read result force/torque (for all joints)
 

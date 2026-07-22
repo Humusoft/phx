@@ -64,7 +64,7 @@ classdef tImport < matlab.unittest.TestCase
 
             tc.verifyClass(joints.shoulder_joint, "phx.RevoluteJoint");
             tc.verifyClass(joints.elbow_fix, "phx.FixedJoint");
-            tc.verifyClass(joints.wrist_slide, "phx.FixedJoint"); % substituted prismatic
+            tc.verifyClass(joints.wrist_slide, "phx.PrismaticJoint");
             tc.verifyClass(joints.tool_mount, "phx.FixedJoint");
 
             % Original URDF names are preserved in the Name property
@@ -113,9 +113,36 @@ classdef tImport < matlab.unittest.TestCase
         end
 
         function substitutedJointWarns(tc)
+            % planar and floating joints are still substituted by a fixed
+            % joint (prismatic and revolute now map to their own joint types)
+            urdf = tc.writeFile("floating.urdf", "<robot name='f'>" + ...
+                "<link name='a'/><link name='b'/>" + ...
+                "<joint name='free' type='floating'>" + ...
+                "<parent link='a'/><child link='b'/></joint></robot>");
             tc.prepareAxes;
-            tc.verifyWarning(@() phx.assembly.import(tc.fixtureFile), ...
+            tc.verifyWarning(@() phx.assembly.import(urdf), ...
                 "phx:import:substitutedJoint");
+        end
+
+        function prismaticSlidingAxisFollowsJointAxis(tc)
+            % The imported prismatic joint slides along the URDF joint axis:
+            % the local X of both joint frames maps to one and the same world
+            % direction, equal to the URDF axis in the joint (child) frame
+            [bodies, joints] = tc.importFixture; %#ok<ASGLU> bodies keep the joints alive
+            j = joints.wrist_slide;
+            tc.verifyClass(j, "phx.PrismaticJoint");
+
+            TShoulder = tImport.trf([0 0 0.1], [0.1 0.2 0.3]);
+            TElbow = TShoulder*tImport.trf([0 0 0.4], [0 -0.4 0]);
+            TWrist = TElbow*tImport.trf([0.1 0 0], [0 0 1.0]);
+            expected = TWrist(1:3, 1:3)*[1; 0; 0]; % URDF axis "1 0 0" in world
+
+            axisA = j.Parents{1}.Transform(1:3, 1:3)*j.TransformA(1:3, 1);
+            axisB = j.Parents{2}.Transform(1:3, 1:3)*j.TransformB(1:3, 1);
+            tc.verifyEqual(axisA, expected, "AbsTol", 1e-12, ...
+                "Slider axis on body A does not match the URDF joint axis.");
+            tc.verifyEqual(axisB, expected, "AbsTol", 1e-12, ...
+                "Slider axis on body B does not match the URDF joint axis.");
         end
 
         function linkPosesFollowKinematicTree(tc)
@@ -242,8 +269,7 @@ classdef tImport < matlab.unittest.TestCase
             % Joint anchor points still coincide
             tc.verifyAnchorsCoincide(joints, 0.01);
 
-            % Bodies welded by fixed joints keep their relative pose,
-            % including the substituted prismatic joint
+            % Bodies welded by fixed joints keep their relative pose
             relAfter = tc.fixedRelativePoses(joints);
             for i = 1:numel(relBefore)
                 dp = norm(relBefore{i}(1:3, 4) - relAfter{i}(1:3, 4));
@@ -299,7 +325,7 @@ classdef tImport < matlab.unittest.TestCase
         end
 
         function rel = fixedRelativePoses(~, joints)
-            names = ["elbow_fix", "wrist_slide", "tool_mount"];
+            names = ["elbow_fix", "tool_mount"];
             rel = cell(1, numel(names));
             for i = 1:numel(names)
                 j = joints.(names(i));

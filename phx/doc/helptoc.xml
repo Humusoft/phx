@@ -28,6 +28,7 @@
 
         <tocitem target="phx.base.Joint.html">Joints
             <tocitem target="phx.RevoluteJoint.html">phx.RevoluteJoint</tocitem>
+            <tocitem target="phx.PrismaticJoint.html">phx.PrismaticJoint</tocitem>
             <tocitem target="phx.SphericalJoint.html">phx.SphericalJoint</tocitem>
             <tocitem target="phx.GearJoint.html">phx.GearJoint</tocitem>
             <tocitem target="phx.FixedJoint.html">phx.FixedJoint</tocitem>
@@ -78,6 +79,7 @@
             <tocitem target="phx.Logger.html">phx.Logger</tocitem>
             <tocitem target="phx.Trace.html">phx.Trace</tocitem>
             <tocitem target="phx.Measure.html">phx.Measure</tocitem>
+            <tocitem target="phx.Zone.html">phx.Zone</tocitem>
             <tocitem target="phx.Script.html">phx.Script</tocitem>
             <tocitem target="phx.Function.html">phx.Function</tocitem>
             <tocitem target="phx.Camera.html">phx.Camera</tocitem>

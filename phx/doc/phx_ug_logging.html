@@ -13,15 +13,17 @@
 <div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; User Guide &rsaquo; Measuring and logging</div>
 
 <h1 class="phx-title">Measuring and Logging Data</h1>
-<p class="phx-purpose">Observing simulation results with Logger, Trace and Measure</p>
+<p class="phx-purpose">Observing simulation results with Logger, Trace, Measure and Zone</p>
 
-<p>Simulation results are observed with three helpers:</p>
+<p>Simulation results are observed with four helpers:</p>
 <ul>
 <li><code class="phx-inline">phx.Logger</code> &mdash; records property values over time (position,
     velocity, force&nbsp;&hellip;).</li>
 <li><code class="phx-inline">phx.Trace</code> &mdash; draws the trail of a chosen body point.</li>
 <li><code class="phx-inline">phx.Measure</code> &mdash; measures the distance and relative velocity
     between two bodies.</li>
+<li><code class="phx-inline">phx.Zone</code> &mdash; counts the bodies inside a box-shaped region and
+    reports when they enter or leave it.</li>
 </ul>
 
 <pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
@@ -48,6 +50,25 @@ Data is read from <code>log1.Time</code> and <code>log1.Data</code>.</figcaption
 
 <p>With multiple channels, individual signals are selected with
 <code class="phx-inline">log.getChannel(k)</code>.</p>
+
+<p>A <code class="phx-inline">phx.Zone</code> counts bodies inside a box-shaped region attached to an
+anchor body. It watches every moving body by default and can call back on entry and exit:</p>
+
+<pre class="phx-code">floor = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [10 10 0.3]});
+b = phx.Body(<span class="str">"Position"</span>, [0 0 6], <span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>});
+
+<span class="cmt">% a box region over the floor; report each body that enters</span>
+z = phx.Zone(floor, <span class="str">"Position"</span>, [0 0 2], <span class="str">"Size"</span>, [4 4 2], ...
+    <span class="str">"EnteredFcn"</span>, @(zone, body) disp(<span class="str">"inside: "</span> + zone.Count));
+
+sim = phx.Simulation;
+sim.step(3, 600, 1);
+disp(z.Count);         <span class="cmt">% bodies currently in the region</span>
+delete(sim);</pre>
+
+<p>For a pure end-of-run tally, make the zone passive with
+<code class="phx-inline">"SimulationOrder", "none"</code> (it then costs nothing per step) and read it once
+after stepping with <code class="phx-inline">update(z)</code>.</p>
 
 <div class="phx-seealso">
 <span class="lbl">Topics</span>

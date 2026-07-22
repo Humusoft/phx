@@ -37,12 +37,11 @@ function phxex_galton(nBalls, nRows, seed)
     rng(seed); % Random seed for reproducible release jitter
 
     % Board proportions (everything derives from the ball diameter)
-    d = 1;                 % ball diameter
-    sx = 3*d;              % horizontal pin pitch = bin width
-    pinD = 0.8*d;          % pin diameter
-    dz = 1.6*d;            % vertical distance between pin rows
-    gapY = 1.25*d;         % depth between the front and back glass
-    mu = [0.05 0.01 0];    % low friction [drag roll spin] keeps balls flowing
+    d = 1.2;               % ball diameter
+    sx = 3.0*d;            % horizontal pin pitch = bin width
+    pinD = 0.7*d;          % pin diameter
+    dz = 1.9*d;            % vertical distance between pin rows
+    gapY = 1.2*d;          % depth between the front and back glass
 
     nBins = nRows + 1;
     halfW = nBins/2*sx;    % board half-width (outer bin edges)
@@ -62,36 +61,32 @@ function phxex_galton(nBalls, nRows, seed)
     [viewer, ax] = phx.extra.Viewer("clear", "DefaultCameraTarget", [0 0 hWall/2], ...
         "DefaultCameraPosition", [0 -2.0*hWall 0.6*hWall]);
 
-    % Static floor
-    phx.Body(ax, "Type", "static", "Position", [0 0 -0.5], ...
-        "Shape", {"Box", "Size", [2*halfW + 6, 6, 1], "Color", [1 1 1]}, "Friction", mu);
+    % Static floor (also the anchor for the bin zones)
+    floor = phx.Body(ax, "Type", "static", "Position", [0 0 -0.5], ...
+        "Shape", {"Box", "Size", [2*halfW + 6, 6, 1], "Color", [1 1 1]});
 
     % Back glass (solid) and front glass (wireframe, so we can see inside);
     % both collide with the balls and keep the board effectively 2D
     phx.Body(ax, "Type", "static", "Position", [0 gapY/2 + 0.15, hWall/2], ...
-        "Shape", {"Box", "Size", [2*halfW + 0.4, 0.3, hWall], "Color", [0.85 0.87 0.92]}, ...
-        "Friction", mu);
+        "Shape", {"Box", "Size", [2*halfW + 0.4, 0.3, hWall], "Color", [0.85 0.87 0.92]});
     phx.Body(ax, "Type", "static", "Position", [0, -gapY/2 - 0.15, hWall/2], ...
         "Shape", {"Box", "Size", [2*halfW + 0.4, 0.3, hWall], ...
-        "Style", "wireframe", "Color", [0.6 0.7 0.8], "ForcePatch", true}, "Friction", mu);
+        "Style", "wireframe", "Color", [0.6 0.7 0.8], "ForcePatch", true});
 
     % Side walls (outer edges of the first and last bin)
     for sgn = [-1 1]
         phx.Body(ax, "Type", "static", "Position", [sgn*(halfW + 0.1), 0, hWall/2], ...
-            "Shape", {"Box", "Size", [0.2 gapY hWall], "Color", [0.5 0.5 0.55]}, ...
-            "Friction", mu);
+            "Shape", {"Box", "Size", [0.2 gapY hWall], "Color", [0.5 0.5 0.55]});
     end
 
     % Bin dividers (interior bin edges only, side walls close the outer bins)
     for j = 1:nRows
         phx.Body(ax, "Type", "static", "Position", [(j - nBins/2)*sx, 0, hBin/2], ...
-            "Shape", {"Box", "Size", [0.2 gapY hBin], "Color", [0.5 0.5 0.55]}, ...
-            "Friction", mu);
+            "Shape", {"Box", "Size", [0.2 gapY hBin], "Color", [0.5 0.5 0.55]});
     end
 
     % Pin grid (quincunx): odd rows have a pin right below the drop point,
-    % even rows are shifted by half a pitch. The outermost pins sit half
-    % buried in the side walls, so there is no free corridor along them.
+    % even rows are shifted by half a pitch.
     m = round(halfW/sx);
     for r = 1:nRows
         z = zRowTop - (r - 1)*dz;
@@ -102,10 +97,17 @@ function phxex_galton(nBalls, nRows, seed)
         end
         for x = xPins
             phx.Body(ax, "Type", "static", "Position", [x 0 z], ...
-                "Shape", {"Cylinder", "Diameter", pinD, "Height", gapY, "Axis", "y", ...
-                "Segments", 18, "Color", [0.75 0.75 0.78], "Material", "metal"}, ...
-                "Friction", mu);
+                "Shape", {"Cylinder", "Diameter", pinD, "Height", gapY, "Axis", "y", "Color", 0.8});
         end
+    end
+
+    % One passive phx.Zone per bin (a full-height x-slab) so the piles count
+    % themselves; tallied once at the end with update(), free during the run.
+    bins = phx.Zone.empty;
+    for k = 0:nRows
+        bins(k + 1) = phx.Zone(floor, "Position", [(k - nRows/2)*sx, 0, hWall/2], ...
+            "Size", [sx, gapY + 0.4, hWall], "SimulationOrder", "none", ...
+            "Visible", false); %#ok<AGROW> fixed nBins
     end
 
     % On-screen readout
@@ -126,50 +128,30 @@ function phxex_galton(nBalls, nRows, seed)
 
             shp = shp.nextColor;
             balls(released + 1) = phx.Body(ax, "Position", [jit 0 zDrop], ...
-                "Shape", shp, "Friction", mu, "Mass", 1, "Inertia", 0.1); %#ok<AGROW> unknown rate
+                "Shape", shp, "Mass", 1, "Inertia", 0.1); %#ok<AGROW> unknown rate
 
-            if released == 0
-                phx.Trace(balls(1), "TracePoints", 600, "Overlay", true);
-            end
-            
             sim.addObjects(balls(released + 1));
             released = released + 1;
             viewer.displayText(sprintf("Released: %d / %d", released, nBalls));
         end
-        sim.step(dt, 5, 5);
+        sim.step(dt, 5);
         pause(0);
     end
 
     % Phase 2 - let the last balls trickle down and the piles settle
-    settleTimeout = sim.Time + 20;
-    while sim.Time < settleTimeout
-        sim.step(0.1, 10, 10);
-        %pause(0);
-        vMax = 0;
-        for i = 1:nBalls
-            vMax = max(vMax, norm(balls(i).LinearVelocity));
-        end
-        viewer.displayText(sprintf("Settling...   max speed: %.2f", vMax));
-        if vMax < 0.15
-            break
-        end
+    sim.step(20, 2000, 10);
+
+    % Tally the settled piles from the zones and recolor each ball by its bin
+    update(bins);
+    counts = [bins.Count]';
+    clr = (jet(nBins) + 1)/2;
+    for b = 1:nBins
+        set(bins(b).Contents, "Color", clr(b, :));
     end
     delete(sim);
 
-    % Classify every ball into its bin by the final x position
-    xFinal = zeros(1, nBalls);
-    for i = 1:nBalls
-        p = balls(i).Position;
-        xFinal(i) = p(1);
-    end
-    binIdx = max(0, min(nRows, round(xFinal/sx + nRows/2)));
-    counts = accumarray(binIdx(:) + 1, 1, [nBins 1]);
-
-    % Recolor the balls by their bin to highlight the histogram in the scene
-    clr = (jet(nBins) + 1)/2;
-    for i = 1:nBalls
-        balls(i).Color = clr(binIdx(i) + 1, :);
-    end
+    % Final x positions are still needed for the sample statistics below
+    xFinal = arrayfun(@(b) b.Position(1), balls);
     drawnow;
     viewer.displayText(sprintf("Done: %d balls in %d bins", nBalls, nBins));
 
@@ -181,7 +163,7 @@ function phxex_galton(nBalls, nRows, seed)
         mean(xFinal), std(xFinal), stdTheory);
 
     % Compare the measured histogram with the binomial expectation
-    figure(2);
+    clf(figure(2));
     xc = ((0:nRows) - nRows/2)*sx;
     bar(xc, counts, 0.9);
     hold on

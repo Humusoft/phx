@@ -131,7 +131,7 @@ function Start(block)
 
     % Create simulation object
     %BB.Sim = phx.Simulation([]);
-    BB.Sim = phx.Simulation([], "EngineSettings", phx.engine.BulletSettings("AutoActivated", false, "SubstepLimit", 100));
+    BB.Sim = phx.Simulation([]);
     BB.Sim.addObjects(BB.Source);
     BB.Sim.propagate("ParentAxes", BB.hA);
 
