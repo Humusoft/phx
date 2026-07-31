@@ -27,7 +27,7 @@ only a matter of combining them.</p>
     <td>A rigid body &mdash; it has a position, mass, velocity and a shape. The basic building
     block.</td></tr>
 <tr><td class="name">phx.shape.*</td>
-    <td>The geometry a body &ldquo;wears&rdquo; &mdash; box, sphere, cylinder, STL model&nbsp;&hellip;
+    <td>The geometry a body &ldquo;wears&rdquo; &mdash; box, sphere, cylinder, imported mesh&nbsp;&hellip;
     See <a href="phx_ug_bodies.html">Bodies and shapes</a>.</td></tr>
 <tr><td class="name">phx.*Joint</td>
     <td>A connection of two bodies with restricted motion (hinge, ball joint, gear). See
@@ -40,15 +40,17 @@ only a matter of combining them.</p>
     gravitational/magnetic interaction.</td></tr>
 <tr><td class="name">Assemblies</td>
     <td><code class="phx-inline">phx.assembly.*</code> &mdash; prefab builders that create whole
-    groups of parts at once (an arena, a jointed chain, scattered bodies, a URDF robot). See
+    groups of parts at once (an arena, a jointed chain, scattered bodies, an imported model). See
     <a href="phx_ug_assemblies.html">Prefab assemblies</a>.</td></tr>
 <tr><td class="name">Observers</td>
     <td><code class="phx-inline">Logger</code> (data logging), <code class="phx-inline">Trace</code>
-    (motion trail), <code class="phx-inline">Measure</code> (distances and velocities). See
+    (motion trail), <code class="phx-inline">Measure</code> (distances and velocities),
+    <code class="phx-inline">Zone</code> (bodies inside a region). See
     <a href="phx_ug_logging.html">Measuring and logging</a>.</td></tr>
 <tr><td class="name">Automation</td>
     <td><code class="phx-inline">Script</code> (prescribed value profiles over time),
-    <code class="phx-inline">Function</code> (custom computation/control at every step). See
+    <code class="phx-inline">Function</code> (custom computation/control at every step),
+    <code class="phx-inline">Camera</code> (view attached to bodies). See
     <a href="phx_ug_control.html">Automation and control</a>.</td></tr>
 </table>
 

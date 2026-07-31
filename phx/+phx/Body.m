@@ -248,8 +248,8 @@ classdef Body < phx.base.Object
         function set.Shape(obj, shape)
             switch class(shape)
                 case 'cell'
-                    if endsWith(shape{1}, ".stl")
-                        shape = phx.shape.STL("Source", shape{:});
+                    if endsWith(lower(shape{1}), [".stl", ".obj", ".ply"])
+                        shape = phx.shape.Mesh("Source", shape{:});
                     else
                         shape = feval("phx.shape."+shape{1}, shape{2:end});
                     end

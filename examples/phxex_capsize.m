@@ -135,7 +135,6 @@ function phxex_capsize(duration, maxAmplitude)
 
         viewer.displayText(sprintf("t = %4.1f s   wave amplitude %.2f m   roll %5.1f deg   crates lost %d/4", ...
             t, amp(t), rad2deg(hist.roll(end)), nnz(fallen)));
-        pause(0);
     end
     delete(sim);
 
@@ -150,7 +149,7 @@ function phxex_capsize(duration, maxAmplitude)
     end
 
     % Roll history with the growing sea and the overboard events
-    figure(2);
+    clf(figure(2));
     yyaxis left
     plot(hist.t, rad2deg(hist.roll), "LineWidth", 1.2);
     ylabel("hull roll [deg]");

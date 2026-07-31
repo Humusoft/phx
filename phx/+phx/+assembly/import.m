@@ -1,19 +1,32 @@
 function [bodies, joints] = import(varargin)
-%phx.assembly.import Import a robot model from a URDF file
+%phx.assembly.import Import a multi-body model from a file
 %
-%   bodies = phx.assembly.import(file) reads a robot description from the
-%   given URDF (Unified Robot Description Format) file and creates a
-%   phx.Body object for every link of the robot. The bodies are returned in
-%   a struct whose field names are the link names (made valid MATLAB
-%   identifiers by matlab.lang.makeValidName; the original URDF name is
-%   preserved in the Name property of each object). The bodies are drawn
-%   into the current axes and are placed at the world poses of the robot in
-%   its zero (home) configuration, with the base (root link frame) at the
-%   world origin unless a pose is given by the Position and Orientation or
-%   EulerAngles options. Like with phx.Body, a target axes to draw into
-%   may be passed as an optional first argument:
-%   phx.assembly.import(ax, file, ___), where an empty target ([]) creates
-%   the bodies without graphics for headless simulations.
+%   bodies = phx.assembly.import(file) reads a model from the given file and
+%   creates the phx.Body objects it describes. The file format is selected
+%   from the extension:
+%   - URDF (.urdf, .xml) - one body per robot link, connected by joints;
+%   - OBJ (.obj) - one body per Wavefront object (o/g group), with no joints;
+%   - STL (.stl) and PLY (.ply) - a single body from the whole mesh.
+%   The bodies are returned in a struct whose field names are the link or
+%   object names (made valid MATLAB identifiers by matlab.lang.makeValidName;
+%   the original name is preserved in the Name property of each object). Like
+%   with phx.Body, a target axes to draw into may be passed as an optional
+%   first argument: phx.assembly.import(ax, file, ___), where an empty target
+%   ([]) creates the bodies without graphics for headless simulations.
+%
+%   For an OBJ file the mesh objects become separate dynamic bodies with a
+%   convex collision envelope (set Envelope to override); each body frame
+%   sits at its object's centroid. Only genuine 3D solids are imported - flat
+%   objects (ground planes, light quads, decals) and line- or point-only
+%   objects carry no useful collision volume and are skipped. Use
+%   phx.shape.Mesh instead to load a whole OBJ as a single merged body. The
+%   URDF path is described below.
+%
+%   A URDF file creates a phx.Body for every link. The bodies are drawn into
+%   the current axes and placed at the world poses of the robot in its zero
+%   (home) configuration, with the base (root link frame) at the world
+%   origin unless a pose is given by the Position and Orientation or
+%   EulerAngles options.
 %
 %   [bodies, joints] = phx.assembly.import(file) also returns all created
 %   joints in a struct whose field names are the joint names.
@@ -47,8 +60,8 @@ function [bodies, joints] = import(varargin)
 %     body origin. Links without any geometry get a small placeholder
 %     sphere.
 %   - Geometries map to box -> phx.shape.Box, cylinder -> phx.shape.Cylinder,
-%     sphere -> phx.shape.Sphere and mesh -> phx.shape.STL or phx.shape.OBJ
-%     (selected by the file extension, with the scale attribute applied).
+%     sphere -> phx.shape.Sphere and mesh -> phx.shape.Mesh (STL or OBJ,
+%     selected by the file extension, with the scale attribute applied).
 %     Mesh shapes use the "convex" collision envelope. The capsule element
 %     <capsule radius="r" length="l"/> - a common vendor extension of the
 %     URDF format - maps to phx.shape.Capsule.
@@ -63,9 +76,14 @@ function [bodies, joints] = import(varargin)
 %
 %   Limitations of the importer:
 %   - Joint limits of revolute and prismatic joints are ignored.
-%   - Joints of type "planar" and "floating" are replaced by a
-%     phx.FixedJoint (their degrees of freedom are locked in the zero pose)
-%     and the warning phx:import:substitutedJoint is issued.
+%   - Joints of type "planar" have no direct PHX equivalent yet and are
+%     approximated by a phx.GenericJoint that frees the two in-plane
+%     translations and the rotation about the plane normal; the warning
+%     phx:import:substitutedJoint is issued.
+%   - Joints of type "floating" impose no constraint, so no joint is created
+%     and the child link is left free at its zero-configuration pose; the
+%     warning phx:import:floatingJoint is issued and the link has no entry in
+%     the returned joints struct.
 %   - All joints are passive; no motors or transmissions are created.
 %   - Products of inertia (off-diagonal tensor elements) and the offset of
 %     the centre of mass from the body frame are ignored. Links with a zero
@@ -84,10 +102,58 @@ function [bodies, joints] = import(varargin)
 %   ^..^
 
     [ax, args] = axesTarget(varargin);
-    [bodies, joints] = build(ax, args{:});
+    if isempty(args)
+        error("phx:import:missingFile", "A model file name is required.");
+    end
+    file = string(args{1});
+    [~, ~, ext] = fileparts(file);
+
+    % Base-pose options are shared, the rest belongs to one branch only. The
+    % branch functions validate them again (types, membership); checking the
+    % names here just turns MATLAB's generic MATLAB:TooManyInputs into a
+    % phx:import:unsupportedOption that says which format the option belongs to.
+    BASE = ["Position", "Orientation", "EulerAngles"];
+    MESH = ["Scale", "Envelope", "FlipFaces", "Density"];
+    URDF = "MeshPath";
+
+    switch lower(ext)
+        case {".urdf", ".xml"}
+            checkOptions(args, [BASE URDF], "URDF", MESH, "OBJ, STL and PLY files");
+            [bodies, joints] = importURDF(ax, args{:});
+        case ".obj"
+            checkOptions(args, [BASE MESH], "OBJ", URDF, "URDF files");
+            [bodies, joints] = importOBJ(ax, args{:});
+        case {".stl", ".ply"}
+            checkOptions(args, [BASE MESH], upper(extractAfter(lower(ext), ".")), URDF, "URDF files");
+            [bodies, joints] = importMeshFile(ax, args{:});
+        otherwise
+            error("phx:import:unsupportedFormat", "Unsupported model file format '%s'; supported formats are URDF, OBJ, STL and PLY.", ext);
+    end
 end
 
-function [bodies, joints] = build(ax, file, Options)
+function checkOptions(args, allowed, format, foreign, foreignFormats)
+% Reject option names this branch does not take, naming the format they suit.
+    for i = 2:2:numel(args) - 1
+        name = args{i};
+        if ~(isstring(name) || ischar(name)) || isscalar(string(name)) == false
+            continue % not a name-value name; leave it to the branch function
+        end
+        name = string(name);
+        if any(strcmpi(name, allowed))
+            continue
+        end
+        if any(strcmpi(name, foreign))
+            error("phx:import:unsupportedOption", ...
+                "Option '%s' does not apply to %s files; it applies to %s. Valid options here are %s.", ...
+                name, format, foreignFormats, strjoin("'" + allowed + "'", ", "));
+        end
+        error("phx:import:unsupportedOption", ...
+            "Unknown option '%s' for %s files. Valid options are %s.", ...
+            name, format, strjoin("'" + allowed + "'", ", "));
+    end
+end
+
+function [bodies, joints] = importURDF(ax, file, Options)
     arguments
         ax
         file (1, 1) string
@@ -248,10 +314,10 @@ function [bodies, joints] = build(ax, file, Options)
                 if ~any(def.axis)
                     error("phx:import:invalidAttribute", "Joint '%s' has a zero-length sliding axis.", def.name);
                 end
-                % The slider axis is the local X of both joint frames, so the
-                % frame is rebuilt with its X along the joint axis (fixed
+                % The sliding axis is the local Z of both joint frames, so the
+                % frame is rebuilt with its Z along the joint axis (fixed
                 % joints, in contrast, only need the two frames to coincide)
-                TS = sliderFrame(TJ, def.axis/norm(def.axis));
+                TS = axisAlignedFrame(TJ, def.axis/norm(def.axis));
                 j = phx.PrismaticJoint(parentBody, childBody, ...
                     "TransformA", cleanTransform(TBody{parentID(k)}\TS), ...
                     "TransformB", cleanTransform(TBody{childID(k)}\TS), ...
@@ -259,15 +325,166 @@ function [bodies, joints] = build(ax, file, Options)
             case "fixed"
                 j = phx.FixedJoint(parentBody, childBody, ...
                     "TransformA", TA, "TransformB", TB, "Name", def.name);
-            otherwise % planar, floating
-                warning("phx:import:substitutedJoint", "Joint '%s' of unsupported type '%s' was replaced by a fixed joint; its degrees of freedom are locked in the zero pose.", def.name, def.type);
-                j = phx.FixedJoint(parentBody, childBody, ...
-                    "TransformA", TA, "TransformB", TB, "Name", def.name);
+            case "planar"
+                if ~any(def.axis)
+                    error("phx:import:invalidAttribute", "Joint '%s' has a zero-length plane normal.", def.name);
+                end
+                % TEMPORARY substitution: PHX has no dedicated planar joint
+                % yet, so the motion (two translations in the plane plus a
+                % rotation about the plane normal) is approximated with a
+                % phx.GenericJoint - the plane normal (URDF axis) is put on
+                % the joint Z, which frees the two in-plane translations (X, Y)
+                % and the rotation about Z while locking the rest. Z also keeps
+                % the free rotation off the generic joint's degenerate Y axis.
+                % Replace with a direct phx.PlanarJoint once it exists.
+                warning("phx:import:substitutedJoint", "Joint '%s' of type 'planar' has no direct PHX equivalent yet and was approximated by a phx.GenericJoint.", def.name);
+                TP = axisAlignedFrame(TJ, def.axis/norm(def.axis));
+                j = phx.GenericJoint(parentBody, childBody, ...
+                    "TransformA", cleanTransform(TBody{parentID(k)}\TP), ...
+                    "TransformB", cleanTransform(TBody{childID(k)}\TP), ...
+                    "LowerLinearLimits", [1 1 0], "UpperLinearLimits", [-1 -1 0], ...
+                    "LowerAngularLimits", [0 0 1], "UpperAngularLimits", [0 0 -1], ...
+                    "Name", def.name);
+            case "floating"
+                % A floating joint imposes no constraint - all six degrees of
+                % freedom are free - so no PHX joint is created and the child
+                % link is left as a free dynamic body at its zero-configuration
+                % pose. This matches the URDF semantics of a free-floating link
+                % (e.g. a mobile robot's base) more faithfully than any
+                % constraint could. The link therefore has no entry in the
+                % returned joints struct.
+                warning("phx:import:floatingJoint", "Joint '%s' of type 'floating' imposes no constraint; link '%s' is left free and no joint is created.", def.name, def.child);
+                continue
+            otherwise
+                error("phx:import:unsupportedJoint", "Joint '%s' has unhandled type '%s'.", def.name, def.type);
         end
 
         joints.(jointFields(k)) = j;
     end
 
+end
+
+%% OBJ / mesh import -----------------------------------------------------
+
+function [bodies, joints] = importOBJ(ax, file, Options)
+% Import a Wavefront OBJ as one phx.Body per object (o/g group).
+    arguments
+        ax
+        file (1, 1) string
+        Options.Position (1, 3) double = [0 0 0]
+        Options.Orientation (3, 3) double = eye(3)
+        Options.EulerAngles (1, 3) double = [0 0 0]
+        Options.Scale (1, 3) double = [1 1 1]
+        Options.Envelope {mustBeMember(Options.Envelope, ["box", "cylinder", "sphere", "convex", "concave"])} = "convex"
+        Options.FlipFaces (1, 1) logical = false
+        Options.Density (1, 1) double = 1000
+    end
+
+    TBase = basePose(Options, "import");
+    if ~isfile(file)
+        error("phx:import:fileNotFound", "OBJ file '%s' was not found.", file);
+    end
+
+    mesh = phx.internal.readMesh(file);
+    joints = struct;
+    bodies = struct;
+
+    groups = mesh.groups;
+    n = numel(groups);
+    if n == 0
+        return
+    end
+    if isa(ax, "missing")
+        ax = gca;
+    end
+
+    names = strings(1, n);
+    for i = 1:n
+        nm = groups(i).name;
+        if strlength(nm) == 0
+            nm = "part";
+        end
+        names(i) = nm;
+    end
+    fields = matlab.lang.makeUniqueStrings(matlab.lang.makeValidName(names));
+
+    for i = 1:n
+        % Recentre each object on its own bounding box, so the body frame
+        % sits at the object's centroid (see phx.shape.Mesh, Centered)
+        V = groupVertices(groups(i));
+
+        % Import only genuine 3D solids; flat objects (ground planes, light
+        % quads, decals) and line/point-only objects make no useful physics
+        % body and are skipped
+        if ~isSolidMesh(V)
+            continue
+        end
+
+        [pmin, pmax] = bounds(V);
+        center = (pmin + pmax)/2;
+
+        shape = phx.shape.Mesh.fromGroup(groups(i), "Envelope", Options.Envelope, ...
+            "FlipFaces", Options.FlipFaces, "Scale", Options.Scale, ...
+            "Centered", true, "Density", Options.Density);
+
+        b = phx.Body(ax, "Name", char(names(i)), "Shape", shape);
+        T = TBase;
+        T(1:3, 4) = TBase(1:3, 4) + TBase(1:3, 1:3)*(center.*Options.Scale)';
+        b.Transform = T;
+
+        bodies.(fields(i)) = b;
+    end
+end
+
+function [bodies, joints] = importMeshFile(ax, file, Options)
+% Import a single-solid mesh file (STL, PLY) as one phx.Body.
+    arguments
+        ax
+        file (1, 1) string
+        Options.Position (1, 3) double = [0 0 0]
+        Options.Orientation (3, 3) double = eye(3)
+        Options.EulerAngles (1, 3) double = [0 0 0]
+        Options.Scale (1, 3) double = [1 1 1]
+        Options.Envelope {mustBeMember(Options.Envelope, ["box", "cylinder", "sphere", "convex", "concave"])} = "convex"
+        Options.FlipFaces (1, 1) logical = false
+        Options.Density (1, 1) double = 1000
+    end
+
+    TBase = basePose(Options, "import");
+    if ~isfile(file)
+        error("phx:import:fileNotFound", "Mesh file '%s' was not found.", file);
+    end
+    if isa(ax, "missing")
+        ax = gca;
+    end
+
+    [~, name] = fileparts(file);
+    shape = phx.shape.Mesh("Source", file, "Envelope", Options.Envelope, ...
+        "FlipFaces", Options.FlipFaces, "Scale", Options.Scale, "Density", Options.Density);
+    b = phx.Body(ax, "Name", char(name), "Shape", shape);
+    b.Transform = TBase;
+
+    joints = struct;
+    bodies = struct(matlab.lang.makeValidName(name), b);
+end
+
+function V = groupVertices(group)
+    V = zeros(0, 3);
+    for s = 1:numel(group.submeshes)
+        V = [V; group.submeshes(s).vertices]; %#ok<AGROW>
+    end
+end
+
+function tf = isSolidMesh(V)
+% True when the vertices span three dimensions, i.e. form a real 3D solid
+% rather than a flat sheet. Uses the smallest principal extent, so the test
+% is independent of how the plane is oriented.
+    if size(V, 1) < 4
+        tf = false;
+        return
+    end
+    s = svd(V - mean(V, 1), "econ");
+    tf = numel(s) >= 3 && s(3) > 1e-4*s(1);
 end
 
 %% XML helpers -----------------------------------------------------------
@@ -511,18 +728,11 @@ function shape = createShape(geom, meshPath, urdfDir)
         case "mesh"
             source = resolveMeshFile(geom.filename, meshPath, urdfDir);
             [~, ~, ext] = fileparts(source);
-            switch lower(ext)
-                case ".stl"
-                    shape = phx.shape.STL;
-                case ".obj"
-                    shape = phx.shape.OBJ;
-                otherwise
-                    error("phx:import:unsupportedGeometry", "Unsupported mesh file format '%s' of '%s'; only STL and OBJ meshes are supported.", ext, geom.filename);
+            if ~ismember(lower(ext), [".stl", ".obj"])
+                error("phx:import:unsupportedGeometry", "Unsupported mesh file format '%s' of '%s'; only STL and OBJ meshes are supported.", ext, geom.filename);
             end
-            shape.Centered = false; % keep the vertices in the URDF geometry frame
-            shape.Scale = geom.scale;
-            shape.Envelope = "convex";
-            shape.Source = source;
+            % Keep the vertices in the URDF geometry frame (no recentring)
+            shape = phx.shape.Mesh("Source", source, "Scale", geom.scale, "Envelope", "convex", "Centered", false);
     end
 
     if ~isempty(geom.color)
@@ -584,21 +794,14 @@ function T = cleanTransform(T)
     T(4, :) = [0 0 0 1];
 end
 
-function T = sliderFrame(TJ, axis)
-% World joint frame of a prismatic joint: the origin sits at the joint
-% point and the local X points along the sliding axis (URDF axis, given in
-% the joint frame); Y and Z complete a right-handed orthonormal basis. Both
-% body-side frames are later derived from this single world frame, so they
-% stay consistent and share the same sliding direction.
-    x = TJ(1:3, 1:3)*axis(:);
-    x = x/norm(x);
-    ref = [0; 0; 1];
-    if abs(x'*ref) > 0.9
-        ref = [1; 0; 0]; % avoid a degenerate cross product for a near-Z axis
-    end
-    y = cross(ref, x); y = y/norm(y);
-    z = cross(x, y);
+function T = axisAlignedFrame(TJ, axis)
+% World joint frame whose local axis Z points along the given axis (URDF axis,
+% expressed in the joint frame); the other two axes complete a right-handed
+% orthonormal basis and the origin sits at the joint point. Deriving both
+% body-side frames from this single world frame keeps them consistent, so the
+% joint neither deforms nor snaps at the first step. Used to align a prismatic
+% sliding axis or a planar plane normal, both of which are the local axis Z.
     T = eye(4);
-    T(1:3, 1:3) = [x y z];
+    T(1:3, 1:3) = phx.internal.Math.alignZ(eye(3), TJ(1:3, 1:3)*axis(:));
     T(1:3, 4) = TJ(1:3, 4);
 end

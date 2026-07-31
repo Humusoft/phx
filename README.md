@@ -18,12 +18,14 @@ to allow co-simulation with custom MATLAB elements.
 * Rigid-body dynamics with collisions and contacts (boxes, spheres, cylinders,
 cones, capsules, meshes, terrain, imported OBJ/STL, …)
 * Joints (revolute, spherical, gear, …), springs and ropes
-* Force and field elements (thrusters, resistance, dipole/monopole fields)
+* Force and field elements (buoyancy, thrusters, resistance, dipole/monopole fields)
 * Logging, tracing and measurement tools, interactive viewer
 * Simulink block for closed-loop co-simulation
 * Headless stepping for batch runs and experiments
 
-PHX Toolbox also includes a set of AI skills for use with common AI agents.
+PHX Toolbox also includes a set of AI skills for use with common AI agents. They are
+installed with the toolbox in its `skills` folder (and live here in `.claude/skills`);
+see **AI agent skills** in the User Guide for how to point your assistant at them.
 
 ![PHX demo 1](doc/phx-demo-1.gif) ![PHX demo 2](doc/phx-demo-2.gif)
 ![PHX demo 3](doc/phx-demo-3.gif) ![PHX demo 4](doc/phx-demo-4.gif)

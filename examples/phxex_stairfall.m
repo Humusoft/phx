@@ -62,7 +62,7 @@ function phxex_stairfall(pushSpeed, duration)
         "Shape", {"Box", "Size", [(nSteps - 1)*run*4, (nSteps - 1)*run*4, 0.2], ...
         "Color", [0.75 0.73 0.7], "Texture", resdir+"tiles.jpg"}, "Friction", [0.7 0 0]);
 
-    phx.Body(ax, "Position", [-0.2 0 H+0.2], "Shape", {"STL", "Source", resdir+"cat.stl", "Scale", 0.01, "Color", 1});
+    phx.Body(ax, "Position", [-0.2 0 H+0.2], "Shape", {"Mesh", "Source", resdir+"cat.stl", "Scale", 0.01, "Envelope", "box", "Color", 1});
 
     % Import the humanoid right at the edge of the landing, leaning over it
     lean = 0.647; %randi(1000)/1000
@@ -118,9 +118,7 @@ function phxex_stairfall(pushSpeed, duration)
             calm = 0;
         end
 
-        viewer.displayText(sprintf("t = %4.2f s   head z = %.2f m", ...
-            sim.Time, head.Position(3)));
-        pause(0);
+        viewer.displayText(sprintf("t = %4.2f s   head z = %.2f m", sim.Time, head.Position(3)));
     end
     tEnd = sim.Time;
     pelvisEnd = bodies.pelvis.Position;

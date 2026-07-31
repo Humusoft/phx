@@ -120,13 +120,12 @@ classdef Thruster < phx.base.Object
                 end
 
                 if obj.Thrust ~= 0
-                    % The thrust is fixed to the body, so rotate it to the
-                    % global frame here and apply as a global force at the
-                    % local mounting point
-                    R = body.Matrix(1:3, 1:3);
-                    phx.engine.io('apply', world, body.ObjectHandle, 'force', (R*(obj.Thrust*obj.Direction)')', obj.Point, false, true);
+                    % The thrust is fixed to the body: apply it as a local
+                    % force at the local mounting point (the engine rotates
+                    % it into the global frame)
+                    phx.engine.io('apply', world, body.ObjectHandle, 'force', obj.Thrust*obj.Direction, obj.Point, true, true);
                     if obj.ReactionFactor ~= 0
-                        phx.engine.io('apply', world, body.ObjectHandle, 'torque', (R*(obj.ReactionFactor*obj.Thrust*obj.Direction)')', false);
+                        phx.engine.io('apply', world, body.ObjectHandle, 'torque', obj.ReactionFactor*obj.Thrust*obj.Direction, true);
                     end
                 end
             end

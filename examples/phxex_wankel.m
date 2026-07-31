@@ -25,16 +25,16 @@ function phxex_wankel(showGraphs)
     phx.Body(ax, "Type", "static", "Position", [0 0 -0.05], "Shape", {"Box", "Size", [1 1 0.1], "Color", [1 1 0.9]});
     
     % Create housing body with specified properties
-    h = phx.Body(ax, "Position", [0 0 0], "Shape", {resdir+"housing.stl", "Scale", 0.01, "Centered", false, "Color", 0.4, "Style", "flat", "Material", "shiny", "Density", 2700}, "Collisions", true);
+    h = phx.Body(ax, "Position", [0 0 0], "Shape", {resdir+"housing.stl", "Scale", 0.01, "Envelope", "box", "Centered", false, "Color", 0.4, "Style", "flat", "Material", "glossy", "Density", 2700}, "Collisions", true);
     
     % Create shaft body with specified properties
-    s = phx.Body(ax, "Position", [0 0 0], "Shape", {resdir+"shaft.stl", "Scale", 0.01, "Centered", false, "Color", [1 0.8 0.5], "Style", "flat", "Density", 7850}, "AxisAngle", [0 0 1 pi/2], "Collisions", false);
+    s = phx.Body(ax, "Position", [0 0 0], "Shape", {resdir+"shaft.stl", "Scale", 0.01, "Envelope", "box", "Centered", false, "Color", [1 0.8 0.5], "Style", "flat", "Density", 7850}, "AxisAngle", [0 0 1 pi/2], "Collisions", false);
     
     % Create rotor body with specified properties
-    r = phx.Body(ax, "Position", [0 0.015 0], "Shape", {resdir+"rotor.stl", "Scale", 0.01, "Centered", false, "Color", 1, "Style", "flat", "Density", 7850}, "Collisions", false);
+    r = phx.Body(ax, "Position", [0 0.015 0], "Shape", {resdir+"rotor.stl", "Scale", 0.01, "Envelope", "box", "Centered", false, "Color", 1, "Style", "flat", "Density", 7850}, "Collisions", false);
     
     % Create cat body with specified properties
-    phx.Body(ax, "Position", [0.2 0 0.2], "Shape", {resdir+"cat.stl", "Scale", 0.005, "Color", [0.9 0.9 1]});
+    phx.Body(ax, "Position", [0.2 0 0.2], "Shape", {resdir+"cat.stl", "Scale", 0.005, "Envelope", "box", "Color", [0.9 0.9 1]});
     
     % Group the engine components
     engine = [h s r];

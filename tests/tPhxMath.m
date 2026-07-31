@@ -97,6 +97,48 @@ classdef tPhxMath < matlab.unittest.TestCase
             tc.verifyEqual(phx.internal.Math.rotQ(q), R, "AbsTol", 1e-12);
         end
 
+        function alignZPutsTheDirectionInTheThirdColumnExactly(tc)
+            % The whole point of alignZ: the direction is placed in column 3
+            % as it is, so AxisA/AxisB read back bit-for-bit the normalized
+            % direction that was set - verified without any tolerance. Note
+            % that normalizing an already unit vector is not a no-op in
+            % floating point, hence the expected value is normalized too.
+            dirs = [0 0 1; 0 0 -1; 1 0 0; 0 1 0; -1 0 0; 0 -1 0; ...
+                    1 1 1; -0.3 0.7 -0.65; 1e-9 0 -1];
+            for k = 1:size(dirs, 1)
+                a = dirs(k, :)/norm(dirs(k, :));
+                R = phx.internal.Math.alignZ(eye(3), a);
+                tc.verifyEqual(R(:, 3)', a/norm(a), ...
+                    sprintf("Direction [%g %g %g] must read back exactly.", a));
+                tc.verifyEqual(R'*R, eye(3), "AbsTol", 1e-15);
+                tc.verifyEqual(det(R), 1, "AbsTol", 1e-15);
+            end
+        end
+
+        function alignZLeavesAnAlreadyAlignedFrameAlone(tc)
+            % Aligning a frame to the axis Z it already has must do nothing,
+            % including when a rotation about that axis has been applied.
+            tc.verifyEqual(phx.internal.Math.alignZ(eye(3), [0 0 1]), eye(3));
+
+            R0 = phx.internal.Math.rotAA([0 0 1], pi/6);
+            tc.verifyEqual(phx.internal.Math.alignZ(R0, [0 0 1]), R0, "AbsTol", 1e-15);
+        end
+
+        function alignZIgnoresDirectionLength(tc)
+            % The direction is normalized internally.
+            tc.verifyEqual(phx.internal.Math.alignZ(eye(3), [0 0 5]), eye(3));
+            R = phx.internal.Math.alignZ(eye(3), [0 3 4]);
+            tc.verifyEqual(R(:, 3)', [0 0.6 0.8], "AbsTol", 1e-15);
+        end
+
+        function alignZIsIdempotent(tc)
+            % Setting the same axis twice must not keep turning the frame.
+            a = [0.2 -0.5 0.84];
+            R1 = phx.internal.Math.alignZ(eye(3), a);
+            R2 = phx.internal.Math.alignZ(R1, a);
+            tc.verifyEqual(R2, R1, "AbsTol", 1e-15);
+        end
+
         function quaternionKnownZRotation(tc)
             a = pi/3;
             R = phx.internal.Math.rotAA([0 0 1], a);

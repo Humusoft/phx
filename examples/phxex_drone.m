@@ -71,7 +71,7 @@ function phxex_drone(wpScale)
 
     % The quadcopter frame; mass properties are set explicitly
     drone = phx.Body(ax, "Position", [0 0 0.36], ...
-        "Shape", {resdir+"drone_frame.stl", "Scale", scl, "Color", [0.8 0.8 0.8], ...
+        "Shape", {resdir+"drone_frame.stl", "Scale", scl, "Envelope", "box", "Color", [0.8 0.8 0.8], ...
         "Material", "matte", "Style", "flat"});
     drone.Mass = mDrone;
     drone.Inertia = iDrone;
@@ -85,8 +85,8 @@ function phxex_drone(wpScale)
     end
 
     % Visual-only spinning propellers following the frame
-    shpProp = phx.shape.STL("Source", resdir+"drone_prop.stl", "Scale", scl, ...
-        "Color", [0.9 0.65 0.2], "Style", "flat");
+    shpProp = phx.shape.Mesh("Source", resdir+"drone_prop.stl", "Scale", scl, ...
+        "Envelope", "box", "Color", [0.9 0.65 0.2], "Style", "flat");
     for i = 1:4
         props(i) = phx.Body(ax, "Type", "kinematic", "Collisions", false, ...
             "Position", [0 0 1], "Shape", shpProp); %#ok<AGROW> four propellers
@@ -132,7 +132,6 @@ function phxex_drone(wpScale)
             L = [c -sn 0 mounts(i, 1); sn c 0 mounts(i, 2); 0 0 1 mounts(i, 3) + 0.06; 0 0 0 1];
             props(i).Transform = M*L;
         end
-        pause(0);
 
         log.t(end + 1) = sim.Time;
         log.p(:, end + 1) = drone.Position;
@@ -160,7 +159,7 @@ function phxex_drone(wpScale)
     viewer.displayText(sprintf("Landed:  offset %.2f m,  flight time %.1f s", norm(pEnd(1:2)), tLand));
 
     % Trajectory and flight history plots
-    figure(2);
+    clf(figure(2));
     subplot(1, 2, 1);
     plot3(log.p(1, :), log.p(2, :), log.p(3, :), "LineWidth", 1.5); hold on
     plot3(wp(:, 1), wp(:, 2), wp(:, 3), "o--", "LineWidth", 1);

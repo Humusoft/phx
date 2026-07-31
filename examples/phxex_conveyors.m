@@ -29,7 +29,7 @@ function phxex_conveyors
     phx.Script(belt, {"Position", [0; 0.01; 0.02;], [1 -1.3 -0.4; 0.998 -1.3 -0.4; 1 -1.3 -0.4], 'nearest', 'repeat'}, {"Friction", [0; 0.01; 0.02], [0; 1; 0], 'nearest', 'repeat'});
 
     % Import an STL model as a shape
-    stl = phx.shape.STL("Source", resdir+"bottle.stl", "Scale", 0.01, "Color", [0.4 0.6 1], "Material", "shiny");
+    stl = phx.shape.Mesh("Source", resdir+"bottle.stl", "Scale", 0.01, "Envelope", "cylinder", "Color", [0.4 0.6 1], "Material", "glossy");
 
     % Create the simulation object
     sim = phx.Simulation;

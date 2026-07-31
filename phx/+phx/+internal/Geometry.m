@@ -332,28 +332,58 @@ classdef Geometry
                 tY = [0 0 linspace(0, 1, nS - 4) 1 1];
             end
 
-            % Main part (from second point to end)
-            Ptot = Spine(1, :);
-            for i = 2:nS
-                P = Spine(i, :) - Spine(i - 1, :);
-                p = P/norm(P);
-                Z = -atan2(p(2), p(1));
-                Y = atan2(p(3), sqrt(p(1)^2 + p(2)^2));
-                X = 0;
-                R = phx.internal.Math.rot321([X Y Z]);
-                Ptot = Ptot + P;
-                V = vertcat(V, v0.*Scale(i, :)*R + Ptot);
-                N = vertcat(N, n0*R);
-                F = vertcat(F, f0);
-                f0 = f0 + Segments + 1;
-                T = vertcat(T, t0 + [0 tY(i)]);
+            % Main part: one cross-section per spine point. Row 1 of R is the
+            % local tangent, so the profile plane is truly perpendicular to the
+            % curve; rows 2-3 orient the profile within that plane by referencing
+            % a fixed world up-direction. This replaces the old zero-roll atan2
+            % aim, which mis-oriented (and was singular for) any segment with a
+            % world-Z component. (row-vector convention: local basis -> rows of R)
+            lp = Segments + 1;
+
+            % Per-point tangents: at interior vertices the normalized average of
+            % the incoming and outgoing segment directions (a miter), so the plane
+            % bisects each bend instead of leaning fully onto one segment. That
+            % halves the tilt of a section at a sharp corner and stops a steeply
+            % tilted ring from crossing its neighbour and pinching the swept tube
+            % into a blade. End points use their single adjacent segment.
+            D = Spine(2:nS, :) - Spine(1:nS - 1, :);
+            D = D./vecnorm(D, 2, 2);                 % unit segment directions
+            Tg = [D(1, :); zeros(nS - 2, 3); D(nS - 1, :)];
+            for i = 2:nS - 1
+                t = D(i - 1, :) + D(i, :);
+                if norm(t) < 1e-9
+                    t = D(i, :);                     % ~180 deg reversal fallback
+                end
+                Tg(i, :) = t/norm(t);
             end
 
-            % Initial part (from first to second point)
-            lp = Segments + 1;
-            V = [(V(1:lp, :) - Spine(2, :)).*Scale(1, :)./Scale(2, :) + Spine(1, :); V];
-            N = [N(1:lp, :); N];
-            T = [t0; T];
+            % Build each frame from its tangent and a fixed world up-reference
+            % (+Z, falling back to +X where the tangent runs along +-Z). Anchoring
+            % the roll to a global direction - rather than parallel-transporting
+            % it point to point - keeps a non-circular profile from slowly rolling
+            % about the tangent along a curved or helical spine, so e.g. the
+            % flighting of phxex_screwconv stays a regular screw instead of a
+            % warped one; for a straight or planar spine it reproduces the
+            % historical frame exactly. Then place a scaled, translated ring per
+            % point, and its normals through the same frame.
+            for i = 1:nS
+                p = Tg(i, :);
+                ref = [0 0 1];
+                if abs(p*ref') > 1 - 1e-6
+                    ref = [1 0 0];                   % tangent along world +-Z
+                end
+                row2 = cross(ref, p);
+                row2 = row2/norm(row2);
+                row3 = cross(p, row2);
+                R = [p; row2; row3];
+                V = vertcat(V, v0.*Scale(i, :)*R + Spine(i, :));
+                N = vertcat(N, n0*R);
+                T = vertcat(T, t0 + [0 tY(i)]);
+                if i < nS
+                    F = vertcat(F, f0);
+                    f0 = f0 + lp;
+                end
+            end
 
             % Modify caps segments
             if BeginCap

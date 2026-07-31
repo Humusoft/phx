@@ -31,7 +31,7 @@ function phxex_stack(n, mu, tiltRate)
 
     % Figure setup
     figure(1);
-    [~, ax] = phx.extra.Viewer("clear", "DefaultCameraTarget", [0 0 3], ...
+    [viewer, ax] = phx.extra.Viewer("clear", "DefaultCameraTarget", [0 0 3], ...
         "DefaultCameraPosition", [18 -18 8]);
 
     % Box geometry (width depth height) and stacking parameters
@@ -66,10 +66,6 @@ function phxex_stack(n, mu, tiltRate)
     % Log the pallet tilt angle and the measured drift over time.
     logTilt = phx.Logger(pallet, "Frequency", 50, "Parameters", "EulerAngles");
 
-    % On-screen readout
-    label = uilabel(gcf, "FontSize", 18, "FontColor", [1 1 1], ...
-        "Position", [20 20 320 40], "Text", "Tilt: 0.0 deg");
-
     % Simulation: let the stack settle, then tilt the pallet about the X axis.
     sim = phx.Simulation;
 
@@ -95,9 +91,7 @@ function phxex_stack(n, mu, tiltRate)
             collapseAngle = tiltDeg;
         end
 
-        label.Text = sprintf("Tilt: %.1f deg   |   top drift: %.2f", ...
-            tiltDeg, drift.Distance);
-        pause(0);
+        viewer.displayText(sprintf("Tilt: %.1f deg   |   top drift: %.2f", tiltDeg, drift.Distance));
     end
 
     delete(sim);
@@ -111,7 +105,7 @@ function phxex_stack(n, mu, tiltRate)
             collapseAngle, mu, n);
     end
 
-    figure(2);
+    clf(figure(2));
     tiltX = logTilt.getChannel(1);          % EulerAngles channel -> [X Y Z]
     plot(logTilt.Time, tiltX(:, 1)*180/pi, "LineWidth", 1.5);
     grid on; xlabel("time [s]"); ylabel("pallet tilt [deg]");

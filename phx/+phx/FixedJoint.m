@@ -22,28 +22,12 @@ classdef FixedJoint < phx.base.Joint
 
     properties (Access = private)
         hL
+        hM
     end
 
     properties
-        % Transformation matrix relative to the first body
-        TransformA (4, 4) double = eye(4)
-
-        % Transformation matrix relative to the second body
-        TransformB (4, 4) double = eye(4)
-    end
-
-    properties (Dependent)
-        % Connecting point in the local space of the first body
-        PointA (1, 3) double
-
-        % Connecting point in the local space of the second body
-        PointB (1, 3) double
-
-        % Euler angles rotation (for z->y->x order) of the first body
-        EulerAnglesA (1, 3) double
-
-        % Euler angles rotation (for z->y->x order) of the second body
-        EulerAnglesB (1, 3) double
+        % Draw joint as overlay
+        Overlay (1, 1) logical = false
     end
 
     methods
@@ -64,40 +48,10 @@ classdef FixedJoint < phx.base.Joint
             phx.internal.applyArguments(Options, obj);
 
             % Create graphics objects
-            obj.hL = line(obj.Graphics, [NaN NaN], [NaN NaN], [NaN NaN], "Color", [0.6 0.6 0.6], "LineWidth", 1.0, "Marker", "o", "MarkerSize", 10);
+            clr = uint8([obj.Color*255 255]');
+            obj.hL = matlab.graphics.primitive.world.LineStrip('Parent', obj.Graphics, 'LineWidth', 1.0, 'ColorBinding', 'object', 'ColorData', clr, 'Layer', phx.internal.choose({'middle', 'front'}, obj.Overlay + 1));
+            obj.hM = matlab.graphics.primitive.world.Marker('Parent', obj.Graphics, 'EdgeColorData', clr, 'Style', 'circle', 'Size', 10, 'Layer', phx.internal.choose({'middle', 'front'}, obj.Overlay + 1));
             phx.FixedJoint.updateView({obj});
-        end
-
-        function set.PointA(obj, value)
-            obj.TransformA(13:15) = value;
-        end
-
-        function value = get.PointA(obj)
-            value = obj.TransformA(13:15)';
-        end
-
-        function set.PointB(obj, value)
-            obj.TransformB(13:15) = value;
-        end
-
-        function value = get.PointB(obj)
-            value = obj.TransformB(13:15)';
-        end
-
-        function set.EulerAnglesA(obj, value)
-            obj.TransformA(1:3, 1:3) = phx.internal.Math.rot321(value);
-        end
-
-        function value = get.EulerAnglesA(obj)
-            value = phx.internal.Math.decomp321(obj.TransformA(1:3, 1:3));
-        end
-
-        function set.EulerAnglesB(obj, value)
-            obj.TransformB(1:3, 1:3) = phx.internal.Math.rot321(value);
-        end
-
-        function value = get.EulerAnglesB(obj)
-            value = phx.internal.Math.decomp321(obj.TransformB(1:3, 1:3));
         end
     end
 
@@ -107,7 +61,7 @@ classdef FixedJoint < phx.base.Joint
             if valid
                 obj.WorldHandle = world;
                 obj.ObjectHandle = phx.engine.io('add', world, 'fixedconstraint', obj.Parents{1}.ObjectHandle, obj.Parents{2}.ObjectHandle, obj.TransformA(:), obj.TransformB(:), ~obj.MutualCollisions);
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'error', 0.1, 0.00001);
+                %phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'error', 0.5, 0.5);
             end
         end
 
@@ -127,13 +81,12 @@ classdef FixedJoint < phx.base.Joint
             for i = 1:numel(cellObjs)
                 obj = cellObjs{i};
 
-                pa = phx.internal.transformPoint(obj.Parents{1}.Matrix, obj.TransformA(13:15));
-                pb = phx.internal.transformPoint(obj.Parents{2}.Matrix, obj.TransformB(13:15));
+                pa = phx.internal.transformPoint(obj.Parents{1}.Matrix, obj.PointA);
+                pb = phx.internal.transformPoint(obj.Parents{2}.Matrix, obj.PointB);
+                vd = single([pa' pb']);
 
-                hL = obj.hL;
-                hL.XData_I = [pa(1) pb(1)];
-                hL.YData_I = [pa(2) pb(2)];
-                hL.ZData_I = [pa(3) pb(3)];
+                obj.hL.VertexData = vd;
+                obj.hM.VertexData = vd;
             end
         end
     end

@@ -2,18 +2,19 @@ classdef RevoluteJoint < phx.base.Joint
 %phx.RevoluteJoint Revolute joint
 %
 %   Revolute joint realizes a kinematic constraint with 1 degree of freedom
-%   specified as rotations around the axis.
+%   specified as rotations around the axis. The rotation axis is the Z axis of
+%   the joint coordinate systems of both connected bodies.
 %
 %   phx.RevoluteJoint(bodyA, bodyB) creates a joint between two bodies A and B
 %   attached to their points of origin and with rotation axes aligned to axis Z
 %   of the local coordinate system of each body.
-%   Custom connection points and direction vectors of rotation axes can be set 
+%   Custom connection points and direction vectors of rotation axes can be set
 %   using PointA, PointB, AxisA and AxisB properties.
 %
 %   phx.RevoluteJoint(___, name, value, ...) creates a joint and sets properties
 %   values according to given name-value pairs.
 %
-%   See also phx.SphericalJoint
+%   See also phx.SphericalJoint, phx.CylindricalJoint
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 %   SPDX-License-Identifier: LicenseRef-PHX-Preview-1.0
@@ -29,18 +30,6 @@ classdef RevoluteJoint < phx.base.Joint
     end
 
     properties
-        % Connecting point in the local space of the first body
-        PointA (1, 3) double = [0 0 0]
-
-        % Connecting point in the local space of the second body
-        PointB (1, 3) double = [0 0 0]
-        
-        % Direction vector of the rotation axis in the local space of the first body
-        AxisA (1, 3) double = [0 0 1]
-
-        % Direction vector of the rotation axis in the local space of the second body
-        AxisB (1, 3) double = [0 0 1]
-
         % Draw joint as overlay
         Overlay (1, 1) logical = false
     end

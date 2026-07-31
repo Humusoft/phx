@@ -165,7 +165,7 @@ sim.step(2, 200, 1);</pre>
 </figure>
 
 <h4 class="phx-h4">Drive a body with a transient force</h4>
-<pre class="phx-code">box.applyForce([0 0 50]);              <span class="cmt">% upward kick, world frame</span>
+<pre class="phx-code">box.applyForce([0 0 50]);              <span class="cmt">% upward kick, body frame (default)</span>
 box.applyForce([10 0 0], [0 0 0.5]);   <span class="cmt">% off-centre push, local point</span>
 sim.step(0.1, 20, 1);</pre>
 

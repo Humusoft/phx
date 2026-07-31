@@ -51,6 +51,12 @@ rotation axes aligned to the local Z axis of each body and a unit gear ratio. Se
 <p>Reaction feedback and the <code class="phx-inline">MutualCollisions</code> switch (collisions
 between the connected bodies, default <code class="phx-inline">false</code>) are inherited from
 <a href="phx.base.Joint.html">phx.base.Joint</a>.</p>
+<p>A gear joint couples angular velocities only &mdash; it does not tie the bodies together in space.
+It therefore reads no attachment point: the inherited
+<code class="phx-inline">PointA</code>/<code class="phx-inline">PointB</code> have <b>no effect</b>
+here, and of the joint frames it reads only their Z axis, i.e.
+<code class="phx-inline">AxisA</code>/<code class="phx-inline">AxisB</code>. Hold the wheels in place
+with their own joints, as in the example below.</p>
 
 <h2 class="phx-h2">Examples</h2>
 <h4 class="phx-h4">Couple two wheels with a 2:1 ratio</h4>

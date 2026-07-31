@@ -116,7 +116,7 @@ classdef tSimulation < matlab.unittest.TestCase
                 "EulerAngles", [0 0.3 0], "Shape", {"Box", "Size", [20 4 1]}, ...
                 "Friction", 0.3);
             body = phx.Body(ax, "Position", [-3 0 2], "Friction", 0.3, ...
-                "Shape", {"STL", "Source", stl, "Envelope", "convex"});
+                "Shape", {"Mesh", "Source", stl, "Envelope", "convex"});
             sim = phx.Simulation([ground body]);
             sim.step(3, 600, -1);
             p = [body.Position body.Quaternion];

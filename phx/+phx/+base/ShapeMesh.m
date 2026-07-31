@@ -22,7 +22,7 @@ classdef ShapeMesh
         Color (1, 3) double = [NaN NaN NaN]
 
         % Surface material
-        Material {mustBeMember(Material, ["default", "dull", "shiny", "metal", "matte"])} = "dull"
+        Material {mustBeMember(Material, ["unlit", "matte", "plastic", "glossy", "metal"])} = "plastic"
 
         % Surface style
         Style {mustBeMember(Style, ["smooth", "edged", "flat", "wireframe"])} = "smooth"
@@ -41,11 +41,7 @@ classdef ShapeMesh
 
     methods
         function obj = set.Texture(obj, fileName)
-            [img, ~, alpha] = imread(fileName);
-            if ~isempty(alpha) && min(alpha(:)) < 255
-                img(:, :, 4) = alpha;
-            end
-            obj.TextureData = permute(img, [3 1 2]);
+            obj.TextureData = phx.base.ShapeMesh.loadTexture(fileName);
         end
 
         function obj = colormapTexture(obj, cdata, cmap)
@@ -110,37 +106,36 @@ classdef ShapeMesh
 
         function applyMaterial(obj, primitive, material)
             switch material
-                case "default"
-                    primitive.AmbientStrength = 0.3;
-                    primitive.DiffuseStrength = 0.6;
-                    primitive.SpecularStrength = 0.9;
+                case "unlit"
+                    primitive.AmbientStrength = 1.0;
+                    primitive.DiffuseStrength = 0.0;
+                    primitive.SpecularStrength = 0.0;
                     primitive.SpecularExponent = 10;
-                    primitive.SpecularColorReflectance = 1.0; 
-
-                case "dull"
-                    primitive.AmbientStrength = 0.3;
-                    primitive.DiffuseStrength = 0.8;
+                    primitive.SpecularColorReflectance = 1.0;
+                case "matte"
+                    primitive.AmbientStrength = 0.42;
+                    primitive.DiffuseStrength = 0.58;
                     primitive.SpecularStrength = 0.0;
                     primitive.SpecularExponent = 10;
                     primitive.SpecularColorReflectance = 1.0; 
-                case "shiny"
-                    primitive.AmbientStrength = 0.3;
-                    primitive.DiffuseStrength = 0.6;
-                    primitive.SpecularStrength = 0.9;
-                    primitive.SpecularExponent = 20;
+                case "plastic"
+                    primitive.AmbientStrength = 0.32;
+                    primitive.DiffuseStrength = 0.68;
+                    primitive.SpecularStrength = 0.40;
+                    primitive.SpecularExponent = 10;
+                    primitive.SpecularColorReflectance = 1.0; 
+                case "glossy"
+                    primitive.AmbientStrength = 0.22;
+                    primitive.DiffuseStrength = 0.78;
+                    primitive.SpecularStrength = 0.85;
+                    primitive.SpecularExponent = 45;
                     primitive.SpecularColorReflectance = 1.0; 
                 case "metal"
-                    primitive.AmbientStrength = 0.3;
-                    primitive.DiffuseStrength = 0.3;
+                    primitive.AmbientStrength = 0.12;
+                    primitive.DiffuseStrength = 0.88;
                     primitive.SpecularStrength = 1.0;
-                    primitive.SpecularExponent = 25;
-                    primitive.SpecularColorReflectance = 0.5; 
-                case "matte"
-                    primitive.AmbientStrength = 0.5;
-                    primitive.DiffuseStrength = 0.5;
-                    primitive.SpecularStrength = 0.0;
-                    primitive.SpecularExponent = 10;
-                    primitive.SpecularColorReflectance = 0.0; 
+                    primitive.SpecularExponent = 32;
+                    primitive.SpecularColorReflectance = 0.1; 
             end
         end
 
@@ -210,6 +205,15 @@ classdef ShapeMesh
     end
 
     methods (Static, Hidden)
+        function data = loadTexture(fileName)
+        %loadTexture Read an image file into TriangleStrip texture data.
+            [img, ~, alpha] = imread(fileName);
+            if ~isempty(alpha) && min(alpha(:)) < 255
+                img(:, :, 4) = alpha;
+            end
+            data = permute(img, [3 1 2]);
+        end
+
         function clr = newColor(newValue)
             persistent counter colors
 

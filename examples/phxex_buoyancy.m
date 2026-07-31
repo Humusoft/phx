@@ -61,7 +61,7 @@ function phxex_buoyancy(duration, waves)
         "Shape", {"Box", "Size", [0.5 0.5 0.5], "Density", 3000, ...
         "Color", [0.35 0.35 0.4]}, "Friction", [0.6 0.1 0.1]);
     cat = phx.Body(ax, "Position", [2 1.8 1.8], ...
-        "Shape", {"STL", "Source", resdir+"cat.stl", "Scale", 0.1, "Density", 800, ...
+        "Shape", {"Mesh", "Source", resdir+"cat.stl", "Scale", 0.1, "Density", 800, "Envelope", "box", ...
         "Color", [1 1 1]}, "Friction", [0.6 0.1 0.1]);
 
     bodies = [crate buoy timber anchor cat];
@@ -86,7 +86,6 @@ function phxex_buoyancy(duration, waves)
         sim.step(dt*subSteps, subSteps, 5);
         viewer.displayText(sprintf("t = %4.1f s   crate z = %+.2f   anchor z = %+.2f", ...
             sim.Time, crate.Position(3), anchor.Position(3)));
-        pause(0);
     end
     delete(sim);
 

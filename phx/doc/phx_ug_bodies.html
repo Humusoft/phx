@@ -24,10 +24,12 @@ or in shorthand as a cell array <code class="phx-inline">{"Box", "Size", &hellip
 <tr><th>Shape</th><th>Main options</th><th>Note</th></tr>
 <tr><td class="name"><a href="phx.shape.Box.html">Box</a></td>
     <td><code class="phx-inline">Size [x y z]</code></td><td>Rectangular box.</td></tr>
-<tr><td class="name"><a href="phx.shape.Sphere.html">Sphere</a> /
-    <a href="phx.shape.Globe.html">Globe</a></td>
+<tr><td class="name"><a href="phx.shape.Sphere.html">Sphere</a></td>
     <td><code class="phx-inline">Diameter</code>, <code class="phx-inline">Division</code></td>
-    <td>Sphere (Globe has better texture mapping).</td></tr>
+    <td>Sphere from a subdivided icosahedron.</td></tr>
+<tr><td class="name"><a href="phx.shape.Globe.html">Globe</a></td>
+    <td><code class="phx-inline">Diameter</code>, <code class="phx-inline">Segments</code></td>
+    <td>Sphere from a meridian/parallel grid &mdash; use it for textures.</td></tr>
 <tr><td class="name"><a href="phx.shape.Cylinder.html">Cylinder</a></td>
     <td><code class="phx-inline">Diameter</code>, <code class="phx-inline">Height</code>,
     <code class="phx-inline">Axis</code></td><td>Cylinder.</td></tr>
@@ -37,12 +39,10 @@ or in shorthand as a cell array <code class="phx-inline">{"Box", "Size", &hellip
 <tr><td class="name"><a href="phx.shape.Capsule.html">Capsule</a></td>
     <td><code class="phx-inline">Diameter</code>, <code class="phx-inline">Height</code>,
     <code class="phx-inline">Axis</code></td><td>Cylinder with rounded caps.</td></tr>
-<tr><td class="name"><a href="phx.shape.STL.html">STL</a> /
-    <a href="phx.shape.OBJ.html">OBJ</a></td>
-    <td><code class="phx-inline">Source</code>, <code class="phx-inline">Scale</code>,
-    <code class="phx-inline">Envelope</code></td><td>Import a model from a file.</td></tr>
 <tr><td class="name"><a href="phx.shape.Mesh.html">Mesh</a></td>
-    <td>vertices / faces</td><td>Custom mesh with texture support.</td></tr>
+    <td><code class="phx-inline">Source</code>, <code class="phx-inline">Vertices</code>/<code class="phx-inline">Faces</code>,
+    <code class="phx-inline">Scale</code>, <code class="phx-inline">Envelope</code></td>
+    <td>Triangular mesh from an STL, OBJ or PLY file, or from data.</td></tr>
 <tr><td class="name"><a href="phx.shape.Terrain.html">Terrain</a>,
     <a href="phx.shape.Rock.html">Rock</a>,<br>
     <a href="phx.shape.Extrusion.html">Extrusion</a>,
@@ -62,8 +62,8 @@ phx.Body(<span class="str">"Position"</span>, [0.5 0 2],   <span class="str">"Sh
 phx.Body(<span class="str">"Position"</span>, [0 0 0.5],   <span class="str">"Shape"</span>, {<span class="str">"Cylinder"</span>, <span class="str">"Axis"</span>, <span class="str">"y"</span>, <span class="str">"Style"</span>, <span class="str">"edged"</span>});
 phx.Body(<span class="str">"Position"</span>, [2.5 0 0.5], <span class="str">"Shape"</span>, {<span class="str">"Cone"</span>, <span class="str">"Axis"</span>, <span class="str">"z"</span>});
 phx.Body(<span class="str">"Position"</span>, [2.5 0 2],   <span class="str">"Shape"</span>, {<span class="str">"Capsule"</span>, <span class="str">"Axis"</span>, <span class="str">"z"</span>});
-phx.Body(<span class="str">"Position"</span>, [1 -1.8 1],  <span class="str">"Shape"</span>, {<span class="str">"STL"</span>, <span class="str">"Source"</span>, <span class="str">"res/cat.stl"</span>, ...
-         <span class="str">"Scale"</span>, 0.025, <span class="str">"Material"</span>, <span class="str">"shiny"</span>});</pre>
+phx.Body(<span class="str">"Position"</span>, [1 -1.8 1],  <span class="str">"Shape"</span>, {<span class="str">"Mesh"</span>, <span class="str">"Source"</span>, <span class="str">"res/cat.stl"</span>, ...
+         <span class="str">"Scale"</span>, 0.025, <span class="str">"Material"</span>, <span class="str">"glossy"</span>});</pre>
 
 <figure class="phx-fig">
 <img src="img/shapes.png" alt="Shape gallery">
@@ -90,7 +90,7 @@ read and written &mdash; even during the simulation (they read/write the engine 
     <td>Mass [kg]. Can also be derived from the shape density
     (<code class="phx-inline">Density</code>).</td></tr>
 <tr><td class="name">Friction</td>
-    <td>Friction coefficients [slide &middot; roll &middot; spin].</td></tr>
+    <td>Friction coefficients <code class="phx-inline">[drag roll spin]</code>.</td></tr>
 <tr><td class="name">TotalForce / TotalTorque / Energy</td>
     <td>Current force, torque and kinetic energy (read-only).</td></tr>
 </table>
@@ -113,7 +113,7 @@ weightlessness.
 <a href="phx.Body.html">phx.Body</a>,
 <a href="phx.shape.Box.html">phx.shape.Box</a>,
 <a href="phx.shape.Sphere.html">phx.shape.Sphere</a>,
-<a href="phx.shape.STL.html">phx.shape.STL</a>
+<a href="phx.shape.Mesh.html">phx.shape.Mesh</a>
 </div>
 
 <div class="phx-seealso">

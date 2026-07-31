@@ -1,5 +1,5 @@
 % PHX
-% Version 1.0.5 (R2026a) 22-Jul-2026
+% Version 1.0.6 (R2026a) 31-Jul-2026
 %
 % PHX is an object-oriented physics toolbox for MATLAB, layered over the
 % Bullet physics engine. Scenes are built from phx.* objects that draw into
@@ -16,26 +16,27 @@
 %   phx.shape.Cone         - Cone shape
 %   phx.shape.Capsule      - Capsule shape
 %   phx.shape.Globe        - Globe shape
-%   phx.shape.Mesh         - Custom shape with texture
+%   phx.shape.Mesh         - Triangular mesh shape (STL/OBJ/PLY import or data)
 %   phx.shape.Extrusion    - Extrusion shape
 %   phx.shape.Revolution   - Revolution shape
 %   phx.shape.Rock         - Rock shape
 %   phx.shape.Terrain      - Terrain heightfield
-%   phx.shape.OBJ          - OBJ imported shape
-%   phx.shape.STL          - STL imported shape
 %
 % Assemblies
 %   phx.assembly.arena     - Static arena - a floor plate enclosed by four walls
 %   phx.assembly.chain     - Chain of rigid links along a polyline
 %   phx.assembly.scatter   - Bodies scattered randomly inside a box region
-%   phx.assembly.import    - Robot model imported from a URDF file
+%   phx.assembly.import    - Multi-body model imported from URDF, OBJ, STL or PLY
 %
 % Joints
 %   phx.RevoluteJoint      - Revolute joint
 %   phx.PrismaticJoint     - Prismatic joint
+%   phx.CylindricalJoint   - Cylindrical joint (slide and spin about one axis)
 %   phx.SphericalJoint     - Spherical joint
 %   phx.GearJoint          - Gear joint
 %   phx.FixedJoint         - Fixed joint
+%   phx.BushingJoint       - Bushing joint (compliant fixed joint)
+%   phx.GenericJoint       - Generic joint (6 DOF with limits)
 %
 % Springs and ropes
 %   phx.Spring             - Spring

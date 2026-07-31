@@ -81,7 +81,6 @@ function phxex_magpendulum(nGrid, tMaxRun)
     tVec = (1:nFrames)*5*dt;
     for f = 1:nFrames
         sim.step(5*dt, 5, 5);
-        pause(0);
         dist(f) = norm(tipOf(rod1) - tipOf(rod2));
         viewer.displayText(sprintf("Twin pendulums:  t = %.1f s   tip distance = %.4f", ...
             tVec(f), dist(f)));

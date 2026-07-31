@@ -29,7 +29,7 @@ function phxex_segway(Kp, Kd, push)
 
     arguments
         Kp   (1, 1) double = 4000
-        Kd   (1, 1) double = 380
+        Kd   (1, 1) double = 900
         push (1, 1) double = -40000
     end
 
@@ -38,7 +38,7 @@ function phxex_segway(Kp, Kd, push)
 
     % Figure setup
     figure(1);
-    [~, ax] = phx.extra.Viewer("clear", "DefaultCameraTarget", [-4 0 0.6], ...
+    [viewer, ax] = phx.extra.Viewer("clear", "DefaultCameraTarget", [-4 0 0.6], ...
         "DefaultCameraPosition", [-10 -10 4]);
 
     % Ground
@@ -84,10 +84,6 @@ function phxex_segway(Kp, Kd, push)
 
     phx.Camera(ground, body, "PointA", [-8 -6 2.5]);
 
-    % On-screen readout
-    label = uilabel(gcf, "FontSize", 18, "FontColor", [1 1 1], ...
-        "Position", [20 20 380 40], "Text", "Balancing...");
-
     sim = phx.Simulation;
 
     dt = 0.005;             % small step - balancing needs a fast loop
@@ -111,20 +107,18 @@ function phxex_segway(Kp, Kd, push)
         % External disturbance: a sideways shove on the body
         if k == pushStep
             body.applyForce([push 0 0], [], false);
-            label.Text = "Disturbance push!";
+            viewer.displayText("Disturbance push!");
         end
 
         sim.step(dt, 1, 1);
 
         if mod(k, 20) == 0
-            label.Text = sprintf("pitch = %6.1f deg   |   torque = %5.1f Nm", ...
-                pitch*180/pi, tau);
-            pause(0);
+            viewer.displayText(sprintf("pitch = %6.1f deg   |   torque = %5.1f Nm", pitch*180/pi, tau));
         end
 
         % Stop if the robot has fallen over
         if abs(pitch) > pi/3
-            label.Text = "Fell over!";
+            viewer.displayText("Fell over!");
             sim.step(dt, 40, 4);            % let it settle for the view
             break;
         end
@@ -142,7 +136,7 @@ function phxex_segway(Kp, Kd, push)
     end
 
     % Plot body pitch over time
-    figure(2);
+    clf(figure(2));
     e = logBody.getChannel(1);             % EulerAngles [x y z]
     plot(logBody.Time, e(:, 2)*180/pi, "LineWidth", 1.4);
     grid on; xlabel("time [s]"); ylabel("body pitch [deg]");

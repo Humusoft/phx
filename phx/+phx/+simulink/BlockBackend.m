@@ -134,6 +134,16 @@ classdef BlockBackend < handle
                         portKind, r.ObjectName, r.Property);
                 end
 
+                % An input port writes the property every step, so a read-only
+                % one can only ever be an output. Checked here rather than at
+                % the first write, which would fail mid-simulation.
+                if portKind == "input" && ...
+                        ~phx.simulink.BlockBackend.propertyIsSettable(iface(idx).Class, r.Property)
+                    error("phx:PhxModel:propertyReadOnly", ...
+                        "%s reference ""%s.%s"": the property is read-only and can be used as an output only.", ...
+                        portKind, r.ObjectName, r.Property);
+                end
+
                 if isempty(r.Indices)
                     w = phx.simulink.BlockBackend.propertyWidth(iface(idx).Class, r.Property);
                     if isnan(w)
@@ -166,10 +176,38 @@ classdef BlockBackend < handle
                 if isnan(w)
                     continue
                 end
-                settable = phx.simulink.BlockBackend.accessIsPublic(p.SetAccess) ...
-                    && (~p.Dependent || ~isempty(p.SetMethod));
+                settable = phx.simulink.BlockBackend.metaPropIsSettable(p);
                 props(end + 1) = struct('Name', string(p.Name), 'Width', w, 'ReadOnly', ~settable); %#ok<AGROW>
             end
+        end
+
+        % True when a property can be written from outside the class, i.e. is
+        % usable as an input port. A dependent property needs a set method.
+        % Unknown properties fail open (reported settable) so that a reference
+        % is never rejected on missing metadata alone.
+        function tf = propertyIsSettable(className, prop)
+            arguments
+                className (1, 1) string
+                prop (1, 1) string
+            end
+
+            tf = true;
+            try
+                pl = meta.class.fromName(className).PropertyList;
+            catch
+                return
+            end
+            i = find(string({pl.Name}) == prop, 1);
+            if isempty(i)
+                return
+            end
+            tf = phx.simulink.BlockBackend.metaPropIsSettable(pl(i));
+        end
+
+        % Settability of one meta.property (shared by the two callers above).
+        function tf = metaPropIsSettable(p)
+            tf = phx.simulink.BlockBackend.accessIsPublic(p.SetAccess) ...
+                && (~p.Dependent || ~isempty(p.SetMethod));
         end
 
         % True when a meta property access specifier is plain public (not a

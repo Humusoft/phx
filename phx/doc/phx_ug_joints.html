@@ -31,15 +31,19 @@ are given in the local coordinates of each body (<code class="phx-inline">PointA
     <code class="phx-inline">AxisB</code>).</td></tr>
 <tr><td class="name"><a href="phx.PrismaticJoint.html">PrismaticJoint</a></td>
     <td>1 &mdash; translation along an axis</td>
-    <td>Slider, rail, piston (sliding axis is the local X of the joint frame).</td></tr>
+    <td>Slider, rail, piston (<code class="phx-inline">AxisA</code>,
+    <code class="phx-inline">AxisB</code>).</td></tr>
+<tr><td class="name"><a href="phx.CylindricalJoint.html">CylindricalJoint</a></td>
+    <td>2 &mdash; translation along and rotation about one axis</td>
+    <td>Shaft in a sleeve, telescopic strut (<code class="phx-inline">AxisA</code>,
+    <code class="phx-inline">AxisB</code>).</td></tr>
 <tr><td class="name"><a href="phx.SphericalJoint.html">SphericalJoint</a></td>
     <td>3 &mdash; rotation about all axes</td><td>Ball joint.</td></tr>
 <tr><td class="name"><a href="phx.GearJoint.html">GearJoint</a></td>
     <td>velocity coupling</td><td>Gear train with a <code class="phx-inline">Ratio</code>.</td></tr>
-<tr><td class="name"><a href="phx.GenericJoint.html">GenericJoint</a>
-    <span class="phx-tag dev">dev</span></td>
+<tr><td class="name"><a href="phx.GenericJoint.html">GenericJoint</a></td>
     <td>6 &mdash; with limits</td>
-    <td>General constraint with translation/rotation limits.</td></tr>
+    <td>General constraint, each axis free, locked or bounded by end stops.</td></tr>
 </table>
 
 <pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
@@ -58,6 +62,31 @@ phx.SphericalJoint(B, C, <span class="str">"PointA"</span>, [0 -1.5 0], <span cl
 <figcaption>A chain of two joints (hinge + ball joint). The red line is the trail of the chain's
 end (<code>phx.Trace</code>). See <code>phxex_joints</code>.</figcaption>
 </figure>
+
+<div class="phx-note">
+<span class="lbl">Joint frames.</span> A joint holds the two joint coordinate systems
+(<code class="phx-inline">TransformA</code> and <code class="phx-inline">TransformB</code>, of which
+<code class="phx-inline">PointA</code> and <code class="phx-inline">PointB</code> are the position part)
+in coincidence, except for the degrees of freedom it leaves free. Choose them consistently with the
+initial poses of both bodies: a mismatch in a <i>constrained</i> direction is not an error, the solver
+just pulls the bodies together over the following steps &mdash; which is why the hinge above uses
+<code class="phx-inline">[1.5 0 0]</code> and <code class="phx-inline">[-1.5 0 0]</code> on bodies three
+metres apart. A mismatch in a <i>free</i> direction is harmless and only shifts the zero of that degree
+of freedom, e.g. an offset along the sliding axis of a
+<a href="phx.PrismaticJoint.html">PrismaticJoint</a>.
+</div>
+
+<div class="phx-note">
+<span class="lbl">Joint axis.</span> The axis of the free degrees of freedom is always the
+<b>Z axis</b> of the joint coordinate systems &mdash; the rotation axis of a
+<a href="phx.RevoluteJoint.html">RevoluteJoint</a> or a <a href="phx.GearJoint.html">GearJoint</a>, the
+sliding axis of a <a href="phx.PrismaticJoint.html">PrismaticJoint</a>, both at once for a
+<a href="phx.CylindricalJoint.html">CylindricalJoint</a> &mdash; and
+<code class="phx-inline">AxisA</code>/<code class="phx-inline">AxisB</code> read and write exactly that
+axis, leaving the rest of the coordinate system alone. Mind that a prismatic joint also locks the
+rotation <i>about</i> its sliding axis, which the axis alone does not describe: when the two bodies do
+not share an orientation, give that joint its coordinate systems in full rather than just their axes.
+</div>
 
 <div class="phx-note">
 <span class="lbl">Tip.</span> Whole jointed chains &mdash; pendulums, hanging ropes of links &mdash;
@@ -89,14 +118,15 @@ own weight. See <code>phxex_springs</code>.</figcaption>
 
 <h2 class="phx-h2">Ropes and generic couplings</h2>
 <p><a href="phx.Rope.html">phx.Rope</a> connects two bodies with an inextensible rope that can be
-routed over pulleys &mdash; hoists, tackles and counterweights. For more complex couplings there is
-<a href="phx.GenericSpring.html">phx.GenericSpring</a> <span class="phx-tag dev">dev</span>
-(a spring/damper on all 6 axes with limits).</p>
+routed over pulleys &mdash; hoists, tackles and counterweights. For a compliant fixed connection there is
+<a href="phx.BushingJoint.html">phx.BushingJoint</a>
+(an elastic bushing with a spring/damper on all 6 axes).</p>
 
 <div class="phx-seealso">
 <span class="lbl">See also</span>
 <a href="phx.RevoluteJoint.html">phx.RevoluteJoint</a>,
 <a href="phx.PrismaticJoint.html">phx.PrismaticJoint</a>,
+<a href="phx.CylindricalJoint.html">phx.CylindricalJoint</a>,
 <a href="phx.SphericalJoint.html">phx.SphericalJoint</a>,
 <a href="phx.FixedJoint.html">phx.FixedJoint</a>,
 <a href="phx.GearJoint.html">phx.GearJoint</a>,

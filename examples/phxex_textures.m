@@ -18,11 +18,11 @@ function phxex_textures
     phx.Body(ax, "Type", "static", "Position", [0 0 -0.5], "Shape", {"Box", "Texture", resdir+"tiles.jpg", "Size", [100 100 1]});
     
     % Cottage
-    cottageShape = phx.shape.OBJ("Source", resdir+"cottage.obj", "Texture", resdir+"cottage_diffuse.jpg", "Envelope", "convex", "Scale", 2);
+    cottageShape = phx.shape.Mesh("Source", resdir+"cottage.obj", "Group", "Cube_Cube.002", "Texture", resdir+"cottage_diffuse.jpg", "Envelope", "convex", "Centered", false, "Scale", 2);
     phx.Body(ax, "Type", "static", "Position", [0 -20 0], "Shape", cottageShape);
 
     % Trees
-    treeShape = phx.shape.OBJ("Source", resdir+"palm_tree.obj", "Texture", resdir+"palm_atlas.jpg", "Material", "matte", "Envelope", "convex", "Scale", 4);
+    treeShape = phx.shape.Mesh("Source", resdir+"palm_tree.obj", "Material", "matte", "Envelope", "convex", "Centered", false, "Scale", 4);
     for y = -20:8:20
         phx.Body(ax, "Type", "static", "Position", [19+rand*2 y 0]*2, "EulerAngles", [0 0 y], "Shape", treeShape);
     end

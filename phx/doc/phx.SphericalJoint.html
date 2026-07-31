@@ -51,6 +51,10 @@ bodies attached at their origins. Use <code class="phx-inline">PointA</code> and
 <code class="phx-inline">MutualCollisions</code> switch (collisions between the connected bodies,
 default <code class="phx-inline">false</code>) are inherited from
 <a href="phx.base.Joint.html">phx.base.Joint</a>.</p>
+<p>The joint constrains the two connection points only and leaves all three rotations free, so it
+reads no orientation at all: the inherited <code class="phx-inline">AxisA</code>/<code class="phx-inline">AxisB</code>
+and the rotation part of the joint frames (<code class="phx-inline">EulerAngles*</code>,
+<code class="phx-inline">AxisAngle*</code>) have <b>no effect</b> here.</p>
 
 <h2 class="phx-h2">Examples</h2>
 <h4 class="phx-h4">Chain two arms with a ball joint</h4>

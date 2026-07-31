@@ -58,6 +58,13 @@ axes with name-value arguments (<code class="phx-inline">PointA</code>, <code cl
 <code class="phx-inline">MutualCollisions</code> switch (collisions between the connected bodies,
 default <code class="phx-inline">false</code>) are inherited from
 <a href="phx.base.Joint.html">phx.base.Joint</a>.</p>
+<p><code class="phx-inline">AxisA</code>/<code class="phx-inline">AxisB</code> are the Z axis of the
+inherited joint frames, so writing those frames another way
+(<code class="phx-inline">EulerAngles*</code>, <code class="phx-inline">AxisAngle*</code>,
+<code class="phx-inline">TransformA</code>/<code class="phx-inline">TransformB</code>) moves the hinge
+axis too. What has <b>no effect</b> is the remaining rotation <i>about</i> the axis: the hinge is
+handed only its points and axes, and derives its own reference for
+<code class="phx-inline">Angle</code> from them.</p>
 
 <h2 class="phx-h2">Examples</h2>
 <h4 class="phx-h4">Hinge a pendulum to a static base</h4>
@@ -80,6 +87,7 @@ delete(sim);</pre>
 <div class="phx-seealso">
 <span class="lbl">See also</span>
 <a href="phx.PrismaticJoint.html">phx.PrismaticJoint</a>,
+<a href="phx.CylindricalJoint.html">phx.CylindricalJoint</a>,
 <a href="phx.SphericalJoint.html">phx.SphericalJoint</a>,
 <a href="phx.GearJoint.html">phx.GearJoint</a>,
 <a href="phx.base.Joint.html">phx.base.Joint</a>,

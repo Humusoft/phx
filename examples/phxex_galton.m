@@ -13,9 +13,9 @@ function phxex_galton(nBalls, nRows, seed)
 % The balls do not exist when the simulation starts - each one is created
 % on the fly and added to the running simulation with
 % phx.Simulation.addObjects, demonstrating runtime changes of the scene.
-% The path of the first ball is drawn with phx.Trace. After all balls
-% settle, they are recolored by the bin they ended up in and the measured
-% histogram is compared with the theoretical binomial expectation.
+% After all balls settle, they are recolored by the bin they ended up in
+% and the measured histogram is compared with the theoretical binomial
+% expectation.
 %
 % Input Arguments:
 %     nBalls - number of released balls (default 150)
@@ -134,8 +134,7 @@ function phxex_galton(nBalls, nRows, seed)
             released = released + 1;
             viewer.displayText(sprintf("Released: %d / %d", released, nBalls));
         end
-        sim.step(dt, 5);
-        pause(0);
+        sim.step(dt, 5, 5);
     end
 
     % Phase 2 - let the last balls trickle down and the piles settle

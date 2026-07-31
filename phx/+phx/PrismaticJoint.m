@@ -3,19 +3,32 @@ classdef PrismaticJoint < phx.base.Joint
 %
 %   Prismatic joint realizes a kinematic constraint with 1 degree of freedom
 %   specified as translation along the sliding axis. The sliding axis is the
-%   X axis of the joint coordinate systems of both connected bodies.
+%   Z axis of the joint coordinate systems of both connected bodies.
 %
 %   phx.PrismaticJoint(bodyA, bodyB) creates a joint between two bodies A and B
-%   attached to their points of origin, with the sliding axis aligned to axis X
+%   attached to their points of origin, with the sliding axis aligned to axis Z
 %   of the local coordinate system of each body.
-%   Custom joint coordinate systems can be set using the TransformA and TransformB
-%   properties, or via the PointA, PointB, EulerAnglesA and EulerAnglesB helpers;
-%   in every case the sliding axis is the local X axis of each coordinate system.
+%   Custom sliding axes can be set using the AxisA and AxisB properties, custom
+%   joint coordinate systems using TransformA and TransformB or the PointA,
+%   PointB, EulerAnglesA and EulerAnglesB helpers; in every case the sliding
+%   axis is the local Z axis of each coordinate system.
+%   Only the components perpendicular to the sliding axis place the bodies with
+%   respect to each other; an offset along the sliding axis merely shifts the
+%   zero of the free translation.
+%
+%   Because this joint also locks the rotation about the sliding axis, AxisA
+%   and AxisB alone do not fully describe it: they fix where each coordinate
+%   system points its Z axis, but not how the two are rolled about it. They are
+%   enough when both bodies share an orientation, as a body and a part sliding
+%   straight out of it usually do. When they do not, set TransformA and
+%   TransformB (or the EulerAngles helpers) so that both coordinate systems
+%   coincide in every axis, otherwise the solver twists the bodies into line
+%   over the first steps.
 %
 %   phx.PrismaticJoint(___, name, value, ...) creates a joint and sets properties
 %   values according to given name-value pairs.
 %
-%   See also phx.RevoluteJoint, phx.FixedJoint
+%   See also phx.RevoluteJoint, phx.CylindricalJoint, phx.FixedJoint
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 %   SPDX-License-Identifier: LicenseRef-PHX-Preview-1.0
@@ -25,34 +38,21 @@ classdef PrismaticJoint < phx.base.Joint
 %#ok<*MCSUP> OK to access other properties in setters
 %#ok<*INUSD> OK to see the full list of arguments for callbacks
 
+    properties (Constant, Access = private)
+        % The engine slides along the frame's axis X while PHX exposes axis Z,
+        % so both frames are handed over turned by -90 degrees about Y. The
+        % matrix is written out as integers to keep the frames exact.
+        EngineFrame = [0 0 -1 0; 0 1 0 0; 1 0 0 0; 0 0 0 1]
+    end
+
     properties (Access = private)
         hL
         hM
     end
 
     properties
-        % Transformation matrix relative to the first body
-        TransformA (4, 4) double = eye(4)
-
-        % Transformation matrix relative to the second body
-        TransformB (4, 4) double = eye(4)
-
         % Draw joint as overlay
         Overlay (1, 1) logical = false
-    end
-
-    properties (Dependent)
-        % Connecting point in the local space of the first body
-        PointA (1, 3) double
-
-        % Connecting point in the local space of the second body
-        PointB (1, 3) double
-
-        % Euler angles rotation (for z->y->x order) of the first body
-        EulerAnglesA (1, 3) double
-
-        % Euler angles rotation (for z->y->x order) of the second body
-        EulerAnglesB (1, 3) double
     end
 
     methods
@@ -78,38 +78,6 @@ classdef PrismaticJoint < phx.base.Joint
             obj.hM = matlab.graphics.primitive.world.Marker('Parent', obj.Graphics, 'EdgeColorData', clr, 'Style', 'circle', 'Size', 10, 'Layer', phx.internal.choose({'middle', 'front'}, obj.Overlay + 1));
             phx.PrismaticJoint.updateView({obj});
         end
-
-        function set.PointA(obj, value)
-            obj.TransformA(13:15) = value;
-        end
-
-        function value = get.PointA(obj)
-            value = obj.TransformA(13:15)';
-        end
-
-        function set.PointB(obj, value)
-            obj.TransformB(13:15) = value;
-        end
-
-        function value = get.PointB(obj)
-            value = obj.TransformB(13:15)';
-        end
-
-        function set.EulerAnglesA(obj, value)
-            obj.TransformA(1:3, 1:3) = phx.internal.Math.rot321(value);
-        end
-
-        function value = get.EulerAnglesA(obj)
-            value = phx.internal.Math.decomp321(obj.TransformA(1:3, 1:3));
-        end
-
-        function set.EulerAnglesB(obj, value)
-            obj.TransformB(1:3, 1:3) = phx.internal.Math.rot321(value);
-        end
-
-        function value = get.EulerAnglesB(obj)
-            value = phx.internal.Math.decomp321(obj.TransformB(1:3, 1:3));
-        end
     end
 
     methods (Access = protected)
@@ -117,8 +85,11 @@ classdef PrismaticJoint < phx.base.Joint
             valid = numel(obj.Parents) == 2 && all(cellfun(@isvalid, obj.Parents));
             if valid
                 obj.WorldHandle = world;
+                M = phx.PrismaticJoint.EngineFrame;
+                TA = obj.TransformA*M;
+                TB = obj.TransformB*M;
                 obj.ObjectHandle = phx.engine.io('add', world, 'sliderconstraint', obj.Parents{1}.ObjectHandle, obj.Parents{2}.ObjectHandle, ...
-                    obj.TransformA(:), obj.TransformB(:), true, ~obj.MutualCollisions);
+                    TA(:), TB(:), true, ~obj.MutualCollisions);
             end
         end
 

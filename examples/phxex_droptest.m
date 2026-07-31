@@ -32,7 +32,7 @@ function phxex_droptest(dropH, stiffness, damping)
 
     % Figure setup
     figure(1);
-    [~, ax] = phx.extra.Viewer("clear", "DefaultCameraTarget", [0 0 1], ...
+    [viewer, ax] = phx.extra.Viewer("clear", "DefaultCameraTarget", [0 0 1], ...
         "DefaultCameraPosition", [4 -5 2.5], "ViewMode", "plain");
 
     % Hard static floor that the package will hit
@@ -65,19 +65,14 @@ function phxex_droptest(dropH, stiffness, damping)
     logForce  = phx.Logger(cushion,  "Frequency", 500, "Parameters", "Force");
     logHeight = phx.Logger([shell product], "Frequency", 500, "Parameters", "Position");
 
-    % On-screen readout
-    label = uilabel(gcf, "FontSize", 14, "FontColor", [1 0.5 0], ...
-        "Position", [20 20 360 40], "Text", "Dropping...");
-
     % Simulation - fine time step to capture the short impact event
     sim = phx.Simulation;
     dt = 0.001;
     for k = 1:1200
         sim.step(dt, 1, mod(k, 10));   % redraw every 10 steps
         if mod(k, 25) == 0
-            label.Text = sprintf("t = %.2f s   |   shell z = %.2f   product z = %.2f", ...
-                sim.Time, shell.Position(3), product.Position(3));
-            pause(0);
+            viewer.displayText(sprintf("t = %.2f s   |   shell z = %.2f   product z = %.2f", ...
+                sim.Time, shell.Position(3), product.Position(3)));
         end
     end
     delete(sim);

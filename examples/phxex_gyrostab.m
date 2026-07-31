@@ -148,7 +148,6 @@ function phxex_gyrostab(duration, spinRate, maxAmplitude)
             "t = %4.1f s   amplitude %.2f m   roll: bare %+5.1f deg / gyro %+5.1f deg   cargo: %d/4 vs %d/4", ...
             t, amp(t), rad2deg(ea(1)), rad2deg(eb(1)), ...
             4 - nnz(fallen(1, :)), 4 - nnz(fallen(2, :))));
-        pause(0);
     end
     delete(sim);
 

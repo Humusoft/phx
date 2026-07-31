@@ -49,7 +49,7 @@ a time:</p>
 <li><a href="phx_ug_bodies.html">Bodies and shapes</a> &mdash; geometry, appearance, motion</li>
 <li><a href="phx_ug_joints.html">Joints, springs and ropes</a> &mdash; connecting bodies</li>
 <li><a href="phx_ug_forces.html">Forces, actuators and fields</a> &mdash; thrust, drag, buoyancy, magnetism</li>
-<li><a href="phx_ug_assemblies.html">Prefab assemblies</a> &mdash; arenas, chains, URDF import</li>
+<li><a href="phx_ug_assemblies.html">Prefab assemblies</a> &mdash; arenas, chains, model import</li>
 </ul>
 </div>
 
@@ -59,11 +59,18 @@ a time:</p>
 <li><a href="phx_ug_logging.html">Measuring and logging</a> &mdash; Logger, Trace, Measure, Zone</li>
 <li><a href="phx_ug_control.html">Automation and control</a> &mdash; Script and Function</li>
 <li><a href="phx_ug_viewer.html">Interactive viewer</a> &mdash; sky, camera, mouse editing</li>
-<li><a href="phx_ug_examples.html">Examples and larger scenes</a> &mdash; demos and a full walkthrough</li>
+<li><a href="phx_ug_skills.html">AI agent skills</a> &mdash; teaching an AI assistant the PHX API</li>
 </ul>
 </div>
 
 </div>
+
+<h2 class="phx-h2">Examples</h2>
+
+<p>The toolbox ships several dozen ready-made scenes &mdash; mechanisms, vehicles, granular piles,
+magnetic fields, control loops and headless workflows. The
+<a href="phx_ex_gallery.html">Examples gallery</a> shows a frame of each one running, and every
+example is a single command in the Command Window.</p>
 
 <h2 class="phx-h2">Classes</h2>
 
@@ -82,10 +89,12 @@ a time:</p>
 <ul>
 <li><a href="phx.RevoluteJoint.html">phx.RevoluteJoint</a> &mdash; 1 DOF hinge</li>
 <li><a href="phx.PrismaticJoint.html">phx.PrismaticJoint</a> &mdash; 1 DOF slider</li>
+<li><a href="phx.CylindricalJoint.html">phx.CylindricalJoint</a> &mdash; 2 DOF slide and spin</li>
 <li><a href="phx.SphericalJoint.html">phx.SphericalJoint</a> &mdash; 3 DOF ball</li>
 <li><a href="phx.GearJoint.html">phx.GearJoint</a> &mdash; coupled rotation</li>
 <li><a href="phx.FixedJoint.html">phx.FixedJoint</a> &mdash; 0 DOF rigid connection</li>
-<li><a href="phx.GenericJoint.html">phx.GenericJoint</a> <span class="phx-tag dev">dev</span></li>
+<li><a href="phx.BushingJoint.html">phx.BushingJoint</a> &mdash; compliant fixed joint</li>
+<li><a href="phx.GenericJoint.html">phx.GenericJoint</a> &mdash; 6 DOF with limits</li>
 </ul>
 </div>
 
@@ -94,7 +103,6 @@ a time:</p>
 <ul>
 <li><a href="phx.Spring.html">phx.Spring</a> &mdash; spring&ndash;damper</li>
 <li><a href="phx.Rope.html">phx.Rope</a> &mdash; rope over pulleys</li>
-<li><a href="phx.GenericSpring.html">phx.GenericSpring</a> <span class="phx-tag dev">dev</span></li>
 </ul>
 </div>
 
@@ -124,13 +132,11 @@ a time:</p>
 <div class="phx-card">
 <h3>Geometry &mdash; custom &amp; imported</h3>
 <ul>
-<li><a href="phx.shape.Mesh.html">phx.shape.Mesh</a> &mdash; custom shape with texture</li>
+<li><a href="phx.shape.Mesh.html">phx.shape.Mesh</a> &mdash; triangular mesh (STL/OBJ/PLY import or data)</li>
 <li><a href="phx.shape.Extrusion.html">phx.shape.Extrusion</a> &mdash; extrusion shape</li>
 <li><a href="phx.shape.Revolution.html">phx.shape.Revolution</a> &mdash; revolution shape</li>
 <li><a href="phx.shape.Rock.html">phx.shape.Rock</a> &mdash; rock shape</li>
 <li><a href="phx.shape.Terrain.html">phx.shape.Terrain</a> &mdash; terrain heightfield</li>
-<li><a href="phx.shape.OBJ.html">phx.shape.OBJ</a> &mdash; OBJ imported shape</li>
-<li><a href="phx.shape.STL.html">phx.shape.STL</a> &mdash; STL imported shape</li>
 </ul>
 </div>
 
@@ -140,7 +146,7 @@ a time:</p>
 <li><a href="phx.assembly.arena.html">phx.assembly.arena</a> &mdash; floor plate enclosed by four walls</li>
 <li><a href="phx.assembly.chain.html">phx.assembly.chain</a> &mdash; chain of rigid links along a polyline</li>
 <li><a href="phx.assembly.scatter.html">phx.assembly.scatter</a> &mdash; bodies scattered inside a box region</li>
-<li><a href="phx.assembly.import.html">phx.assembly.import</a> &mdash; robot model imported from URDF</li>
+<li><a href="phx.assembly.import.html">phx.assembly.import</a> &mdash; model imported from URDF, OBJ, STL or PLY</li>
 </ul>
 </div>
 

@@ -90,7 +90,6 @@ function phxex_grip(mu, squeeze)
         jawL.Position = [-c 0 objH/2];
         jawR.Position = [ c 0 objH/2];
         sim.step(dt, 10, 1);
-        pause(0);
     end
 
     % Phase 3 - lift both jaws straight up, carrying the object by friction
@@ -103,7 +102,6 @@ function phxex_grip(mu, squeeze)
         sim.step(dt, 10, 1);
         viewer.displayText(sprintf("Phase: lift   |   jaw z = %.2f   obj z = %.2f", ...
             z, obj.Position(3)));
-        pause(0);
     end
 
     % Phase 4 - hold and see whether the object stays in the grip

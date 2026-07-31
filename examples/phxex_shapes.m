@@ -31,7 +31,7 @@ function phxex_shapes
     phx.Body("Position", [2.5 0 2], "Shape", {"Capsule", "Axis", "z", "Style", "edged"});
 
     % Add an STL model to the simulation
-    phx.Body("Position", [1 -1.5 1], "Shape", {"STL", "Source", resdir+"cat.stl", "Scale", 0.025, "Details", 0.2, "Material", "shiny"});
+    phx.Body("Position", [1 -1.5 1], "Shape", {"Mesh", "Source", resdir+"cat.stl", "Scale", 0.025, "Envelope", "box", "Details", 0.2, "Material", "glossy"});
 
     % Fix current axes limits
     axis("manual");

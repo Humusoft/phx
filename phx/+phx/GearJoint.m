@@ -3,7 +3,8 @@ classdef GearJoint < phx.base.Joint
 %
 %   Gear joint realizes a kinematic constraint with 5 degrees of freedom
 %   specified as coupled rotations between two bodies and with a defined
-%   target ratio of their angular velocities.
+%   target ratio of their angular velocities. The rotation axis is the Z axis
+%   of the joint coordinate systems of both connected bodies.
 %
 %   phx.GearJoint(bodyA, bodyB) creates a joint between two bodies A and B
 %   attached to their points of origin and with rotation axes aligned to axis Z
@@ -30,12 +31,6 @@ classdef GearJoint < phx.base.Joint
     end
 
     properties
-        % Direction vector of the rotation axis in the local space of the first body
-        AxisA (1, 3) double = [0 0 1]
-
-        % Direction vector of the rotation axis in the local space of the second body
-        AxisB (1, 3) double = [0 0 1]
-
         % Gear ratio
         Ratio (1, 1) double = 1
 
@@ -93,8 +88,8 @@ classdef GearJoint < phx.base.Joint
             for i = 1:numel(cellObjs)
                 obj = cellObjs{i};
 
-                pa = phx.internal.transformPoint(obj.Parents{1}.Matrix, [0 0 0]);
-                pb = phx.internal.transformPoint(obj.Parents{2}.Matrix, [0 0 0]);
+                pa = phx.internal.transformPoint(obj.Parents{1}.Matrix, obj.PointA);
+                pb = phx.internal.transformPoint(obj.Parents{2}.Matrix, obj.PointB);
                 vd = single([pa' pb']);
 
                 obj.hL.VertexData = vd;

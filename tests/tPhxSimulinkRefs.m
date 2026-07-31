@@ -95,6 +95,46 @@ classdef tPhxSimulinkRefs < matlab.unittest.TestCase
                 "phx:PhxModel:methodPortsUnsupported");
         end
 
+        function resolveReadOnlyInputRejected(tc)
+            % An input port writes its property every step, so a get-only one
+            % must be refused up front rather than failing mid-simulation.
+            iface = tPhxSimulinkRefs.fakeIface();
+            for prop = ["TotalForce", "Energy"]
+                r = phx.simulink.ParameterReference("Chassis." + prop);
+                tc.verifyError(@() phx.simulink.BlockBackend.resolveRefs(r, iface, "input"), ...
+                    "phx:PhxModel:propertyReadOnly", prop);
+            end
+        end
+
+        function resolveReadOnlyOutputAccepted(tc)
+            % The same properties are perfectly valid as outputs.
+            iface = tPhxSimulinkRefs.fakeIface();
+            r = phx.simulink.ParameterReference("Chassis.TotalForce");
+            r = phx.simulink.BlockBackend.resolveRefs(r, iface, "output");
+            tc.verifyEqual(r.Size, 3);
+        end
+
+        function resolveSettableInputAccepted(tc)
+            % Guard against over-eager rejection: these are the port kinds the
+            % shipped co-simulation models drive.
+            iface = tPhxSimulinkRefs.fakeIface();
+            for prop = ["Position", "Quaternion", "LinearVelocity"]
+                r = phx.simulink.ParameterReference("Chassis." + prop);
+                tc.verifyWarningFree(@() phx.simulink.BlockBackend.resolveRefs(r, iface, "input"), prop);
+            end
+        end
+
+        function propertyIsSettableClassifies(tc)
+            isSettable = @(p) phx.simulink.BlockBackend.propertyIsSettable("phx.Body", p);
+            tc.verifyTrue(isSettable("Position"));
+            tc.verifyTrue(isSettable("Mass"));
+            tc.verifyFalse(isSettable("TotalForce"));
+            tc.verifyFalse(isSettable("Energy"));
+            % Unknown property / class must fail open, never block a reference.
+            tc.verifyTrue(isSettable("NoSuchProperty"));
+            tc.verifyTrue(phx.simulink.BlockBackend.propertyIsSettable("no.such.Class", "Position"));
+        end
+
         % --- signalProperties (port candidate listing) ---
         function signalListsAllSizeable(tc)
             p = phx.simulink.BlockBackend.signalProperties("phx.Body");
@@ -139,7 +179,7 @@ classdef tPhxSimulinkRefs < matlab.unittest.TestCase
             iface = struct( ...
                 'Name', "Chassis", ...
                 'Class', "phx.Body", ...
-                'Properties', ["Position", "Quaternion", "LinearVelocity", "Name"], ...
+                'Properties', ["Position", "Quaternion", "LinearVelocity", "Name", "TotalForce", "Energy"], ...
                 'Methods', ["applyTorque", "applyForce"]);
         end
     end

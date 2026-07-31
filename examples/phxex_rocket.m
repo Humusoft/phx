@@ -69,8 +69,8 @@ function phxex_rocket(hopHeight)
 
     % The rocket; mass properties are set explicitly
     rocket = phx.Body(ax, "Position", [0 0 0.4 + hBase + 0.01], ...
-        "Shape", {resdir+"rocket.stl", "Scale", scl*[1 1 1], "Color", [1 1 1], ...
-        "Material", "shiny"});
+        "Shape", {resdir+"rocket.stl", "Scale", scl*[1 1 1], "Envelope", "box", "Color", [1 1 1], ...
+        "Material", "glossy"});
     rocket.Mass = mRocket;
     rocket.Inertia = iRocket;
 

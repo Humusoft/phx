@@ -34,16 +34,14 @@ function phxex_camvalve
     tSettle  = 0.01;             % seat the valve on the cam
     rpmCal   = 240;              % calibration speed (low, follower stays seated)
     rpmLo    = 1600;             % ramp start
-    rpmHi    = 2600;             % ramp end
+    rpmHi    = 3200;             % ramp end
     tRamp    = 0.4;              % ramp duration (s)
     gapThresh = 1.5e-3;          % lift-off gap that counts as float (m)
 
     % --- Scene ----------------------------------------------------------
-    clf; view(35, 12); axis("equal"); grid("on"); camlight("headlight");
-    axis([-0.12 0.12, -0.12 0.12, 0 0.38]);
-    xlabel("X"); ylabel("Y"); zlabel("Z");
-
-    ax = gca;
+    figure(1);
+    [viewer, ax] = phx.extra.Viewer("clear", "DefaultCameraPosition", [-0.32 -0.32 0.32], ...
+        "DefaultCameraTarget", [0 0 0.23], "Texture", "defaultPlane");
     [cam, valve, info] = buildScene(ax, rBase, lift, noseSpan, camThick, ...
         zc, Lvalve, mValve, kSpring, cSpring, freeLen);
 
@@ -100,7 +98,7 @@ function phxex_camvalve
             if isnan(onsetRpm) && gap > gapThresh
                 onsetRpm = rpm;
             end
-            title(ax, sprintf("cam %.0f rpm   valve lift %.1f mm", rpm, log.lift(end)*1e3));
+            viewer.displayText(sprintf("cam %.0f rpm   valve lift %.1f mm", rpm, log.lift(end)*1e3));
         end
     end
     delete(sim);
@@ -116,7 +114,7 @@ function phxex_camvalve
         (liftRest - min(Lref))*1e3, mValve*1e3, kSpring*(freeLen - info.springLen0));
 
     % --- Plots ----------------------------------------------------------
-    figure;
+    clf(figure(2));
     subplot(2, 1, 1);
     plot(log.t, log.ref*1e3, "--", log.t, log.lift*1e3, "LineWidth", 1.3);
     grid on; ylabel("valve lift [mm]");
@@ -137,6 +135,9 @@ function [cam, valve, info] = buildScene(ax, rBase, lift, noseSpan, camThick, ..
         zc, Lvalve, mValve, kSpring, cSpring, freeLen)
 % Build the cam, the valve on its prismatic guide, and the spring
 
+    % Resources directory
+    resdir = fullfile(fileparts(mfilename("fullpath")), "res", " ");
+
     % Cam: egg-shaped lobe extruded to a disc, rotating about world X.
     % The 2D profile spans world Y-Z; the straight spine gives the width.
     phi = linspace(0, 2*pi, 145)';
@@ -149,7 +150,7 @@ function [cam, valve, info] = buildScene(ax, rBase, lift, noseSpan, camThick, ..
     spine = [-camThick/2 0 0; camThick/2 0 0];
     camShape = phx.shape.Extrusion("Spine", spine, "Profile", profile, ...
         "Envelope", "convex", "Material", "metal", "Color", [0.55 0.57 0.62]);
-    cam = phx.Body(ax, "Type", "kinematic", "Position", [0 0 zc], ...
+    cam = phx.Body(ax, "Type", "kinematic", "Position", [0.01 0 zc], ...
         "Shape", camShape, "Friction", [0.2 0 0]);
 
     % Poppet valve: revolved head + stem + bucket tappet, sliding along Z.
@@ -158,21 +159,23 @@ function [cam, valve, info] = buildScene(ax, rBase, lift, noseSpan, camThick, ..
     rHead = 0.030; hHead = 0.012; rStem = 0.010; rCap = 0.030; hCap = 0.008;
     vProfile = [0 0; 0 rHead; hHead rHead; hHead rStem; ...
                 Lvalve-hCap rStem; Lvalve-hCap rCap; Lvalve rCap; Lvalve 0];
-    valveShape = phx.shape.Revolution("Axis", "z", "Profile", vProfile, ...
-        "Envelope", "concave", "Style", "flat", "Material", "metal", "Color", [0.8 0.3 0.25]);
+    valveShape = phx.shape.Revolution("Axis", "z", "Profile", vProfile, "Envelope", "concave", ...
+        "Color", [0.8 0.5 0.2], "Texture", resdir+"checker4.png", "TextureBlend", 0.3);
     zv = zc - rBase - Lvalve;                    % tappet just touching the base circle
-    valve = phx.Body(ax, "Position", [0 0 zv], "Shape", valveShape, "Friction", [0.2 0 0]);
+    valve = phx.Body(ax, "Position", [0 0 zv], "Shape", valveShape, "Friction", [1 0 0]);
     valve.Mass = mValve;
     valve.Inertia = [1e-4 1e-4 1e-4];            % rotation is locked by the joint
 
     % Cylinder-head deck: static, both the guide partner and the spring seat.
     zDeck = zv + 0.045;
     deck = phx.Body(ax, "Type", "static", "Position", [0 0 zDeck], ...
-        "Shape", {"Cylinder", "Diameter", 0.04 "Height", 0.04, "Color", [0.9 0.7 0.5]});
+        "Shape", {"Cylinder", "Diameter", 0.04 "Height", 0.04, "Color", [0.5 0.7 0.9]});
 
-    % Prismatic guide: sliding axis is the joint-frame local X -> world Z.
-    phx.PrismaticJoint(deck, valve, "PointA", [0 0 0], "PointB", [0 0 0], ...
-        "EulerAnglesA", [0 -pi/2 0], "EulerAnglesB", [0 -pi/2 0]);
+    % Valve stop
+    phx.Body(ax, "Type", "static", "Position", [-0.025 0 zDeck - 0.03], "Shape", {"Box", "Size", 0.01, "Color", [0.5 0.9 0.3]});
+
+    % Cylindrical guide: the valve slides along the default axis Z.
+    phx.CylindricalJoint(deck, valve, "PointA", [0 0 0], "PointB", [0 0 0], "Visible", false);
 
     % Valve spring: seats on the deck, pushes the retainer (and the valve) up.
     pRet = Lvalve - hCap;                         % retainer height on the valve

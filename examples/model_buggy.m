@@ -11,10 +11,10 @@ function model_buggy
     resdir = fullfile(fileparts(mfilename("fullpath")), "res", " ");
 
     % Create a buggy chassis from an STL model
-    chassis = phx.Body("Position", [0 0 10], "Shape", {"STL", "Source", resdir+"BuggyBody.stl", "Details", 0.2, "Scale", 0.01, "Color", [0.9 0.9 0.9], "Envelope", "convex"}, "Mass", 300, "Inertia", [100 100 100], "Name", "Chassis");
+    chassis = phx.Body("Position", [0 0 10], "Shape", {"Mesh", "Source", resdir+"BuggyBody.stl", "Details", 0.2, "Scale", 0.01, "Color", [0.9 0.9 0.9], "Envelope", "convex"}, "Mass", 300, "Inertia", [100 100 100], "Name", "Chassis");
 
     % Create wheels with marks
-    shpWheel = phx.shape.STL("Source", resdir+"BuggyWheelFL.stl", "Details", 0.2, "Scale", 0.01, "Color", [0.3 0.3 0.3], "Envelope", "cylinder", "SkeletPoints", [1 0 1.6; 1 0 2.2], "SkeletStyle", "line", "SkeletColor", [1 1 1]);
+    shpWheel = phx.shape.Mesh("Source", resdir+"BuggyWheelFL.stl", "Details", 0.2, "Scale", 0.01, "Color", [0.3 0.3 0.3], "Envelope", "cylinder", "Axis", "x", "SkeletPoints", [1 0 1.6; 1 0 2.2], "SkeletStyle", "line", "SkeletColor", [1 1 1]);
     wheelFL = phx.Body("Position", [-9 -7 4], "EulerAngles", [0 0 -pi/2], "Shape", shpWheel, "Mass", 30, "Inertia", [2 2 2], "Name", "WheelFL");
     wheelFR = phx.Body("Position", [-9 7 4], "EulerAngles", [0 0 pi/2], "Shape", shpWheel, "Mass", 30, "Inertia", [2 2 2], "Name", "WheelFR");
     wheelRL = phx.Body("Position", [11 -7 4], "EulerAngles", [0 0 -pi/2], "Shape", shpWheel, "Mass", 30, "Inertia", [2 2 2], "Name", "WheelRL");

@@ -13,16 +13,26 @@
 <div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.assembly.import</div>
 
 <h1 class="phx-title">phx.assembly.import</h1>
-<p class="phx-purpose">Robot model imported from a URDF file</p>
+<p class="phx-purpose">Multi-body model imported from a file (URDF, OBJ, STL or PLY)</p>
 <p class="phx-classref">Function&nbsp;&nbsp;phx.assembly.import &nbsp;|&nbsp; Package: phx.assembly</p>
 
 <h2 class="phx-h2">Description</h2>
-<p><code class="phx-inline">phx.assembly.import</code> reads a robot description from a URDF
-(Unified Robot Description Format) file and creates a <a href="phx.Body.html">phx.Body</a> for
-every link and a joint for every revolute, continuous, prismatic or fixed joint of the robot. Despite the
-name of the format, URDF files describe more than robots &mdash; ragdolls, vehicles, furniture
-and single-body props from public model libraries import the same way. The assembled model is
-placed in its zero (home) configuration with the base (root link frame) at the world origin,
+<p><code class="phx-inline">phx.assembly.import</code> reads a model file and creates the
+<a href="phx.Body.html">phx.Body</a> objects it describes. The format is chosen from the extension:
+a <b>URDF</b> (<code class="phx-inline">.urdf</code>, <code class="phx-inline">.xml</code>) file
+becomes one body per link connected by joints; a Wavefront <b>OBJ</b>
+(<code class="phx-inline">.obj</code>) file becomes one body per object (o/g group) with no joints;
+an <b>STL</b> or <b>PLY</b> file becomes a single body. To load an OBJ as one merged body instead
+of separate parts, use <a href="phx.shape.Mesh.html">phx.shape.Mesh</a>.</p>
+
+<p>OBJ objects import as dynamic bodies with a convex collision envelope (set
+<code class="phx-inline">Envelope</code> to override), each body frame at its object's centroid.
+Only genuine 3D solids are imported &mdash; flat objects (ground planes, light quads, decals) and
+line- or point-only objects carry no useful collision volume and are skipped.
+A URDF file also creates a joint for every revolute, continuous, prismatic or fixed joint of the
+robot. Despite the name of the format, URDF files describe more than robots &mdash; ragdolls,
+vehicles, furniture and single-body props from public model libraries import the same way. The
+assembled model is placed in its zero (home) configuration with the base at the world origin,
 unless a pose is given by the <code class="phx-inline">Position</code> and
 <code class="phx-inline">Orientation</code> or <code class="phx-inline">EulerAngles</code>
 options.</p>
@@ -47,12 +57,19 @@ bodies without graphics for headless simulations.</p>
 </div>
 
 <h2 class="phx-h2">Options</h2>
+<p>The base-pose options apply to every format. The remaining options are specific to one
+branch &mdash; passing a mesh option to a URDF file, or <code class="phx-inline">MeshPath</code> to a
+mesh file, raises <code class="phx-inline">phx:import:unsupportedOption</code>.</p>
 <table class="phx-tbl">
 <tr><th>Option</th><th>Default</th><th>Description</th></tr>
 <tr><td class="name">Position</td><td class="dflt">[0 0 0]</td><td>World position of the base (root link frame).</td></tr>
 <tr><td class="name">Orientation</td><td class="dflt">eye(3)</td><td>World rotation of the base as a 3&times;3 rotation matrix. Same convention as <code class="phx-inline">phx.Body.Orientation</code>.</td></tr>
 <tr><td class="name">EulerAngles</td><td class="dflt">[0 0 0]</td><td>World rotation of the base as Euler angles (z&rarr;y&rarr;x order), an alternative to <code class="phx-inline">Orientation</code>.</td></tr>
-<tr><td class="name">MeshPath</td><td class="dflt">""</td><td>Root folder used to resolve <code class="phx-inline">package://</code> URIs and relative file names of mesh geometries. Meshes are always searched relative to the folder of the URDF file as well.</td></tr>
+<tr><td class="name">MeshPath</td><td class="dflt">""</td><td><b>URDF only.</b> Root folder used to resolve <code class="phx-inline">package://</code> URIs and relative file names of mesh geometries. Meshes are always searched relative to the folder of the URDF file as well.</td></tr>
+<tr><td class="name">Scale</td><td class="dflt">[1 1 1]</td><td><b>Mesh files only.</b> Scale factor applied to the imported mesh.</td></tr>
+<tr><td class="name">Envelope</td><td class="dflt">"convex"</td><td><b>Mesh files only.</b> Collision envelope of every imported body: <code class="phx-inline">"box"</code>, <code class="phx-inline">"cylinder"</code>, <code class="phx-inline">"sphere"</code>, <code class="phx-inline">"convex"</code> or <code class="phx-inline">"concave"</code>. See <a href="phx.shape.Mesh.html">phx.shape.Mesh</a>.</td></tr>
+<tr><td class="name">FlipFaces</td><td class="dflt">false</td><td><b>Mesh files only.</b> Reverse the triangle winding of the <code class="phx-inline">"concave"</code> collision mesh when its solid side comes out wrong.</td></tr>
+<tr><td class="name">Density</td><td class="dflt">1000</td><td><b>Mesh files only.</b> Volumetric density of the imported bodies, <span class="phx-unit">kg/m&sup3;</span>. URDF masses come from the inertial elements instead.</td></tr>
 </table>
 
 <h2 class="phx-h2">URDF to PHX mapping</h2>
@@ -60,13 +77,15 @@ bodies without graphics for headless simulations.</p>
 geometry (PHX shapes are always centred at the body origin). Geometries map to
 <a href="phx.shape.Box.html">Box</a>, <a href="phx.shape.Cylinder.html">Cylinder</a>,
 <a href="phx.shape.Sphere.html">Sphere</a>, <a href="phx.shape.Capsule.html">Capsule</a>
-(a common vendor extension) and <a href="phx.shape.STL.html">STL</a> /
-<a href="phx.shape.OBJ.html">OBJ</a> meshes with the convex collision envelope. Joints of type
+(a common vendor extension) and <a href="phx.shape.Mesh.html">STL and OBJ meshes</a>
+with the convex collision envelope. Joints of type
 revolute and continuous become <a href="phx.RevoluteJoint.html">phx.RevoluteJoint</a>, prismatic
 joints become <a href="phx.PrismaticJoint.html">phx.PrismaticJoint</a> (sliding along the joint
-axis) and fixed joints become <a href="phx.FixedJoint.html">phx.FixedJoint</a>; planar and
-floating joints are substituted by a fixed joint with a warning. Joint limits are ignored and all
-joints are passive &mdash; no motors are created. Masses come from the inertial elements; only the
+axis) and fixed joints become <a href="phx.FixedJoint.html">phx.FixedJoint</a>. Planar joints have
+no direct equivalent yet and are approximated by a
+<a href="phx.GenericJoint.html">phx.GenericJoint</a> with a warning; floating joints impose no
+constraint, so no joint is created and the child link is left free. Joint limits are ignored and
+all joints are passive &mdash; no motors are created. Masses come from the inertial elements; only the
 diagonal of the inertia tensor expressed in body axes is used.</p>
 
 <h2 class="phx-h2">Examples</h2>

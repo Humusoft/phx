@@ -58,7 +58,9 @@ resolved automatically from class metadata (for example <code class="phx-inline"
 property after the step (for example <code class="phx-inline">Position</code>,
 <code class="phx-inline">Quaternion</code> or <code class="phx-inline">Energy</code>). References are
 validated when you edit the mask (for MAT-file sources) and again when the simulation starts; unknown
-objects or properties raise a <code class="phx-inline">phx:PhxModel:*</code> error.</p>
+objects or properties raise a <code class="phx-inline">phx:PhxModel:*</code> error, and a read-only
+property used as an <i>input</i> is rejected with
+<code class="phx-inline">phx:PhxModel:propertyReadOnly</code> rather than failing on the first write.</p>
 
 <div class="phx-note">
 <span class="lbl">Method ports.</span> References such as <code class="phx-inline">Body1.applyForce</code> are
@@ -112,7 +114,12 @@ the scene so you can add input and output references without typing them by hand
 
     anchor = phx.Body(ax, <span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Name"</span>, <span class="str">"Anchor"</span>);
     bob    = phx.Body(ax, <span class="str">"Position"</span>, [1 0 0], <span class="str">"Name"</span>, <span class="str">"Bob"</span>);
-    phx.RevoluteJoint(anchor, bob, <span class="str">"Point"</span>, [0 0 0], <span class="str">"Axis"</span>, [0 1 0]);
+
+    <span class="cmt">% hinge about the y axis, the arm pinned at the anchor origin</span>
+    phx.RevoluteJoint(anchor, bob, <span class="str">"PointB"</span>, [-1 0 0], <span class="str">"AxisA"</span>, [0 1 0]);
+
+    <span class="cmt">% actuator driven from Simulink through its Throttle</span>
+    phx.Thruster(bob, <span class="str">"Direction"</span>, [0 0 1], <span class="str">"MaxThrust"</span>, 5e3, <span class="str">"Name"</span>, <span class="str">"Drive"</span>);
 
     bodies = [anchor bob];
 <span class="kw">end</span></pre>
@@ -121,7 +128,7 @@ the scene so you can add input and output references without typing them by hand
 <p>2.&nbsp;Drop a <strong>PhxModel</strong> block from <code class="phx-inline">PhxLibrary.slx</code> into your model.</p>
 <p>3.&nbsp;Set <strong>Source</strong> to <code class="phx-inline">model_pendulum</code>, choose a
 <strong>SampleTime</strong>, and declare ports, for example output
-<code class="phx-inline">Bob.Position</code> and input <code class="phx-inline">Bob.TotalForce</code>.</p>
+<code class="phx-inline">Bob.EulerAngles(2)</code> and input <code class="phx-inline">Drive.Throttle</code>.</p>
 <p>4.&nbsp;Wire the ports to the rest of the model and run. Turn <strong>ShowViewer</strong> on to watch
 the scene.</p>
 </div>

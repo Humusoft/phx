@@ -21,7 +21,11 @@
 %% Recommended Exclusions (remove lines to re-include files):
 
 % Exclude source control files
-**/*.md
+% (not **/*.md - the AI agent skills in phx/skills are Markdown and DO ship)
+README.md
+CONTRIBUTING.md
+CODE_REVIEW.md
+CLAUDE.md
 **/*.gif
 phx/+phx/+engine/*.pdb
 phx/+phx/+engine/bullet_*.*
@@ -32,6 +36,7 @@ examples/model_*.*
 examples/res/Buggy*.*
 .claude/
 .git/
+tools/
 PHX Toolbox/
 publications/
 tests/

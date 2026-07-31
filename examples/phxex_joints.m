@@ -39,8 +39,8 @@ function phxex_joints(showGraphs)
     % Create a fixed joint between bodies C and D
     phx.FixedJoint(C, D, "PointA", [0 0 -1.5], "Visible", false);
 
-    % Create a fixed joint between bodies A and E
-    phx.PrismaticJoint(A, E, "EulerAnglesA", [0 pi/4 0], "MutualCollisions", true);
+    % Create a prismatic joint between bodies A and E
+    phx.PrismaticJoint(A, E, "EulerAnglesA", [0 3*pi/4 0], "EulerAnglesB", [0 pi/2 0], "MutualCollisions", true);
 
     % Logger to record the linear velocity of body B
     L = phx.Logger(B, "Parameters", "LinearVelocity", "Frequency", 100);

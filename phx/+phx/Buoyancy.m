@@ -41,6 +41,7 @@ classdef Buoyancy < phx.base.Object
     properties (Access = private)
         ehs         % engine handles of the parent bodies
         SamplePoints % cell array of 3xN local interior points per body
+        SamplePointsH % cell array of 4xN homogeneous local points per body
         SampleVolumes % cell array of 1xN volumes of the sampling points
         CachedGravity = [0 0 -9.81]
         hS          % liquid surface graphics
@@ -130,10 +131,14 @@ classdef Buoyancy < phx.base.Object
             n = numel(P);
             obj.ehs = zeros(1, n, 'uint64');
             obj.SamplePoints = cell(1, n);
+            obj.SamplePointsH = cell(1, n);
             obj.SampleVolumes = cell(1, n);
             for a = 1:n
                 obj.ehs(a) = P{a}.ObjectHandle;
                 [obj.SamplePoints{a}, obj.SampleVolumes{a}] = obj.sampleBody(P{a});
+                % Homogeneous copy lets the world transform be a single
+                % matrix product (no separate translation add) each step
+                obj.SamplePointsH{a} = [obj.SamplePoints{a}; ones(1, size(obj.SamplePoints{a}, 2))];
             end
 
             % Cache gravity of the owning simulation
@@ -203,17 +208,38 @@ classdef Buoyancy < phx.base.Object
                 hs = zeros(1, 0, 'uint64');
                 Fb = zeros(3, 0);
                 cb = zeros(3, 0);
+
+                if useFcn
+                    % Transform every body's sample points to world space
+                    % (single homogeneous matrix product each), then evaluate
+                    % the surface for all points at once so the LevelFunction
+                    % overhead is paid once per step, not once per body.
+                    W = cell(1, n);
+                    for a = 1:n
+                        W{a} = P{a}.Matrix*obj.SamplePointsH{a};
+                    end
+                    Wcat = [W{:}];
+                    levels = lf(Wcat(1, :), Wcat(2, :), time);
+                    if isscalar(levels)
+                        levels = repmat(levels, 1, size(Wcat, 2));
+                    end
+                end
+
+                k = 0; % running column offset into the concatenated levels
                 for a = 1:n
-                    pts = obj.SamplePoints{a};
                     dV = obj.SampleVolumes{a};
-                    M = P{a}.Matrix;
-                    wpts = M(1:3, 1:3)*pts + M(13:15)';
                     if useFcn
-                        level = lf(wpts(1, :), wpts(2, :), time);
+                        wz = W{a}(3, :);
+                        level = levels(k + (1:numel(dV)));
+                        k = k + numel(dV);
                     else
+                        % Flat surface: only the world height of each point
+                        % is needed, so transform just the third row
+                        M = P{a}.Matrix;
+                        wz = M(3, 1:3)*obj.SamplePoints{a} + M(15);
                         level = obj.Level;
                     end
-                    sub = wpts(3, :) < level;
+                    sub = wz < level;
                     Vsub = sum(dV(sub));
                     if Vsub <= 0
                         continue
@@ -221,6 +247,7 @@ classdef Buoyancy < phx.base.Object
                     frac(a) = Vsub/sum(dV);
                     hs(end + 1) = obj.ehs(a); %#ok<AGROW> submerged subset only
                     Fb(:, end + 1) = obj.Density*gmag*Vsub*up; %#ok<AGROW>
+                    pts = obj.SamplePoints{a};
                     cb(:, end + 1) = pts(:, sub)*dV(sub)'/Vsub; %#ok<AGROW>
                 end
 

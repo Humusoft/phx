@@ -10,12 +10,12 @@ classdef tInternals < matlab.unittest.TestCase
 %   Guarded internals and their call sites:
 %     matlab.internal.math.ismemberhelper           - phx.Simulation/resolveState
 %     matlab.internal.math.interp1                  - phx.Script/resolveState
-%     matlab.internal.meshio.stlread                - phx.shape.STL/set.Source
-%     matlab.io.internal.validators.validateFileName - phx.shape.STL/set.Source
+%     matlab.internal.meshio.stlread                - phx.internal.readMesh (STL)
+%     matlab.io.internal.validators.validateFileName - phx.internal.readMesh (STL)
 %     matlab.graphics.internal.drawnow.startUpdate  - phx.Simulation/step
 %     Matrix_I (hgtransform property)               - phx.Body/updateView
 %
-%   See also phx.Simulation, phx.Script, phx.shape.STL
+%   See also phx.Simulation, phx.Script, phx.shape.Mesh
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 
@@ -49,7 +49,7 @@ classdef tInternals < matlab.unittest.TestCase
         end
 
         function stlreadInternalReturnsMesh(tc)
-            % shape.STL/set.Source reads .Faces, .Vertices and .Normals from
+            % phx.internal.readMesh reads .Faces, .Vertices and .Normals from
             % the returned mesh; lock in those fields on a one-triangle file.
             fileName = tc.writeTriangleSTL;
             stl = matlab.internal.meshio.stlread(fileName);
@@ -60,7 +60,7 @@ classdef tInternals < matlab.unittest.TestCase
         end
 
         function validateFileNameResolvesExisting(tc)
-            % shape.STL/set.Source expects a cell array of resolved names.
+            % phx.internal.readMesh expects a cell array of resolved names.
             fileName = tc.writeTriangleSTL;
             cFileName = matlab.io.internal.validators.validateFileName(fileName);
             tc.verifyClass(cFileName, 'cell');

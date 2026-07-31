@@ -77,8 +77,8 @@ so you can draw bodies into <code class="phx-inline">ax</code>.</p>
 <tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
 <tr><td class="name">ViewMode</td><td class="dflt">"texture"</td>
 <td>Viewing mode: <code class="phx-inline">"texture"</code> (sky sphere), <code class="phx-inline">"axis"</code> (axes + grid fitted to the bodies) or <code class="phx-inline">"plain"</code> (neither).</td></tr>
-<tr><td class="name">Texture</td><td class="dflt">"defaultSky.jpg"</td>
-<td>Background texture file in equirectangular projection. Accepts a path or the name of a built-in default texture.</td></tr>
+<tr><td class="name">Texture</td><td class="dflt">""</td>
+<td>Background texture file in equirectangular projection. Accepts a path or the name of a built-in default texture; left empty, the viewer loads the bundled <code class="phx-inline">defaultSky.jpg</code> when it opens, so reading the property afterwards returns that path.</td></tr>
 <tr><td class="name">Headlight</td><td class="dflt">true</td><td>Enable the camera headlight.</td></tr>
 <tr><td class="name">SkySphereSize</td><td class="dflt">4</td><td>Sky-sphere size multiplier (relative to the camera distance).</td></tr>
 </table>
@@ -101,10 +101,20 @@ so you can draw bodies into <code class="phx-inline">ax</code>.</p>
 <tr><td class="name">FreeRunSpeed</td><td class="dflt">1</td><td>Free-run speed factor (<code class="phx-inline">1</code> = real time, <code class="phx-inline">Inf</code> = maximal speed).</td></tr>
 </table>
 
+<h3 class="phx-h3">Selection</h3>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">SelectedBody</td><td class="type">phx.Body | [] (read-only)</td><td>Currently selected body, empty when nothing is selected. Set it through <code class="phx-inline">select</code>/<code class="phx-inline">deselect</code> or a double-click.</td></tr>
+<tr><td class="name">SelectionChangedFcn</td><td class="dflt">[]</td><td>Callback fired on every selection change, invoked as <code class="phx-inline">fcn(viewer)</code>; read <code class="phx-inline">SelectedBody</code> for the new selection. Intended for embedding the viewer in an app.</td></tr>
+</table>
+
 <h2 class="phx-h2">Object Functions</h2>
 <table class="phx-tbl">
 <tr><th>Function</th><th>Description</th></tr>
 <tr><td class="name">displayText</td><td>Show or update a text overlay (HUD) in the corner of the viewer.</td></tr>
+<tr><td class="name">select</td><td>Select a body for interactive editing.</td></tr>
+<tr><td class="name">deselect</td><td>Deselect the currently selected body.</td></tr>
+<tr><td class="name">basicView</td><td>Set the camera to a named or indexed standard view.</td></tr>
 <tr><td class="name">cla</td><td>Clear the scene (bodies) while keeping the viewer's own graphics.</td></tr>
 <tr><td class="name">close</td><td>Close the viewer figure and delete the viewer.</td></tr>
 <tr><td class="name">delete</td><td>Detach the interaction callbacks and remove the viewer.</td></tr>
@@ -127,13 +137,39 @@ log modes (default 10). <code class="phx-inline">fontSize</code> (default 16) an
 is first created.</p>
 </div>
 
+<h3 class="phx-h3">select, deselect</h3>
+<span class="phx-syntax">select(viewer,body)</span>
+<span class="phx-syntax">deselect(viewer)</span>
+<div class="phx-desc">
+<p><code class="phx-inline">select(viewer,body)</code> selects the given
+<a href="phx.Body.html">phx.Body</a> for interactive editing; any previously selected body is
+deselected first. The selected body gets an editing gizmo and is <b>temporarily switched to the
+kinematic type</b> so it can be dragged or rotated without falling.
+<code class="phx-inline">deselect(viewer)</code> removes the gizmo and restores the body's original
+type; it does nothing when no body is selected. Both fire
+<code class="phx-inline">SelectionChangedFcn</code>.</p>
+</div>
+
+<h3 class="phx-h3">basicView</h3>
+<span class="phx-syntax">basicView(viewer,"home")</span>
+<span class="phx-syntax">basicView(viewer,"next")</span>
+<span class="phx-syntax">basicView(viewer,"previous")</span>
+<span class="phx-syntax">basicView(viewer,id)</span>
+<div class="phx-desc">
+<p>Points the camera at a standard view. <code class="phx-inline">"home"</code> restores the default
+view (the <b>Home</b> key), while <code class="phx-inline">"next"</code> and
+<code class="phx-inline">"previous"</code> cycle through the preset front / side / back / top / bottom
+views (the <b>PgUp</b> / <b>PgDown</b> keys). A numeric <code class="phx-inline">id</code> selects one
+of them directly, with <code class="phx-inline">0</code> being the home view.</p>
+</div>
+
 <h2 class="phx-h2">Interactive Controls</h2>
 
 <h3 class="phx-h3">Mouse</h3>
 <table class="phx-tbl">
 <tr><th>Action</th><th>Effect</th></tr>
 <tr><td class="name">Left button</td><td>Pan the camera, or move the selected object.</td></tr>
-<tr><td class="name">Middle button</td><td>Orbit the camera, or rotate the selected object.</td></tr>
+<tr><td class="name">Middle button<br>(or <b>Shift</b>+left)</td><td>Orbit the camera, or rotate the selected object.</td></tr>
 <tr><td class="name">Right button</td><td>Open the context menu (snapshot, material, properties, scene load/save, &hellip;).</td></tr>
 <tr><td class="name">Scroll wheel</td><td>Zoom. <b>Shift</b>+scroll changes the field of view.</td></tr>
 <tr><td class="name">Double click</td><td>Select/unselect a body, or trigger its <code class="phx-inline">OnDoubleClickFcn</code>.</td></tr>

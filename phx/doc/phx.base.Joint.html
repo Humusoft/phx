@@ -19,11 +19,81 @@
 <h2 class="phx-h2">Description</h2>
 <p><code class="phx-inline">phx.base.Joint</code> is the abstract superclass for kinematic constraints
 connecting two bodies, referred to as body&nbsp;A and body&nbsp;B. Concrete joints derive from it
-and define the actual constraint; this class provides the reaction force and torque feedback common
-to all of them through the <code class="phx-inline">ForceA</code>, <code class="phx-inline">TorqueA</code>,
-<code class="phx-inline">ForceB</code> and <code class="phx-inline">TorqueB</code> properties, and the
+and define the actual constraint; this class provides what all of them share: the joint frames
+<code class="phx-inline">TransformA</code> and <code class="phx-inline">TransformB</code> together
+with the helpers that read and write parts of them, the reaction force and torque feedback
+(<code class="phx-inline">ForceA</code>, <code class="phx-inline">TorqueA</code>,
+<code class="phx-inline">ForceB</code>, <code class="phx-inline">TorqueB</code>), and the
 <code class="phx-inline">MutualCollisions</code> switch controlling whether the two connected bodies
 collide with each other.</p>
+
+<p>The axis of the free degrees of freedom is always the <b>Z axis</b> of the joint frames &mdash;
+the rotation axis of a <a href="phx.RevoluteJoint.html">phx.RevoluteJoint</a> or a
+<a href="phx.GearJoint.html">phx.GearJoint</a>, the sliding axis of a
+<a href="phx.PrismaticJoint.html">phx.PrismaticJoint</a>, both at once for a
+<a href="phx.CylindricalJoint.html">phx.CylindricalJoint</a> &mdash; and
+<code class="phx-inline">AxisA</code>/<code class="phx-inline">AxisB</code> read and write exactly
+that axis, as the third column of the frame. Setting one leaves the frame otherwise as intact as it
+can: the connection point is untouched, and the rotation about the axis is kept unless the axis moves
+close to where the frame's local X axis used to point.</p>
+
+<p>Every joint inherits the whole set, but each one reads only the part its constraint needs. The
+rest stays settable and simply has <b>no effect</b> &mdash; setting an axis on a ball joint, or a
+connection point on a gear coupling, changes nothing and is not reported as an error:</p>
+
+<table class="phx-tbl">
+<tr><th>Joint</th><th>Reads</th><th>No effect</th></tr>
+<tr><td class="name"><a href="phx.RevoluteJoint.html">phx.RevoluteJoint</a></td>
+    <td><code class="phx-inline">PointA</code>/<code class="phx-inline">PointB</code>,
+    <code class="phx-inline">AxisA</code>/<code class="phx-inline">AxisB</code></td>
+    <td>the rotation about the axis, i.e. the part of the frame rotation that
+    <code class="phx-inline">AxisA</code>/<code class="phx-inline">AxisB</code> do not determine</td></tr>
+<tr><td class="name"><a href="phx.CylindricalJoint.html">phx.CylindricalJoint</a></td>
+    <td><code class="phx-inline">PointA</code>/<code class="phx-inline">PointB</code>,
+    <code class="phx-inline">AxisA</code>/<code class="phx-inline">AxisB</code></td>
+    <td>the rotation about the axis, and an offset of
+    <code class="phx-inline">PointA</code>/<code class="phx-inline">PointB</code> along it &mdash;
+    both degrees of freedom are free</td></tr>
+<tr><td class="name"><a href="phx.SphericalJoint.html">phx.SphericalJoint</a></td>
+    <td><code class="phx-inline">PointA</code>/<code class="phx-inline">PointB</code></td>
+    <td><code class="phx-inline">AxisA</code>/<code class="phx-inline">AxisB</code>, frame rotation</td></tr>
+<tr><td class="name"><a href="phx.GearJoint.html">phx.GearJoint</a></td>
+    <td><code class="phx-inline">AxisA</code>/<code class="phx-inline">AxisB</code></td>
+    <td><code class="phx-inline">PointA</code>/<code class="phx-inline">PointB</code>, the rotation
+    about the axis</td></tr>
+<tr><td class="name"><a href="phx.PrismaticJoint.html">phx.PrismaticJoint</a></td>
+    <td>the full frames, i.e. <code class="phx-inline">AxisA</code>/<code class="phx-inline">AxisB</code>
+    <i>and</i> the rotation about the axis</td>
+    <td>an offset of <code class="phx-inline">PointA</code>/<code class="phx-inline">PointB</code>
+    along the sliding axis</td></tr>
+<tr><td class="name"><a href="phx.FixedJoint.html">phx.FixedJoint</a>,
+    <a href="phx.BushingJoint.html">phx.BushingJoint</a>,<br>
+    <a href="phx.GenericJoint.html">phx.GenericJoint</a></td>
+    <td>the full frames <code class="phx-inline">TransformA</code>/<code class="phx-inline">TransformB</code>,
+    and so every helper that writes into them</td>
+    <td>nothing &mdash; these joints have no single free axis, so
+    <code class="phx-inline">AxisA</code>/<code class="phx-inline">AxisB</code> just move the frame's
+    Z axis like any other helper</td></tr>
+</table>
+
+<div class="phx-note">
+<span class="lbl">Note.</span> <code class="phx-inline">AxisA</code>/<code class="phx-inline">AxisB</code>
+fully describe a joint only where the rotation about the axis is free. A
+<a href="phx.PrismaticJoint.html">phx.PrismaticJoint</a> locks it, so its two frames must also agree
+on where their remaining axes point &mdash; which the axis alone does not say. Setting only the axes
+on a prismatic joint whose bodies do not share an orientation can leave the frames rolled against
+each other about the sliding axis, and the solver then twists that out. Give such a joint its
+<code class="phx-inline">TransformA</code>/<code class="phx-inline">TransformB</code>, or the
+<code class="phx-inline">EulerAngles</code> helpers, in full.
+</div>
+
+<p>A joint keeps both joint frames in coincidence, except for the degrees of freedom it leaves free
+(the rotation of a revolute joint, the translation of a prismatic one, none at all for a fixed joint).
+Set the frames consistently with the initial poses of the bodies: a mismatch in a <i>constrained</i>
+direction is not reported as an error, the solver simply pulls the bodies together over the following
+steps. A mismatch in a <i>free</i> direction is harmless and only shifts the zero of that degree of
+freedom, for example an offset of <code class="phx-inline">PointA</code> along the sliding axis of a
+<a href="phx.PrismaticJoint.html">phx.PrismaticJoint</a>.</p>
 
 <h2 class="phx-h2">Properties</h2>
 <table class="phx-tbl">
@@ -32,13 +102,23 @@ collide with each other.</p>
 the two connected bodies. By default the bodies of a joint pass through each other; set
 <code class="phx-inline">true</code> to let them collide. Applied when the joint is initialized
 in a simulation.</td></tr>
+<tr><td class="name">TransformA</td><td class="dflt">eye(4)</td><td>Homogeneous transformation of the joint frame relative to body A.</td></tr>
+<tr><td class="name">TransformB</td><td class="dflt">eye(4)</td><td>Homogeneous transformation of the joint frame relative to body B.</td></tr>
+<tr><td class="name">AxisA</td><td class="dflt">[0 0 1]</td><td>Direction vector of the joint axis in the local space of body A; the Z axis of <code class="phx-inline">TransformA</code>, i.e. its third column (dependent). Normalized on assignment, and read back exactly as assigned.</td></tr>
+<tr><td class="name">AxisB</td><td class="dflt">[0 0 1]</td><td>Direction vector of the joint axis in the local space of body B; the Z axis of <code class="phx-inline">TransformB</code>, i.e. its third column (dependent). Normalized on assignment, and read back exactly as assigned.</td></tr>
+<tr><td class="name">PointA</td><td class="dflt">[0 0 0]</td><td>Connection point in the local space of body A; the translation part of <code class="phx-inline">TransformA</code> (dependent).</td></tr>
+<tr><td class="name">PointB</td><td class="dflt">[0 0 0]</td><td>Connection point in the local space of body B; the translation part of <code class="phx-inline">TransformB</code> (dependent).</td></tr>
+<tr><td class="name">EulerAnglesA</td><td class="dflt">[0 0 0]</td><td>Euler angles (z&rarr;y&rarr;x order) of the joint frame relative to body A; the rotation part of <code class="phx-inline">TransformA</code> (dependent).</td></tr>
+<tr><td class="name">EulerAnglesB</td><td class="dflt">[0 0 0]</td><td>Euler angles (z&rarr;y&rarr;x order) of the joint frame relative to body B; the rotation part of <code class="phx-inline">TransformB</code> (dependent).</td></tr>
+<tr><td class="name">AxisAngleA</td><td class="dflt">[0 0 1 0]</td><td>Axis and angle of the joint frame relative to body A; the rotation part of <code class="phx-inline">TransformA</code> (dependent).</td></tr>
+<tr><td class="name">AxisAngleB</td><td class="dflt">[0 0 1 0]</td><td>Axis and angle of the joint frame relative to body B; the rotation part of <code class="phx-inline">TransformB</code> (dependent).</td></tr>
 <tr><td class="name">ForceA</td><td class="type">1&times;3 double (read-only)</td><td>Reaction force acting on body A, <span class="phx-unit">N</span>.</td></tr>
 <tr><td class="name">TorqueA</td><td class="type">1&times;3 double (read-only)</td><td>Reaction torque acting on body A, <span class="phx-unit">N&middot;m</span>.</td></tr>
 <tr><td class="name">ForceB</td><td class="type">1&times;3 double (read-only)</td><td>Reaction force acting on body B, <span class="phx-unit">N</span>.</td></tr>
 <tr><td class="name">TorqueB</td><td class="type">1&times;3 double (read-only)</td><td>Reaction torque acting on body B, <span class="phx-unit">N&middot;m</span>.</td></tr>
 </table>
-<p>Before the joint is initialized in a simulation, these properties return
-<code class="phx-inline">[NaN NaN NaN]</code>. They also inherit the full
+<p>Before the joint is initialized in a simulation, the four feedback properties return
+<code class="phx-inline">[NaN NaN NaN]</code>. Joints also inherit the full
 <a href="phx.base.Object.html">phx.base.Object</a> property set (<code class="phx-inline">Children</code>,
 <code class="phx-inline">Color</code>, <code class="phx-inline">Name</code>, &hellip;).</p>
 
@@ -46,10 +126,13 @@ in a simulation.</td></tr>
 <table class="phx-tbl">
 <tr><th>Class</th><th>DOF</th><th>Constraint</th></tr>
 <tr><td class="name"><a href="phx.RevoluteJoint.html">phx.RevoluteJoint</a></td><td>1</td><td>Rotation about a shared axis (hinge).</td></tr>
+<tr><td class="name"><a href="phx.PrismaticJoint.html">phx.PrismaticJoint</a></td><td>1</td><td>Translation along a shared axis (slider).</td></tr>
+<tr><td class="name"><a href="phx.CylindricalJoint.html">phx.CylindricalJoint</a></td><td>2</td><td>Translation along and rotation about a shared axis (shaft in a sleeve).</td></tr>
 <tr><td class="name"><a href="phx.SphericalJoint.html">phx.SphericalJoint</a></td><td>3</td><td>Rotation about X, Y, Z (ball joint).</td></tr>
 <tr><td class="name"><a href="phx.GearJoint.html">phx.GearJoint</a></td><td>&mdash;</td><td>Coupled rotation with a fixed ratio.</td></tr>
 <tr><td class="name"><a href="phx.FixedJoint.html">phx.FixedJoint</a></td><td>0</td><td>Rigid connection.</td></tr>
-<tr><td class="name"><a href="phx.GenericJoint.html">phx.GenericJoint</a></td><td>6</td><td>Configurable linear/angular limits. <span class="phx-tag dev">under development</span></td></tr>
+<tr><td class="name"><a href="phx.BushingJoint.html">phx.BushingJoint</a></td><td>6</td><td>Compliant fixed joint &mdash; elastic bushing with per-axis stiffness and damping.</td></tr>
+<tr><td class="name"><a href="phx.GenericJoint.html">phx.GenericJoint</a></td><td>6</td><td>Each axis free, locked or bounded by end stops.</td></tr>
 </table>
 
 <h2 class="phx-h2">Examples</h2>
@@ -74,6 +157,7 @@ plot(log.Time, log.getChannel(1));     <span class="cmt">% reaction force on bod
 <div class="phx-seealso">
 <span class="lbl">See also</span>
 <a href="phx.RevoluteJoint.html">phx.RevoluteJoint</a>,
+<a href="phx.CylindricalJoint.html">phx.CylindricalJoint</a>,
 <a href="phx.SphericalJoint.html">phx.SphericalJoint</a>,
 <a href="phx.GearJoint.html">phx.GearJoint</a>,
 <a href="phx.base.Object.html">phx.base.Object</a>

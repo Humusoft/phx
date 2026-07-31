@@ -30,7 +30,7 @@ function phxex_terrain
     phxc = flipud(phxc);
 
     % Create dynamic bodies (spheres) at specified positions
-    shp = phx.shape.Sphere("Diameter", 1.1, "Material", "shiny");
+    shp = phx.shape.Sphere("Diameter", 1.1, "Material", "glossy");
     i = 0;
     for x = -19:2:19
         for y = -15:2:15

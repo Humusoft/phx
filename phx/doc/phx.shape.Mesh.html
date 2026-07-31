@@ -13,15 +13,27 @@
 <div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.shape.Mesh</div>
 
 <h1 class="phx-title">phx.shape.Mesh</h1>
-<p class="phx-purpose">Custom shape with texture</p>
+<p class="phx-purpose">Triangular mesh shape (imported from a file or built from data)</p>
 <p class="phx-classref">Class&nbsp;&nbsp;phx.shape.Mesh &nbsp;|&nbsp; Superclasses: <a href="phx.base.Shape.html">phx.base.Shape</a>, <a href="phx.base.ShapeMesh.html">phx.base.ShapeMesh</a></p>
 
 <h2 class="phx-h2">Description</h2>
-<p><code class="phx-inline">phx.shape.Mesh</code> wears a user-supplied triangular mesh defined by the
-<code class="phx-inline">Vertices</code>, <code class="phx-inline">Normals</code>,
-<code class="phx-inline">Faces</code> and <code class="phx-inline">UV</code> properties, optionally
-textured. The collision shape and mass properties are modeled as an ideal block based on the
-axis-aligned bounding box of the mesh, scaled by <code class="phx-inline">Scale</code>.</p>
+<p><code class="phx-inline">phx.shape.Mesh</code> is a general triangular-mesh shape. Its geometry is either
+loaded from a file through the <code class="phx-inline">Source</code> property (STL, Wavefront OBJ and
+Stanford PLY are supported) or supplied directly as data through <code class="phx-inline">Vertices</code>,
+<code class="phx-inline">Normals</code>, <code class="phx-inline">Faces</code> and <code class="phx-inline">UV</code>.
+An OBJ file is loaded as a single body with all of its objects and materials merged; its diffuse colors and
+textures are taken automatically from the referenced <code class="phx-inline">.mtl</code> materials. To turn a
+multi-object OBJ into separate bodies, use <a href="phx.assembly.import.html">phx.assembly.import</a> instead.
+A PLY file loads as a single mesh; its per-vertex color is averaged into one diffuse color (per-vertex color
+is not rendered).</p>
+
+<p>The collision shape is selected by <code class="phx-inline">Envelope</code>. A bounding
+<code class="phx-inline">"box"</code>, <code class="phx-inline">"cylinder"</code> or <code class="phx-inline">"sphere"</code>
+fits a smooth primitive to the mesh (cylinder and sphere keep rolling bodies from juddering), while
+<code class="phx-inline">"convex"</code> uses the convex hull (dynamic, the default) and
+<code class="phx-inline">"concave"</code> uses the exact triangle mesh (best kept static). Mass properties are
+computed from the mesh volume and <code class="phx-inline">Density</code>, falling back to the bounding box for
+non-solid meshes.</p>
 
 <h2 class="phx-h2">Creation</h2>
 <h3 class="phx-h3">Syntax</h3>
@@ -30,29 +42,52 @@ axis-aligned bounding box of the mesh, scaled by <code class="phx-inline">Scale<
 
 <h3 class="phx-h3">Description</h3>
 <div class="phx-desc">
-<p><code class="phx-inline">shape = phx.shape.Mesh(Name,Value)</code> creates a shape from the given
-mesh data. Supply at least <code class="phx-inline">Vertices</code> and <code class="phx-inline">Faces</code>;
-provide <code class="phx-inline">Normals</code> for shading and <code class="phx-inline">UV</code> with a
-<code class="phx-inline">Texture</code> for texturing.</p>
+<p><code class="phx-inline">shape = phx.shape.Mesh(Name,Value)</code> creates a mesh shape. Give a
+<code class="phx-inline">Source</code> file, or supply <code class="phx-inline">Vertices</code> and
+<code class="phx-inline">Faces</code> directly (with optional <code class="phx-inline">Normals</code> and
+<code class="phx-inline">UV</code>).</p>
+<p>As a shorthand a body can build the shape inline from a file name:
+<code class="phx-inline">phx.Body("Shape", {"file.stl", "Envelope", "cylinder"})</code>, which is equivalent to
+passing <code class="phx-inline">phx.shape.Mesh("Source", "file.stl", "Envelope", "cylinder")</code>.</p>
 </div>
 
 <h2 class="phx-h2">Properties</h2>
-<h3 class="phx-h3">Geometry</h3>
+<h3 class="phx-h3">Source and geometry</h3>
 <table class="phx-tbl">
 <tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
-<tr><td class="name">Vertices</td><td class="type">N&times;3 double</td><td>Vertex coordinates.</td></tr>
-<tr><td class="name">Normals</td><td class="type">N&times;3 double</td><td>Vertex normals.</td></tr>
-<tr><td class="name">Faces</td><td class="type">M&times;3 double</td><td>Triangle vertex indices.</td></tr>
-<tr><td class="name">UV</td><td class="type">N&times;2 double</td><td>Vertex texture coordinates.</td></tr>
+<tr><td class="name">Source</td><td class="type">string</td><td>Mesh file to load (<code class="phx-inline">.stl</code>, <code class="phx-inline">.obj</code> or <code class="phx-inline">.ply</code>).</td></tr>
+<tr><td class="name">Group</td><td class="type">string</td><td>Keep only this named OBJ object; default keeps all, merged.</td></tr>
+<tr><td class="name">Details</td><td class="dflt">1</td><td>STL decimation factor (0&ndash;1); 1 keeps the full mesh.</td></tr>
+<tr><td class="name">Vertices</td><td class="type">N&times;3 double</td><td>Vertex coordinates (direct data input).</td></tr>
+<tr><td class="name">Normals</td><td class="type">N&times;3 double</td><td>Vertex normals (direct data input).</td></tr>
+<tr><td class="name">Faces</td><td class="type">M&times;3 double</td><td>Triangle vertex indices (direct data input).</td></tr>
+<tr><td class="name">UV</td><td class="type">N&times;2 double</td><td>Vertex texture coordinates (direct data input).</td></tr>
 <tr><td class="name">Scale</td><td class="dflt">[1 1 1]</td><td>Scale factor applied to the mesh.</td></tr>
-<tr><td class="name">Density</td><td class="dflt">1000</td><td>Volumetric density, <span class="phx-unit">kg/m&sup3;</span> (applied to the bounding box).</td></tr>
+<tr><td class="name">Centered</td><td class="dflt">true</td><td>Move the origin to the centre of the bounding box.</td></tr>
+<tr><td class="name">Density</td><td class="dflt">1000</td><td>Volumetric density, <span class="phx-unit">kg/m&sup3;</span>.</td></tr>
+</table>
+
+<h3 class="phx-h3">Collision</h3>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">Envelope</td><td class="dflt">"convex"</td><td>Collision shape: <code class="phx-inline">"box"</code>, <code class="phx-inline">"cylinder"</code>, <code class="phx-inline">"sphere"</code>, <code class="phx-inline">"convex"</code> or <code class="phx-inline">"concave"</code>.</td></tr>
+<tr><td class="name">Axis</td><td class="dflt">"z"</td><td>Axis of the <code class="phx-inline">"cylinder"</code> envelope: <code class="phx-inline">"x"</code>, <code class="phx-inline">"y"</code> or <code class="phx-inline">"z"</code>.</td></tr>
+<tr><td class="name">FlipFaces</td><td class="dflt">false</td><td>Reverse the triangle winding of the <code class="phx-inline">"concave"</code> collision mesh when its solid side comes out wrong.</td></tr>
 </table>
 
 <p>Appearance properties are inherited from <a href="phx.base.ShapeMesh.html">phx.base.ShapeMesh</a>
-and skeletal properties from <a href="phx.base.Shape.html">phx.base.Shape</a>.
-<code class="phx-inline">Mesh</code> uses the <code class="phx-inline">"flat"</code> style by default.</p>
+and skeletal properties from <a href="phx.base.Shape.html">phx.base.Shape</a>. A manually set
+<code class="phx-inline">Texture</code> fills in materials that carry no texture of their own.</p>
 
 <h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">Import an STL as a rolling wheel</h4>
+<pre class="phx-code">shape = phx.shape.Mesh(<span class="str">"Source"</span>, <span class="str">"wheel.stl"</span>, <span class="str">"Scale"</span>, 0.01, <span class="str">"Envelope"</span>, <span class="str">"cylinder"</span>);
+b = phx.Body(<span class="str">"Shape"</span>, shape);</pre>
+
+<h4 class="phx-h4">Import a textured OBJ</h4>
+<pre class="phx-code"><span class="cmt">% Colours and textures come from the OBJ's .mtl materials</span>
+b = phx.Body(<span class="str">"Shape"</span>, {<span class="str">"cottage.obj"</span>, <span class="str">"Envelope"</span>, <span class="str">"convex"</span>, <span class="str">"Scale"</span>, 2});</pre>
+
 <h4 class="phx-h4">A body from a custom triangulation</h4>
 <pre class="phx-code">phx.extra.Viewer(<span class="str">"clear"</span>, <span class="str">"DefaultCameraPosition"</span>, [10 10 10]);
 
@@ -67,8 +102,8 @@ sim.step(2, 200, 1);</pre>
 <div class="phx-seealso">
 <span class="lbl">See also</span>
 <a href="phx.Body.html">phx.Body</a>,
-<a href="phx.shape.OBJ.html">phx.shape.OBJ</a>,
-<a href="phx.shape.STL.html">phx.shape.STL</a>,
+<a href="phx.assembly.import.html">phx.assembly.import</a>,
+<a href="phx.shape.Box.html">phx.shape.Box</a>,
 <a href="phx.base.Shape.html">phx.base.Shape</a>
 </div>
 

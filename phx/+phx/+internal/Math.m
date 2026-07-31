@@ -31,6 +31,28 @@ classdef Math
             end
         end
 
+        % Reorientation of a frame so that its axis Z points along a direction
+        function R = alignZ(R, Axis)
+            % The direction is placed in the third column as it is, so reading
+            % it back is exact; the other two columns are rebuilt around it.
+            % Axis X serves as the reference and is only swapped for axis Y
+            % when it is too parallel to the direction to project cleanly.
+            % Deciding that by a fixed threshold rather than by comparing the
+            % two projections keeps the choice stable: on an already aligned
+            % frame both projections are rounding noise, and picking between
+            % them would spin the frame by 90 degrees at random.
+            a = Axis(:)/norm(Axis);
+
+            x = R(:, 1);
+            if abs(a'*x) > 0.9
+                x = R(:, 2);
+            end
+
+            x = x - (a'*x)*a;
+            x = x/norm(x);
+            R = [x, cross(a, x), a];
+        end
+
         % Transformation matrix for rotations in order Z -> Y -> X
         function M = rot321(XYZ)
             c = cos(XYZ);

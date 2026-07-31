@@ -24,7 +24,7 @@ function phxex_screwconv(showGraphs)
     spine = [cos(t)*r, sin(t)*r, t*0.5];
     t = linspace(0, 2*pi, 8)';
     profile = [cos(t), sin(t)*0.2];
-    shape = phx.shape.Extrusion("Spine", spine, "Profile", profile, "Axis", "x", "Envelope", "concave", "Material", "shiny", "Color", [0.5 0.5 0.5]);
+    shape = phx.shape.Extrusion("Spine", spine, "Profile", profile, "Axis", "x", "Envelope", "concave", "Material", "glossy", "Color", [0.5 0.5 0.5]);
     screw = phx.Body(ax, "Type", "kinematic", "Position", [-5 0 3.0], "Shape", shape);
 
     % Walls
@@ -56,7 +56,7 @@ function phxex_screwconv(showGraphs)
 
     % Plot results
     if showGraphs
-        figure(2);
+        clf(figure(2));
         plot(logger.Time, logger.Data(:, 1));
         grid("on");
         xlabel("Time (s)"); ylabel("Force (N)"); title("Axial force");

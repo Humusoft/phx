@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Agent Skills</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; User Guide &rsaquo; AI agent skills</div>
+
+<h1 class="phx-title">AI Agent Skills</h1>
+<p class="phx-purpose">Teaching an AI coding assistant to write PHX code that works</p>
+
+<h2 class="phx-h2">What they are</h2>
+<p>PHX ships with a set of <i>skills</i> &mdash; short instruction documents that teach an AI coding
+assistant how this toolbox is actually used: which class to reach for, what the properties mean, and
+which pitfalls to avoid. They are ordinary Markdown files, so any assistant that can read a file can
+use them; assistants with built-in skill support (such as Claude Code) pick the right one on their
+own, based on what you are asking for.</p>
+
+<p>The point is accuracy. Without them an assistant will guess an API that looks plausible and
+produce code that does not run. With them it writes scenes against the real PHX API of the version
+you have installed.</p>
+
+<table class="phx-tbl">
+<tr><th>Skill</th><th>What it covers</th></tr>
+<tr><td class="name">phx-scene-basics</td><td>The starting point: bodies, shapes, imported geometry,
+    prefab assemblies, the viewer, stepping a simulation, running headless.</td></tr>
+<tr><td class="name">phx-constraints-forces</td><td>Joints, springs and ropes, thrusters, buoyancy,
+    fields, applied forces and torques, scripted and closed-loop control.</td></tr>
+<tr><td class="name">phx-logging-view</td><td>Logging signals, motion traces, measurements,
+    detection zones, camera and the interactive viewer.</td></tr>
+<tr><td class="name">phx-engine-gotchas</td><td>The engine gateway, error identifiers and the
+    behavior worth knowing when something does not simulate as expected.</td></tr>
+<tr><td class="name">phx-simulink</td><td>Driving a PHX scene from Simulink through the PHX
+    block.</td></tr>
+</table>
+
+<h2 class="phx-h2">Where they are</h2>
+<p>The skills are installed with the toolbox, in the <code class="phx-inline">skills</code> folder
+next to the PHX code. Ask MATLAB for the folder and open it:</p>
+
+<pre class="phx-code">skills = fullfile(fileparts(which(<span class="str">"phxdoc"</span>)), <span class="str">"skills"</span>)
+winopen(skills)     <span class="cmt">% Windows; use "open" on macOS, "xdg-open" on Linux</span></pre>
+
+<p>Each skill is one folder with a single <code class="phx-inline">SKILL.md</code> file inside, for
+example <code class="phx-inline">skills/phx-scene-basics/SKILL.md</code>.</p>
+
+<h2 class="phx-h2">How to use them</h2>
+
+<h3 class="phx-h3">Assistants with skill support</h3>
+<p>Copy the skill folders where your assistant looks for them and it will load the right one by
+itself. For Claude Code that is a <code class="phx-inline">.claude/skills</code> folder, either
+inside the project you are working in, or in your home folder to make them available everywhere:</p>
+
+<pre class="phx-code">skills = fullfile(fileparts(which(<span class="str">"phxdoc"</span>)), <span class="str">"skills"</span>);
+target = fullfile(pwd, <span class="str">".claude"</span>, <span class="str">"skills"</span>);   <span class="cmt">% this project only</span>
+<span class="cmt">% target = fullfile(userpath, "..", ".claude", "skills");  % all projects</span>
+
+mkdir(target);
+copyfile(fullfile(skills, <span class="str">"*"</span>), target);</pre>
+
+<p>After that just describe what you want in plain language &mdash; &quot;build a PHX scene with a
+crate sliding down a ramp and log its velocity&quot; &mdash; and the assistant consults the matching
+skill on its own. You do not name the skills yourself.</p>
+
+<h3 class="phx-h3">Any other assistant</h3>
+<p>The files are plain Markdown. Attach or paste the relevant one into the conversation as context
+before asking for code. Start with <code class="phx-inline">phx-scene-basics</code>; add
+<code class="phx-inline">phx-constraints-forces</code> when the scene needs joints, springs or
+actuators, and the others as the task calls for them.</p>
+
+<div class="phx-note">
+<span class="lbl">Note.</span> The skills describe the API of the PHX version they were installed
+with. After upgrading the toolbox, copy them again so your assistant does not work from an outdated
+description. They are instructions for writing code, not a replacement for this User Guide &mdash;
+what an assistant produces is still worth reading before you run it.
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_gettingstarted.html">Getting started</a>,
+<a href="phx_ex_gallery.html">Examples</a>,
+<a href="phx_ug_concepts.html">Core concepts</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox User Guide</div>
+
+</div>
+</body>
+</html>

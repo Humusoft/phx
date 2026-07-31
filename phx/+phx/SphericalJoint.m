@@ -27,12 +27,6 @@ classdef SphericalJoint < phx.base.Joint
     end
 
     properties
-        % Connecting point in the local space of the first body
-        PointA (1, 3) double = [0 0 0]
-
-        % Connecting point in the local space of the second body
-        PointB (1, 3) double = [0 0 0]
-
         % Draw joint as overlay
         Overlay (1, 1) logical = false
     end

@@ -32,16 +32,14 @@ function phxex_balance(Kp, Kd)
 
     % Figure setup
     figure(1);
-    [~, ax] = phx.extra.Viewer("clear", "DefaultCameraTarget", [0 0 0], ...
-        "DefaultCameraPosition", [4 -4 4]);
+    [viewer, ax] = phx.extra.Viewer("clear", "DefaultCameraTarget", [0 0 0], "DefaultCameraPosition", [4 -4 4]);
 
     % Plate geometry
     plateSize = [4 4 0.2];
     ballR = 0.3;
 
     % Catch floor far below in case the ball falls off
-    phx.Body(ax, "Type", "static", "Position", [0 0 -6], ...
-        "Shape", {"Box", "Size", [40 40 1], "Color", 1});
+    phx.Body(ax, "Type", "static", "Position", [0 0 -6], "Shape", {"Box", "Size", [40 40 1], "Color", 1});
 
     % Kinematic plate - we drive its tilt; the ball only feels it via contact
     plate = phx.Body(ax, "Type", "kinematic", "Position", [0 0 0], ...
@@ -50,9 +48,8 @@ function phxex_balance(Kp, Kd)
 
     % Ball dropped from a position above the plate
     p0 = [1.5 1.5];
-    ball = phx.Body(ax, "Position", [p0, 2.0], ...
-        "Shape", {"Globe", "Radius", ballR, "Color", [1 0.5 0.2], ...
-                  "Material", "shiny", "Texture", resdir+"checker2.png", "TextureBlend", 0.2});
+    ball = phx.Body(ax, "Position", [p0, 2.0], "Shape", {"Globe", "Radius", ballR, "Color", [1 0.5 0.2], ...
+        "Material", "glossy", "Texture", resdir+"checker2.png", "TextureBlend", 0.2});
     ball.LinearVelocity = [-1 0 -1];
 
     % Visual trail of the ball path on the plate
@@ -61,10 +58,6 @@ function phxex_balance(Kp, Kd)
     % Log the ball position so the settling behaviour can be analysed
     logBall  = phx.Logger(ball,  "Frequency", 50, "Parameters", "Position");
     logPlate = phx.Logger(plate, "Frequency", 50, "Parameters", "EulerAngles");
-
-    % On-screen readout
-    label = uilabel(gcf, "FontSize", 18, "FontColor", [1 1 1], ...
-        "Position", [20 20 380 40], "Text", "Dropping ball...");
 
     % Closed-loop balancing: the PD control law runs every (sub)step as a
     % phx.Function bound to the ball (sensor) and the plate (actuator)
@@ -80,15 +73,13 @@ function phxex_balance(Kp, Kd)
         sim.step(dt, 1, 1);
 
         if mod(k, 10) == 0
-            label.Text = sprintf("err = [% .2f % .2f] m   |   tilt = [% .2f % .2f] rad", ...
-                ball.Position(1), ball.Position(2), ...
-                plate.EulerAngles(1), plate.EulerAngles(2));
-            pause(0);
+            viewer.displayText(sprintf("err = [% .2f % .2f] m   |   tilt = [% .2f % .2f] rad", ...
+                ball.Position(1), ball.Position(2), plate.EulerAngles(1), plate.EulerAngles(2)));
         end
 
         % Stop early if the ball has fallen off the plate
         if ball.Position(3) < -1
-            label.Text = "Ball fell off the plate!";
+            viewer.displayText("Ball fell off the plate!");
             break;
         end
     end
@@ -96,11 +87,10 @@ function phxex_balance(Kp, Kd)
 
     % Report final settling error
     finalErr = norm(ball.Position(1:2));
-    fprintf("Final distance from centre: %.3f m (Kp = %.1f, Kd = %.1f).\n", ...
-        finalErr, Kp, Kd);
+    fprintf("Final distance from centre: %.3f m (Kp = %.1f, Kd = %.1f).\n", finalErr, Kp, Kd);
 
     % Plot ball position error and plate tilt over time
-    figure(2);
+    clf(figure(2));
     bp = logBall.getChannel(1);            % ball Position [x y z]
     pt = logPlate.getChannel(1);           % plate EulerAngles [x y z]
     subplot(2, 1, 1);

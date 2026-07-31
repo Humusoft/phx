@@ -106,7 +106,6 @@ function phxex_crystal(nBalls, annealTime, seed)
         sim.step(dt*subSteps, subSteps, subSteps);
         t = t + dt*subSteps;
         frame = frame + 1;
-        pause(0);
 
         if mod(frame, 10) == 0                % sample the order every 0.5 s
             [lastOrder, nBonds] = bondOrder(balls, chg, d);
@@ -123,7 +122,6 @@ function phxex_crystal(nBalls, annealTime, seed)
     settleTimeout = 5;
     while settleTimeout > 0
         sim.step(0.1, 20, 20);
-        pause(0);
         settleTimeout = settleTimeout - 0.1;
         vMax = 0;
         for i = 1:nBalls

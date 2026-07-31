@@ -43,10 +43,17 @@ their origins. Set custom connection points with <code class="phx-inline">PointA
 <tr><td class="name">PointB</td><td class="dflt">[0 0 0]</td><td>Connection point in the local space of body B; the translation part of <code class="phx-inline">TransformB</code> (dependent).</td></tr>
 <tr><td class="name">EulerAnglesA</td><td class="dflt">[0 0 0]</td><td>Euler angles (z&rarr;y&rarr;x order) of the joint frame relative to body A; the rotation part of <code class="phx-inline">TransformA</code> (dependent).</td></tr>
 <tr><td class="name">EulerAnglesB</td><td class="dflt">[0 0 0]</td><td>Euler angles (z&rarr;y&rarr;x order) of the joint frame relative to body B; the rotation part of <code class="phx-inline">TransformB</code> (dependent).</td></tr>
+<tr><td class="name">Overlay</td><td class="dflt">false</td><td>Draw the joint as an overlay (always on top).</td></tr>
 </table>
 <p>Reaction feedback and the <code class="phx-inline">MutualCollisions</code> switch (collisions
 between the connected bodies, default <code class="phx-inline">false</code>) are inherited from
 <a href="phx.base.Joint.html">phx.base.Joint</a>.</p>
+<p>A fixed joint locks the frames completely, so it has no free axis for the inherited
+<code class="phx-inline">AxisA</code>/<code class="phx-inline">AxisB</code> to describe. They are
+still writable and still move the Z axis of the frames like any other rotation helper, which here
+only offsets the welded orientation &mdash; use
+<code class="phx-inline">EulerAnglesA</code>/<code class="phx-inline">TransformA</code> when that is
+what you want.</p>
 
 <h2 class="phx-h2">Examples</h2>
 <h4 class="phx-h4">Rigidly weld two bodies</h4>

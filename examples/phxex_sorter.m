@@ -105,7 +105,6 @@ function phxex_sorter(nBalls, fieldStrength, seed)
     dt = 0.05;
     released = 0;
     charges = zeros(1, nBalls);
-    traced = false;
     while released < nBalls
         if sim.Time >= released*releasePeriod
             i = released + 1;
@@ -116,23 +115,17 @@ function phxex_sorter(nBalls, fieldStrength, seed)
                 "Color", clsClr(cls(i) + 2, :)}, "Friction", [0.3 0.01 0]); %#ok<AGROW> unknown rate
             phx.Monopole([pellets balls(i)], "Charge", [qPellets charges(i)]', ...
                 "Attractivity", -1, "VectorFieldSize", [0 0 0], "Visible", false);
-            if ~traced && cls(i) ~= 0
-                phx.Trace(balls(i), "TracePoints", 300, "Overlay", true);
-                traced = true;
-            end
             sim.addObjects(balls(i));
             released = i;
             viewer.displayText(sprintf("Released: %d / %d", released, nBalls));
         end
         sim.step(dt, 5, 5);
-        pause(0);
     end
 
     % Phase 2 - let the last balls land and everything settle
     settleTimeout = sim.Time + 10;
     while sim.Time < settleTimeout
         sim.step(0.1, 10, 10);
-        pause(0);
         vMax = 0;
         for i = 1:nBalls
             vMax = max(vMax, norm(balls(i).LinearVelocity));
@@ -164,7 +157,7 @@ function phxex_sorter(nBalls, fieldStrength, seed)
     viewer.displayText(sprintf("Done: sorting accuracy %.1f %%", 100*accuracy));
 
     % The money plot: landing position is proportional to the charge
-    figure(2);
+    clf(figure(2));
     hold on
     for c = [-1 0 1]
         id = cls == c;

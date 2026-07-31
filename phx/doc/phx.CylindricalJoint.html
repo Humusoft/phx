@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.CylindricalJoint</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.CylindricalJoint</div>
+
+<h1 class="phx-title">phx.CylindricalJoint</h1>
+<p class="phx-purpose">Cylindrical joint</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.CylindricalJoint &nbsp;|&nbsp; Superclass: <a href="phx.base.Joint.html">phx.base.Joint</a></p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.CylindricalJoint</code> realizes a kinematic constraint with two
+degrees of freedom: a translation along an axis and a rotation about the same axis &mdash; a shaft
+free to slide and spin inside a sleeve. The axis is the local Z axis of the joint frame of each
+connected body; the remaining four degrees of freedom are locked. It is a
+<a href="phx.PrismaticJoint.html">phx.PrismaticJoint</a> and a
+<a href="phx.RevoluteJoint.html">phx.RevoluteJoint</a> sharing one axis.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">joint = phx.CylindricalJoint(bodyA,bodyB)</span>
+<span class="phx-syntax">joint = phx.CylindricalJoint(___,Name,Value)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">joint = phx.CylindricalJoint(bodyA,bodyB)</code> creates a joint between
+two bodies attached at their origins, with the joint axis aligned to the local Z axis of each body.
+Set custom connection points and axis directions with <code class="phx-inline">PointA</code>,
+<code class="phx-inline">PointB</code>, <code class="phx-inline">AxisA</code> and
+<code class="phx-inline">AxisB</code>, or whole joint frames with
+<code class="phx-inline">TransformA</code> and <code class="phx-inline">TransformB</code>; in every
+case the joint axis is the local Z axis of each frame. Only the components perpendicular to the axis
+place the bodies with respect to each other; an offset along the axis merely shifts the zero of the
+free translation, and a roll about it the zero of the free rotation.</p>
+</div>
+
+<h3 class="phx-h3">Input Arguments</h3>
+<table class="phx-tbl">
+<tr><th>Argument</th><th>Type</th><th>Description</th></tr>
+<tr><td class="name">bodyA, bodyB</td><td class="type">phx.Body (scalar)</td><td>The two bodies connected by the joint.</td></tr>
+</table>
+
+<h2 class="phx-h2">Properties</h2>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">TransformA</td><td class="dflt">eye(4)</td><td>Homogeneous transformation of the joint frame relative to body A; its local Z axis is the joint axis.</td></tr>
+<tr><td class="name">TransformB</td><td class="dflt">eye(4)</td><td>Homogeneous transformation of the joint frame relative to body B; its local Z axis is the joint axis.</td></tr>
+<tr><td class="name">AxisA</td><td class="dflt">[0 0 1]</td><td>Joint-axis direction in the local space of body A; the Z axis of <code class="phx-inline">TransformA</code> (dependent).</td></tr>
+<tr><td class="name">AxisB</td><td class="dflt">[0 0 1]</td><td>Joint-axis direction in the local space of body B; the Z axis of <code class="phx-inline">TransformB</code> (dependent).</td></tr>
+<tr><td class="name">PointA</td><td class="dflt">[0 0 0]</td><td>Connection point in the local space of body A; the translation part of <code class="phx-inline">TransformA</code> (dependent).</td></tr>
+<tr><td class="name">PointB</td><td class="dflt">[0 0 0]</td><td>Connection point in the local space of body B; the translation part of <code class="phx-inline">TransformB</code> (dependent).</td></tr>
+<tr><td class="name">EulerAnglesA</td><td class="dflt">[0 0 0]</td><td>Euler angles (z&rarr;y&rarr;x order) of the joint frame relative to body A; the rotation part of <code class="phx-inline">TransformA</code> (dependent).</td></tr>
+<tr><td class="name">EulerAnglesB</td><td class="dflt">[0 0 0]</td><td>Euler angles (z&rarr;y&rarr;x order) of the joint frame relative to body B; the rotation part of <code class="phx-inline">TransformB</code> (dependent).</td></tr>
+<tr><td class="name">Overlay</td><td class="dflt">false</td><td>Draw the joint as an overlay (always on top).</td></tr>
+</table>
+<p>Reaction feedback (<code class="phx-inline">ForceA</code>, <code class="phx-inline">TorqueA</code>,
+<code class="phx-inline">ForceB</code>, <code class="phx-inline">TorqueB</code>) and the
+<code class="phx-inline">MutualCollisions</code> switch (collisions between the connected bodies,
+default <code class="phx-inline">false</code>) are inherited from
+<a href="phx.base.Joint.html">phx.base.Joint</a>.</p>
+<div class="phx-note">
+<span class="lbl">Note.</span> Unlike <a href="phx.PrismaticJoint.html">phx.PrismaticJoint</a>, this
+joint leaves the rotation about the axis free, so <code class="phx-inline">AxisA</code> and
+<code class="phx-inline">AxisB</code> alone fully describe it &mdash; the two frames need not agree
+on how they are rolled about the axis, and the solver does not twist the bodies into line.
+</div>
+<div class="phx-note">
+<span class="lbl">Tip.</span> For end stops on the travel or on the rotation, use
+<a href="phx.GenericJoint.html">phx.GenericJoint</a> with the Z axes bounded instead of free; for a
+compliant version, <a href="phx.BushingJoint.html">phx.BushingJoint</a> with the Z stiffnesses set
+to zero.
+</div>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">Drop a spinning shaft out of a sleeve</h4>
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+sleeve = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Shape"</span>, {<span class="str">"Cylinder"</span>, <span class="str">"Radius"</span>, 0.5, <span class="str">"Height"</span>, 0.5});
+shaft  = phx.Body(<span class="str">"Shape"</span>, {<span class="str">"Cylinder"</span>, <span class="str">"Radius"</span>, 0.3, <span class="str">"Height"</span>, 1.5}, ...
+                  <span class="str">"AngularVelocity"</span>, [0 0 40], <span class="str">"Color"</span>, [0.85 0.33 0.6]);
+
+<span class="cmt">% both degrees of freedom are free, so the shaft keeps spinning while it</span>
+<span class="cmt">% slides out of the sleeve - a point on its rim traces a stretching helix</span>
+phx.CylindricalJoint(sleeve, shaft);
+phx.Trace(shaft, <span class="str">"Point"</span>, [0.36 0 0.75], <span class="str">"Color"</span>, [1 0 0], <span class="str">"TracePoints"</span>, 400);
+
+sim = phx.Simulation;
+sim.step(0.6, 300, 1);
+delete(sim);</pre>
+
+<figure class="phx-fig">
+<img src="img/cylindricaljoint.png" alt="Spinning shaft sliding out of a sleeve">
+<figcaption>The shaft slides along the joint axis and spins about it at the same time; the helix is
+the trail of a point on its rim.</figcaption>
+</figure>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.PrismaticJoint.html">phx.PrismaticJoint</a>,
+<a href="phx.RevoluteJoint.html">phx.RevoluteJoint</a>,
+<a href="phx.GenericJoint.html">phx.GenericJoint</a>,
+<a href="phx.base.Joint.html">phx.base.Joint</a>,
+<a href="phx.Body.html">phx.Body</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_joints.html">Joints, springs and ropes</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

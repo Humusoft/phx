@@ -21,11 +21,11 @@ function phxex_gears
 
     % Create right static cylinder and dynamic gear body from STL file
     phx.Body(ax, "Type", "static", "Position", [-d 0 0.2], "Shape", {"Cylinder", "Radius", 0.09, "Height", 0.4, "Color", 0.6}, "Friction", 0);
-    g1 = phx.Body(ax, "Position", [-d 0 0.1], "Shape", {resdir+"Z7.stl", "Scale", s, "Color", [0.4 0.5 0.6], "Envelope", "concavef", "Details", 0.25, "Style", "flat"});
+    g1 = phx.Body(ax, "Position", [-d 0 0.1], "Shape", {resdir+"Z7.stl", "Scale", s, "Color", [0.4 0.5 0.6], "Envelope", "concave", "FlipFaces", true, "Details", 0.25, "Style", "flat"});
 
     % Create left static cylinder and dynamic gear body from STL file
     phx.Body(ax, "Type", "static", "Position", [d 0 0.2], "Shape", {"Cylinder", "Radius", 0.09, "Height", 0.4, "Color", 0.6});
-    phx.Body(ax, "Position", [d 0 0.1], "Shape", {resdir+"Z11.stl", "Scale", s, "Color", [0.5 0.6 0.4], "Envelope", "concavef", "Details", 0.25, "Style", "flat"});
+    phx.Body(ax, "Position", [d 0 0.1], "Shape", {resdir+"Z11.stl", "Scale", s, "Color", [0.5 0.6 0.4], "Envelope", "concave", "FlipFaces", true, "Details", 0.25, "Style", "flat"});
 
     % Initialize the simulation with specified settings
     opt = phx.engine.BulletSettings("Margin", 0.001);
