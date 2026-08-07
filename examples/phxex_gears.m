@@ -10,7 +10,7 @@ function phxex_gears
     resdir = fullfile(fileparts(mfilename("fullpath")), "res", " ");
 
     % Clear the current axes and set up the viewer
-    [~, ax] = phx.extra.Viewer("clear", "DefaultCameraPosition", [0 1.2 1.6], "DefaultCameraTarget", [0 0 0.3], "Texture", "defaultGradient");
+    [~, ax] = phx.extra.Viewer("clear", "DefaultCameraPosition", [0 1.2 1.6], "DefaultCameraTarget", [0 0 0.3], "Texture", "Gradient");
 
     % Create static base body
     phx.Body(ax, "Type", "static", "Position", [0 0 -0.1], "Shape", {"Box", "Size", [2 1 0.2], "Color", [1 1 1]});

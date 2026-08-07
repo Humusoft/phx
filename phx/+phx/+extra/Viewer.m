@@ -19,7 +19,7 @@ classdef Viewer < handle
 %
 %   Functions
 %   - F1: show help
-%   - F2: headlight (on/off)
+%   - F2: lighting mode (headlight/studio/none)
 %   - F3: view mode (texture/axis/plain)
 %   - F5: free run (start/stop)
 %   - Home: default view
@@ -52,7 +52,7 @@ classdef Viewer < handle
         % Additional objects
         FreerunSim = []
         Triad = []
-        CamLight = []
+        Lights = []
         SkySphere = []
         HUD = []
 
@@ -93,8 +93,9 @@ classdef Viewer < handle
         % Background texture file (in equirectangular projection)
         Texture (1, 1) string = ""
 
-        % Enable headlight
-        Headlight (1, 1) logical = true
+        % Lighting mode ("studio" is three world-fixed lights, "headlight" is
+        % a single light at the camera, "none" for custom lighting)
+        Lighting {mustBeMember(Lighting, ["studio", "headlight", "none"])} = "headlight"
 
         % Enable camera panning using arrow keys
         ArrowsEnable (1, 1) logical = false
@@ -221,7 +222,7 @@ classdef Viewer < handle
             faces = uint32(F');
             uvs = single(T');
             tx = matlab.graphics.primitive.world.Texture('SamplingFilter', 'bilinear');
-            matlab.graphics.primitive.world.TriangleStrip('Parent', obj.SkySphere, 'VertexIndices', faces(:)', 'VertexData', vertices, 'NormalData', normals, 'ColorData', uvs, 'ColorType', 'texturemapped', 'ColorBinding', 'interpolated', 'Texture', tx, 'NormalBinding', 'interpolated', 'AmbientStrength', 1, 'DiffuseStrength', 1, 'SpecularStrength', 0, 'HitTest', 'on', 'Layer', 'back');
+            matlab.graphics.primitive.world.TriangleStrip('Parent', obj.SkySphere, 'VertexIndices', faces(:)', 'VertexData', vertices, 'NormalData', normals, 'ColorData', uvs, 'ColorType', 'texturemapped', 'ColorBinding', 'interpolated', 'Texture', tx, 'NormalBinding', 'interpolated', 'AmbientStrength', 1, 'DiffuseStrength', 0, 'SpecularStrength', 0, 'HitTest', 'on', 'Layer', 'back');
 
             % Triad
             obj.Triad = hgtransform(obj.Axes, 'Visible', false, 'Tag', 'phxViewer');
@@ -231,8 +232,8 @@ classdef Viewer < handle
             matlab.graphics.primitive.world.LineStrip('Parent', obj.Triad, 'ColorData', uint8([0 0 255 255]'), 'ColorBinding', 'object', 'LineWidth', 2, 'VertexData', single([0 0; 0 0; 0.02 0.98]), 'Layer', 'front');
 
             % Timers
-            obj.AnimationTimer = timer('Period', 0.05, 'ExecutionMode', 'fixedSpacing', 'TimerFcn', @obj.animatedNavigation);
-            obj.FreerunTimer = timer('Period', 0.01, 'ExecutionMode', 'fixedSpacing', 'TimerFcn', @obj.freeRun);
+            obj.AnimationTimer = timer('Period', 0.05, 'ExecutionMode', 'fixedSpacing', 'TimerFcn', @obj.animatedNavigation, 'Tag', 'phxViewer');
+            obj.FreerunTimer = timer('Period', 0.01, 'ExecutionMode', 'fixedSpacing', 'TimerFcn', @obj.freeRun, 'Tag', 'phxViewer');
 
             % Set input name/value pairs
             phx.internal.applyArguments(Options, obj);
@@ -246,10 +247,12 @@ classdef Viewer < handle
             % Apply initial view settings
             obj.ViewMode = obj.ViewMode;
             if obj.Texture == ""
-                obj.Texture = strrep(mfilename("fullpath"), mfilename, "defaultSky.jpg");
+                obj.Texture = "sky";
             end
             %obj.Axes.CameraViewAngle = obj.DefaultCameraViewAngle;
-            obj.Headlight = obj.Headlight;
+            if ~isfield(Options, "Lighting")
+                obj.Lighting = obj.Lighting;
+            end
             obj.basicView("home");
         end
 
@@ -409,7 +412,7 @@ classdef Viewer < handle
             % Resolve texture file
             if ~isfile(fileName)
                 % Redirect to default textures
-                testName = strrep(mfilename("fullpath"), mfilename, fileName)+".*";
+                testName = strrep(mfilename("fullpath"), mfilename, "assets/"+lower(fileName)+".*");
                 defTexture = dir(testName);
                 if ~isempty(defTexture)
                     fileName = fullfile(defTexture(1).folder, defTexture(1).name);
@@ -439,15 +442,22 @@ classdef Viewer < handle
             obj.Texture = fileName;
         end
 
-        function set.Headlight(obj, enable)
-            % Check the headlight object
-            if isempty(obj.CamLight) || ~isvalid(obj.CamLight)
-                obj.CamLight = light(obj.Axes, 'Style', 'local', 'Tag', 'phxViewer');
-                %obj.CamLight = matlab.graphics.primitive.world.LightSource('Parent', obj.Axes, 'Style', 'local');
-            end
+        function set.Lighting(obj, value)
+            obj.Lighting = value;
 
-            obj.Headlight = enable;
-            obj.CamLight.Visible = enable;
+            delete(obj.Lights);
+            obj.Lights = [];
+
+            switch value
+                case "headlight"
+                    obj.Lights = light(obj.Axes, 'Style', 'local', 'Tag', 'phxViewer', 'Position', obj.Axes.CameraPosition);
+                case "studio"
+                    obj.Lights(1) = light(obj.Axes, 'Style', 'infinite', 'Tag', 'phxViewer', 'Position', [0.4545 -0.4545  0.7660], 'Color', [0.8317 0.7984 0.7485]); % key
+                    obj.Lights(2) = light(obj.Axes, 'Style', 'infinite', 'Tag', 'phxViewer', 'Position', [-0.6124  0.6124  0.5000], 'Color', [0.4292 0.4591 0.4990]); % back
+                    obj.Lights(3) = light(obj.Axes, 'Style', 'infinite', 'Tag', 'phxViewer', 'Position', [0.4830  0.8365  0.2588], 'Color', [0.2329 0.2503 0.2911]); % fill
+                case "none"
+                    % without lights
+            end
         end
 
         function pos = get.CameraPosition(obj)
@@ -456,7 +466,9 @@ classdef Viewer < handle
 
         function set.CameraPosition(obj, pos)
             obj.Axes.CameraPosition = pos;
-            obj.CamLight.Position = pos;
+            if obj.Lighting == "headlight"
+                obj.Lights.Position = pos;
+            end
 
             % Update sky sphere scale and axes limits
             r = norm(pos)*obj.SkySphereSize;
@@ -497,6 +509,20 @@ classdef Viewer < handle
         end
 
         function delete(obj)
+            % Delete timers
+            if ~isempty(obj.AnimationTimer) && isvalid(obj.AnimationTimer)
+                stop(obj.AnimationTimer);
+                delete(obj.AnimationTimer);
+            end
+            if ~isempty(obj.FreerunTimer) && isvalid(obj.FreerunTimer)
+                stop(obj.FreerunTimer);
+                delete(obj.FreerunTimer);
+            end
+
+            % Delete auxiliar sim object
+            delete(obj.FreerunSim);
+            obj.FreerunSim = [];
+
             if isvalid(obj.Figure)
                 % Remove mouse callbacks
                 obj.Figure.WindowButtonDownFcn = [];
@@ -512,10 +538,8 @@ classdef Viewer < handle
 
                 % Delete internal objects
                 delete(obj.SkySphere);
-                delete(obj.CamLight);
+                delete(obj.Lights);
                 delete(obj.Triad);
-                delete(obj.AnimationTimer);
-                delete(obj.FreerunTimer);
             end
         end
 
@@ -721,7 +745,7 @@ classdef Viewer < handle
                     obj.SelectedBody.Orientation = obj.SelectedBody.Orientation*m(1:3, 1:3);
             end
             %obj.Axes.CameraUpVector = [0 0 1];
-            %obj.CamLight.Position = obj.CameraPosition;
+            %obj.Lights.Position = obj.CameraPosition;
             obj.LastHitPoint = event.Point;
         end
 
@@ -780,7 +804,14 @@ classdef Viewer < handle
                 case 'f1'
                     uialert(obj.Figure, evalc("help phx.extra.Viewer"), "Help", "Icon", "info", "Interpreter", "html");
                 case 'f2'
-                    obj.Headlight = ~obj.Headlight;
+                    switch obj.Lighting
+                        case "headlight"
+                            obj.Lighting = "studio";
+                        case "studio"
+                            obj.Lighting = "none";
+                        case "none"
+                            obj.Lighting = "headlight";
+                    end
                 case 'f3'
                     switch obj.ViewMode
                         case "texture"
@@ -797,6 +828,7 @@ classdef Viewer < handle
                     else
                         obj.FreerunTimer.stop;
                         delete(obj.FreerunSim);
+                        obj.FreerunSim = [];
                         obj.displayText("");
                     end
                 case 'home'
@@ -809,7 +841,7 @@ classdef Viewer < handle
                     return
             end
 
-            if any(obj.PressedKeys) && strcmp(obj.AnimationTimer.Running, 'off')
+            if (obj.ArrowsEnable || obj.WASDEnable) && any(obj.PressedKeys) && strcmp(obj.AnimationTimer.Running, 'off')
                 obj.AnimationTimer.start;
             end
         end

@@ -20,12 +20,13 @@ function phxex_jenga(n, s)
     resdir = fullfile(fileparts(mfilename("fullpath")), "res", " ");
 
     % Figure setup
-    [viewer, ax] = phx.extra.Viewer("clear", "DefaultCameraTarget", [0 0 8], "DefaultCameraPosition", [22 -30 17], "Texture", resdir+"HumusoftHall.png");
+    [viewer, ax] = phx.extra.Viewer("clear", "DefaultCameraTarget", [0 0 8], "DefaultCameraPosition", [22 -30 17], ...
+        "Texture", resdir+"HumusoftHall.png", "Lighting", "studio");
 
     % Physical model
     ground = phx.Body(ax, "Type", "static", "Position", [0 0 0], "Shape", {"Box", "Size", [50 50 1], "Color", [1 1 1]});
-    shpA = phx.shape.Box("Size", s, "Texture", resdir+"woodtile.jpg", "TextureBlend", 0.5);
-    shpB = phx.shape.Box("Size", s([2 1 3]), "Texture", resdir+"woodtile.jpg", "TextureBlend", 0.5);
+    shpA = phx.shape.Box("Size", s, "Texture", "wood", "TextureBlend", 0.5);
+    shpB = phx.shape.Box("Size", s([2 1 3]), "Texture", "wood", "TextureBlend", 0.5);
     clr = (jet(n) + 1)/2; % Generate colors for the blocks
     % Create layers with three blocks each
     for i = 1:n

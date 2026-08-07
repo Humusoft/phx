@@ -7,11 +7,8 @@ function phxex_slide
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 
-    % Resources directory
-    resdir = fullfile(fileparts(mfilename("fullpath")), "res", " ");
-
     % Figure setup
-    [~, ax] = phx.extra.Viewer("clear", "DefaultCameraTarget", [3 5 4], "DefaultCameraPosition", [-8 32 24]);
+    [~, ax] = phx.extra.Viewer("clear", "DefaultCameraTarget", [3 5 4], "DefaultCameraPosition", [-8 32 24], "Lighting", "studio");
 
     % Physical model
     phx.Body(ax, "Type", "static", "Position", [0 0 0], "Shape", {"Box", "Size", [50 50 1], "Color", [1 1 1]});
@@ -21,7 +18,7 @@ function phxex_slide
     spine = [-sin(t).*t, t*5, 2 + t];
     t = linspace(0, 2*pi, 30)';
     profile = [cos(t)*2, sin(t)*0.5+cos(t*2)+1.2];
-    shape = phx.shape.Extrusion("Spine", spine, "Profile", profile, "Envelope", "concave", "Material", "matte", "Texture", resdir+"tiles.jpg");
+    shape = phx.shape.Extrusion("Spine", spine, "Profile", profile, "Envelope", "concave", "Material", "matte", "Texture", "tiles");
     phx.Body(ax, "Type", "static", "Position", [0 -10 1], "Shape", shape);
 
     % Ball

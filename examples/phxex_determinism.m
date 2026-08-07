@@ -20,7 +20,7 @@ function phxex_determinism(numOfBalls)
 
     % Figure setup
     rng(0); % Set random seed for reproducibility
-    [~, ax] = phx.extra.Viewer("clear", "DefaultCameraPosition", [50, 22, 89], "Texture", "defaultChecker"); % Set camera position and view mode
+    [~, ax] = phx.extra.Viewer("clear", "DefaultCameraPosition", [50, 22, 89], "Texture", "Checker"); % Set camera position and view mode
 
     % Physical model: Create static ground bodies
     phx.assembly.arena("Size", [50 50 2], "Thickness", 1);

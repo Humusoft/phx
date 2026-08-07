@@ -41,7 +41,7 @@ function phxex_camvalve
     % --- Scene ----------------------------------------------------------
     figure(1);
     [viewer, ax] = phx.extra.Viewer("clear", "DefaultCameraPosition", [-0.32 -0.32 0.32], ...
-        "DefaultCameraTarget", [0 0 0.23], "Texture", "defaultPlane");
+        "DefaultCameraTarget", [0 0 0.23], "Texture", "Tiles");
     [cam, valve, info] = buildScene(ax, rBase, lift, noseSpan, camThick, ...
         zc, Lvalve, mValve, kSpring, cSpring, freeLen);
 
@@ -135,9 +135,6 @@ function [cam, valve, info] = buildScene(ax, rBase, lift, noseSpan, camThick, ..
         zc, Lvalve, mValve, kSpring, cSpring, freeLen)
 % Build the cam, the valve on its prismatic guide, and the spring
 
-    % Resources directory
-    resdir = fullfile(fileparts(mfilename("fullpath")), "res", " ");
-
     % Cam: egg-shaped lobe extruded to a disc, rotating about world X.
     % The 2D profile spans world Y-Z; the straight spine gives the width.
     phi = linspace(0, 2*pi, 145)';
@@ -160,7 +157,7 @@ function [cam, valve, info] = buildScene(ax, rBase, lift, noseSpan, camThick, ..
     vProfile = [0 0; 0 rHead; hHead rHead; hHead rStem; ...
                 Lvalve-hCap rStem; Lvalve-hCap rCap; Lvalve rCap; Lvalve 0];
     valveShape = phx.shape.Revolution("Axis", "z", "Profile", vProfile, "Envelope", "concave", ...
-        "Color", [0.8 0.5 0.2], "Texture", resdir+"checker4.png", "TextureBlend", 0.3);
+        "Color", [0.8 0.5 0.2], "Texture", "checker", "TextureBlend", 0.3);
     zv = zc - rBase - Lvalve;                    % tappet just touching the base circle
     valve = phx.Body(ax, "Position", [0 0 zv], "Shape", valveShape, "Friction", [1 0 0]);
     valve.Mass = mValve;

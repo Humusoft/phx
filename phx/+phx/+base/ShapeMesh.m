@@ -41,6 +41,18 @@ classdef ShapeMesh
 
     methods
         function obj = set.Texture(obj, fileName)
+            % Resolve texture file
+            if ~isfile(fileName)
+                % Redirect to default textures
+                testName = strrep(mfilename("fullpath"), mfilename, "assets/"+lower(fileName)+".*");
+                defTexture = dir(testName);
+                if ~isempty(defTexture)
+                    fileName = fullfile(defTexture(1).folder, defTexture(1).name);
+                else
+                    error("phx:ShapeMesh:fileNotFound", "File '%s' is not an existing file or name of a default texture.", fileName);
+                end
+            end
+
             obj.TextureData = phx.base.ShapeMesh.loadTexture(fileName);
         end
 

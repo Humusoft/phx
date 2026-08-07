@@ -78,9 +78,6 @@ function phxex_capsize(duration, maxAmplitude)
     wave = @(x, y, t) amp(t).*reshape( ...
         sum(wt.*sin(kx.*x(:)' + ky.*y(:)' - ww*t + ph), 1), size(x));
 
-    % Resources directory
-    resdir = fullfile(fileparts(mfilename("fullpath")), "res", " ");
-
     % Figure setup
     figure(1);
     [viewer, ax] = phx.extra.Viewer("clear", "DefaultCameraTarget", [0 0 0], ...
@@ -93,7 +90,7 @@ function phxex_capsize(duration, maxAmplitude)
     for i = 1:4
         crates(i) = phx.Body(ax, "Position", [crateX(i) 0 deckTop + crateSize/2], ...
             "Shape", {"Box", "Size", crateSize*[1 1 1], "Density", 400, ...
-            "Color", crateColor(i, :), "Texture", resdir+"woodtile.jpg", "TextureBlend", 0.5}, ...
+            "Color", crateColor(i, :), "Texture", "wood", "TextureBlend", 0.5}, ...
             "Friction", [crateMu(i) 0 0]);
     end
 
@@ -137,16 +134,6 @@ function phxex_capsize(duration, maxAmplitude)
             t, amp(t), rad2deg(hist.roll(end)), nnz(fallen)));
     end
     delete(sim);
-
-    % Summary: the sea state each level of securing survived
-    fprintf("\nSecuring quality vs survivable sea state:\n");
-    for i = 1:4
-        if fallen(i)
-            fprintf("  friction %.2f: lost at amplitude %.2f m\n", crateMu(i), amp(fallTime(i)));
-        else
-            fprintf("  friction %.2f: survived up to amplitude %.2f m\n", crateMu(i), amp(sim.Time));
-        end
-    end
 
     % Roll history with the growing sea and the overboard events
     clf(figure(2));

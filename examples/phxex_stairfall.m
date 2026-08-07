@@ -60,7 +60,7 @@ function phxex_stairfall(pushSpeed, duration)
     end
     ground = phx.Body(ax, "Type", "static", "Position", [0, 0, -0.1], ...
         "Shape", {"Box", "Size", [(nSteps - 1)*run*4, (nSteps - 1)*run*4, 0.2], ...
-        "Color", [0.75 0.73 0.7], "Texture", resdir+"tiles.jpg"}, "Friction", [0.7 0 0]);
+        "Color", [0.75 0.73 0.7], "Texture", "tiles"}, "Friction", [0.7 0 0]);
 
     phx.Body(ax, "Position", [-0.2 0 H+0.2], "Shape", {"Mesh", "Source", resdir+"cat.stl", "Scale", 0.01, "Envelope", "box", "Color", 1});
 

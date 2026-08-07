@@ -15,7 +15,7 @@ function phxex_textures
     [~, ax] = phx.extra.Viewer("clear", "DefaultCameraPosition", [60.0, 90.7, 35.0], "DefaultCameraTarget", [-13.4 -7.7 7.7]);
 
     % Create a static ground body
-    phx.Body(ax, "Type", "static", "Position", [0 0 -0.5], "Shape", {"Box", "Texture", resdir+"tiles.jpg", "Size", [100 100 1]});
+    phx.Body(ax, "Type", "static", "Position", [0 0 -0.5], "Shape", {"Box", "Texture", "tiles", "Size", [100 100 1]});
     
     % Cottage
     cottageShape = phx.shape.Mesh("Source", resdir+"cottage.obj", "Group", "Cube_Cube.002", "Texture", resdir+"cottage_diffuse.jpg", "Envelope", "convex", "Centered", false, "Scale", 2);

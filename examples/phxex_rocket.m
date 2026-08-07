@@ -57,7 +57,7 @@ function phxex_rocket(hopHeight)
     % Figure setup
     figure(1);
     [viewer, ax] = phx.extra.Viewer("clear", "DefaultCameraTarget", [padBx/2 0 3.0], ...
-        "DefaultCameraPosition", [padBx/2 - 12, -8, 5], "Texture", "defaultNebula");
+        "DefaultCameraPosition", [padBx/2 - 12, -8, 5], "Texture", "Nebula");
 
     % Ground and the two neighbouring platforms
     phx.Body(ax, "Type", "static", "Position", [padBx/2 0 -0.5], ...

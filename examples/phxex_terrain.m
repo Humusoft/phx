@@ -7,7 +7,7 @@ function phxex_terrain
 %   Copyright 2026 HUMUSOFT s.r.o.
 
     % Figure setup
-    [~, ax] = phx.extra.Viewer("clear", "DefaultCameraPosition", [-30 -75 30], "Texture", "defaultChecker");
+    [~, ax] = phx.extra.Viewer("clear", "DefaultCameraPosition", [-30 -75 30], "Texture", "Checker");
     
     % Generate terrain using the peaks function
     h = peaks(64);

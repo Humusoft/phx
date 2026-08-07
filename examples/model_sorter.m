@@ -16,16 +16,13 @@ function model_sorter
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 
-    % Resources directory
-    resdir = fullfile(fileparts(mfilename("fullpath")), "res", " ");
-
     % Viewer setup
     ax = cla(clf);
     phx.extra.Viewer(ax, "ViewMode", "plain");
 
     zc = @(x) 0.25 - tand(20)*(x - 8);     % chute surface line
 
-    Disk = phx.Body("Type", "kinematic", "Position", [0 0 0.75], "Shape", {"Cylinder", "Diameter", 16, "Height", 0.5, "Axis", "z", "Color", [0.80 0.80 0.85], "Texture", resdir+"checker4.png", "TextureBlend", 0.25}, "Friction", [0.9 0 0], "Name", "Disk"); %#ok<NASGU>
+    Disk = phx.Body("Type", "kinematic", "Position", [0 0 0.75], "Shape", {"Cylinder", "Diameter", 16, "Height", 0.5, "Axis", "z", "Color", [0.80 0.80 0.85], "Texture", "checker", "TextureBlend", 0.25}, "Friction", [0.9 0 0], "Name", "Disk"); %#ok<NASGU>
     Defl = phx.Body("Type", "kinematic", "Position", [6.5 0 1.8], "EulerAngles", [0 0 deg2rad(30)], "Shape", {"Box", "Size", [7 0.4 1.6], "Color", [0.90 0.80 0.30]}, "Friction", [0.4 0 0], "Name", "Defl"); %#ok<NASGU>
     ChuteUp = phx.Body("Type", "static", "Position", [10.75 0 zc(10.75)], "EulerAngles", [0 deg2rad(20) 0], "Shape", {"Box", "Size", [5.5 9 0.4], "Color", [0.92 0.92 0.92], "Density", 100}, "Friction", [0 0 0], "Name", "ChuteUp"); %#ok<NASGU>
     ChuteDn = phx.Body("Type", "static", "Position", [21.00 0 zc(21.00)-0.3], "EulerAngles", [0 deg2rad(20) 0], "Shape", {"Box", "Size", [5.0 9 0.4], "Color", [0.92 0.92 0.92]}, "Friction", [0.1 0 0], "Name", "ChuteDn"); %#ok<NASGU>

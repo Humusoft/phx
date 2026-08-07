@@ -1,16 +1,18 @@
 classdef tAssembly < matlab.unittest.TestCase
-%tAssembly Tests for the phx.assembly scene builders (arena and chain).
+%tAssembly Tests for the phx.assembly scene builders.
 %
 %   Untagged tests cover the option validation and need neither graphics
 %   nor the engine. Graphics-tagged tests verify the built object
 %   structure and geometry (arena: inner dimensions, floor surface through
 %   the origin, closed corners; chain: link poses along the polyline,
-%   joint types per axis row, anchors) and the shared base-pose options.
-%   The Engine-tagged tests verify that a moving body cannot escape the
-%   arena and that an anchored chain swings as a pendulum without falling
-%   apart.
+%   joint types per axis row, anchors; wall: brick sizes, the running bond
+%   and both ways of ending the shifted rows) and the shared base-pose
+%   options. The Engine-tagged tests verify that a moving body cannot
+%   escape the arena, that an anchored chain swings as a pendulum without
+%   falling apart and that a brick wall stands on its own yet collapses
+%   when hit.
 %
-%   See also phx.assembly.arena, phx.assembly.chain
+%   See also phx.assembly.arena, phx.assembly.chain, phx.assembly.wall
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 
@@ -52,6 +54,23 @@ classdef tAssembly < matlab.unittest.TestCase
             tc.verifyError(@() phx.assembly.chain([0 0 0; 1 0 0], ...
                 "Orientation", [0 -1 0; 1 0 0; 0 0 1], "EulerAngles", [0 0 pi/2]), ...
                 "phx:chain:conflictingOptions");
+        end
+
+        function invalidWallInputsRaiseErrors(tc)
+            % Open even rows hold one brick less, so they need a second column
+            tc.verifyError(@() phx.assembly.wall("Columns", 1, ...
+                "HalfBricks", false), "phx:wall:invalidColumns");
+            tc.verifyError(@() phx.assembly.wall("Rows", 2.5), ...
+                "MATLAB:validators:mustBeInteger");
+            tc.verifyError(@() phx.assembly.wall("Size", [2 0 1]), ...
+                "MATLAB:validators:mustBePositive");
+            tc.verifyError(@() phx.assembly.wall("RandomTint", 1.5), ...
+                "MATLAB:validators:mustBeInRange");
+            tc.verifyError(@() phx.assembly.wall("RandomTint", -0.1), ...
+                "MATLAB:validators:mustBeInRange");
+            tc.verifyError(@() phx.assembly.wall( ...
+                "Orientation", [0 -1 0; 1 0 0; 0 0 1], "EulerAngles", [0 0 pi/2]), ...
+                "phx:wall:conflictingOptions");
         end
     end
 
@@ -180,6 +199,127 @@ classdef tAssembly < matlab.unittest.TestCase
                 "AbsTol", 1e-12, "The same seed did not reproduce the layout.");
         end
 
+        function wallLaysBricksInARunningBond(tc)
+            tc.prepareAxes;
+            s = [2 0.2 1];
+            nRows = 4;
+            nCols = 5;
+            len = s(1)/nCols;
+            hgt = s(3)/nRows;
+            density = 1800;
+
+            for halfBricks = [true false]
+                bricks = phx.assembly.wall("Size", s, "Rows", nRows, ...
+                    "Columns", nCols, "HalfBricks", halfBricks, "Density", density);
+
+                % Odd rows hold nCols bricks, even rows one more (closed by
+                % half bricks) or one less (left open)
+                nEven = nCols - 1 + 2*halfBricks;
+                tc.verifySize(bricks, [1 2*nCols + 2*nEven]);
+                tc.verifyEqual(string(bricks(1).Type), "dynamic");
+                tc.verifyEqual(bricks(1).Mass, density*len*s(2)*hgt, "RelTol", 1e-9);
+
+                names = string({bricks.Name});
+                for row = 1:nRows
+                    rowBricks = bricks(startsWith(names, "brick" + row + "_"));
+                    pos = vertcat(rowBricks.Position);
+                    sz = zeros(numel(rowBricks), 3);
+                    for i = 1:numel(rowBricks)
+                        sz(i, :) = tc.bodyShape(rowBricks(i)).Size;
+                    end
+                    n = numel(rowBricks);
+
+                    % Every brick is as thick as the wall, one row high and
+                    % centred in the wall plane
+                    tc.verifyEqual(sz(:, 2), repmat(s(2), n, 1), "AbsTol", 1e-12);
+                    tc.verifyEqual(sz(:, 3), repmat(hgt, n, 1), "AbsTol", 1e-12);
+                    tc.verifyEqual(pos(:, 2), zeros(n, 1), "AbsTol", 1e-12);
+                    tc.verifyEqual(pos(:, 3), repmat((row - 0.5)*hgt, n, 1), "AbsTol", 1e-12);
+
+                    % The bricks come back left to right and lie side by side
+                    % without gaps or overlaps
+                    left = pos(:, 1) - sz(:, 1)/2;
+                    right = pos(:, 1) + sz(:, 1)/2;
+                    tc.verifyEqual(left(2:end), right(1:end - 1), "AbsTol", 1e-12, ...
+                        "Bricks of row " + row + " are not laid side by side.");
+
+                    if mod(row, 2) == 1
+                        % Unshifted row: full bricks over the whole length
+                        tc.verifySize(rowBricks, [1 nCols]);
+                        tc.verifyEqual(sz(:, 1), repmat(len, n, 1), "AbsTol", 1e-12);
+                        tc.verifyEqual([left(1) right(end)], [-s(1)/2 s(1)/2], "AbsTol", 1e-12);
+                    elseif halfBricks
+                        % Shifted row closed by a half brick at each side, so
+                        % the ends of the wall are flush and the joints of the
+                        % row sit at the middle of the bricks below
+                        tc.verifySize(rowBricks, [1 nCols + 1]);
+                        tc.verifyEqual(sz([1 end], 1), [len/2; len/2], "AbsTol", 1e-12);
+                        tc.verifyEqual(sz(2:end - 1, 1), repmat(len, n - 2, 1), "AbsTol", 1e-12);
+                        tc.verifyEqual([left(1) right(end)], [-s(1)/2 s(1)/2], "AbsTol", 1e-12);
+                    else
+                        % Shifted row left open: full bricks only, inset by
+                        % half a brick at both ends
+                        tc.verifySize(rowBricks, [1 nCols - 1]);
+                        tc.verifyEqual(sz(:, 1), repmat(len, n, 1), "AbsTol", 1e-12);
+                        tc.verifyEqual([left(1) right(end)], ...
+                            [-s(1)/2 + len/2, s(1)/2 - len/2], "AbsTol", 1e-12);
+                    end
+                end
+                delete(bricks);
+            end
+
+            % The base pose moves the whole wall rigidly
+            ref = phx.assembly.wall("Rows", 2, "Columns", 3);
+            TBase = eye(4);
+            TBase(1:3, 1:3) = phx.internal.Math.rot321([0.2 -0.3 0.4]);
+            TBase(1:3, 4) = [0.5 -1 2];
+            moved = phx.assembly.wall("Rows", 2, "Columns", 3, ...
+                "Position", [0.5 -1 2], "EulerAngles", [0.2 -0.3 0.4]);
+            for i = 1:numel(ref)
+                tc.verifyEqual(moved(i).Transform, TBase*ref(i).Transform, ...
+                    "AbsTol", 1e-12, "Base pose was not applied to brick #" + i + ".");
+            end
+        end
+
+        function wallRandomTintShadesTheBricks(tc)
+            tc.prepareAxes;
+            color = [0.7 0.35 0.25];
+            tint = 0.3;
+
+            rng(3);
+            bricks = phx.assembly.wall("Rows", 4, "Columns", 4, ...
+                "Color", color, "RandomTint", tint);
+            shades = vertcat(bricks.Color);
+
+            % Every brick keeps the hue and is darkened by its own factor
+            % within the requested band
+            factors = shades(:, 1)/color(1);
+            tc.verifyEqual(shades, factors.*color, "AbsTol", 1e-12, ...
+                "A brick was tinted per channel instead of darkened.");
+            tc.verifyGreaterThan(min(factors), 1 - tint, "A brick was darkened too much.");
+            tc.verifyLessThanOrEqual(max(factors), 1, "A brick came out brighter than Color.");
+            tc.verifyGreaterThan(max(factors) - min(factors), 0.05, ...
+                "The bricks did not get different shades.");
+
+            % The tinting is reproducible through the global generator
+            rng(3);
+            again = phx.assembly.wall("Rows", 4, "Columns", 4, ...
+                "Color", color, "RandomTint", tint);
+            tc.verifyEqual(vertcat(again.Color), shades, "AbsTol", 1e-12, ...
+                "The same seed did not reproduce the shades.");
+
+            % No tint means one uniform color and no draw from the generator
+            rng(3);
+            expected = rand;
+            rng(3);
+            plain = phx.assembly.wall("Rows", 2, "Columns", 2, ...
+                "Color", color, "RandomTint", 0);
+            tc.verifyEqual(vertcat(plain.Color), repmat(color, numel(plain), 1), ...
+                "AbsTol", 1e-12, "RandomTint 0 did not leave the color alone.");
+            tc.verifyEqual(rand, expected, "AbsTol", 1e-12, ...
+                "An untinted wall consumed random numbers.");
+        end
+
         function explicitAxesTargetIsHonored(tc)
             % All builders take an optional leading axes target and leave
             % the current axes untouched
@@ -192,8 +332,9 @@ classdef tAssembly < matlab.unittest.TestCase
             parts = phx.assembly.arena(axTarget);
             links = phx.assembly.chain(axTarget, [0 0 0; 0.4 0 0]).links;
             balls = phx.assembly.scatter(axTarget, {"Sphere", "Diameter", 0.2}, 3);
+            bricks = phx.assembly.wall(axTarget, "Rows", 2, "Columns", 2);
 
-            for b = [parts.floor parts.walls links balls]
+            for b = [parts.floor parts.walls links balls bricks]
                 tc.verifyEqual(b.ParentAxes, axTarget, ...
                     "A body was not drawn into the requested axes.");
             end
@@ -208,8 +349,9 @@ classdef tAssembly < matlab.unittest.TestCase
             parts = phx.assembly.arena([]);
             ch = phx.assembly.chain([], [0 0 0; 0.4 0 0], "Anchor", "start");
             balls = phx.assembly.scatter([], {"Sphere", "Diameter", 0.2}, 3);
+            bricks = phx.assembly.wall([], "Rows", 2, "Columns", 2);
 
-            for b = [parts.floor parts.walls ch.links ch.anchors balls]
+            for b = [parts.floor parts.walls ch.links ch.anchors balls bricks]
                 tc.verifyEmpty(b.ParentAxes, "A headless body got a parent axes.");
             end
             tc.verifyEqual(numel(findall(groot, "Type", "figure")), nFigures, ...
@@ -292,6 +434,42 @@ classdef tAssembly < matlab.unittest.TestCase
             for i = 1:numel(parts.joints)
                 tc.verifyJointAt(parts.joints{i}, [], 0.01);
             end
+        end
+
+        function brickWallStandsAndCollapses(tc)
+            tc.assumeNotEmpty(which("phx.engine.io"), ...
+                "Physics engine (phx.engine.io) is not on the path.");
+            tc.prepareAxes;
+
+            phx.Body(gca, "Type", "static", "Position", [0 0 -0.1], ...
+                "Shape", {"Box", "Size", [6 2 0.2]});
+            bricks = phx.assembly.wall(gca, "Size", [2 0.2 1], ...
+                "Rows", 8, "Columns", 8);
+            sim = phx.Simulation(gca);
+            tc.addTeardown(@() delete(sim));
+
+            % Left alone the wall carries its own weight: the rows settle by
+            % a fraction of a brick and come to rest
+            z0 = vertcat(bricks.Position);
+            z0 = z0(:, 3);
+            sim.step(2, 400); % dt = 5 ms
+            z1 = vertcat(bricks.Position);
+            z1 = z1(:, 3);
+            tc.verifyTrue(all(isfinite(z1)), "The wall state diverged.");
+            tc.verifyLessThan(max(abs(z1 - z0)), 0.01, "The wall settled too much.");
+            tc.verifyLessThan(max(vecnorm(vertcat(bricks.LinearVelocity), 2, 2)), 0.05, ...
+                "The wall did not come to rest.");
+
+            % A heavy ball thrown at it brings the wall down
+            ball = phx.Body(gca, "Position", [-2 0 0.5], ...
+                "Shape", {"Sphere", "Radius", 0.2, "Density", 4000}, ...
+                "LinearVelocity", [10 0 0]);
+            sim.addObjects(ball); % the ball joined the scene after the build
+            sim.step(1.5, 300);
+            z2 = vertcat(bricks.Position);
+            z2 = z2(:, 3);
+            tc.verifyGreaterThan(max(z0 - z2), 0.2, ...
+                "The wall did not collapse after the impact.");
         end
     end
 

@@ -31,6 +31,9 @@ afterwards exactly as if you had built them by hand.</p>
 <tr><td class="name"><a href="phx.assembly.scatter.html">phx.assembly.scatter</a></td>
     <td>A given number of bodies scattered without overlaps inside a box region &mdash; piles of
     rocks, granular material.</td></tr>
+<tr><td class="name"><a href="phx.assembly.wall.html">phx.assembly.wall</a></td>
+    <td>A wall of loose bricks laid in a running bond &mdash; obstacles and structures meant to be
+    knocked down.</td></tr>
 <tr><td class="name"><a href="phx.assembly.import.html">phx.assembly.import</a></td>
     <td>A model imported from a file &mdash; a URDF robot or mechanism (bodies plus the joints
     connecting them), or the parts of an OBJ, STL or PLY mesh.</td></tr>
@@ -84,6 +87,27 @@ delete(sim);</pre>
 <figcaption>The double pendulum after a few swings. See <a href="phx.assembly.chain.html">phx.assembly.chain</a>.</figcaption>
 </figure>
 
+<h3 class="phx-h3">A ball thrown through a brick wall</h3>
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+phx.assembly.arena(<span class="str">"Size"</span>, [6 4 0.2]);
+
+bricks = phx.assembly.wall(<span class="str">"Size"</span>, [3 0.25 1.2], <span class="str">"Rows"</span>, 10, ...
+    <span class="str">"Columns"</span>, 6, <span class="str">"EulerAngles"</span>, [0 0 pi/2], ...
+    <span class="str">"Color"</span>, [0.7 0.35 0.25], <span class="str">"RandomTint"</span>, 0.3);
+
+ball = phx.Body(<span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>, <span class="str">"Diameter"</span>, 0.4, <span class="str">"Density"</span>, 4000}, ...
+    <span class="str">"Position"</span>, [-2.5 0 0.6], <span class="str">"LinearVelocity"</span>, [10 0 1]);
+
+sim = phx.Simulation;
+sim.step(2, 1000, 20);
+delete(sim);</pre>
+
+<figure class="phx-fig">
+<img src="img/wall.png" alt="Brick wall hit by a ball">
+<figcaption>The wall breaking apart around the impact. See <a href="phx.assembly.wall.html">phx.assembly.wall</a>.</figcaption>
+</figure>
+
 <h3 class="phx-h3">Import a robot and anchor its base</h3>
 <pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
 
@@ -99,6 +123,7 @@ delete(sim);</pre>
 <a href="phx.assembly.arena.html">phx.assembly.arena</a>,
 <a href="phx.assembly.chain.html">phx.assembly.chain</a>,
 <a href="phx.assembly.scatter.html">phx.assembly.scatter</a>,
+<a href="phx.assembly.wall.html">phx.assembly.wall</a>,
 <a href="phx.assembly.import.html">phx.assembly.import</a>
 </div>
 

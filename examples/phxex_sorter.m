@@ -41,18 +41,18 @@ function phxex_sorter(nBalls, fieldStrength, seed)
     zPlate = [4 10];       % vertical extent of the plates
     zDrop = 11;            % drop height
     binW = 2.1;            % width of one bin
-    hDiv = 1.2;            % bin divider height
+    hDiv = 1.1;            % bin divider height
     qBall = 1;             % unit ball charge
     qPlate = 2.2*fieldStrength;  % charge of one electrode pellet
 
     % Figure setup
     figure(1);
     [viewer, ax] = phx.extra.Viewer("clear", "DefaultCameraTarget", [0 0 5], ...
-        "DefaultCameraPosition", [2 -26 9]);
+        "DefaultCameraPosition", [0 -22 11], "Texture", "tiles");
 
     % Static floor and bin dividers (negative | neutral | positive)
     phx.Body(ax, "Type", "static", "Position", [0 0 -0.5], ...
-        "Shape", {"Box", "Size", [16 6 1], "Color", [1 1 1]}, "Friction", [0.4 0.01 0]);
+        "Shape", {"Box", "Size", [16 6 1], "Color", [1 1 1]});
     for x = [-1.5 -0.5 0.5 1.5]*binW
         phx.Body(ax, "Type", "static", "Position", [x 0 hDiv/2], ...
             "Shape", {"Box", "Size", [0.15 3 hDiv], "Color", [0.55 0.55 0.6]});
@@ -84,7 +84,7 @@ function phxex_sorter(nBalls, fieldStrength, seed)
     % static bodies do not move, so this group adds no dynamics)
     phx.Monopole(pellets, "Charge", qPellets', "Attractivity", -1, ...
         "VectorFieldCenter", [0 0 zMid], "VectorFieldSize", [2*xGap - 0.8, 0, hPlate], ...
-        "VectorFieldStep", 0.8, "VectorLength", 1, "VectorSegments", 5, "Color", [1 1 1]);
+        "VectorFieldStep", 0.6, "VectorLength", 1, "VectorSegments", 5, "Color", [1 1 1]);
 
     % Balanced random sequence of ball charge classes (-1, 0, +1)
     nBalls = 3*ceil(nBalls/3);
@@ -112,7 +112,7 @@ function phxex_sorter(nBalls, fieldStrength, seed)
             charges(i) = cls(i)*qBall*(0.8 + 0.4*rand);
             balls(i) = phx.Body(ax, "Position", [(rand - 0.5)*0.4, 0, zDrop], ...
                 "Shape", {"Sphere", "Diameter", d, "Division", 2, "Density", 8, ...
-                "Color", clsClr(cls(i) + 2, :)}, "Friction", [0.3 0.01 0]); %#ok<AGROW> unknown rate
+                "Color", clsClr(cls(i) + 2, :)}); %#ok<AGROW> unknown rate
             phx.Monopole([pellets balls(i)], "Charge", [qPellets charges(i)]', ...
                 "Attractivity", -1, "VectorFieldSize", [0 0 0], "Visible", false);
             sim.addObjects(balls(i));

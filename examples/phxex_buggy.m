@@ -12,9 +12,6 @@ function phxex_buggy(showGraphs)
         showGraphs (1, 1) logical = true 
     end
 
-    % Resources directory
-    resdir = fullfile(fileparts(mfilename("fullpath")), "res", " ");
-
     % Setup figure
     figure(1);
     [~, ax] = phx.extra.Viewer("clear", "DefaultCameraTarget", [-21 4 -5], "DefaultCameraPosition", [-81 -47 15]);
@@ -23,8 +20,8 @@ function phxex_buggy(showGraphs)
     speed = uigauge(gcf, "Limits", [0 5], "Position", [10 10 120 120]);
 
     % Create ground
-    phx.Body(ax, "Type", "static", "Position", [0 0 -5], "Shape", {"Box", "Size", [50 50 1], "Texture", resdir+"tiles.jpg"}, "EulerAngles", [0 -0.12 0]);
-    phx.Body(ax, "Type", "static", "Position", [-50 0 -8], "Shape", {"Box", "Size", [50 50 1], "Texture", resdir+"tiles.jpg"});
+    phx.Body(ax, "Type", "static", "Position", [0 0 -5], "Shape", {"Box", "Size", [50 50 1], "Texture", "tiles"}, "EulerAngles", [0 -0.12 0]);
+    phx.Body(ax, "Type", "static", "Position", [-50 0 -8], "Shape", {"Box", "Size", [50 50 1], "Texture", "tiles"});
 
     % Load buggy model and show it in the current axes
     buggy = load("saved_buggy.mat");
@@ -34,7 +31,7 @@ function phxex_buggy(showGraphs)
     log = phx.Logger(buggy.chassis.Children(5:8), "Parameters", "Length", "Frequency", 100);
 
     % Create cones
-    shpCone = phx.shape.Cone("Diameter", 2, "Height", 6, "Texture", resdir+"checker4.png", "TextureBlend", 0.25, "Color", [1 0.5 0]);
+    shpCone = phx.shape.Cone("Diameter", 2, "Height", 6, "Texture", "checker", "TextureBlend", 0.25, "Color", [1 0.5 0]);
     phx.Body("Position", [-30 -7 0], "Shape", shpCone, "Mass", 1, "Inertia", 0.1);
     phx.Body("Position", [-40 -7 0], "Shape", shpCone, "Mass", 1, "Inertia", 0.1);
     phx.Body("Position", [-50 -7 0], "Shape", shpCone, "Mass", 1, "Inertia", 0.1);

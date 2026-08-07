@@ -11,7 +11,7 @@ function phxex_soil
 
     % Figure setup
     rng(0); % Set random seed for reproducibility
-    [viewer, ax] = phx.extra.Viewer("clear", "DefaultCameraPosition", [-50, 110, 50], "DefaultCameraTarget", [0 0 10], "Texture", "defaultPlane");
+    [viewer, ax] = phx.extra.Viewer("clear", "DefaultCameraPosition", [-50, 110, 50], "DefaultCameraTarget", [0 0 10], "Texture", "Tiles");
 
     % Create static bodies representing the environment
     ground = phx.Body(ax, "Type", "static", "Position", [0 0 0], "Shape", {"Box", "Size", [100 50 1], "Color", [1 1 1]});

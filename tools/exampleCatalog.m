@@ -56,6 +56,7 @@ function catalog = exampleCatalog
         entry("phxex_rocket",      "Vehicles, robots and control",   12)
         entry("phxex_balance",     "Vehicles, robots and control",    4)
         entry("phxex_antisway",    "Vehicles, robots and control",   12)
+        entry("phxex_swingover",   "Vehicles, robots and control",   14)
         entry("phxex_gyrostab",    "Vehicles, robots and control",   20)
         entry("phxex_stairfall",   "Vehicles, robots and control",    8)
 
@@ -66,6 +67,7 @@ function catalog = exampleCatalog
         entry("phxex_rotmagdip",   "Fields, magnetism and fluids",   10)
         entry("phxex_maglev",      "Fields, magnetism and fluids",   10)
         entry("phxex_sorter",      "Fields, magnetism and fluids",   12)
+        entry("phxex_capacitor",   "Fields, magnetism and fluids",   25)
         entry("phxex_buoyancy",    "Fields, magnetism and fluids",   15)
 
         entry("phxex_optimize",    "Analysis and workflows",         40)

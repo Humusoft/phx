@@ -78,8 +78,9 @@ so you can draw bodies into <code class="phx-inline">ax</code>.</p>
 <tr><td class="name">ViewMode</td><td class="dflt">"texture"</td>
 <td>Viewing mode: <code class="phx-inline">"texture"</code> (sky sphere), <code class="phx-inline">"axis"</code> (axes + grid fitted to the bodies) or <code class="phx-inline">"plain"</code> (neither).</td></tr>
 <tr><td class="name">Texture</td><td class="dflt">""</td>
-<td>Background texture file in equirectangular projection. Accepts a path or the name of a built-in default texture; left empty, the viewer loads the bundled <code class="phx-inline">defaultSky.jpg</code> when it opens, so reading the property afterwards returns that path.</td></tr>
-<tr><td class="name">Headlight</td><td class="dflt">true</td><td>Enable the camera headlight.</td></tr>
+<td>Background texture in equirectangular projection. Accepts either a path to an image file or the name of a built-in texture &ndash; <code class="phx-inline">"sky"</code>, <code class="phx-inline">"nebula"</code>, <code class="phx-inline">"gradient"</code>, <code class="phx-inline">"checker"</code> or <code class="phx-inline">"tiles"</code> (matched case-insensitively). Left empty, the viewer loads <code class="phx-inline">"sky"</code> when it opens, so reading the property afterwards returns the full path of that bundled image.</td></tr>
+<tr><td class="name">Lighting</td><td class="dflt">"headlight"</td>
+<td>Lighting mode: <code class="phx-inline">"headlight"</code> (a single light travelling with the camera, so whatever you look at is lit), <code class="phx-inline">"studio"</code> (three world-fixed lights &ndash; a warm key, a cool backlight and a low fill &ndash; which stay put as you orbit, so shading conveys the shape of a body and separates its silhouette from the background) or <code class="phx-inline">"none"</code> (no lights, for supplying your own).</td></tr>
 <tr><td class="name">SkySphereSize</td><td class="dflt">4</td><td>Sky-sphere size multiplier (relative to the camera distance).</td></tr>
 </table>
 
@@ -183,7 +184,7 @@ system moves or rotates the object along/about that axis.</p>
 <tr><td class="name">Arrow keys</td><td>Camera panning (if <code class="phx-inline">ArrowsEnable</code>).</td></tr>
 <tr><td class="name">W / A / S / D</td><td>Camera movement (if <code class="phx-inline">WASDEnable</code>).</td></tr>
 <tr><td class="name">F1</td><td>Show help.</td></tr>
-<tr><td class="name">F2</td><td>Toggle the headlight.</td></tr>
+<tr><td class="name">F2</td><td>Cycle the lighting mode (headlight / studio / none).</td></tr>
 <tr><td class="name">F3</td><td>Cycle the view mode (texture / axis / plain).</td></tr>
 <tr><td class="name">F5</td><td>Start/stop free run (steps a simulation of the scene in real time).</td></tr>
 <tr><td class="name">Home</td><td>Restore the default view.</td></tr>

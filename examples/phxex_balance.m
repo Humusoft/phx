@@ -27,9 +27,6 @@ function phxex_balance(Kp, Kd)
         Kd (1, 1) double = 0.4
     end
 
-    % Resources directory
-    resdir = fullfile(fileparts(mfilename("fullpath")), "res", " ");
-
     % Figure setup
     figure(1);
     [viewer, ax] = phx.extra.Viewer("clear", "DefaultCameraTarget", [0 0 0], "DefaultCameraPosition", [4 -4 4]);
@@ -44,12 +41,12 @@ function phxex_balance(Kp, Kd)
     % Kinematic plate - we drive its tilt; the ball only feels it via contact
     plate = phx.Body(ax, "Type", "kinematic", "Position", [0 0 0], ...
         "Shape", {"Box", "Size", plateSize, "Color", [0.6 0.7 0.8], ...
-        "Texture", resdir+"checker4.png", "TextureBlend", 0.3});
+        "Texture", "checker", "TextureBlend", 0.3});
 
     % Ball dropped from a position above the plate
     p0 = [1.5 1.5];
     ball = phx.Body(ax, "Position", [p0, 2.0], "Shape", {"Globe", "Radius", ballR, "Color", [1 0.5 0.2], ...
-        "Material", "glossy", "Texture", resdir+"checker2.png", "TextureBlend", 0.2});
+        "Material", "glossy", "Texture", "checker", "TextureBlend", 0.2});
     ball.LinearVelocity = [-1 0 -1];
 
     % Visual trail of the ball path on the plate

@@ -33,9 +33,6 @@ function phxex_segway(Kp, Kd, push)
         push (1, 1) double = -40000
     end
 
-    % Resources directory
-    resdir = fullfile(fileparts(mfilename("fullpath")), "res", " ");
-
     % Figure setup
     figure(1);
     [viewer, ax] = phx.extra.Viewer("clear", "DefaultCameraTarget", [-4 0 0.6], ...
@@ -44,7 +41,7 @@ function phxex_segway(Kp, Kd, push)
     % Ground
     ground = phx.Body(ax, "Type", "static", "Position", [0 0 -0.1], ...
         "Shape", {"Box", "Size", [40 40 0.2], "Color", 1, "Material", "matte", ...
-                  "Texture", resdir+"checker4.png", "TextureBlend", 0.2}, ...
+                  "Texture", "checker", "TextureBlend", 0.2}, ...
         "Friction", [0.9 0 0]);
 
     % Dimensions
@@ -67,7 +64,7 @@ function phxex_segway(Kp, Kd, push)
 
     % Two wheels as cylinders, axis along Y (the track direction)
     wheelShape = {"Cylinder", "Diameter", 2*wheelRad, "Height", wheelW, ...
-                  "Color", [0.2 0.2 0.2], "Texture", resdir+"checker4.png", "TextureBlend", 0.5};
+                  "Color", [0.2 0.2 0.2], "Texture", "checker", "TextureBlend", 0.5};
     wheelL = phx.Body(ax, "Position", [0  track/2 axleZ], "EulerAngles", [pi/2 0 0], ...
         "Shape", wheelShape, "Friction", 1);
     wheelR = phx.Body(ax, "Position", [0 -track/2 axleZ], "EulerAngles", [pi/2 0 0], ...

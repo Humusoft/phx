@@ -4,7 +4,7 @@ description: >
   Build and run a physics scene with the PHX MATLAB toolbox (phx.* objects over
   the Bullet engine). Use when creating phx.Body objects, attaching phx.shape.*
   geometry, importing meshes (STL/OBJ/PLY) or URDF models, using the phx.assembly
-  prefab builders (arena, chain, scatter, import), drawing the scene into
+  prefab builders (arena, chain, scatter, wall, import), drawing the scene into
   phx.extra.Viewer (the default) or plain axes, stepping a phx.Simulation, or
   running a PHX scene headlessly. Start here before the other phx-* skills.
 ---
@@ -165,6 +165,29 @@ carries data (group, state, a mapped value) rather than shape: it renders the au
 `Color` exactly and ignores the lights, so nothing shades the encoding away. `Style` is
 independent of it: `"smooth"` (default), `"edged"`, `"flat"` or `"wireframe"`.
 
+**Textures.** `Texture` takes an image file path *or* the name of a built-in texture
+bundled with the toolbox — **`"checker"`, `"wood"`, `"tiles"`, `"metal"`** (matched
+case-insensitively). `TextureBlend` (0–1, default 1) mixes the texture with `Color`, so
+a light blend keeps the body's own color while giving it surface detail:
+
+```matlab
+crate = phx.shape.Box("Size", 0.4, "Texture", "wood", "TextureBlend", 0.5);
+ball  = phx.shape.Globe("Diameter", 1, "Color", [0.9 0.3 0.3], ...
+                        "Texture", "checker", "TextureBlend", 0.3);
+```
+
+`"checker"` at a low blend is the standard trick for making a spinning or rolling body
+read as a solid object — without it, a uniformly colored sphere looks static. An unknown
+name errors (`phx:ShapeMesh:fileNotFound`) instead of falling back, and the shape names
+are a *different* set from the viewer's sky textures (`"nebula"` is not a shape texture),
+so use only the four above.
+
+> **Textures render only in `phx.extra.Viewer` axes.** Only the viewer's axes take the
+> fast world-primitive draw path that carries texture data; in plain axes (and whenever
+> `ForcePatch` is true) the shape falls back to a `patch` and the texture is silently
+> ignored — nothing errors, the surface just shows its `Color`. So if you set a texture,
+> build the scene into the viewer's `ax`.
+
 **Imported geometry — `phx.shape.Mesh`.** One class covers all file formats: **STL,
 Wavefront OBJ and Stanford PLY** (there is no separate `OBJ`/`STL` shape class). The
 cell shorthand recognizes the extension, so `{"model.obj", ...}` /`{"part.stl", ...}`
@@ -188,13 +211,13 @@ decides whether an imported body behaves:
 ## Prefab assemblies (`phx.assembly.*`)
 
 Package functions that build common multi-body setups in one call. Shared
-conventions across all four: an optional **leading axes** target like `phx.Body`
+conventions across all five: an optional **leading axes** target like `phx.Body`
 (pass the viewer's `ax`; omitted → `gca`; explicit `[]` → no graphics); the base-pose options
 **`Position`** / **`Orientation`** (3×3) / **`EulerAngles`** (z→y→x, alternative
 to `Orientation` — combining both errors) that rigidly place the whole assembly
 (default: world origin); and plain `phx.Body`/joint objects as return values, so
 parts can be restyled or retuned afterwards. Error IDs are per function
-(`phx:arena:*`, `phx:chain:*`, `phx:scatter:*`, `phx:import:*`).
+(`phx:arena:*`, `phx:chain:*`, `phx:scatter:*`, `phx:wall:*`, `phx:import:*`).
 
 ```matlab
 % Arena: floor + 4 walls. Size = INNER dims [x y z]; origin = middle of the
@@ -219,6 +242,20 @@ p = phx.assembly.chain([0 0 0; 0.4 0 0; 0.8 0 0], "Anchor", "start", "Axis", [0 
 rocks = phx.assembly.scatter({"Rock", "Radius", 0.4}, 30, ...
     "Region", [7 7 4], "Spacing", 0.8, "Position", [0 0 1], ...
     "RandomOrientation", true, "Color", hsv(30));
+
+% Wall of loose bricks (no mortar) in a running bond, origin = middle of the
+% BASE, spans ±x/2 in length, ±y/2 in thickness, 0..z up. Size is the WHOLE
+% wall; the brick size follows: x/Columns long, y thick, z/Rows high.
+% HalfBricks true = even rows closed by half bricks at both sides (flush ends,
+% Columns+1 bricks); false = left open (Columns-1 bricks, inset half a brick,
+% toothed edge; needs Columns >= 2 => phx:wall:invalidColumns).
+% RandomTint (0..1, default 0.1) shades each brick on its own:
+% brickColor = Color*(1 - rand*RandomTint) — GLOBAL rng like scatter, 0 = off
+% (and no rand call at all). set(bricks,"Color",...) afterwards WIPES the tint.
+% Returns a 1xn Body array, bottom row first and left to right, named
+% "brick<row>_<col>". Stands on friction alone — put it on a floor first.
+bricks = phx.assembly.wall(ax, "Size", [3 0.25 1.2], "Rows", 10, "Columns", 6, ...
+    "HalfBricks", true, "Density", 2000, "Color", [0.7 0.35 0.25], "RandomTint", 0.3);
 
 % Multi-body import, format picked from the extension:
 %  .urdf/.xml - one Body per link + joints (robots, ragdolls, vehicles, furniture)

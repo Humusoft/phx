@@ -45,7 +45,7 @@ function phxex_vengine(opts)
     rodOff   = bore*0.32;                 % X offset of the two rods on one throw
 
     % --- Scene ----------------------------------------------------------
-    [viewer, ax] = phx.extra.Viewer("clear", "DefaultCameraPosition", [0.9 0.6 0.3], "Texture", "defaultChecker");
+    [viewer, ax] = phx.extra.Viewer("clear", "DefaultCameraPosition", [0.9 0.6 0.3], "Texture", "Checker");
 
     [crank, block, mount, cat, cyl] = buildScene(ax, nPair, halfV, r, L, bore, zc, throwSpc, rodOff);
 
@@ -183,7 +183,7 @@ function [crank, block, mount, cat, cyl] = buildScene(ax, nPair, halfV, r, L, bo
     end
     spine = [spine; crankLen/2, 0, 0];       % right main-journal end (on the axis)
     crankShape = phx.shape.Extrusion("Spine", spine, "Profile", profile, ...
-        "Material", "metal", "Color", 1, "Texture", resdir+"checker4.png", "TextureBlend", 0.5);
+        "Material", "metal", "Color", 1, "Texture", "checker", "TextureBlend", 0.5);
     crank = phx.Body(ax, "Type", "dynamic", "Position", [0 0 zc], "Shape", crankShape);
     crank.Collisions = false;               % visual-only shape; joints do the constraining
     crank.Mass    = 3;                       % lumped shaft + flywheel
@@ -266,7 +266,7 @@ function [crank, block, mount, cat, cyl] = buildScene(ax, nPair, halfV, r, L, bo
                 "Shape", {"Box", "Size", [rodTX L rodTZ], "Material", "metal", "Color", rodColor});
             piston = phx.Body(ax, "Position", W0, "EulerAngles", [gamma 0 0], ...
                 "Shape", phx.shape.Revolution("Axis", "z", "Profile", pistProfile, ...
-                         "Material", "metal", "Color", pistColor, "Density", 2700));
+                         "Material", "metal", "Color", pistColor, "Density", 2700, "Texture", "metal", "TextureBlend", 0.1));
 
             % Crank pin: revolute between the crankshaft and the rod, axis = X.
             phx.RevoluteJoint(crank, rod, "PointA", P0 - [0 0 zc], "PointB", [0 -L/2 0], ...

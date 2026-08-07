@@ -39,9 +39,6 @@ function phxex_isolation
     P.ampMax    = 0.16;
     P.collapseDrop = 0.25;
     
-    % Resources directory
-    resdir = fullfile(fileparts(mfilename("fullpath")), "res", " ");
-    
     % Viewer
     figure(1);
     [~, ax] = phx.extra.Viewer("clear", "DefaultCameraPosition", [0 -10 3.2], "DefaultCameraTarget",   [0 0 1.9]);
@@ -56,7 +53,7 @@ function phxex_isolation
     
     % isolation layer
     zR = P.rollerR;
-    rollerShape = phx.shape.Cylinder("Radius", P.rollerR, "Height", P.rollerL, "Axis", "y", "Color", [0.80 0.62 0.20], "Texture", resdir+"checker4.png", "TextureBlend", 0.25);
+    rollerShape = phx.shape.Cylinder("Radius", P.rollerR, "Height", P.rollerL, "Axis", "y", "Color", [0.80 0.62 0.20], "Texture", "checker", "TextureBlend", 0.25);
     S.roller1 = phx.Body(ax, "Position", [P.xIso - P.rollerGap/2, 0, zR], "Friction", [1.2 0.0015 0.0015], "Shape", rollerShape);
     S.roller2 = phx.Body(ax, "Position", [P.xIso + P.rollerGap/2, 0, zR], "Friction", [1.2 0.0015 0.0015], "Shape", rollerShape);
     

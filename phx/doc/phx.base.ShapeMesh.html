@@ -39,7 +39,7 @@ available on every <code class="phx-inline">phx.shape.*</code> object and are se
 <tr><td class="name">ForcePatch</td><td class="dflt">false</td>
 <td>Force the use of a <code class="phx-inline">patch</code> object for drawing instead of the fast world primitive.</td></tr>
 <tr><td class="name">Texture</td><td class="type">string</td>
-<td>Texture image file. Setting it loads the image (with alpha, if present) as the surface texture.</td></tr>
+<td>Texture image. Setting it loads the image (with alpha, if present) as the surface texture. Accepts either a path to an image file or the name of a built-in texture: <code class="phx-inline">"checker"</code>, <code class="phx-inline">"metal"</code>, <code class="phx-inline">"tiles"</code> or <code class="phx-inline">"wood"</code> (matched case-insensitively).</td></tr>
 <tr><td class="name">TextureBlend</td><td class="dflt">1</td>
 <td>Texture blending ratio (0&ndash;1) between the texture and the surface color.</td></tr>
 </table>
@@ -48,6 +48,15 @@ available on every <code class="phx-inline">phx.shape.*</code> object and are se
 <span class="lbl">Note.</span> The default <code class="phx-inline">Style</code> is overridden to
 <code class="phx-inline">"flat"</code> by the faceted shapes <a href="phx.shape.Box.html">Box</a>,
 <a href="phx.shape.Mesh.html">Mesh</a> and <a href="phx.shape.Rock.html">Rock</a>.
+</div>
+
+<div class="phx-note">
+<span class="lbl">Note.</span> Textures are drawn only on the fast world-primitive path, which shapes
+take when they are drawn into the axes of a <a href="phx.extra.Viewer.html">phx.extra.Viewer</a>.
+In plain axes &ndash; and whenever <code class="phx-inline">ForcePatch</code> is
+<code class="phx-inline">true</code> &ndash; the shape falls back to a
+<code class="phx-inline">patch</code> object, which ignores the texture: nothing fails, but the
+surface simply shows its <code class="phx-inline">Color</code>.
 </div>
 
 <h2 class="phx-h2">Object Functions</h2>
@@ -80,9 +89,21 @@ b = phx.Body(<span class="str">"Shape"</span>, {<span class="str">"Sphere"</span
 <figcaption>The metal material adds specular highlights to the smooth sphere.</figcaption>
 </figure>
 
-<h4 class="phx-h4">Texture from an image</h4>
-<pre class="phx-code">earth = phx.shape.Globe(<span class="str">"Diameter"</span>, 2, <span class="str">"Texture"</span>, <span class="str">"earth.jpg"</span>);
-b = phx.Body(<span class="str">"Shape"</span>, earth);</pre>
+<h4 class="phx-h4">Built-in texture and texture from an image</h4>
+<p>Draw the bodies into the axes of a <a href="phx.extra.Viewer.html">phx.extra.Viewer</a>, otherwise
+the textures are not rendered:</p>
+<pre class="phx-code">[~, ax] = phx.extra.Viewer(<span class="str">"clear"</span>);
+
+crate = phx.shape.Box(<span class="str">"Size"</span>, 2, <span class="str">"Texture"</span>, <span class="str">"wood"</span>);            <span class="cmt">% built-in texture</span>
+earth = phx.shape.Globe(<span class="str">"Diameter"</span>, 2, <span class="str">"Texture"</span>, <span class="str">"earth.jpg"</span>);  <span class="cmt">% image file</span>
+
+phx.Body(ax, <span class="str">"Position"</span>, [-2 0 0], <span class="str">"Shape"</span>, crate);
+phx.Body(ax, <span class="str">"Position"</span>, [ 2 0 0], <span class="str">"Shape"</span>, earth);</pre>
+
+<p>Use <code class="phx-inline">TextureBlend</code> below 1 to tint a texture with the
+<code class="phx-inline">Color</code> of the shape &ndash; a blend of 0.2&ndash;0.5 over
+<code class="phx-inline">"checker"</code> is a cheap way to make a colored body read as a solid
+object while it rotates.</p>
 
 <div class="phx-seealso">
 <span class="lbl">See also</span>

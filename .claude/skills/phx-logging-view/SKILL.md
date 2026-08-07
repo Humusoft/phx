@@ -128,7 +128,8 @@ figure(1);
     "DefaultCameraPosition", [-12 -8 5], ...
     "DefaultCameraTarget",  [2 0 3], ...
     "ViewMode", "plain", ...               % "texture" | "axis" | "plain"
-    "Texture", "defaultNebulaFFT");        % sky texture (res/ has more)
+    "Lighting", "studio", ...              % "headlight" | "studio" | "none"
+    "Texture", "nebula");                  % sky texture (see below)
 
 % ... build the scene into ax, e.g. phx.Body(ax, ...) ...
 
@@ -139,7 +140,26 @@ sim = phx.Simulation(ax);
 Pass the returned `ax` as the first argument to every `phx.Body(ax, ...)` (and to the
 `phx.assembly.*` builders) so the scene lands in the viewer's axes. Mouse: left drag
 pans, middle drag orbits, scroll zooms, double click selects. Keys: F1 help, F2
-headlight, F3 view mode, F5 free-run, Home default view, PgUp/PgDn cycle views.
+lighting mode, F3 view mode, F5 free-run, Home default view, PgUp/PgDn cycle views.
+
+**`Texture`.** The equirectangular background of the sky sphere (shown in `ViewMode`
+`"texture"`). Takes an image path *or* the name of a built-in texture bundled with the
+toolbox — **`"sky"` (the default), `"nebula"`, `"gradient"`, `"checker"`, `"tiles"`** —
+matched case-insensitively. An unknown name errors (`phx:Viewer:fileNotFound`) rather
+than falling back, so do not invent names.
+
+> The viewer is also what makes **shape** textures visible at all: only its axes take the
+> world-primitive draw path that carries texture data. In plain axes a textured
+> `phx.shape.*` silently renders untextured (just its `Color`) — nothing errors. If the
+> scene uses `"Texture"` on any shape, build it into the viewer's `ax`.
+
+**`Lighting`.** `"headlight"` (the default) puts one light at the camera, so whatever you
+look at is lit — safe but flat, since the shading then carries no directional information.
+`"studio"` uses three world-fixed lights that stay put while you orbit, so a body's shading
+conveys its shape and its silhouette separates from the background; prefer it for
+screenshots, videos and anything where form matters. `"none"` leaves the lighting to you.
+The modes are deliberately exclusive: a headlight shines along the view axis, so mixing it
+in would add a view-locked gradient that fights the studio key's directional one.
 
 The viewer takes over the **whole figure** — it is not designed to share a window with
 other plots, so put result plots in a separate figure. It runs fine under `-batch`

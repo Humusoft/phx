@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.assembly.wall</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.assembly.wall</div>
+
+<h1 class="phx-title">phx.assembly.wall</h1>
+<p class="phx-purpose">Wall of bricks laid in a running bond</p>
+<p class="phx-classref">Function&nbsp;&nbsp;phx.assembly.wall &nbsp;|&nbsp; Package: phx.assembly</p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.assembly.wall</code> fills a box-shaped wall volume with loose
+brick bodies. The overall <code class="phx-inline">Size</code> of the wall together with the
+<code class="phx-inline">Rows</code> and <code class="phx-inline">Columns</code> counts define the
+brick size &mdash; a brick is <em>x</em>/Columns long, as thick as the wall and <em>z</em>/Rows
+high. The wall origin lies at the middle of its base, so the wall spans &minus;x/2..x/2 in length,
+&minus;y/2..y/2 in thickness and 0..z upwards.</p>
+<p>The rows are laid in a running bond: every even row is shifted by half a brick against the odd
+rows. The <code class="phx-inline">HalfBricks</code> option decides how the shifted rows end at the
+sides &mdash; closed by a half brick at each side so that the wall is flush, or left open with one
+brick less than an odd row.</p>
+<p>There is no mortar: the bricks are ordinary dynamic bodies resting on each other, so the wall
+stands by gravity and friction alone and collapses realistically when something hits it. By
+default the bricks are tinted slightly differently
+(<code class="phx-inline">RandomTint</code>), which makes the bond visible without any texture.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">bricks = phx.assembly.wall</span>
+<span class="phx-syntax">bricks = phx.assembly.wall(Name,Value)</span>
+<span class="phx-syntax">bricks = phx.assembly.wall(ax,___)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">bricks = phx.assembly.wall</code> creates the bricks in the current
+axes and returns them as a 1&times;n <a href="phx.Body.html">phx.Body</a> array, row by row: the
+bottom row first and left to right (in the +x direction) within a row. The body names
+(<code class="phx-inline">"brick&lt;row&gt;_&lt;column&gt;"</code>) carry the same indices.</p>
+<p><code class="phx-inline">bricks = phx.assembly.wall(ax,___)</code> draws into the given axes
+instead of the current axes; an empty target (<code class="phx-inline">[]</code>) creates the
+bricks without graphics.</p>
+</div>
+
+<h2 class="phx-h2">Options</h2>
+<table class="phx-tbl">
+<tr><th>Option</th><th>Default</th><th>Description</th></tr>
+<tr><td class="name">Size</td><td class="dflt">[2 0.2 1]</td><td>Overall dimensions [x y z] of the wall &mdash; its length x, its thickness y and its height z.</td></tr>
+<tr><td class="name">Rows</td><td class="dflt">8</td><td>Number of brick rows stacked on top of each other.</td></tr>
+<tr><td class="name">Columns</td><td class="dflt">8</td><td>Number of bricks in an odd (unshifted) row.</td></tr>
+<tr><td class="name">HalfBricks</td><td class="dflt">true</td><td>How the shifted even rows end at the sides. <code class="phx-inline">true</code> closes them with a half brick at each side (flush wall, Columns+1 bricks per even row); <code class="phx-inline">false</code> leaves them open (Columns&minus;1 bricks, inset by half a brick at both ends), which leaves the toothed edge a wall continues from. An open wall needs at least two columns, otherwise the error <code class="phx-inline">phx:wall:invalidColumns</code> is raised.</td></tr>
+<tr><td class="name">Density</td><td class="dflt">2000</td><td>Density of the brick material (kg/m<sup>3</sup>); the brick masses and inertias follow from the geometry.</td></tr>
+<tr><td class="name">Color</td><td class="dflt">[1 1 1]</td><td>Common color of all bricks.</td></tr>
+<tr><td class="name">RandomTint</td><td class="dflt">0.1</td><td>Random shade variation between the bricks (0..1). Every brick is darkened by its own random factor, <code class="phx-inline">brickColor&nbsp;=&nbsp;Color*(1&nbsp;&minus;&nbsp;rand*RandomTint)</code>, so the shades differ while the hue stays; 0 leaves all bricks in exactly the same color. Random numbers are drawn from the global generator (like <code class="phx-inline">rand</code>), so a wall is reproduced by seeding it first with <code class="phx-inline">rng</code>.</td></tr>
+<tr><td class="name">Friction</td><td class="dflt">[0.5 0 0]</td><td>Friction coefficients of all bricks.</td></tr>
+<tr><td class="name">Position</td><td class="dflt">[0 0 0]</td><td>World position of the wall origin (the middle of its base).</td></tr>
+<tr><td class="name">Orientation</td><td class="dflt">eye(3)</td><td>World rotation of the wall as a 3&times;3 rotation matrix.</td></tr>
+<tr><td class="name">EulerAngles</td><td class="dflt">[0 0 0]</td><td>World rotation of the wall as Euler angles (z&rarr;y&rarr;x order), an alternative to <code class="phx-inline">Orientation</code>.</td></tr>
+</table>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">A ball thrown through a brick wall</h4>
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+phx.assembly.arena(<span class="str">"Size"</span>, [6 4 0.2]);
+
+bricks = phx.assembly.wall(<span class="str">"Size"</span>, [3 0.25 1.2], <span class="str">"Rows"</span>, 10, ...
+    <span class="str">"Columns"</span>, 6, <span class="str">"EulerAngles"</span>, [0 0 pi/2], ...
+    <span class="str">"Color"</span>, [0.7 0.35 0.25], <span class="str">"RandomTint"</span>, 0.3);
+
+ball = phx.Body(<span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>, <span class="str">"Diameter"</span>, 0.4, <span class="str">"Density"</span>, 4000}, ...
+    <span class="str">"Position"</span>, [-2.5 0 0.6], <span class="str">"LinearVelocity"</span>, [10 0 1]);
+
+sim = phx.Simulation;
+sim.step(2, 1000, 20);
+delete(sim);</pre>
+
+<figure class="phx-fig">
+<img src="img/wall.png" alt="Brick wall hit by a ball">
+<figcaption>The wall of 65 bricks after the ball punched through it; the rest of the courses still stand.</figcaption>
+</figure>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.assembly.arena.html">phx.assembly.arena</a>,
+<a href="phx.assembly.scatter.html">phx.assembly.scatter</a>,
+<a href="phx.assembly.chain.html">phx.assembly.chain</a>,
+<a href="phx.Body.html">phx.Body</a>,
+<a href="phx.shape.Box.html">phx.shape.Box</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_assemblies.html">Prefab assemblies</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

@@ -37,13 +37,9 @@ function phxex_tackle(mCrate)
     cRope = 500;           % rope damping (N*s/m)
     rDrum = 0.18;          % winch drum radius (for the drum rotation)
 
-    % Resources directory
-    resdir = fullfile(fileparts(mfilename("fullpath")), "res", " ");
-
     % Figure setup
     figure(1);
-    [viewer, ax] = phx.extra.Viewer("clear", "DefaultCameraTarget", [0.5 0 1.8], ...
-        "DefaultCameraPosition", [4 -7 3]);
+    [viewer, ax] = phx.extra.Viewer("clear", "DefaultCameraTarget", [0.5 0 1.8], "DefaultCameraPosition", [4 -7 3]);
 
     % Floor, gantry posts and the crossbeam
     phx.Body(ax, "Type", "static", "Position", [0.5 0 -0.5], ...
@@ -65,7 +61,7 @@ function phxex_tackle(mCrate)
     % The winch drum (kinematic, so it can visually rotate while reeling)
     drum = phx.Body(ax, "Type", "kinematic", "Position", [2.6 0 0.8], ...
         "Shape", {"Cylinder", "Diameter", 2*rDrum, "Height", 0.4, "Axis", "y", ...
-        "Color", [0.4 0.4 0.45], "Material", "metal", "Texture", resdir+"checker4.png", "TextureBlend", 0.5});
+        "Color", [0.4 0.4 0.45], "Material", "metal", "Texture", "checker", "TextureBlend", 0.5});
 
     % The rope: beam anchor -> moving block -> fixed sheave -> moving
     % block -> fixed sheave -> winch; the crate appears twice in the
