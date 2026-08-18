@@ -6,17 +6,20 @@ function catalog = exampleCatalog
 %   it belongs to and, optionally, how deep into the run its thumbnail is
 %   grabbed.
 %
-%   An example does not have to be listed here. Unlisted examples fall into
-%   the "Other" section and use the default capture delay, and a
-%   "% Category: <name>" line in the example header always wins over this
-%   table. The table exists so that adding a demo does not force an edit of
-%   the generator itself - see tools/buildExampleDocs.m.
+%   An example does not have to be listed here - unlisted phxex_*.m files fall
+%   into the "Other" section with the default delay, and a "% Category: <name>"
+%   line in the example header always wins over this table. A phxex_*.slx file
+%   is in the gallery only when it is listed here with a Summary.
 %
 %   Columns:
 %     Category - gallery section, must be one of the sections listed in
 %                the CategoryOrder constant of buildExampleDocs
 %     Delay    - seconds into the run when the thumbnail is captured;
 %                NaN uses the default of buildExampleDocs
+%     Summary  - gallery caption; needed only by Simulink examples,
+%                which have no H1 line to read it from
+%     Press    - buttons an interactive example needs pressed before
+%                its thumbnail can show anything, comma separated
 %
 %   See also buildExampleDocs, captureExampleThumb
 
@@ -56,7 +59,8 @@ function catalog = exampleCatalog
         entry("phxex_rocket",      "Vehicles, robots and control",   12)
         entry("phxex_balance",     "Vehicles, robots and control",    4)
         entry("phxex_antisway",    "Vehicles, robots and control",   12)
-        entry("phxex_swingover",   "Vehicles, robots and control",   14)
+        entry("phxex_swingover",   "Vehicles, robots and control",   16, "", "Build walls,Simulate")
+        entry("phxex_sim_swingover", "Vehicles, robots and control", 24, "Simulink version: a scheduled trolley path swings the load over the wall")
         entry("phxex_gyrostab",    "Vehicles, robots and control",   20)
         entry("phxex_stairfall",   "Vehicles, robots and control",    8)
 
@@ -84,6 +88,12 @@ function catalog = exampleCatalog
 
 end
 
-function s = entry(name, category, delay)
-    s = struct("Name", string(name), "Category", string(category), "Delay", delay);
+function s = entry(name, category, delay, summary, press)
+    arguments
+        name, category, delay
+        summary (1, 1) string = ""      % only Simulink examples need one
+        press (1, 1) string = ""        % only interactive examples need one
+    end
+    s = struct("Name", string(name), "Category", string(category), ...
+        "Delay", delay, "Summary", summary, "Press", press);
 end

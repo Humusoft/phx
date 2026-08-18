@@ -56,22 +56,22 @@ classdef Body < phx.base.Object
     % Kinematic state in a global coordinate system
     properties (Dependent)
         % Full transform matrix (4x4)
-        Transform (4, 4) double
+        Transform (4, 4) double {mustBeFinite}
 
         % Linear position
-        Position (1, 3) double
+        Position (1, 3) double {mustBeFinite}
 
         % Rotation matrix (3x3)
-        Orientation (3, 3) double
+        Orientation (3, 3) double {mustBeFinite}
 
         % Axis-angle rotation
-        AxisAngle (1, 4) double
+        AxisAngle (1, 4) double {mustBeFinite}
 
         % Euler angles rotation for z->y->x order
-        EulerAngles (1, 3) double
+        EulerAngles (1, 3) double {mustBeFinite}
 
         % Quaternion rotation
-        Quaternion (1, 4) double
+        Quaternion (1, 4) double {mustBeFinite}
 
         % Total force in the centre of the body
         TotalForce (1, 3) double
@@ -502,10 +502,10 @@ classdef Body < phx.base.Object
 
             arguments
                 objs (1, :) phx.Body
-                transforms.Transform (4, 4) double
-                transforms.Translation (1, 3) double
-                transforms.AxisAngle (1, 4) double
-                transforms.EulerAngles (1, 3) double
+                transforms.Transform (4, 4) double {mustBeFinite}
+                transforms.Translation (1, 3) double {mustBeFinite}
+                transforms.AxisAngle (1, 4) double {mustBeFinite}
+                transforms.EulerAngles (1, 3) double {mustBeFinite}
             end
 
             if isfield(transforms, 'Transform')

@@ -640,7 +640,10 @@ classdef Viewer < handle
                 if event.HitObject.Parent.Tag == "phx_edit"
                     body = getappdata(event.HitObject.Parent.Parent, 'phxObject');
                     a = event.HitObject.VertexData(:, 2)';
-                    obj.DragAxis = a/max(a);
+                    s = max(a);
+                    if s > 0 % s = 0 for a degenerate gizmo, leave DragAxis empty
+                        obj.DragAxis = a/s;
+                    end
                 else
                     body = getappdata(event.HitObject.Parent, 'phxObject');
                 end

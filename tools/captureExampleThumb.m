@@ -1,9 +1,15 @@
-function captureExampleThumb(name, outFile, delay, width, height)
+function captureExampleThumb(name, outFile, delay, width, height, press)
 %CAPTUREEXAMPLETHUMB Grab a frame of a running phxex_* example.
 %
 %   CAPTUREEXAMPLETHUMB(NAME, OUTFILE, DELAY, WIDTH, HEIGHT) runs the example
 %   NAME, waits DELAY seconds, exports whatever the example is drawing at that
-%   moment and writes it to OUTFILE scaled to WIDTH-by-HEIGHT pixels.
+%   moment and writes it to OUTFILE scaled to WIDTH-by-HEIGHT pixels. A NAME
+%   that is a Simulink model is simulated instead of called.
+%
+%   CAPTUREEXAMPLETHUMB(___, PRESS) first presses the buttons named in PRESS
+%   (comma separated), which is what an interactive example needs before there
+%   is anything worth a picture - it opens its window and returns, so the run
+%   only starts when a button is pushed.
 %
 %   The capture happens in a timer callback, i.e. while the example is still
 %   simulating - PHX pumps the event queue on every redraw, so the timer fires
@@ -31,6 +37,7 @@ function captureExampleThumb(name, outFile, delay, width, height)
         delay (1, 1) double = 6
         width (1, 1) double = 320
         height (1, 1) double = 240
+        press (1, 1) string = ""
     end
 
     captured = false;
@@ -43,7 +50,12 @@ function captureExampleThumb(name, outFile, delay, width, height)
     start(kill);
 
     try
-        feval(name);
+        if isfile(name + ".slx")
+            sim(name);                      % a Simulink example
+        else
+            feval(name);
+            pushButtons;                    % an interactive one needs a nudge
+        end
     catch err
         fprintf("THUMB error running %s: %s\n", name, err.message);
     end
@@ -56,6 +68,22 @@ function captureExampleThumb(name, outFile, delay, width, height)
         finish(double(~captured));
     catch
         exit(0);
+    end
+
+    function pushButtons
+        % Press the buttons of an interactive example, in order. Each callback
+        % runs its whole stage, so the shot timer fires inside one of them.
+        for label = strip(split(press, ","))'
+            if label == "" || captured
+                continue
+            end
+            b = findall(groot, "Type", "uibutton", "Text", label);
+            if isempty(b)
+                fprintf("THUMB no button ""%s"" in %s\n", label, name);
+            else
+                feval(b(1).ButtonPushedFcn, b(1), []);
+            end
+        end
     end
 
     function onShot(~, ~)

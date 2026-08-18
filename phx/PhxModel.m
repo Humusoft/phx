@@ -122,7 +122,7 @@ function Start(block)
             clf(BB.hF);
         end
         BB.hA = axes(BB.hF);
-        phx.extra.Viewer(BB.hA, "DefaultCameraPosition", BB.DefaultCameraPosition, "DefaultCameraTarget", BB.DefaultCameraTarget, "ViewMode", "plain", "ArrowsEnable", false, "WASDEnable", false);
+        phx.extra.Viewer(BB.hA, "DefaultCameraPosition", BB.DefaultCameraPosition, "DefaultCameraTarget", BB.DefaultCameraTarget, "ViewMode", "plain");
     else
         delete(BB.hF);
         BB.hF = [];

@@ -55,11 +55,20 @@ example <code class="phx-inline">skills/phx-scene-basics/SKILL.md</code>.</p>
 <h3 class="phx-h3">Assistants with skill support</h3>
 <p>Copy the skill folders where your assistant looks for them and it will load the right one by
 itself. For Claude Code that is a <code class="phx-inline">.claude/skills</code> folder, either
-inside the project you are working in, or in your home folder to make them available everywhere:</p>
+inside the project you are working in, or in your home folder to make them available everywhere.</p>
 
+<h4 class="phx-h4">This project only</h4>
 <pre class="phx-code">skills = fullfile(fileparts(which(<span class="str">"phxdoc"</span>)), <span class="str">"skills"</span>);
-target = fullfile(pwd, <span class="str">".claude"</span>, <span class="str">"skills"</span>);   <span class="cmt">% this project only</span>
-<span class="cmt">% target = fullfile(userpath, "..", ".claude", "skills");  % all projects</span>
+target = fullfile(pwd, <span class="str">".claude"</span>, <span class="str">"skills"</span>);
+
+mkdir(target);
+copyfile(fullfile(skills, <span class="str">"*"</span>), target);</pre>
+
+<h4 class="phx-h4">All projects</h4>
+<pre class="phx-code">skills = fullfile(fileparts(which(<span class="str">"phxdoc"</span>)), <span class="str">"skills"</span>);
+home = getenv(<span class="str">"USERPROFILE"</span>);                        <span class="cmt">% Windows</span>
+<span class="kw">if</span> home == <span class="str">""</span>, home = getenv(<span class="str">"HOME"</span>); <span class="kw">end</span>     <span class="cmt">% macOS and Linux</span>
+target = fullfile(home, <span class="str">".claude"</span>, <span class="str">"skills"</span>);
 
 mkdir(target);
 copyfile(fullfile(skills, <span class="str">"*"</span>), target);</pre>

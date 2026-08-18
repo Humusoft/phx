@@ -1,11 +1,12 @@
 function buildExampleDocs(options)
 %BUILDEXAMPLEDOCS Regenerate the Examples gallery of the HTML help.
 %
-%   BUILDEXAMPLEDOCS scans examples/phxex_*.m, captures a thumbnail for every
-%   example that does not have one yet, writes phx/doc/phx_ex_gallery.html and
-%   refreshes the generated part of phx/doc/helptoc.xml. Nothing in the gallery
-%   is maintained by hand: the tile title is the command name and the caption is
-%   the H1 line of the example itself.
+%   BUILDEXAMPLEDOCS scans examples/phxex_*.m and the phxex_*.slx models that
+%   exampleCatalog describes, captures a thumbnail for every example that does
+%   not have one yet, writes phx/doc/phx_ex_gallery.html and refreshes the
+%   generated part of phx/doc/helptoc.xml. Nothing in the gallery is maintained
+%   by hand: the tile title is the command name and the caption is the H1 line
+%   of the example itself (of exampleCatalog for a model, which has no H1).
 %
 %   BUILDEXAMPLEDOCS(Name = Value) accepts:
 %
@@ -79,34 +80,50 @@ end
 % ---------------------------------------------------------------- scanning ---
 
 function examples = scanExamples(exampleDir)
-% One struct per phxex_*.m file, with the metadata scraped from its header.
-    files = dir(fullfile(exampleDir, "phxex_*.m"));
+% One struct per example: every phxex_*.m file, plus the phxex_*.slx models the
+% catalog gives a summary to (a model has no H1 line to read one from).
     catalog = exampleCatalog;
+    files = [dir(fullfile(exampleDir, "phxex_*.m")); dir(fullfile(exampleDir, "phxex_*.slx"))];
     examples = struct("Name", {}, "Summary", {}, "Category", {}, "Delay", {}, ...
-        "Rank", {}, "Thumbnail", {}, "HasThumbnail", {});
+        "Press", {}, "IsModel", {}, "Rank", {}, "Thumbnail", {}, "HasThumbnail", {});
 
     for k = 1:numel(files)
-        name = string(erase(files(k).name, ".m"));
-        header = readHeader(fullfile(exampleDir, files(k).name));
-
-        category = tagValue(header, "Category");
-        delay = NaN;
-        rank = Inf;
+        [~, name, ext] = fileparts(files(k).name);
+        name = string(name);
+        isModel = ext == ".slx";
         listed = find(catalog.Name == name, 1);
+        if isModel && (isempty(listed) || catalog.Summary(listed) == "")
+            continue        % a model the catalog does not describe stays out
+        end
+
+        header = strings(0);
+        if ~isModel
+            header = readHeader(fullfile(exampleDir, files(k).name));
+        end
+        category = tagValue(header, "Category");
+        summary = summaryLine(header, name);
+        delay = NaN;
+        press = "";
+        rank = Inf;
         if ~isempty(listed)
             if category == ""
                 category = catalog.Category(listed);
             end
+            if summary == ""
+                summary = catalog.Summary(listed);
+            end
             delay = catalog.Delay(listed);
+            press = catalog.Press(listed);
             rank = listed;
         end
         if category == ""
             category = "Other";
         end
 
-        examples(end + 1) = struct("Name", name, "Summary", summaryLine(header, name), ...
-            "Category", category, "Delay", delay, "Rank", rank, ...
-            "Thumbnail", "", "HasThumbnail", false); %#ok<AGROW>
+        examples(end + 1) = struct("Name", name, "Summary", summary, ...
+            "Category", category, "Delay", delay, "Press", press, ...
+            "IsModel", isModel, "Rank", rank, "Thumbnail", "", ...
+            "HasThumbnail", false); %#ok<AGROW>
     end
 
     % Inside a section the examples follow the order of the catalog (easiest
@@ -192,9 +209,10 @@ function captureThumb(root, exampleDir, example, thumbDir, options)
     end
     outFile = fullfile(thumbDir, example.Name + ".png");
     exe = fullfile(matlabroot, "bin", "matlab");
-    batch = sprintf("addpath('%s');addpath('%s');cd('%s');captureExampleThumb('%s','%s',%g,%d,%d)", ...
+    batch = sprintf("addpath('%s');addpath('%s');cd('%s');captureExampleThumb('%s','%s',%g,%d,%d,'%s')", ...
         fullfile(root, "phx"), fullfile(root, "tools"), exampleDir, ...
-        example.Name, replace(outFile, "\", "/"), delay, options.Width, options.Height);
+        example.Name, replace(outFile, "\", "/"), delay, options.Width, ...
+        options.Height, example.Press);
 
     fprintf("Capturing %-18s (%4.1f s) ... ", example.Name, delay);
     started = tic;
@@ -286,6 +304,11 @@ function s = tile(example, options)
     else
         thumb = sprintf("<span class=""phx-tile-noimg"">%s</span>", escape(name));
     end
+    if example.IsModel
+        open = sprintf("open_system('%s')", name);      % a Simulink model
+    else
+        open = sprintf("edit('%s')", name);
+    end
 
     s = "<div class=""phx-tile"">" + newline + ...
         sprintf("<a class=""phx-tile-shot"" href=""matlab:%s"" title=""Run %s"">%s</a>", name, name, thumb) + newline + ...
@@ -293,7 +316,7 @@ function s = tile(example, options)
         sprintf("<div class=""phx-tile-cmd"">%s</div>", escape(name)) + newline + ...
         sprintf("<p>%s</p>", dashes(escape(example.Summary))) + newline + ...
         "</div>" + newline + ...
-        sprintf("<div class=""phx-tile-acts""><a href=""matlab:%s"">Run</a><a href=""matlab:edit('%s')"">Open</a></div>", name, name) + newline + ...
+        sprintf("<div class=""phx-tile-acts""><a href=""matlab:%s"">Run</a><a href=""matlab:%s"">Open</a></div>", name, open) + newline + ...
         "</div>";
 end
 
