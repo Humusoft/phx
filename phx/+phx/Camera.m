@@ -34,6 +34,10 @@ classdef Camera < phx.base.Object
         % Connecting point in the local space of the second body
         PointB (1, 3) double = [0 0 0]
 
+        % Time the camera lags behind the tracked pose in seconds
+        % (0 for rigid tracking, Inf for a static camera)
+        TrackingLag (1, 1) double {mustBeNonnegative} = 0
+
         % PHX viewer
         Viewer = []
 
@@ -72,7 +76,7 @@ classdef Camera < phx.base.Object
             end
 
             % Create graphics objects
-            phx.Camera.updateView({obj});
+            phx.Camera.updateView({obj}, 0.01);
         end
     end
 
@@ -105,8 +109,16 @@ classdef Camera < phx.base.Object
 
                 pa = phx.internal.transformPoint(obj.Parents{1}.Matrix, obj.PointA);
                 pb = phx.internal.transformPoint(obj.Parents{2}.Matrix, obj.PointB);
-                obj.Viewer.CameraPosition = pa;
-                obj.Viewer.CameraTarget = pb;
+                tl = obj.TrackingLag;
+
+                if tl > 0
+                    w = 1 - exp(-dt/tl);
+                    obj.Viewer.CameraPosition = obj.Viewer.CameraPosition*(1 - w) + pa*w;
+                    obj.Viewer.CameraTarget = obj.Viewer.CameraTarget*(1 - w) + pb*w;
+                else
+                    obj.Viewer.CameraPosition = pa;
+                    obj.Viewer.CameraTarget = pb;
+                end
 
                 if ~isempty(obj.Video) && time >= obj.NextTime
                     obj.Video.writeVideo(getframe(gcf));

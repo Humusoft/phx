@@ -1,11 +1,12 @@
-classdef tBuoyancy < matlab.unittest.TestCase
+classdef tBuoyancy < PhxTestCase
 %tBuoyancy Volume sampling and floating-equilibrium tests for phx.Buoyancy.
 %
 %   The voxelization layer is pure geometry (phx.internal.Geometry), so
 %   those tests need neither the physics engine nor a graphics session.
 %   The floating tests exercise the full force pipeline end-to-end (a light
-%   sphere settles half submerged, a dense body sinks), so they carry the
-%   "Engine" tag and are assumed away when the MEX is absent.
+%   sphere settles half submerged, a dense body sinks) on headless bodies,
+%   so they carry the "Engine" tag and are assumed away when the MEX is
+%   absent.
 %
 %   See also phx.Buoyancy, phx.internal.Geometry
 
@@ -53,37 +54,29 @@ classdef tBuoyancy < matlab.unittest.TestCase
             % grid layer (D/2R = 1/32 m here), plus the icosphere mesh
             % volume sits ~3 % under the analytic sphere volume the mass is
             % computed from - together well within the 0.06 m tolerance.
-            b = tc.spawnBody([0 0 0.2], {"Sphere", "Radius", 0.5, "Density", 500});
+            tc.requireEngine;
+            b = tc.spawnBody([0 0 0.2], "Shape", {"Sphere", "Radius", 0.5, "Density", 500});
             phx.Buoyancy(b, "Level", 0, "Resolution", 16, "LinearDamping", 2000, ...
                 "AngularDamping", 20, "SurfaceSize", [0 0]);
             sim = phx.Simulation(b);
             tc.addTeardown(@() delete(sim));
 
-            sim.step(6, 1200); % dt = 5 ms
+            sim.step(6, 1200, -1); % dt = 5 ms
 
             tc.verifyEqual(b.Position(3), 0, "AbsTol", 0.06);
             tc.verifyLessThan(abs(b.LinearVelocity(3)), 0.05);
         end
 
         function denserThanLiquidBodySinks(tc)
-            b = tc.spawnBody([0 0 0.5], {"Box", "Size", [0.4 0.4 0.4], "Density", 3000});
+            tc.requireEngine;
+            b = tc.spawnBody([0 0 0.5], "Shape", {"Box", "Size", [0.4 0.4 0.4], "Density", 3000});
             phx.Buoyancy(b, "Level", 0, "LinearDamping", 50, "SurfaceSize", [0 0]);
             sim = phx.Simulation(b);
             tc.addTeardown(@() delete(sim));
 
-            sim.step(2, 400); % dt = 5 ms, no floor to stop the body
+            sim.step(2, 400, -1); % dt = 5 ms, no floor to stop the body
 
             tc.verifyLessThan(b.Position(3), -1);
-        end
-    end
-
-    methods (Access = private)
-        function b = spawnBody(tc, position, shape)
-            tc.assumeNotEmpty(which("phx.engine.io"), ...
-                "Physics engine (phx.engine.io) is not on the path.");
-            f = figure("Visible", "off");
-            tc.addTeardown(@() close(f));
-            b = phx.Body(axes(f), "Position", position, "Shape", shape);
         end
     end
 

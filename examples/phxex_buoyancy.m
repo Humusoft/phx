@@ -67,6 +67,9 @@ function phxex_buoyancy(duration, waves)
     bodies = [crate buoy timber anchor cat];
     names = ["crate" "buoy" "timber" "anchor" "cat"];
 
+    % Add planar shadows
+    phx.PlanarShadow(bodies, "Position", [0 0 -poolDepth]);
+
     % One water volume for all bodies; the level is either a calm plane or
     % a superposition of two travelling waves
     if waves

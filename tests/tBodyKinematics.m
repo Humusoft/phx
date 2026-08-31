@@ -1,4 +1,4 @@
-classdef tBodyKinematics < matlab.unittest.TestCase
+classdef tBodyKinematics < PhxTestCase
 %tBodyKinematics Round-trip tests for phx.Body pose properties.
 %
 %   A body is created in an invisible figure and is never added to a
@@ -11,20 +11,18 @@ classdef tBodyKinematics < matlab.unittest.TestCase
 %   Copyright 2026 HUMUSOFT s.r.o.
 
     properties
-        Fig
         Body
     end
 
     methods (TestMethodSetup)
         function makeBody(tc)
-            tc.Fig = figure("Visible", "off");
-            tc.addTeardown(@() close(tc.Fig));
-            tc.Body = phx.Body(axes(tc.Fig));
+            tc.Body = phx.Body(tc.prepareAxes);
             tc.addTeardown(@() delete(tc.Body));
         end
     end
 
     methods (Test, TestTags = {'Graphics'})
+
         function defaultPoseIsIdentity(tc)
             tc.verifyEqual(tc.Body.Transform, eye(4), "AbsTol", 1e-12);
             tc.verifyEqual(tc.Body.Position, [0 0 0], "AbsTol", 1e-12);
@@ -57,9 +55,7 @@ classdef tBodyKinematics < matlab.unittest.TestCase
             tc.verifyEqual(tc.Body.Orientation, R, "AbsTol", 1e-12);
             tc.verifyEqual(tc.Body.Position, [7 8 9], "AbsTol", 1e-12);
         end
-    end
 
-    methods (Test, TestTags = {'Graphics'})
         function eulerAnglesRoundTrip(tc)
             ang = [0.2 -0.3 0.5];
             tc.Body.EulerAngles = ang;
@@ -74,11 +70,9 @@ classdef tBodyKinematics < matlab.unittest.TestCase
             tc.Body.Quaternion = q;          % restore from quaternion
             tc.verifyEqual(tc.Body.Orientation, R, "AbsTol", 1e-9);
         end
-    end
 
-    methods (Test, TestTags = {'Graphics'})
         % Validation itself is engine-free, but the shared setup builds a
-        % body (hence a figure), so these stay under the Graphics tag.
+        % body (hence a figure), so these stay under the Graphics tag too.
         function badTypeIsRejected(tc)
             tc.verifyError(@() set(tc.Body, "Type", "bogus"), ?MException);
         end

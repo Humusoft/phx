@@ -98,6 +98,7 @@
 
         <tocitem target="phx.extra.Viewer.html">Viewer
             <tocitem target="phx.extra.Viewer.html">phx.extra.Viewer</tocitem>
+            <tocitem target="phx.PlanarShadow.html">phx.PlanarShadow</tocitem>
         </tocitem>
 
         <tocitem target="PhxModel.html" image="$toolbox/matlab/icons/simulink_icon.gif">Simulink

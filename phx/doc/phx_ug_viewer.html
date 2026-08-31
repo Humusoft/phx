@@ -13,7 +13,7 @@
 <div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; User Guide &rsaquo; Interactive viewer</div>
 
 <h1 class="phx-title">Interactive Viewer</h1>
-<p class="phx-purpose">A ready-made 3-D window with a sky, camera and mouse editing</p>
+<p class="phx-purpose">A ready-made 3-D window with a sky, camera, shadows and mouse editing</p>
 
 <p>Instead of bare axes you can use the enhanced viewer
 <a href="phx.extra.Viewer.html">phx.extra.Viewer</a> with a sky, a movable camera and the ability
@@ -37,9 +37,25 @@ phx.Body(<span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <spa
     <code class="phx-inline">ArrowsEnable</code> / <code class="phx-inline">WASDEnable</code>.</td></tr>
 </table>
 
+<h2 class="phx-h2">Shadows</h2>
+<p>MATLAB axes light objects but do not cast shadows, which makes a flying body hard to place: in a
+perspective view there is nothing to say how high above the floor it is.
+<a href="phx.PlanarShadow.html">phx.PlanarShadow</a> fills that gap by projecting the geometry of
+the chosen bodies onto a plane:</p>
+
+<pre class="phx-code"><span class="cmt">% shadow on the ground plane, lit from above and slightly aside</span>
+phx.PlanarShadow([b1 b2], <span class="str">"LightDirection"</span>, [-0.4 -0.3 -1]);</pre>
+
+<p>The plane does not have to be fixed. With <code class="phx-inline">Anchor</code> it is defined in
+the local frame of a body and follows it, so bodies can cast their shadow on a tilting plate, a
+moving platform or a wall. It is a projection rather than a rendered shadow, so bodies neither
+shadow each other nor block each other's shadow; see the
+<a href="phx.PlanarShadow.html">reference page</a> for the full list of limitations.</p>
+
 <div class="phx-seealso">
 <span class="lbl">See also</span>
-<a href="phx.extra.Viewer.html">phx.extra.Viewer</a>
+<a href="phx.extra.Viewer.html">phx.extra.Viewer</a>,
+<a href="phx.PlanarShadow.html">phx.PlanarShadow</a>
 </div>
 
 <div class="phx-seealso">

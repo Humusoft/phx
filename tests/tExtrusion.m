@@ -1,4 +1,4 @@
-classdef tExtrusion < matlab.unittest.TestCase
+classdef tExtrusion < PhxTestCase
 %tExtrusion Mesh-generation tests for phx.internal.Geometry.extrusion.
 %
 %   The swept-profile generator orients each cross-section with a

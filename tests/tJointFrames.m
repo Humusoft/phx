@@ -1,4 +1,4 @@
-classdef tJointFrames < matlab.unittest.TestCase
+classdef tJointFrames < PhxTestCase
 %tJointFrames Regression tests for the joint-frame coincidence rule.
 %
 %   A joint keeps its two joint frames (TransformA on body A, TransformB on
@@ -15,14 +15,15 @@ classdef tJointFrames < matlab.unittest.TestCase
 %   The axis convention is pinned down here as well: the free axis of a joint
 %   is the Z axis of its joint frames, which the engine expects on a different
 %   axis for a slider than for a hinge, so a regression in that remapping would
-%   silently send every prismatic joint sliding sideways.
+%   silently send every prismatic joint sliding sideways. The property-level
+%   round trip of AxisA/AxisB lives in tJointContract.
 %
 %   All bodies are created without graphics ([] axes), so only the engine is
 %   needed. The scene is a static column with a platform sliding along it on
 %   a vertical prismatic joint (sliding axis = local Z of the joint frames,
 %   which is world Z for the untouched default frames).
 %
-%   See also phx.base.Joint, phx.PrismaticJoint, phx.FixedJoint, tForceApplication
+%   See also phx.base.Joint, phx.PrismaticJoint, phx.FixedJoint, tJointContract
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 
@@ -34,9 +35,8 @@ classdef tJointFrames < matlab.unittest.TestCase
     end
 
     methods (TestClassSetup)
-        function requireEngine(tc)
-            tc.assumeNotEmpty(which("phx.engine.io"), ...
-                "Physics engine (phx.engine.io) is not on the path.");
+        function engineIsPresent(tc)
+            tc.requireEngine;
         end
     end
 
@@ -119,35 +119,6 @@ classdef tJointFrames < matlab.unittest.TestCase
             % bound still tells "held by the joint" from "sliding downwards".
             tc.verifyEqual(p(2:3), [0 0], "AbsTol", 0.02, ...
                 "Gravity must be carried by the joint, not leak into a slide.");
-        end
-
-        function axisPropertiesReadBackExactly(tc)
-            % AxisA/AxisB are a view of the third column of the joint frames,
-            % so a normalized direction must come back bit-for-bit, and the
-            % connecting point must survive an axis change untouched.
-            a = phx.Body([], "Type", "static");
-            b = phx.Body([], "Position", [1 0 0]);
-            tc.addTeardown(@() delete([a b]));
-
-            j = phx.RevoluteJoint(a, b);
-            tc.verifyEqual(j.AxisA, [0 0 1], "The default axis must be Z.");
-            tc.verifyEqual(j.AxisB, [0 0 1], "The default axis must be Z.");
-
-            j.PointA = [0.1 0.2 0.3];
-            j.AxisA = [0 1 0];
-            tc.verifyEqual(j.AxisA, [0 1 0]);
-            tc.verifyEqual(j.PointA, [0.1 0.2 0.3], ...
-                "Setting the axis must not disturb the connecting point.");
-            tc.verifyEqual(j.TransformA(1:3, 1:3)'*j.TransformA(1:3, 1:3), eye(3), ...
-                "AbsTol", 1e-15);
-
-            j.AxisB = [0 0 4];
-            tc.verifyEqual(j.AxisB, [0 0 1], "The direction must be normalized.");
-
-            tc.verifyError(@() setAxis(j), "phx:Joint:invalidAxis");
-            function setAxis(j)
-                j.AxisA = [0 0 0];
-            end
         end
 
         function fixedJointLeavesNoFreeDirection(tc)

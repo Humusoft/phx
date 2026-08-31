@@ -14,6 +14,7 @@ function phxex_rotmagdip
     [~, ax] = phx.extra.Viewer("clear", "DefaultCameraPosition", [1, 0, 80], "ViewMode", "plain"); % Set camera position and view mode
 
     % Physical model: create static and dynamic bodies
+    phx.base.ShapeMesh.resetColorOrder;
     ground = phx.Body(ax, "Type", "static", "Position", [0 0 0], "Shape", {"Cylinder", "Diameter", 1 "Height", 7, "Color", 0.9}, "Collisions", false);
     poles(1) = phx.Body(ax, "Type", "static", "Position", [-15 0 0], "EulerAngles", [0 pi/2 0], "Shape", {"Cylinder", "Diameter", 5, "Height", 2}, "Collisions", false);
     poles(2) = phx.Body(ax, "Type", "static", "Position", [7.5 -13 0], "EulerAngles", [0 pi/2 2*pi/3], "Shape", {"Cylinder", "Diameter", 5, "Height", 2}, "Collisions", false);

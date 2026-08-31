@@ -25,6 +25,9 @@ function phxex_soil
     
     % Create a kinematic body (bucket) for interaction
     exc = phx.Body(ax, "Type", "kinematic", "Position", [0 0 11], "Shape", {resdir+"Bucket.stl", "Scale", 0.2, "Centered", true, "Color", 0.4, "Envelope", "concave", "Style", "flat"});
+
+    % Add planar shadows
+    phx.PlanarShadow([exc rocks], "Anchor", ground, "Position", [0 0 0.5]);
     
     % Detection zone
     zone = phx.Zone(ground, "Bodies", rocks, "Position", [-30 0 5], "Size", [40 50 10], "EnteredFcn", @zoneEnter);

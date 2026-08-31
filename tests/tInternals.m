@@ -1,4 +1,4 @@
-classdef tInternals < matlab.unittest.TestCase
+classdef tInternals < PhxTestCase
 %tInternals Smoke tests for the undocumented MATLAB internals PHX relies on.
 %
 %   PHX deliberately calls a handful of matlab.*.internal.* APIs because
@@ -33,25 +33,23 @@ classdef tInternals < matlab.unittest.TestCase
 
         function interp1InternalMatchesDocumented(tc)
             % Script/resolveState signature: (X, V, method, extrapolation, Xq).
-            x = [0 1 2 4];
-            v = [0 1 0 2];
-            xq = [0.5 1.5 3 3.9];
-            yi = matlab.internal.math.interp1(x, v, 'linear', 'linear', xq);
-            tc.verifyEqual(yi, interp1(x, v, xq, 'linear'), "AbsTol", 1e-12);
-        end
-
-        function interp1InternalSupportsPchip(tc)
-            x = 0:5;
-            v = sin(x);
-            xq = [0.4 2.7 4.1];
-            yi = matlab.internal.math.interp1(x, v, 'pchip', 'pchip', xq);
-            tc.verifyEqual(yi, interp1(x, v, xq, 'pchip'), "AbsTol", 1e-12);
+            % The method name is passed straight through from the curve, so
+            % check the ones a script realistically uses. All query points lie
+            % inside the data range, where every method is extrapolation-free.
+            x = [0 1 2 4 5];
+            v = [0 1 0 2 -1];
+            xq = [0.5 1.5 3 3.9 4.5];
+            for method = {'linear', 'pchip', 'spline', 'nearest'}
+                yi = matlab.internal.math.interp1(x, v, method{1}, method{1}, xq);
+                tc.verifyEqual(yi, interp1(x, v, xq, method{1}), "AbsTol", 1e-12, ...
+                    "Internal interp1 differs for method " + method{1} + ".");
+            end
         end
 
         function stlreadInternalReturnsMesh(tc)
             % phx.internal.readMesh reads .Faces, .Vertices and .Normals from
             % the returned mesh; lock in those fields on a one-triangle file.
-            fileName = tc.writeTriangleSTL;
+            fileName = tc.writeSTL("triangle.stl", [0 0 0; 1 0 0; 0 1 0], [1 2 3]);
             stl = matlab.internal.meshio.stlread(fileName);
             tc.verifySize(stl.Faces, [1 3]);
             tc.verifySize(stl.Vertices, [3 3]);
@@ -61,7 +59,7 @@ classdef tInternals < matlab.unittest.TestCase
 
         function validateFileNameResolvesExisting(tc)
             % phx.internal.readMesh expects a cell array of resolved names.
-            fileName = tc.writeTriangleSTL;
+            fileName = tc.writeSTL("triangle.stl", [0 0 0; 1 0 0; 0 1 0], [1 2 3]);
             cFileName = matlab.io.internal.validators.validateFileName(fileName);
             tc.verifyClass(cFileName, 'cell');
             tc.verifyTrue(isfile(cFileName{1}));
@@ -85,27 +83,6 @@ classdef tInternals < matlab.unittest.TestCase
             M(13:15) = [1 -2 3];
             t.Matrix_I = M;
             tc.verifyEqual(t.Matrix, M);
-        end
-    end
-
-    methods (Access = private)
-        function fileName = writeTriangleSTL(tc)
-            % One-triangle ASCII STL in a temporary folder.
-            import matlab.unittest.fixtures.TemporaryFolderFixture
-            folder = tc.applyFixture(TemporaryFolderFixture).Folder;
-            fileName = fullfile(folder, 'triangle.stl');
-            fid = fopen(fileName, 'w');
-            tc.assertGreaterThan(fid, 0);
-            fprintf(fid, ['solid triangle\n' ...
-                '  facet normal 0 0 1\n' ...
-                '    outer loop\n' ...
-                '      vertex 0 0 0\n' ...
-                '      vertex 1 0 0\n' ...
-                '      vertex 0 1 0\n' ...
-                '    endloop\n' ...
-                '  endfacet\n' ...
-                'endsolid triangle\n']);
-            fclose(fid);
         end
     end
 

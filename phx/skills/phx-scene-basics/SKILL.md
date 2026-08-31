@@ -208,6 +208,12 @@ decides whether an imported body behaves:
 - `"concave"` — the exact triangle mesh; **keep it static** (terrain, funnels, tracks).
   Set `FlipFaces` to reverse the winding if the solid side comes out inverted.
 
+`phx.shape.Revolution` takes `Envelope` too: `"convex"` (default), `"concave"`, or
+`"cylinder"` fitted about the revolution axis, its radius the largest radius in the
+`Profile`. That last one is how a revolved profile gets a **smooth rolling rim** (a
+wheel, a washer) instead of a faceted hull, and it is the only envelope of that shape
+that needs no graphics.
+
 ## Prefab assemblies (`phx.assembly.*`)
 
 Package functions that build common multi-body setups in one call. Shared
@@ -352,6 +358,6 @@ class as a starting point.
 
 - **phx-constraints-forces** — joints, springs, ropes, thrusters, buoyancy, fields,
   `applyForce`/`applyTorque`, scripted and closed-loop control.
-- **phx-logging-view** — Logger, Trace, Measure, Zone, Camera, the interactive Viewer, plotting.
+- **phx-logging-view** — Logger, Trace, Measure, Zone, PlanarShadow, Camera, the interactive Viewer, plotting.
 - **phx-engine-gotchas** — the `phx.engine.io` gateway, engine variants, error IDs, known quirks, tests.
 - **phx-simulink** — drive a PHX scene from Simulink via the PhxModel co-simulation block.

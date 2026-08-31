@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.PlanarShadow</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.PlanarShadow</div>
+
+<h1 class="phx-title">phx.PlanarShadow</h1>
+<p class="phx-purpose">Shadow of bodies projected onto a plane</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.PlanarShadow &nbsp;|&nbsp; Superclass: <a href="phx.base.Object.html">phx.base.Object</a></p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.PlanarShadow</code> draws the shadow of one or more bodies as a
+projection of their visual geometry onto a plane. The plane is given by a point
+(<code class="phx-inline">Position</code>) and a normal (<code class="phx-inline">Normal</code>),
+the light either by a direction (<code class="phx-inline">LightDirection</code>) or by a point
+source (<code class="phx-inline">LightPosition</code>). The result is a flat translucent silhouette
+redrawn at every frame; it is a graphical object only and takes no part in the simulation.</p>
+
+<p>Besides looking better, a shadow makes a scene easier to read. A perspective view does not tell
+how high a body is above the surface or where it is going to land, and its shadow does.</p>
+
+<p>The plane can be attached to a body with <code class="phx-inline">Anchor</code>. Position and
+Normal are then taken in the local frame of that body, so the plane travels and tilts with it, which
+is what a shadow cast on a tilting plate or a moving platform needs. The light stays in world
+coordinates in either case.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">shadow = phx.PlanarShadow(bodies)</span>
+<span class="phx-syntax">shadow = phx.PlanarShadow(___,Name,Value)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">shadow = phx.PlanarShadow(bodies)</code> creates the shadows of the
+given bodies on the horizontal plane z&nbsp;=&nbsp;0, lit from straight above. All bodies of one
+object share the same plane and the same light; use several objects for several planes or lights.</p>
+</div>
+
+<h3 class="phx-h3">Input Arguments</h3>
+<table class="phx-tbl">
+<tr><th>Argument</th><th>Type</th><th>Description</th></tr>
+<tr><td class="name">bodies</td><td class="type">phx.Body (array)</td><td>The bodies that cast the shadow.</td></tr>
+</table>
+
+<h2 class="phx-h2">Properties</h2>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">Anchor</td><td class="dflt">phx.Body.empty</td><td>Body the plane is attached to. Position and Normal are then taken in its local frame and the plane follows it. Empty keeps the plane fixed in the world.</td></tr>
+<tr><td class="name">Position</td><td class="dflt">[0 0 0]</td><td>Point lying in the shadow plane, in the local frame of the anchor.</td></tr>
+<tr><td class="name">Normal</td><td class="dflt">[0 0 1]</td><td>Normal of the shadow plane, in the local frame of the anchor.</td></tr>
+<tr><td class="name">LightDirection</td><td class="dflt">[0 0 -1]</td><td>Direction of the parallel light, in world coordinates. Must not be parallel to the plane.</td></tr>
+<tr><td class="name">LightPosition</td><td class="dflt">[]</td><td>Position of a point light source, in world coordinates. When set, the light diverges from that point and LightDirection is not used.</td></tr>
+<tr><td class="name">Offset</td><td class="dflt">0.002</td><td>Distance of the shadow above the plane, to keep it clear of the surface it is drawn on.</td></tr>
+<tr><td class="name">Alpha</td><td class="dflt">0.4</td><td>Opacity of the shadow, from 0 (invisible) to 1 (opaque).</td></tr>
+<tr><td class="name">Extent</td><td class="dflt">[Inf Inf]</td><td>Half-sizes of the shadow area within the plane, measured from Position along the plane axes. Keeps the shadow on a finite surface such as a plate.</td></tr>
+<tr><td class="name">Detail</td><td class="dflt">1</td><td>Fraction of the faces kept when the geometry is cached, decimated with <code class="phx-inline">reducepatch</code>. Worth lowering only for bodies with a very large mesh; see below.</td></tr>
+<tr><td class="name">Color</td><td class="dflt">[0.1 0.1 0.14]</td><td>Color of the shadow (inherited from <a href="phx.base.Object.html">phx.base.Object</a>). Assigning it resets the shadow to opaque, so set Alpha after Color, not before.</td></tr>
+</table>
+
+<h2 class="phx-h2">Limitations</h2>
+<p>The shadow is a projection onto one plane, not a rendered shadow. Bodies do not shadow each
+other, nothing shadows itself, and nothing blocks a shadow: it is drawn even where an obstacle
+stands between the body and the plane. A body on the far side of the plane casts nothing.</p>
+
+<p>Overlapping translucent triangles add up, so with <code class="phx-inline">Alpha</code> below 1
+the silhouette shows edges where the projected front and back faces, or the shadows of two bodies,
+cross each other. <code class="phx-inline">Alpha</code>&nbsp;=&nbsp;1 gives a clean silhouette.</p>
+
+<p><code class="phx-inline">Extent</code> clamps the shadow to the given area instead of clipping
+it, so a shadow reaching past the boundary is squashed against it and one entirely outside the area
+collapses to nothing.</p>
+
+<p>The projected geometry is read from the bodies when the simulation pipeline is built. Replacing
+the <code class="phx-inline">Shape</code> of a body afterwards is not picked up until the pipeline
+is rebuilt (see <a href="phx.Simulation.html">phx.Simulation</a>). Deleting the anchor removes the
+shadow.</p>
+
+<p>Whether a body is behind the plane is decided by the centre of its geometry, so a body that the
+plane cuts through keeps casting until its centre passes, and the part behind the plane is projected
+to the wrong side of it. Neither shows on a floor that bodies rest on rather than sink into.</p>
+
+<p>Every redraw re-projects the bodies that moved and uploads the whole silhouette in one piece, so
+the cost follows the total mesh size of the cast bodies rather than their number. Fifty simple
+bodies are cheap; one body with a large imported mesh is what makes a shadow expensive. There is
+also a fixed cost per object and per redraw that no setting removes, so a shadow of a body with a
+few thousand vertices costs about the same as a shadow of a simple box.</p>
+
+<p><code class="phx-inline">Detail</code> trades silhouette accuracy for that vertex count, and how
+much it buys depends on how large the mesh is. On a body of 82000 vertices, keeping a quarter of
+the faces cut the per-redraw cost of the shadow by a factor of three; on a body of a few thousand
+vertices the same setting shaves off a few percent, because the fixed cost dominates there. The
+silhouette itself survives the decimation well: a teapot mesh cut to a tenth of its faces differs
+from the full one by a thin fringe along the outline.</p>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">Shadows on the ground plane</h4>
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Position"</span>, [0 0 -0.1], ...
+    <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [6 6 0.2]});
+b1 = phx.Body(<span class="str">"Position"</span>, [-1.2 0.2 2.2], <span class="str">"EulerAngles"</span>, [0.4 0.5 0.2], ...
+    <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [0.8 0.8 0.8]});
+b2 = phx.Body(<span class="str">"Position"</span>, [0.9 0.6 3.0], <span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>, <span class="str">"Radius"</span>, 0.5});
+b3 = phx.Body(<span class="str">"Position"</span>, [0.2 -1.1 1.3], <span class="str">"Shape"</span>, {<span class="str">"Cylinder"</span>, <span class="str">"Radius"</span>, 0.35});
+
+phx.PlanarShadow([b1 b2 b3], <span class="str">"LightDirection"</span>, [-0.4 -0.3 -1]);
+
+sim = phx.Simulation;
+sim.step(0.35, 70, 2);
+delete(sim);</pre>
+
+<figure class="phx-fig">
+<img src="img/planarshadow.png" alt="Three falling bodies with their shadows on the ground plate">
+<figcaption>Caught in mid-air. The distance between each body and its shadow shows how far it still
+has to fall, and the shadow marks where it will land.</figcaption>
+</figure>
+
+<h4 class="phx-h4">Shadow on a tilting plate</h4>
+<p>With <code class="phx-inline">Anchor</code> the plane is defined in the frame of the plate, here
+its top face, and follows the plate as it tilts. <code class="phx-inline">Extent</code> keeps the
+shadow on the plate when the ball rolls over the edge.</p>
+<pre class="phx-code">plateSize = [4 4 0.2];
+plate = phx.Body(<span class="str">"Type"</span>, <span class="str">"kinematic"</span>, <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, plateSize});
+ball = phx.Body(<span class="str">"Position"</span>, [1.5 1.5 2], <span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>, <span class="str">"Radius"</span>, 0.3});
+
+phx.PlanarShadow(ball, <span class="str">"Anchor"</span>, plate, <span class="str">"Position"</span>, [0 0 plateSize(3)/2], ...
+    <span class="str">"Extent"</span>, plateSize(1:2)/2, <span class="str">"Alpha"</span>, 0.35);</pre>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.extra.Viewer.html">phx.extra.Viewer</a>,
+<a href="phx.Camera.html">phx.Camera</a>,
+<a href="phx.Trace.html">phx.Trace</a>,
+<a href="phx.Body.html">phx.Body</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_viewer.html">Interactive viewer</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

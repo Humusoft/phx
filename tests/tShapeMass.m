@@ -1,4 +1,4 @@
-classdef tShapeMass < matlab.unittest.TestCase
+classdef tShapeMass < PhxTestCase
 %tShapeMass Analytic checks of shape mass and inertia.
 %
 %   computeMass is a pure method on the value-class shapes, so these tests
@@ -10,25 +10,18 @@ classdef tShapeMass < matlab.unittest.TestCase
 %   Copyright 2026 HUMUSOFT s.r.o.
 
     methods (Test)
-        function boxUnitMassAndInertia(tc)
-            s = phx.shape.Box("Size", [1 1 1], "Density", 1000);
-            [m, I] = s.computeMass;
-            tc.verifyEqual(m, 1000, "RelTol", 1e-12);
-            % I = m/12 * (b^2 + c^2) per axis, here all sides = 1
-            tc.verifyEqual(I, [2 2 2]*1000/12, "RelTol", 1e-12);
-        end
-
-        function boxMassScalesWithVolume(tc)
-            s = phx.shape.Box("Size", [2 3 4], "Density", 500);
-            m = s.computeMass;
-            tc.verifyEqual(m, 500*2*3*4, "RelTol", 1e-12);
-        end
-
-        function boxInertiaIsAnisotropic(tc)
-            s = phx.shape.Box("Size", [1 2 3], "Density", 1000);
-            [m, I] = s.computeMass;
-            q = [1 4 9];
-            tc.verifyEqual(I, [q(2)+q(3), q(1)+q(3), q(1)+q(2)]*m/12, "RelTol", 1e-12);
+        function boxMassAndInertia(tc)
+            % m = density*volume and I = m/12*(b^2 + c^2) per axis, checked on
+            % a unit cube (all three equal) and on a box with three different
+            % sides (which is where a swapped axis would show).
+            for size = {[1 1 1], [2 3 4], [1 2 3]}
+                s = phx.shape.Box("Size", size{1}, "Density", 1000);
+                [m, I] = s.computeMass;
+                q = size{1}.^2;
+                tc.verifyEqual(m, 1000*prod(size{1}), "RelTol", 1e-12);
+                tc.verifyEqual(I, [q(2)+q(3), q(1)+q(3), q(1)+q(2)]*m/12, ...
+                    "RelTol", 1e-12);
+            end
         end
 
         function sphereMassAndInertia(tc)

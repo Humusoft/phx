@@ -1,4 +1,4 @@
-classdef tPhxMath < matlab.unittest.TestCase
+classdef tPhxMath < PhxTestCase
 %tPhxMath Unit tests for phx.internal.Math and related pure helpers.
 %
 %   These tests are completely engine-free and toolbox-free; they exercise
@@ -115,28 +115,23 @@ classdef tPhxMath < matlab.unittest.TestCase
             end
         end
 
-        function alignZLeavesAnAlreadyAlignedFrameAlone(tc)
-            % Aligning a frame to the axis Z it already has must do nothing,
-            % including when a rotation about that axis has been applied.
+        function alignZDoesNothingWhenThereIsNothingToDo(tc)
+            % Aligning to the axis a frame already has must leave it alone,
+            % including after a rotation about that axis, and applying the
+            % same alignment twice must not keep turning the frame.
             tc.verifyEqual(phx.internal.Math.alignZ(eye(3), [0 0 1]), eye(3));
 
             R0 = phx.internal.Math.rotAA([0 0 1], pi/6);
             tc.verifyEqual(phx.internal.Math.alignZ(R0, [0 0 1]), R0, "AbsTol", 1e-15);
-        end
 
-        function alignZIgnoresDirectionLength(tc)
-            % The direction is normalized internally.
+            % The direction is normalized internally, so its length is inert.
             tc.verifyEqual(phx.internal.Math.alignZ(eye(3), [0 0 5]), eye(3));
             R = phx.internal.Math.alignZ(eye(3), [0 3 4]);
             tc.verifyEqual(R(:, 3)', [0 0.6 0.8], "AbsTol", 1e-15);
-        end
 
-        function alignZIsIdempotent(tc)
-            % Setting the same axis twice must not keep turning the frame.
             a = [0.2 -0.5 0.84];
             R1 = phx.internal.Math.alignZ(eye(3), a);
-            R2 = phx.internal.Math.alignZ(R1, a);
-            tc.verifyEqual(R2, R1, "AbsTol", 1e-15);
+            tc.verifyEqual(phx.internal.Math.alignZ(R1, a), R1, "AbsTol", 1e-15);
         end
 
         function quaternionKnownZRotation(tc)

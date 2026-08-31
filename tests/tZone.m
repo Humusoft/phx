@@ -1,4 +1,4 @@
-classdef tZone < matlab.unittest.TestCase
+classdef tZone < PhxTestCase
 %tZone Tests for phx.Zone spatial detection.
 %
 %   The detection-logic tests drive body positions by hand and call the
@@ -12,7 +12,6 @@ classdef tZone < matlab.unittest.TestCase
 %   Copyright 2026 HUMUSOFT s.r.o.
 
     properties
-        Fig
         Ax
         EnterLog
         ExitLog
@@ -20,9 +19,7 @@ classdef tZone < matlab.unittest.TestCase
 
     methods (TestMethodSetup)
         function setup(tc)
-            tc.Fig = figure("Visible", "off");
-            tc.addTeardown(@() close(tc.Fig));
-            tc.Ax = axes(tc.Fig);
+            tc.Ax = tc.prepareAxes;
             tc.EnterLog = phx.Body.empty;
             tc.ExitLog = phx.Body.empty;
         end
@@ -200,11 +197,6 @@ classdef tZone < matlab.unittest.TestCase
     end
 
     methods (Access = private)
-        function requireEngine(tc)
-            tc.assumeNotEmpty(which("phx.engine.io"), ...
-                "Physics engine (phx.engine.io) is not on the path.");
-        end
-
         function b = mkBody(tc, pos, type)
             arguments
                 tc

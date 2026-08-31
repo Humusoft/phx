@@ -25,6 +25,12 @@ plain axes (whichever is found in the current figure, or set explicitly via
 <code class="phx-inline">Viewer</code>). It can also record the view into a video file
 (MPEG&#8209;4) at a frame rate based on simulation time.</p>
 
+<p>The camera follows the bodies rigidly by default, so any jitter of the tracked bodies shows up
+directly in the view. Setting <code class="phx-inline">TrackingLag</code> smooths the motion out
+with a first-order lag: the camera covers <code class="phx-inline">1-1/e</code>, i.e. about 63&nbsp;%,
+of its distance to the tracked pose in every <code class="phx-inline">TrackingLag</code> seconds,
+independently of how often the view is redrawn.</p>
+
 <h2 class="phx-h2">Creation</h2>
 <h3 class="phx-h3">Syntax</h3>
 <span class="phx-syntax">cam = phx.Camera(bodyA,bodyB)</span>
@@ -50,6 +56,7 @@ properties.</p>
 <tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
 <tr><td class="name">PointA</td><td class="dflt">[0 0 0]</td><td>Connecting point in the local space of the first body (camera position offset).</td></tr>
 <tr><td class="name">PointB</td><td class="dflt">[0 0 0]</td><td>Connecting point in the local space of the second body (camera target offset).</td></tr>
+<tr><td class="name">TrackingLag</td><td class="dflt">0</td><td>Time the camera lags behind the tracked pose, <span class="phx-unit">s</span> (0 = rigid tracking, <code class="phx-inline">Inf</code> = static camera).</td></tr>
 <tr><td class="name">Viewer</td><td class="dflt">[]</td><td>PHX viewer or axes to drive. Empty picks the <a href="phx.extra.Viewer.html">phx.extra.Viewer</a> of the current figure, or the current axes.</td></tr>
 <tr><td class="name">RecordFile</td><td class="type">string</td><td>Video file name. When set, the view is recorded to an MPEG&#8209;4 file during the simulation.</td></tr>
 <tr><td class="name">RecordFPS</td><td class="dflt">30</td><td>Video frame rate based on simulation time, <span class="phx-unit">frames/s</span>.</td></tr>
@@ -74,6 +81,13 @@ delete(sim);</pre>
 <figcaption>The view through the body-mounted camera: looking down from the chase body at the ball
 resting on the ground body.</figcaption>
 </figure>
+
+<h4 class="phx-h4">Smooth out the camera motion</h4>
+<pre class="phx-code">phx.Camera(chase, ball, <span class="str">"TrackingLag"</span>, 0.3);</pre>
+<p>The camera now trails the pose it tracks by roughly a third of a second, which smooths out
+contact jolts and jitter of the tracked bodies. Values around 0.15 to 0.5 suit a chase camera,
+larger ones give a slow cinematic drift. Note that a lagging camera stays visibly behind for as
+long as the tracked body keeps accelerating &mdash; it only catches up once the motion steadies.</p>
 
 <h4 class="phx-h4">Record the view to a video file</h4>
 <pre class="phx-code">phx.Camera(chase, ball, <span class="str">"RecordFile"</span>, <span class="str">"flight.mp4"</span>, <span class="str">"RecordFPS"</span>, 60);</pre>

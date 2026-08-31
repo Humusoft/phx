@@ -1,4 +1,4 @@
-classdef tAssembly < matlab.unittest.TestCase
+classdef tAssembly < PhxTestCase
 %tAssembly Tests for the phx.assembly scene builders.
 %
 %   Untagged tests cover the option validation and need neither graphics
@@ -6,23 +6,20 @@ classdef tAssembly < matlab.unittest.TestCase
 %   structure and geometry (arena: inner dimensions, floor surface through
 %   the origin, closed corners; chain: link poses along the polyline,
 %   joint types per axis row, anchors; wall: brick sizes, the running bond
-%   and both ways of ending the shifted rows) and the shared base-pose
-%   options. The Engine-tagged tests verify that a moving body cannot
-%   escape the arena, that an anchored chain swings as a pendulum without
-%   falling apart and that a brick wall stands on its own yet collapses
-%   when hit.
+%   and both ways of ending the shifted rows). The Engine-tagged tests
+%   verify that a moving body cannot escape the arena, that an anchored
+%   chain swings as a pendulum without falling apart and that a brick wall
+%   stands on its own yet collapses when hit.
 %
-%   See also phx.assembly.arena, phx.assembly.chain, phx.assembly.wall
+%   What all the builders have in common - the axes target, the headless
+%   build and the base-pose options - is in tAssemblyConventions.
+%
+%   See also phx.assembly.arena, phx.assembly.chain, phx.assembly.wall,
+%   tAssemblyConventions
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 
     methods (Test)
-        function conflictingBaseRotationRaisesError(tc)
-            tc.verifyError(@() phx.assembly.arena( ...
-                "Orientation", [0 -1 0; 1 0 0; 0 0 1], "EulerAngles", [0 0 pi/2]), ...
-                "phx:arena:conflictingOptions");
-        end
-
         function invalidSizeRaisesError(tc)
             tc.verifyError(@() phx.assembly.arena("Size", [2 -1 0.5]), ...
                 "MATLAB:validators:mustBePositive");
@@ -37,9 +34,6 @@ classdef tAssembly < matlab.unittest.TestCase
                 "Color", zeros(3)), "phx:scatter:invalidColor");
             tc.verifyError(@() phx.assembly.scatter({"Sphere"}, 10, ...
                 "Region", [0.1 0.1 0], "Spacing", 1), "phx:scatter:regionFull");
-            tc.verifyError(@() phx.assembly.scatter({"Sphere"}, 2, ...
-                "Orientation", [0 -1 0; 1 0 0; 0 0 1], "EulerAngles", [0 0 pi/2]), ...
-                "phx:scatter:conflictingOptions");
         end
 
         function invalidChainInputsRaiseErrors(tc)
@@ -51,9 +45,6 @@ classdef tAssembly < matlab.unittest.TestCase
                 "phx:chain:invalidAxis");
             tc.verifyError(@() phx.assembly.chain([0 0 0; 0.05 0 0], "Diameter", 0.1), ...
                 "phx:chain:linkTooShort");
-            tc.verifyError(@() phx.assembly.chain([0 0 0; 1 0 0], ...
-                "Orientation", [0 -1 0; 1 0 0; 0 0 1], "EulerAngles", [0 0 pi/2]), ...
-                "phx:chain:conflictingOptions");
         end
 
         function invalidWallInputsRaiseErrors(tc)
@@ -68,9 +59,6 @@ classdef tAssembly < matlab.unittest.TestCase
                 "MATLAB:validators:mustBeInRange");
             tc.verifyError(@() phx.assembly.wall("RandomTint", -0.1), ...
                 "MATLAB:validators:mustBeInRange");
-            tc.verifyError(@() phx.assembly.wall( ...
-                "Orientation", [0 -1 0; 1 0 0; 0 0 1], "EulerAngles", [0 0 pi/2]), ...
-                "phx:wall:conflictingOptions");
         end
     end
 
@@ -106,22 +94,6 @@ classdef tAssembly < matlab.unittest.TestCase
             end
         end
 
-        function basePoseTransformsTheWholeArena(tc)
-            tc.prepareAxes;
-            ref = phx.assembly.arena;
-            TBase = eye(4);
-            TBase(1:3, 1:3) = phx.internal.Math.rot321([0.2 -0.3 0.4]);
-            TBase(1:3, 4) = [0.5 -1 2];
-            moved = phx.assembly.arena("Position", [0.5 -1 2], "EulerAngles", [0.2 -0.3 0.4]);
-
-            refParts = [ref.floor ref.walls];
-            movedParts = [moved.floor moved.walls];
-            for i = 1:numel(refParts)
-                tc.verifyEqual(movedParts(i).Transform, ...
-                    TBase*refParts(i).Transform, "AbsTol", 1e-12, ...
-                    "Base pose was not applied to arena part #" + i + ".");
-            end
-        end
         function chainLinksFollowThePolyline(tc)
             tc.prepareAxes;
             % An L-shaped chain with a revolute elbow and a spherical wrist,
@@ -151,8 +123,8 @@ classdef tAssembly < matlab.unittest.TestCase
             % with the polyline points in the world
             tc.verifyClass(parts.joints{1}, "phx.RevoluteJoint"); % point 2
             tc.verifyClass(parts.joints{2}, "phx.RevoluteJoint"); % anchor, point 1
-            tc.verifyJointAt(parts.joints{1}, pts(2, :));
-            tc.verifyJointAt(parts.joints{2}, pts(1, :));
+            tc.verifyAnchorsCoincide(parts.joints{1}, 1e-9, pts(2, :));
+            tc.verifyAnchorsCoincide(parts.joints{2}, 1e-9, pts(1, :));
 
             % The default zero axis makes the joints spherical
             sph = phx.assembly.chain(pts, "Diameter", 0.05);
@@ -268,17 +240,6 @@ classdef tAssembly < matlab.unittest.TestCase
                 delete(bricks);
             end
 
-            % The base pose moves the whole wall rigidly
-            ref = phx.assembly.wall("Rows", 2, "Columns", 3);
-            TBase = eye(4);
-            TBase(1:3, 1:3) = phx.internal.Math.rot321([0.2 -0.3 0.4]);
-            TBase(1:3, 4) = [0.5 -1 2];
-            moved = phx.assembly.wall("Rows", 2, "Columns", 3, ...
-                "Position", [0.5 -1 2], "EulerAngles", [0.2 -0.3 0.4]);
-            for i = 1:numel(ref)
-                tc.verifyEqual(moved(i).Transform, TBase*ref(i).Transform, ...
-                    "AbsTol", 1e-12, "Base pose was not applied to brick #" + i + ".");
-            end
         end
 
         function wallRandomTintShadesTheBricks(tc)
@@ -320,71 +281,11 @@ classdef tAssembly < matlab.unittest.TestCase
                 "An untinted wall consumed random numbers.");
         end
 
-        function explicitAxesTargetIsHonored(tc)
-            % All builders take an optional leading axes target and leave
-            % the current axes untouched
-            f = figure("Visible", "off");
-            tc.addTeardown(@() close(f));
-            axTarget = subplot(1, 2, 2, "Parent", f);
-            axCurrent = subplot(1, 2, 1, "Parent", f);
-            axes(axCurrent);
-
-            parts = phx.assembly.arena(axTarget);
-            links = phx.assembly.chain(axTarget, [0 0 0; 0.4 0 0]).links;
-            balls = phx.assembly.scatter(axTarget, {"Sphere", "Diameter", 0.2}, 3);
-            bricks = phx.assembly.wall(axTarget, "Rows", 2, "Columns", 2);
-
-            for b = [parts.floor parts.walls links balls bricks]
-                tc.verifyEqual(b.ParentAxes, axTarget, ...
-                    "A body was not drawn into the requested axes.");
-            end
-            tc.verifyEqual(gca, axCurrent, "The current axes changed.");
-        end
-
-        function emptyTargetBuildsWithoutGraphics(tc)
-            % An explicit [] target follows the phx.Body([], ...) headless
-            % convention: no parent axes and no figure gets created
-            nFigures = numel(findall(groot, "Type", "figure"));
-
-            parts = phx.assembly.arena([]);
-            ch = phx.assembly.chain([], [0 0 0; 0.4 0 0], "Anchor", "start");
-            balls = phx.assembly.scatter([], {"Sphere", "Diameter", 0.2}, 3);
-            bricks = phx.assembly.wall([], "Rows", 2, "Columns", 2);
-
-            for b = [parts.floor parts.walls ch.links ch.anchors balls bricks]
-                tc.verifyEmpty(b.ParentAxes, "A headless body got a parent axes.");
-            end
-            tc.verifyEqual(numel(findall(groot, "Type", "figure")), nFigures, ...
-                "A headless build created a figure.");
-        end
-
-        function basePoseTransformsTheWholeChain(tc)
-            tc.prepareAxes;
-            pts = [0 0 0; 0.4 0 0; 0.8 0 0.2];
-            ref = phx.assembly.chain(pts, "Anchor", "both");
-            TBase = eye(4);
-            TBase(1:3, 1:3) = phx.internal.Math.rot321([0.2 -0.3 0.4]);
-            TBase(1:3, 4) = [0.5 -1 2];
-            moved = phx.assembly.chain(pts, "Anchor", "both", ...
-                "Position", [0.5 -1 2], "EulerAngles", [0.2 -0.3 0.4]);
-
-            for i = 1:numel(ref.links)
-                tc.verifyEqual(moved.links(i).Transform, ...
-                    TBase*ref.links(i).Transform, "AbsTol", 1e-12, ...
-                    "Base pose was not applied to link #" + i + ".");
-            end
-            for i = 1:numel(ref.anchors)
-                tc.verifyEqual(moved.anchors(i).Position, ...
-                    (TBase(1:3, 1:3)*ref.anchors(i).Position' + TBase(1:3, 4))', ...
-                    "AbsTol", 1e-12, "Base pose was not applied to anchor #" + i + ".");
-            end
-        end
     end
 
     methods (Test, TestTags = {'Engine'})
         function arenaKeepsBodiesInside(tc)
-            tc.assumeNotEmpty(which("phx.engine.io"), ...
-                "Physics engine (phx.engine.io) is not on the path.");
+            tc.requireEngine;
             tc.prepareAxes;
 
             s = [1 1 0.4];
@@ -395,7 +296,7 @@ classdef tAssembly < matlab.unittest.TestCase
 
             sim = phx.Simulation(gca);
             tc.addTeardown(@() delete(sim));
-            sim.step(2, 400); % dt = 5 ms, no redraw
+            sim.step(2, 400, -1); % dt = 5 ms, no redraw
 
             % The ball ricocheted off the walls but stayed in the inner space
             p = ball.Position;
@@ -407,8 +308,7 @@ classdef tAssembly < matlab.unittest.TestCase
         end
 
         function anchoredChainSwingsAsAPendulum(tc)
-            tc.assumeNotEmpty(which("phx.engine.io"), ...
-                "Physics engine (phx.engine.io) is not on the path.");
+            tc.requireEngine;
             tc.prepareAxes;
 
             % A horizontal double pendulum released from rest
@@ -420,7 +320,7 @@ classdef tAssembly < matlab.unittest.TestCase
             % The tip must swing through the lower half-circle at some point
             tipLow = 0;
             for k = 1:10
-                sim.step(0.2, 100); % dt = 2 ms for the constraint chain
+                sim.step(0.2, 100, -1); % dt = 2 ms for the constraint chain
                 tip = phx.internal.transformPoint(parts.links(2).Transform, ...
                     [0 0 0.15]);
                 tc.verifyTrue(all(isfinite(tip)), "The chain state diverged.");
@@ -432,13 +332,12 @@ classdef tAssembly < matlab.unittest.TestCase
             tc.verifyEqual(tip(2), 0, "AbsTol", 1e-3, ...
                 "The revolute joints did not keep the swing planar.");
             for i = 1:numel(parts.joints)
-                tc.verifyJointAt(parts.joints{i}, [], 0.01);
+                tc.verifyAnchorsCoincide(parts.joints{i}, 0.01);
             end
         end
 
         function brickWallStandsAndCollapses(tc)
-            tc.assumeNotEmpty(which("phx.engine.io"), ...
-                "Physics engine (phx.engine.io) is not on the path.");
+            tc.requireEngine;
             tc.prepareAxes;
 
             phx.Body(gca, "Type", "static", "Position", [0 0 -0.1], ...
@@ -452,7 +351,7 @@ classdef tAssembly < matlab.unittest.TestCase
             % a fraction of a brick and come to rest
             z0 = vertcat(bricks.Position);
             z0 = z0(:, 3);
-            sim.step(2, 400); % dt = 5 ms
+            sim.step(2, 400, -1); % dt = 5 ms
             z1 = vertcat(bricks.Position);
             z1 = z1(:, 3);
             tc.verifyTrue(all(isfinite(z1)), "The wall state diverged.");
@@ -465,46 +364,11 @@ classdef tAssembly < matlab.unittest.TestCase
                 "Shape", {"Sphere", "Radius", 0.2, "Density", 4000}, ...
                 "LinearVelocity", [10 0 0]);
             sim.addObjects(ball); % the ball joined the scene after the build
-            sim.step(1.5, 300);
+            sim.step(1.5, 300, -1);
             z2 = vertcat(bricks.Position);
             z2 = z2(:, 3);
             tc.verifyGreaterThan(max(z0 - z2), 0.2, ...
                 "The wall did not collapse after the impact.");
-        end
-    end
-
-    methods (Access = private)
-        function verifyJointAt(tc, j, point, tol)
-            % Both world-space anchor points of the joint coincide (and
-            % optionally sit at the given point)
-            if nargin < 4
-                tol = 1e-9;
-            end
-            pa = phx.internal.transformPoint(j.Parents{1}.Transform, j.PointA);
-            pb = phx.internal.transformPoint(j.Parents{2}.Transform, j.PointB);
-            tc.verifyEqual(pa, pb, "AbsTol", tol, ...
-                "Anchor points of joint '" + j.Name + "' do not coincide.");
-            if nargin > 2 && ~isempty(point)
-                tc.verifyEqual(pa, point, "AbsTol", tol, ...
-                    "Joint '" + j.Name + "' does not sit at the expected point.");
-            end
-        end
-
-        function prepareAxes(tc)
-            f = figure("Visible", "off");
-            tc.addTeardown(@() close(f));
-            axes(f);
-        end
-
-        function shape = bodyShape(~, body)
-            shape = [];
-            for ch = body.Graphics.Children'
-                s = getappdata(ch, "phxShape");
-                if ~isempty(s)
-                    shape = s;
-                    return
-                end
-            end
         end
     end
 

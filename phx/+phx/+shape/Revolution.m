@@ -4,8 +4,11 @@ classdef Revolution < phx.base.Shape & phx.base.ShapeMesh
 %   Visual appearance is based on a geometry of revolved profile defined by
 %   the user.
 %
-%   Collision shape can be based on convex or concave envelope and mass
-%   properties are calculated from the actual triangular mesh.
+%   Collision shape is selected by the Envelope property: the convex hull of
+%   the revolved mesh, the exact concave triangle mesh, or a bounding cylinder
+%   about the revolution axis, which keeps a rolling body smooth where a
+%   faceted hull would not. Mass properties are always calculated from the
+%   actual triangular mesh.
 %   
 %   phx.shape.Revolution() creates a shape with default parameters.
 %
@@ -34,8 +37,9 @@ classdef Revolution < phx.base.Shape & phx.base.ShapeMesh
         % Volumetric density (kg/m^3)
         Density (1, 1) double = 1000
 
-        % Collision envelope: "convex" hull or "concave" triangle mesh
-        Envelope {mustBeMember(Envelope, ["convex", "concave"])} = "convex"
+        % Collision envelope: "convex" hull, "concave" triangle mesh or
+        % bounding "cylinder" about the revolution axis
+        Envelope {mustBeMember(Envelope, ["convex", "concave", "cylinder"])} = "convex"
     end
 
     methods
@@ -73,6 +77,11 @@ classdef Revolution < phx.base.Shape & phx.base.ShapeMesh
     methods (Access = {?phx.base.Shape, ?phx.base.Object})
         function eh = createBody(obj, body, primitive)
             switch obj.Envelope
+                case "cylinder"
+                    % Bounding cylinder (centered on the shape origin)
+                    ext = max(abs(obj.Profile), [], 1);
+                    bsize = phx.internal.Geometry.switchZAxis(obj.Axis, [ext(2) ext(2) ext(1)]);
+                    eh = phx.engine.io('add', body.WorldHandle, 'cylinder', body.TypeID, bsize, char(obj.Axis), body.Transform, body.Mass, body.Inertia);
                 case "convex"
                     ph = phx.internal.PrimitiveHelper(primitive);
                     vertices = ph.Vertices';

@@ -1,4 +1,4 @@
-classdef tPhxSimulinkRefs < matlab.unittest.TestCase
+classdef tPhxSimulinkRefs < PhxTestCase
 %tPhxSimulinkRefs Unit tests for the Simulink port-reference machinery.
 %
 %   Exercises phx.simulink.ParameterReference parsing and the static helpers

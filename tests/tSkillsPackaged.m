@@ -1,4 +1,4 @@
-classdef tSkillsPackaged < matlab.unittest.TestCase
+classdef tSkillsPackaged < PhxTestCase
 %tSkillsPackaged Keeps the shipped AI agent skills in sync with the working ones.
 %
 %   The skills exist twice on purpose: .claude/skills is what this repository's

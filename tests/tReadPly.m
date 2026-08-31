@@ -1,4 +1,4 @@
-classdef tReadPly < matlab.unittest.TestCase
+classdef tReadPly < PhxTestCase
 %tReadPly Tests for the pure-MATLAB Stanford PLY reader.
 %
 %   phx.internal.readPly parses ASCII and binary (little- and big-endian)
@@ -78,31 +78,31 @@ classdef tReadPly < matlab.unittest.TestCase
             V = [1 2 3; 4 5 6; 7 8 9; -1 -2 -3];
         end
 
-        function folder = tempFolder(tc)
-            import matlab.unittest.fixtures.TemporaryFolderFixture
-            folder = tc.applyFixture(TemporaryFolderFixture).Folder;
-        end
-
         function file = writeAsciiPly(tc)
-            file = fullfile(tc.tempFolder, "quad.ply");
-            fid = fopen(file, "w");
-            tc.assertGreaterThan(fid, 0);
-            closer = onCleanup(@() fclose(fid));
-            fprintf(fid, ['ply\n' ...
-                'format ascii 1.0\n' ...
-                'comment a tiny test quad with normals and color\n' ...
-                'element vertex 4\n' ...
-                'property float x\nproperty float y\nproperty float z\n' ...
-                'property float nx\nproperty float ny\nproperty float nz\n' ...
-                'property uchar red\nproperty uchar green\nproperty uchar blue\n' ...
-                'element face 1\n' ...
-                'property list uchar int vertex_indices\n' ...
-                'end_header\n' ...
-                '0 0 0 0 0 1 255 0 0\n' ...
-                '1 0 0 0 0 1 0 255 0\n' ...
-                '1 1 0 0 0 1 0 0 255\n' ...
-                '0 1 0 0 0 1 255 255 255\n' ...
-                '4 0 1 2 3\n']);
+            lines = [
+                "ply"
+                "format ascii 1.0"
+                "comment a tiny test quad with normals and color"
+                "element vertex 4"
+                "property float x"
+                "property float y"
+                "property float z"
+                "property float nx"
+                "property float ny"
+                "property float nz"
+                "property uchar red"
+                "property uchar green"
+                "property uchar blue"
+                "element face 1"
+                "property list uchar int vertex_indices"
+                "end_header"
+                "0 0 0 0 0 1 255 0 0"
+                "1 0 0 0 0 1 0 255 0"
+                "1 1 0 0 0 1 0 0 255"
+                "0 1 0 0 0 1 255 255 255"
+                "4 0 1 2 3"
+                ];
+            file = tc.writeTextFile("quad.ply", strjoin(lines, newline) + newline);
         end
 
         function file = writeBinaryPly(tc, machinefmt, formatKeyword)

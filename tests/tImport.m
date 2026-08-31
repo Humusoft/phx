@@ -1,15 +1,18 @@
-classdef tImport < matlab.unittest.TestCase
+classdef tImport < PhxTestCase
 %tImport Tests for the phx.assembly.import robot importer.
 %
 %   Untagged tests cover the file/XML-level error handling and need neither
 %   graphics nor the engine. Graphics-tagged tests verify the parsed object
 %   structure, name sanitization, the link world poses (pinning the URDF
-%   rpy convention against an independent rotation implementation), the
-%   base-pose options and the mesh path resolution. The Engine-tagged test verifies that an imported
+%   rpy convention against an independent rotation implementation) and the
+%   mesh path resolution. The Engine-tagged tests verify that an imported
 %   robot is collected by phx.Simulation from the bodies struct alone and
 %   that its joints hold together during simulation.
 %
-%   See also phx.assembly.import
+%   The conventions the importer shares with the other phx.assembly builders
+%   - axes target, headless build, base pose - are in tAssemblyConventions.
+%
+%   See also phx.assembly.import, tAssemblyConventions
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 
@@ -20,27 +23,21 @@ classdef tImport < matlab.unittest.TestCase
         end
 
         function invalidXMLRaisesError(tc)
-            file = tc.writeFile("broken.urdf", "<robot name='x'><link");
+            file = tc.writeTextFile("broken.urdf", "<robot name='x'><link");
             tc.verifyError(@() phx.assembly.import(file), "phx:import:parseError");
         end
 
         function nonRobotRootRaisesError(tc)
-            file = tc.writeFile("notrobot.urdf", "<?xml version='1.0'?><model name='x'/>");
+            file = tc.writeTextFile("notrobot.urdf", "<?xml version='1.0'?><model name='x'/>");
             tc.verifyError(@() phx.assembly.import(file), "phx:import:invalidRoot");
         end
 
         function unknownLinkRaisesError(tc)
-            file = tc.writeFile("badlink.urdf", "<robot name='x'>" + ...
+            file = tc.writeTextFile("badlink.urdf", "<robot name='x'>" + ...
                 "<link name='a'/>" + ...
                 "<joint name='j' type='fixed'><parent link='a'/><child link='ghost'/></joint>" + ...
                 "</robot>");
             tc.verifyError(@() phx.assembly.import(file), "phx:import:unknownLink");
-        end
-
-        function conflictingBaseRotationRaisesError(tc)
-            tc.verifyError(@() phx.assembly.import(tc.fixtureFile, ...
-                "Orientation", [0 -1 0; 1 0 0; 0 0 1], "EulerAngles", [0 0 pi/2]), ...
-                "phx:import:conflictingOptions");
         end
 
         function crossBranchOptionRaisesError(tc)
@@ -51,9 +48,7 @@ classdef tImport < matlab.unittest.TestCase
                 tc.verifyError(@() phx.assembly.import(urdf, opt, 1), ...
                     "phx:import:unsupportedOption", opt);
             end
-            stl = fullfile(fileparts(mfilename("fullpath")), "..", "examples", "res", "cat.stl");
-            tc.assumeTrue(isfile(stl), "cat.stl fixture not available");
-            tc.verifyError(@() phx.assembly.import([], stl, "MeshPath", tempdir), ...
+            tc.verifyError(@() phx.assembly.import([], tc.meshFile, "MeshPath", tempdir), ...
                 "phx:import:unsupportedOption");
         end
 
@@ -65,8 +60,7 @@ classdef tImport < matlab.unittest.TestCase
         function branchOptionsAreAccepted(tc)
             % Drift guard: every name the dispatcher allows must really reach
             % its branch, so the two lists cannot silently diverge.
-            stl = fullfile(fileparts(mfilename("fullpath")), "..", "examples", "res", "cat.stl");
-            tc.assumeTrue(isfile(stl), "cat.stl fixture not available");
+            stl = tc.meshFile;
             meshOpts = {"Scale", [0.02 0.02 0.02], "Envelope", "box", ...
                 "FlipFaces", true, "Density", 500};
             for i = 1:2:numel(meshOpts)
@@ -83,7 +77,7 @@ classdef tImport < matlab.unittest.TestCase
         end
 
         function kinematicLoopRaisesError(tc)
-            file = tc.writeFile("loop.urdf", "<robot name='x'>" + ...
+            file = tc.writeTextFile("loop.urdf", "<robot name='x'>" + ...
                 "<link name='a'/><link name='b'/>" + ...
                 "<joint name='j1' type='fixed'><parent link='a'/><child link='b'/></joint>" + ...
                 "<joint name='j2' type='fixed'><parent link='b'/><child link='a'/></joint>" + ...
@@ -120,41 +114,10 @@ classdef tImport < matlab.unittest.TestCase
             tc.verifyLessThanOrEqual(bodies.tool_frame.Mass, 1e-3);
         end
 
-        function explicitAxesTargetIsHonored(tc)
-            f = figure("Visible", "off");
-            tc.addTeardown(@() close(f));
-            axTarget = subplot(1, 2, 2, "Parent", f);
-            axCurrent = subplot(1, 2, 1, "Parent", f);
-            axes(axCurrent);
-
-            ws = warning("off", "phx:import:substitutedJoint");
-            tc.addTeardown(@() warning(ws));
-            bodies = phx.assembly.import(axTarget, tc.fixtureFile);
-
-            tc.verifyEqual(bodies.base.ParentAxes, axTarget, ...
-                "The robot was not drawn into the requested axes.");
-            tc.verifyEqual(gca, axCurrent, "The current axes changed.");
-        end
-
-        function emptyTargetImportsWithoutGraphics(tc)
-            % An explicit [] target follows the phx.Body([], ...) headless
-            % convention: no parent axes and no figure gets created
-            nFigures = numel(findall(groot, "Type", "figure"));
-            ws = warning("off", "phx:import:substitutedJoint");
-            tc.addTeardown(@() warning(ws));
-
-            bodies = phx.assembly.import([], tc.fixtureFile);
-
-            tc.verifyEmpty(bodies.base.ParentAxes, ...
-                "A headless import got a parent axes.");
-            tc.verifyEqual(numel(findall(groot, "Type", "figure")), nFigures, ...
-                "A headless import created a figure.");
-        end
-
         function planarJointMapsToGenericJoint(tc)
             % A planar joint has no direct PHX equivalent yet, so it is
             % approximated by a phx.GenericJoint with a warning
-            urdf = tc.writeFile("planar.urdf", "<robot name='s'>" + ...
+            urdf = tc.writeTextFile("planar.urdf", "<robot name='s'>" + ...
                 "<link name='a'/><link name='b'/>" + ...
                 "<joint name='j' type='planar'>" + ...
                 "<parent link='a'/><child link='b'/><axis xyz='0 0 1'/>" + ...
@@ -171,7 +134,7 @@ classdef tImport < matlab.unittest.TestCase
             % A floating joint imposes no constraint, so no joint is created:
             % the importer warns and the child link is left free, with no
             % entry in the returned joints struct
-            urdf = tc.writeFile("floating.urdf", "<robot name='s'>" + ...
+            urdf = tc.writeTextFile("floating.urdf", "<robot name='s'>" + ...
                 "<link name='a'/><link name='b'/>" + ...
                 "<joint name='j' type='floating'>" + ...
                 "<parent link='a'/><child link='b'/></joint></robot>");
@@ -230,32 +193,6 @@ classdef tImport < matlab.unittest.TestCase
             tc.verifyEqual(bodies.tool_frame.Transform, TTool, "AbsTol", 1e-12);
         end
 
-        function basePoseTransformsTheWholeRobot(tc)
-            % The Position/Orientation/EulerAngles options rigidly move the
-            % complete zero-pose assembly, root link frame first
-            ref = tc.importFixture;
-            TBase = tImport.trf([0.5 -1 2], [0.2 -0.3 0.4]);
-
-            ws = warning("off", "phx:import:substitutedJoint");
-            tc.addTeardown(@() warning(ws));
-            moved = phx.assembly.import(tc.fixtureFile, ...
-                "Position", TBase(1:3, 4)', "EulerAngles", [0.2 -0.3 0.4]);
-            rotated = phx.assembly.import(tc.fixtureFile, ...
-                "Orientation", TBase(1:3, 1:3));
-
-            names = string(fieldnames(ref));
-            for name = names'
-                tc.verifyEqual(moved.(name).Transform, ...
-                    TBase*ref.(name).Transform, "AbsTol", 1e-12, ...
-                    "Base pose was not applied to link '" + name + "'.");
-                TR = rotated.(name).Transform;
-                TExpected = ref.(name).Transform;
-                TExpected(1:3, :) = TBase(1:3, 1:3)*TExpected(1:3, :);
-                tc.verifyEqual(TR, TExpected, "AbsTol", 1e-12, ...
-                    "Orientation option was not applied to link '" + name + "'.");
-            end
-        end
-
         function jointFramesAreConsistentWithInitialPoses(tc)
             % Regression guard: joint frames that disagree with the initial
             % body poses would deform the robot at the first simulation step
@@ -264,17 +201,15 @@ classdef tImport < matlab.unittest.TestCase
         end
 
         function meshGeometryResolvesPackageURI(tc)
-            folder = tc.applyFixture(matlab.unittest.fixtures.TemporaryFolderFixture).Folder;
-            meshDir = fullfile(folder, "mypkg", "meshes");
-            mkdir(meshDir);
-            tc.writeTetrahedronSTL(fullfile(meshDir, "part.stl"));
-            urdf = fullfile(folder, "mesh_robot.urdf");
-            tc.writeTextFile(urdf, "<robot name='m'><link name='part'><visual><geometry>" + ...
+            tc.writeSTL(fullfile("mypkg", "meshes", "part.stl"), ...
+                [0 0 0; 0 1 0; 1 0 0; 0 0 1], [1 2 3; 1 3 4; 1 4 2; 3 2 4]);
+            urdf = tc.writeTextFile("mesh_robot.urdf", ...
+                "<robot name='m'><link name='part'><visual><geometry>" + ...
                 "<mesh filename='package://mypkg/meshes/part.stl' scale='2 2 2'/>" + ...
                 "</geometry></visual></link></robot>");
 
             tc.prepareAxes;
-            bodies = phx.assembly.import(urdf, "MeshPath", folder);
+            bodies = phx.assembly.import(urdf, "MeshPath", tc.tempFolder);
 
             shape = tc.bodyShape(bodies.part);
             tc.verifyClass(shape, "phx.shape.Mesh");
@@ -286,7 +221,7 @@ classdef tImport < matlab.unittest.TestCase
         function capsuleExtensionMapsToCapsuleShape(tc)
             % <capsule> is a common vendor extension of URDF; length is the
             % cylindrical part of the shape (phx.shape.Capsule.Height)
-            urdf = tc.writeFile("capsule.urdf", "<robot name='c'><link name='limb'>" + ...
+            urdf = tc.writeTextFile("capsule.urdf", "<robot name='c'><link name='limb'>" + ...
                 "<visual><geometry><capsule radius='0.04' length='0.2'/></geometry></visual>" + ...
                 "</link></robot>");
             tc.prepareAxes;
@@ -299,7 +234,7 @@ classdef tImport < matlab.unittest.TestCase
         end
 
         function missingMeshRaisesError(tc)
-            urdf = tc.writeFile("nomesh.urdf", "<robot name='m'><link name='part'>" + ...
+            urdf = tc.writeTextFile("nomesh.urdf", "<robot name='m'><link name='part'>" + ...
                 "<visual><geometry><mesh filename='package://nope/part.stl'/></geometry></visual>" + ...
                 "</link></robot>");
             tc.prepareAxes;
@@ -314,10 +249,9 @@ classdef tImport < matlab.unittest.TestCase
             % normal, and locks the rest. With the normal along world Z, the
             % child must not translate along Z (the locked normal) under
             % gravity, which pulls straight along it.
-            tc.assumeNotEmpty(which("phx.engine.io"), ...
-                "Physics engine (phx.engine.io) is not on the path.");
+            tc.requireEngine;
 
-            urdf = tc.writeFile("planar.urdf", "<robot name='p'>" + ...
+            urdf = tc.writeTextFile("planar.urdf", "<robot name='p'>" + ...
                 "<link name='base'/><link name='puck'/>" + ...
                 "<joint name='slab' type='planar'>" + ...
                 "<parent link='base'/><child link='puck'/><axis xyz='0 0 1'/>" + ...
@@ -341,8 +275,7 @@ classdef tImport < matlab.unittest.TestCase
         end
 
         function importedRobotHoldsTogether(tc)
-            tc.assumeNotEmpty(which("phx.engine.io"), ...
-                "Physics engine (phx.engine.io) is not on the path.");
+            tc.requireEngine;
 
             [bodies, joints] = tc.importFixture;
 
@@ -390,34 +323,19 @@ classdef tImport < matlab.unittest.TestCase
             file = fullfile(fileparts(mfilename("fullpath")), "fixtures", "three_link_arm.urdf");
         end
 
+        function file = meshFile(tc)
+            % A mesh to send down the non-URDF branch of the importer. The
+            % option dispatching under test does not care what is in it, so a
+            % tetrahedron is used rather than one of the shipped models.
+            file = tc.writeSTL("part.stl", [0 0 0; 0 1 0; 1 0 0; 0 0 1], ...
+                [1 2 3; 1 3 4; 1 4 2; 3 2 4]);
+        end
+
         function [bodies, joints] = importFixture(tc)
             tc.prepareAxes;
             ws = warning("off", "phx:import:substitutedJoint");
             tc.addTeardown(@() warning(ws));
             [bodies, joints] = phx.assembly.import(tc.fixtureFile);
-        end
-
-        function prepareAxes(tc)
-            f = figure("Visible", "off");
-            tc.addTeardown(@() close(f));
-            axes(f);
-        end
-
-        function file = writeFile(tc, name, content)
-            folder = tc.applyFixture(matlab.unittest.fixtures.TemporaryFolderFixture).Folder;
-            file = fullfile(folder, name);
-            tc.writeTextFile(file, content);
-        end
-
-        function verifyAnchorsCoincide(tc, joints, tol)
-            names = fieldnames(joints);
-            for i = 1:numel(names)
-                j = joints.(names{i});
-                pa = phx.internal.transformPoint(j.Parents{1}.Transform, j.PointA);
-                pb = phx.internal.transformPoint(j.Parents{2}.Transform, j.PointB);
-                tc.verifyEqual(pa, pb, "AbsTol", tol, ...
-                    "Anchor points of joint '" + names{i} + "' do not coincide.");
-            end
         end
 
         function rel = fixedRelativePoses(~, joints)
@@ -429,16 +347,6 @@ classdef tImport < matlab.unittest.TestCase
             end
         end
 
-        function shape = bodyShape(~, body)
-            shape = [];
-            for ch = body.Graphics.Children'
-                s = getappdata(ch, "phxShape");
-                if ~isempty(s)
-                    shape = s;
-                    return
-                end
-            end
-        end
     end
 
     methods (Static, Access = private)
@@ -456,47 +364,6 @@ classdef tImport < matlab.unittest.TestCase
             T(1:3, 4) = xyz;
         end
 
-        function writeTextFile(file, content)
-            fid = fopen(file, "w");
-            fwrite(fid, content);
-            fclose(fid);
-        end
-
-        function writeTetrahedronSTL(file)
-            lines = [
-                "solid part"
-                "  facet normal 0 0 -1"
-                "    outer loop"
-                "      vertex 0 0 0"
-                "      vertex 0 1 0"
-                "      vertex 1 0 0"
-                "    endloop"
-                "  endfacet"
-                "  facet normal 0 -1 0"
-                "    outer loop"
-                "      vertex 0 0 0"
-                "      vertex 1 0 0"
-                "      vertex 0 0 1"
-                "    endloop"
-                "  endfacet"
-                "  facet normal -1 0 0"
-                "    outer loop"
-                "      vertex 0 0 0"
-                "      vertex 0 0 1"
-                "      vertex 0 1 0"
-                "    endloop"
-                "  endfacet"
-                "  facet normal 0.5774 0.5774 0.5774"
-                "    outer loop"
-                "      vertex 1 0 0"
-                "      vertex 0 1 0"
-                "      vertex 0 0 1"
-                "    endloop"
-                "  endfacet"
-                "endsolid part"
-                ];
-            tImport.writeTextFile(file, strjoin(lines, newline));
-        end
     end
 
 end

@@ -1,21 +1,28 @@
-classdef tSimulation < matlab.unittest.TestCase
+classdef tSimulation < PhxTestCase
 %tSimulation Integration tests that exercise the physics engine (MEX).
 %
 %   These verify end-to-end behavior: a body really falls, a static body
 %   really stays put, and repeated runs are bit-for-bit reproducible (the
-%   determinism guarantee demonstrated by phxex_determinism). They depend on
-%   the engine binary and on graphics, so every test carries the "Engine"
-%   tag and can be excluded on machines without the MEX; the draw-path
-%   independence test additionally carries the "Graphics" tag.
+%   determinism guarantee demonstrated by phxex_determinism). The bodies are
+%   built headless ([] axes), so only the engine is needed and every test
+%   carries the "Engine" tag; the draw-path independence test is the one that
+%   compares the three draw paths against each other and therefore
+%   additionally carries the "Graphics" tag.
 %
 %   See also phx.Simulation, phx.Body
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 
+    properties (Constant, Access = private)
+        % An irregular tetrahedron whose coordinates are exact in float64 but
+        % not in float32, which is what used to tell the draw paths apart
+        TumblerVertices = [-0.3 -0.2 -0.1; 0.3 -0.3 0.5; 0.0 0.4 -0.2; 0.5 0.2 0.1]
+        TumblerFaces = [1 2 3; 1 2 4; 1 3 4; 2 3 4]
+    end
+
     methods (TestClassSetup)
-        function requireEngine(tc)
-            tc.assumeNotEmpty(which("phx.engine.io"), ...
-                "Physics engine (phx.engine.io) is not on the path.");
+        function engineIsPresent(tc)
+            tc.requireEngine;
         end
     end
 
@@ -24,7 +31,7 @@ classdef tSimulation < matlab.unittest.TestCase
             g = 9.81;
             t = 1.0;
             z0 = 50;                       % start high, no ground to hit
-            b = tc.spawnBody([0 0 z0], "dynamic");
+            b = tc.spawnBody([0 0 z0]);
             sim = phx.Simulation(b, "Gravity", [0 0 -g]);
             tc.addTeardown(@() delete(sim));
 
@@ -37,7 +44,7 @@ classdef tSimulation < matlab.unittest.TestCase
         end
 
         function staticBodyDoesNotMove(tc)
-            b = tc.spawnBody([1 2 5], "static");
+            b = tc.spawnBody([1 2 5], "Type", "static");
             sim = phx.Simulation(b);
             tc.addTeardown(@() delete(sim));
             sim.step(1, 200);
@@ -45,7 +52,7 @@ classdef tSimulation < matlab.unittest.TestCase
         end
 
         function timeAccumulatesAcrossSteps(tc)
-            b = tc.spawnBody([0 0 20], "dynamic");
+            b = tc.spawnBody([0 0 20]);
             sim = phx.Simulation(b);
             tc.addTeardown(@() delete(sim));
             sim.step(0.1, 10);
@@ -57,7 +64,7 @@ classdef tSimulation < matlab.unittest.TestCase
             % Regression: assigning Gravity after construction must reach
             % the engine, not just the MATLAB property.
             g = 9.81;
-            b = tc.spawnBody([0 0 50], "dynamic");
+            b = tc.spawnBody([0 0 50]);
             sim = phx.Simulation(b);
             tc.addTeardown(@() delete(sim));
 
@@ -84,22 +91,14 @@ classdef tSimulation < matlab.unittest.TestCase
             % primitive, so every draw path - headless ([] parent), phx axes
             % (world primitives) and plain axes (patches) - must carry
             % identical geometry and produce bit-for-bit identical physics.
-            % The STL coordinates are chosen not to be representable in
-            % float32, which is what used to tell the draw paths apart.
-            folder = tc.applyFixture(matlab.unittest.fixtures.TemporaryFolderFixture).Folder;
-            stl = fullfile(folder, "tumbler.stl");
-            tSimulation.writeTumblerSTL(stl);
+            stl = tc.writeSTL("tumbler.stl", tc.TumblerVertices, tc.TumblerFaces);
 
             pHeadless = tc.tumbleMesh([], stl);
 
-            f = figure("Visible", "off");
-            tc.addTeardown(@() close(f));
-            [~, axViewer] = phx.extra.Viewer(axes(f));
+            [~, axViewer] = phx.extra.Viewer(tc.prepareAxes);
             pViewer = tc.tumbleMesh(axViewer, stl);
 
-            f2 = figure("Visible", "off");
-            tc.addTeardown(@() close(f2));
-            pPlain = tc.tumbleMesh(axes(f2), stl);
+            pPlain = tc.tumbleMesh(tc.prepareAxes, stl);
 
             tc.verifyEqual(pViewer, pHeadless, ...
                 "A phx-axes run differs from the headless run.");
@@ -122,42 +121,14 @@ classdef tSimulation < matlab.unittest.TestCase
             p = [body.Position body.Quaternion];
             delete(sim);
         end
-        function b = spawnBody(tc, position, type)
-            f = figure("Visible", "off");
-            tc.addTeardown(@() close(f));
-            b = phx.Body(axes(f), "Position", position, "Type", type);
-        end
 
-        function p = runDrop(tc) %#ok<MANU>
-            f = figure("Visible", "off");
-            b = phx.Body(axes(f), "Position", [0.1 0.2 8], "AngularVelocity", [1 2 3]);
+        function p = runDrop(tc)
+            b = tc.spawnBody([0.1 0.2 8], "AngularVelocity", [1 2 3]);
             sim = phx.Simulation(b);
             sim.step(0.5, 500);
             p = b.Transform;
             delete(sim);
-            close(f);
-        end
-    end
-
-    methods (Static, Access = private)
-        function writeTumblerSTL(file)
-            % An irregular tetrahedron whose coordinates are exact in
-            % float64 but not in float32
-            A = "-0.3 -0.2 -0.1"; B = "0.3 -0.3 0.5"; C = "0.0 0.4 -0.2"; D = "0.5 0.2 0.1";
-            lines = ["solid tumbler"];
-            for tri = {{A B C}, {A B D}, {A C D}, {B C D}}
-                lines(end + 1) = "  facet normal 0 0 1"; %#ok<AGROW> four facets
-                lines(end + 1) = "    outer loop"; %#ok<AGROW>
-                lines(end + 1) = "      vertex " + tri{1}{1}; %#ok<AGROW>
-                lines(end + 1) = "      vertex " + tri{1}{2}; %#ok<AGROW>
-                lines(end + 1) = "      vertex " + tri{1}{3}; %#ok<AGROW>
-                lines(end + 1) = "    endloop"; %#ok<AGROW>
-                lines(end + 1) = "  endfacet"; %#ok<AGROW>
-            end
-            lines(end + 1) = "endsolid tumbler";
-            fid = fopen(file, "w");
-            fwrite(fid, strjoin(lines, newline));
-            fclose(fid);
+            delete(b);
         end
     end
 

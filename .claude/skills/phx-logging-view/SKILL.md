@@ -4,7 +4,8 @@ description: >
   Record and observe a PHX simulation — log object properties over time with
   phx.Logger, draw motion trails with phx.Trace, measure distances/velocities
   between bodies with phx.Measure, detect and count bodies in a region with
-  phx.Zone, and set up the view with phx.Camera and the interactive
+  phx.Zone, cast shadows onto a plane with phx.PlanarShadow (only when the user
+  asks for them), and set up the view with phx.Camera and the interactive
   phx.extra.Viewer. Use when capturing signals for plots, detecting events in a
   scene, or configuring how a PHX scene is displayed.
 ---
@@ -113,6 +114,41 @@ simulation and draws the link into the scene. Dependent readouts, all loggable:
 
 `phx.Camera` is a simulable object, so a camera pose can be scripted with
 `phx.Script` or follow a body, useful for fly-throughs and recorded videos.
+
+## phx.PlanarShadow — shadow on a plane (on request only)
+
+**Never add a shadow on your own initiative.** It costs per-frame work proportional to
+the mesh size of the cast bodies, and the result is a projection rather than a rendered
+shadow, so it comes with the visual limits listed below. Add it only when the user asks
+for a shadow, or asks for something a shadow is the answer to (for example "it is hard
+to tell how high the body is" or "make the scene look better for a video").
+
+When asked: `phx.PlanarShadow(bodies)` projects the visual geometry of the given bodies
+onto a plane and draws it as a flat translucent silhouette. It is a graphics object
+only, with no effect on the physics.
+
+```matlab
+phx.PlanarShadow([b1 b2], "LightDirection", [-0.4 -0.3 -1]);   % ground plane z = 0
+
+% plane carried by a body: Position/Normal are in the anchor's local frame,
+% so the shadow tilts and travels with the plate
+phx.PlanarShadow(ball, "Anchor", plate, "Position", [0 0 thickness/2], ...
+    "Extent", [2 2], "Alpha", 0.35);
+```
+
+Plane: `Position` + `Normal` (in the `Anchor` frame when one is set, world otherwise).
+Light: `LightDirection` (parallel, default straight down) or `LightPosition` (point
+source). Appearance: `Color`, `Alpha`, `Offset` (lift above the surface), `Extent`
+(half-sizes that keep the shadow on a finite plate). `Detail` decimates the cached
+geometry: a few percent on ordinary shapes, several times cheaper on a body with a very
+large mesh (tens of thousands of vertices), which is where it is worth reaching for.
+
+Limits worth knowing, and worth telling the user about when they ask for shadows: one
+plane and one light per object (create several for more), bodies neither shadow each
+other nor block a shadow, `Extent` clamps rather than clips, a body is dropped once its
+centre passes behind the plane, and assigning `Color` resets `Alpha` (set `Alpha`
+afterwards). Cost follows the total mesh size of the cast bodies, not their number: a
+pile of simple bodies is cheap, one big imported mesh is not.
 
 ## phx.extra.Viewer — the default way to show a scene
 

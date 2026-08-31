@@ -183,7 +183,7 @@ classdef Simulation < phx.base.Object
 
                 if animate
                     %drawnow;
-                    % pause(0);
+                    %pause(0);
 
                     if obj.FirstRedraw
                         drawnow;

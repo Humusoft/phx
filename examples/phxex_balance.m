@@ -52,6 +52,9 @@ function phxex_balance(Kp, Kd)
     % Visual trail of the ball path on the plate
     phx.Trace(ball, "TracePoints", 400, "Color", [1 0.7 0.3]);
 
+    % Shadow of the ball cast on the top surface of the plate
+    % phx.PlanarShadow(ball, "Anchor", plate, "Position", [0 0 plateSize(3)/2], "LightPosition", [0 0 3]);
+
     % Log the ball position so the settling behaviour can be analysed
     logBall  = phx.Logger(ball,  "Frequency", 50, "Parameters", "Position");
     logPlate = phx.Logger(plate, "Frequency", 50, "Parameters", "EulerAngles");

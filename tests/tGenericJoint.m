@@ -1,4 +1,4 @@
-classdef tGenericJoint < matlab.unittest.TestCase
+classdef tGenericJoint < PhxTestCase
 %tGenericJoint Integration tests of the generic 6-DOF joint (MEX).
 %
 %   These pin down what the limits of phx.GenericJoint mean: an axis with both
@@ -9,11 +9,12 @@ classdef tGenericJoint < matlab.unittest.TestCase
 %   the angles the other way round and the class compensates for it - a
 %   regression there would silently mirror every bounded rotation.
 %
-%   The joint frame properties inherited from phx.base.Joint (PointA, PointB
-%   and their transform counterparts) are covered here as well, as this is the
-%   joint that exercises all of them.
+%   Only what is specific to this joint lives here; what it shares with the
+%   rest of the family - the joint frame properties inherited from
+%   phx.base.Joint, the reaction feedback and holding two bodies together -
+%   is in tJointContract.
 %
-%   See also phx.GenericJoint, phx.base.Joint
+%   See also phx.GenericJoint, phx.base.Joint, tJointContract
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 
@@ -25,9 +26,8 @@ classdef tGenericJoint < matlab.unittest.TestCase
     end
 
     methods (TestClassSetup)
-        function requireEngine(tc)
-            tc.assumeNotEmpty(which("phx.engine.io"), ...
-                "Physics engine (phx.engine.io) is not on the path.");
+        function engineIsPresent(tc)
+            tc.requireEngine;
         end
     end
 
@@ -127,67 +127,23 @@ classdef tGenericJoint < matlab.unittest.TestCase
             tc.verifyEqual(b.Position(1:2), [0 0], "AbsTol", 1e-3);
         end
 
-        function jointHoldsTwoDynamicBodiesTogether(tc)
-            % Neither body is anchored: the pair must fall as one rigid piece.
-            a = tc.spawnBody([0 0 5]);
-            b = tc.spawnBody([0.5 0 5]);
-            phx.GenericJoint(a, b, "PointA", [0.5 0 0]);
-            sim = phx.Simulation([a b], "Gravity", [0 0 -tc.G]);
-            tc.addTeardown(@() delete(sim));
-            sim.step(1, 1000, -1);
-            tc.verifyEqual(norm(b.Position - a.Position), 0.5, "AbsTol", 0.01);
-            tc.verifyEqual(5 - a.Position(3), 0.5*tc.G, "RelTol", 0.02);
-        end
-    end
-
-    methods (Test)
-        function frameHelpersRoundTrip(tc)
-            % PointA/PointB and the rotation helpers are windows into
-            % TransformA/TransformB and must survive a round trip as 1x3 rows.
-            a = phx.Body([], "Type", "static");
-            b = phx.Body([], "Position", [1 0 0]);
-            tc.addTeardown(@() delete([a b]));
-            j = phx.GenericJoint(a, b, "PointA", [0.1 0.2 0.3], "EulerAnglesA", [0.1 0.2 0.3]);
-
-            tc.verifySize(j.PointA, [1 3]);
-            tc.verifySize(j.PointB, [1 3]);
-            tc.verifyEqual(j.PointA, [0.1 0.2 0.3], "AbsTol", 1e-12);
-            tc.verifyEqual(j.TransformA(1:3, 4)', [0.1 0.2 0.3], "AbsTol", 1e-12);
-            tc.verifyEqual(j.EulerAnglesA, [0.1 0.2 0.3], "AbsTol", 1e-9);
-
-            j.PointB = [0.4 0.5 0.6];
-            tc.verifyEqual(j.PointB, [0.4 0.5 0.6], "AbsTol", 1e-12);
-
-            j.AxisAngleB = [0 0 1 0.5];
-            tc.verifyEqual(j.AxisAngleB, [0 0 1 0.5], "AbsTol", 1e-9);
-            tc.verifyEqual(j.TransformB(1:3, 1:3)'*j.TransformB(1:3, 1:3), eye(3), "AbsTol", 1e-12);
-        end
-
-        function feedbackIsNaNBeforeInitialization(tc)
-            a = phx.Body([], "Type", "static");
-            b = phx.Body([], "Position", [1 0 0]);
-            tc.addTeardown(@() delete([a b]));
-            j = phx.GenericJoint(a, b);
-            tc.verifyEqual(j.ForceA, [NaN NaN NaN]);
-            tc.verifyEqual(j.TorqueB, [NaN NaN NaN]);
-        end
     end
 
     methods (Access = private)
-        function b = spawnBody(~, position, type)
+        function b = cube(tc, position, type)
             arguments
-                ~
+                tc
                 position (1, 3) double
                 type (1, 1) string = "dynamic"
             end
-            b = phx.Body([], "Position", position, "Type", type, ...
+            b = tc.spawnBody(position, "Type", type, ...
                 "Shape", {"Box", "Size", [0.2 0.2 0.2]});
         end
 
         function [a, b, j, sim] = scene(tc, varargin)
             % Static anchor and a dynamic body, both at the origin
-            a = tc.spawnBody([0 0 0], "static");
-            b = tc.spawnBody([0 0 0]);
+            a = tc.cube([0 0 0], "static");
+            b = tc.cube([0 0 0]);
             j = phx.GenericJoint(a, b, varargin{:});
             sim = phx.Simulation([a b], "Gravity", [0 0 -tc.G]);
             tc.addTeardown(@() delete(sim));
@@ -195,8 +151,8 @@ classdef tGenericJoint < matlab.unittest.TestCase
 
         function [a, b, j, sim] = pendulum(tc, varargin)
             % Pivot at the world origin, bob one metre away along +Y
-            a = tc.spawnBody([0 0 0], "static");
-            b = tc.spawnBody([0 1 0]);
+            a = tc.cube([0 0 0], "static");
+            b = tc.cube([0 1 0]);
             j = phx.GenericJoint(a, b, "PointA", [0 0 0], "PointB", [0 -1 0], varargin{:});
             sim = phx.Simulation([a b], "Gravity", [0 0 -tc.G]);
             tc.addTeardown(@() delete(sim));

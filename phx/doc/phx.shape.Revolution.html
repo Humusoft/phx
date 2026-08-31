@@ -19,8 +19,10 @@
 <h2 class="phx-h2">Description</h2>
 <p><code class="phx-inline">phx.shape.Revolution</code> revolves a user-defined 2-D
 <code class="phx-inline">Profile</code> about the modeling axis to form a solid of revolution. The
-collision shape is a convex or concave envelope (<code class="phx-inline">Envelope</code>); the mass
-properties are computed from the actual triangular mesh.</p>
+collision shape is selected by <code class="phx-inline">Envelope</code>: the convex hull of the
+revolved mesh, the exact concave triangle mesh, or a bounding cylinder about the
+revolution axis, which keeps a rolling body smooth where a faceted hull would not. The
+mass properties are always computed from the actual triangular mesh.</p>
 
 <h2 class="phx-h2">Creation</h2>
 <h3 class="phx-h3">Syntax</h3>
@@ -40,7 +42,7 @@ revolution from the given <code class="phx-inline">Profile</code>.</p>
 <tr><td class="name">Profile</td><td class="type">M&times;2 double</td><td>Profile revolved about the modeling axis; each row is a 2-D point (axial, radial).</td></tr>
 <tr><td class="name">Axis</td><td class="dflt">"z"</td><td>Modeling axis: <code class="phx-inline">"x"</code>, <code class="phx-inline">"y"</code> or <code class="phx-inline">"z"</code>.</td></tr>
 <tr><td class="name">Segments</td><td class="dflt">45</td><td>Number of segments around the revolution.</td></tr>
-<tr><td class="name">Envelope</td><td class="dflt">"convex"</td><td>Collision envelope: <code class="phx-inline">"convex"</code> or <code class="phx-inline">"concave"</code>.</td></tr>
+<tr><td class="name">Envelope</td><td class="dflt">"convex"</td><td>Collision envelope: <code class="phx-inline">"convex"</code> hull, <code class="phx-inline">"concave"</code> triangle mesh, or bounding <code class="phx-inline">"cylinder"</code> about the revolution axis. The cylinder takes its radius from the largest radius in the profile and its half height from the profile&#39;s axial reach, centred on the shape origin.</td></tr>
 <tr><td class="name">Density</td><td class="dflt">1000</td><td>Volumetric density, <span class="phx-unit">kg/m&sup3;</span>.</td></tr>
 </table>
 
