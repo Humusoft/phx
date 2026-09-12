@@ -4,19 +4,22 @@ function phxex_drone(wpScale)
 % A quadcopter built from the drone STL meshes carries four phx.Thruster
 % actuators on its motor mounts. Each thruster pushes along the local Z
 % axis of the frame and adds the propeller reaction torque, with a short
-% first-order lag modeling the motor response. The spinning propellers
-% are visual-only kinematic bodies that follow the frame.
+% first-order lag modeling the motor response. The propellers are light
+% bodies on motorized phx.RevoluteJoint hubs, spinning for looks only.
 %
 % A cascade controller runs at the full simulation rate: a position PD
 % loop, a geometric attitude PD loop and an exact allocation into the
-% four motor throttles - the only actuation the drone has.
+% four motor throttles - the only actuation the drone has. Altitude is
+% measured rather than read from the engine, by a phx.Raycast beam looking
+% down, so the waypoint heights are heights above whatever lies below.
 %
-% The drone takes off from the pad, flies a rectangle of waypoints with
-% altitude changes, returns and lands. A ball resting on a slim column
-% stands in the way of the first leg: the drone knocks it off, the ball
-% falls and rolls away, and the attitude controller recovers from the
-% collision disturbance. The final plots show the 3D trajectories of
-% both the drone and the ball, and the altitude and throttle histories.
+% The drone takes off from the pad, flies a rectangle of waypoints,
+% returns and lands. A ball resting on a slim column stands in the way of
+% the first leg: the drone knocks it off and recovers from the collision.
+% Over the hill on the second leg the clearance dips, because a beam
+% pointing down only sees terrain it is already above. The final plots
+% show the trajectories of the drone and the ball, and the altitude,
+% clearance and throttle histories.
 %
 % Input Arguments:
 %     wpScale - size of the waypoint rectangle (default 3)
@@ -60,6 +63,10 @@ function phxex_drone(wpScale)
     phx.Body(ax, "Type", "static", "Position", [0 0 0.05], ...
         "Shape", {"Box", "Size", [1.6 1.6 0.1], "Color", [0.2 0.8 0.9]});
 
+    % A shallow hill under the second leg
+    phx.Body(ax, "Type", "static", "Position", [wpScale wpScale*0.6 -2.0], ...
+        "Shape", {"Globe", "Diameter", 6, "Color", [0.55 0.65 0.45], "Material", "matte"});
+
     % A ball on a slim column right in the path of the first flight leg
     zBall = 2.0;
     phx.Body(ax, "Position", [wpScale/2, -0.5, (zBall - 0.18)/2], ...
@@ -84,24 +91,32 @@ function phxex_drone(wpScale)
             "Color", [0.8 0 0]); %#ok<AGROW> four rotors
     end
 
-    % Visual-only spinning propellers following the frame
+    % Propellers: light bodies each held and spun by its own revolute joint, so
+    % they follow the frame without being placed by hand. Visual only - the
+    % thrust and its reaction torque come from the thrusters above.
     shpProp = phx.shape.Mesh("Source", resdir+"drone_prop.stl", "Scale", scl, ...
         "Envelope", "box", "Color", [0.9 0.65 0.2], "Style", "flat");
     for i = 1:4
-        props(i) = phx.Body(ax, "Type", "kinematic", "Collisions", false, ...
-            "Position", [0 0 1], "Shape", shpProp); %#ok<AGROW> four propellers
+        hub = mounts(i, :) + [0 0 0.06];
+        prop = phx.Body(ax, "Collisions", false, "Position", drone.Position + hub, ...
+            "Shape", shpProp, "Mass", 0.03, "Inertia", [1 1 2]*1e-3);
+        phx.RevoluteJoint(drone, prop, "PointA", hub, "PointB", [0 0 0], ...
+            "AxisA", [0 0 1], "AxisB", [0 0 1], "Visible", false, ...
+            "TargetVelocity", spins(i)*40, "MaxTorque", 1);
     end
-    spinAng = zeros(1, 4);
+
+    % Radar altimeter: one beam down the body Z axis
+    altRange = 6;
+    alt = phx.Raycast(drone, "Ends", [0; 0; -altRange]);
 
     phx.Trace(drone, "TracePoints", 1500, "Overlay", true, "Color", [0.3 0.3 0.3]);
 
-    % Exact thrust allocation: [T tauX tauY tauZ]' = A*f -> f = A\...; the
-    % rear arms are longer, so the allocation balances the unequal lever arms
+    % Exact thrust allocation: [T tauX tauY tauZ]' = A*f, inverted once here
     A = [ones(1, 4); mounts(:, 2)'; -mounts(:, 1)'; spins*kQ];
-    Ainv = inv(A); %#ok<MINV> precomputed once, used every substep
+    Ainv = inv(A);                 % precomputed once, used every substep
 
-    % Waypoints: take off, fly a rectangle with altitude changes, land
-    wp = [0 0 2.2; wpScale 0 2.2; wpScale wpScale 1.2; 0 wpScale 2.2; 0 0 2.2; 0 0 0.45];
+    % Waypoints [x y height]; the height is above the ground below, not zero
+    wp = [0 0 2.2; wpScale 0 2.2; wpScale wpScale 2.2; 0 wpScale 1.2; 0 0 2.2; 0 0 0.35];
 
     viewer.displayText("Take-off...");
 
@@ -109,37 +124,29 @@ function phxex_drone(wpScale)
     subSteps = 10;
     tMax = 60;
 
-    % The flight controller runs as a pipeline element, driving the four
-    % thruster throttles every substep (see droneControl below)
-    prm.th = th;  prm.wp = wp;  prm.Ainv = Ainv;
+    % The flight controller runs every substep as a pipeline element
+    prm.th = th;  prm.wp = wp;  prm.Ainv = Ainv;  prm.alt = alt;
     prm.mDrone = mDrone;  prm.grav = grav;  prm.maxThrust = maxThrust;
     prm.KpP = KpP;  prm.KdP = KdP;
     prm.KattP = KattP;  prm.KattD = KattD;  prm.KyawP = KyawP;  prm.KyawD = KyawD;
     ctrl = phx.Function(drone, @(o, p, ~, tm) droneControl(o, p, tm, prm));
-    ctrl.UserData = struct("wpIdx", 1, "landed", false, "tLand", NaN);
+    ctrl.UserData = struct("wpIdx", 1, "landed", false, "tLand", NaN, "agl", 0.26);
 
     sim = phx.Simulation(ax);
 
-    log = struct("t", [], "p", [], "wp", [], "f", [], "pb", []);
+    log = struct("t", [], "p", [], "wp", [], "f", [], "pb", [], "agl", []);
     while sim.Time < tMax && (isnan(ctrl.UserData.tLand) || sim.Time < ctrl.UserData.tLand + 1.5)
-        sim.step(dt*subSteps, subSteps, 1);   % controller runs every substep inside
-
-        % Spin and place the visual propellers
-        M = drone.Transform;
-        for i = 1:4
-            spinAng(i) = spinAng(i) + spins(i)*(8 + 50*th(i).Throttle)*dt*subSteps;
-            c = cos(spinAng(i)); sn = sin(spinAng(i));
-            L = [c -sn 0 mounts(i, 1); sn c 0 mounts(i, 2); 0 0 1 mounts(i, 3) + 0.06; 0 0 0 1];
-            props(i).Transform = M*L;
-        end
+        sim.step(dt*subSteps, subSteps, 1);
 
         log.t(end + 1) = sim.Time;
         log.p(:, end + 1) = drone.Position;
         log.wp(end + 1) = ctrl.UserData.wpIdx;
         log.f(:, end + 1) = [th.Throttle];
         log.pb(:, end + 1) = ball.Position;
-        viewer.displayText(sprintf("Waypoint %d / %d   alt %.2f m   throttle %3.0f %%", ...
-            ctrl.UserData.wpIdx, size(wp, 1), drone.Position(3), 100*mean([th.Throttle])));
+        log.agl(end + 1) = ctrl.UserData.agl;
+        viewer.displayText(sprintf("Waypoint %d / %d   alt %.2f m   clearance %.2f m   throttle %3.0f %%", ...
+            ctrl.UserData.wpIdx, size(wp, 1), drone.Position(3), ctrl.UserData.agl, ...
+            100*mean([th.Throttle])));
     end
     landed = ctrl.UserData.landed;
     tLand  = ctrl.UserData.tLand;
@@ -153,6 +160,8 @@ function phxex_drone(wpScale)
     else
         fprintf("Flight timed out at waypoint %d.\n", wpIdx);
     end
+    fprintf("Lowest clearance on the leg over the hill was %.2f m of the %.2f m held.\n", ...
+        min(log.agl(log.wp == 3)), wp(3, 3));
     pb = ball.Position;
     fprintf("The ball was knocked %.2f m away from its column.\n", ...
         norm(pb(1:2) - [wpScale/2, 0]));
@@ -160,7 +169,7 @@ function phxex_drone(wpScale)
 
     % Trajectory and flight history plots
     clf(figure(2));
-    subplot(1, 2, 1);
+    subplot(2, 1, 1);
     plot3(log.p(1, :), log.p(2, :), log.p(3, :), "LineWidth", 1.5); hold on
     plot3(wp(:, 1), wp(:, 2), wp(:, 3), "o--", "LineWidth", 1);
     plot3(log.pb(1, :), log.pb(2, :), log.pb(3, :), "LineWidth", 1.5);
@@ -168,9 +177,11 @@ function phxex_drone(wpScale)
     xlabel("x [m]"); ylabel("y [m]"); zlabel("z [m]");
     legend("drone", "waypoints", "ball", "Location", "northeast");
     title("Waypoint flight");
-    subplot(1, 2, 2);
+    subplot(2, 1, 2);
     yyaxis left
-    plot(log.t, log.p(3, :), "LineWidth", 1.5); ylabel("altitude [m]");
+    plot(log.t, log.p(3, :), "LineWidth", 1.5); hold on
+    plot(log.t, log.agl, "LineWidth", 1.5);
+    ylabel("height [m]"); legend("altitude", "clearance", "Location", "south");
     yyaxis right
     plot(log.t, 100*mean(log.f, 1), "LineWidth", 1); ylabel("mean throttle [%]");
     xline(log.t([true diff(log.wp) > 0]), ":");
@@ -180,12 +191,11 @@ function phxex_drone(wpScale)
 end
 
 function droneControl(o, parents, time, prm)
-% Cascade flight controller run each substep by the phx.Function: a position
-% PD loop -> desired acceleration and thrust vector, a geometric attitude PD
-% loop -> body torques, and an exact allocation into the four motor thrusts.
-% Waypoint and landing state are kept in the phx.Function UserData.
+% Cascade flight controller: position PD -> thrust vector, attitude PD ->
+% body torques, allocation into the four motor thrusts. Waypoint, landing
+% and altimeter state live in the phx.Function UserData.
     drone = parents{1};
-    s = o.UserData;     % .wpIdx .landed .tLand
+    s = o.UserData;     % .wpIdx .landed .tLand .agl
 
     M = drone.Transform;
     R = M(1:3, 1:3);
@@ -193,12 +203,21 @@ function droneControl(o, parents, time, prm)
     v = drone.LinearVelocity;
     w = drone.AngularVelocity;
 
+    % Altimeter: the beam is body-fixed, so R(3, 3) projects its slant range
+    % back onto the vertical; out of range the last reading is kept
+    agl = prm.alt.Distances*R(3, 3);
+    if isnan(agl)
+        agl = s.agl;
+    end
+    s.agl = agl;
+
     % Waypoint switching; the last waypoint is the landing descent
     e = prm.wp(s.wpIdx, :) - p;
+    e(3) = prm.wp(s.wpIdx, 3) - agl;     % height error from the altimeter
     if norm(e) < 0.35 && norm(v) < 0.6 && s.wpIdx < size(prm.wp, 1)
         s.wpIdx = s.wpIdx + 1;
     end
-    if s.wpIdx == size(prm.wp, 1) && p(3) < 0.5 && ~s.landed
+    if s.wpIdx == size(prm.wp, 1) && agl < 0.4 && ~s.landed
         s.landed = true;
         s.tLand = time;
     end

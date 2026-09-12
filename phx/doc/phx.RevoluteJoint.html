@@ -20,6 +20,11 @@
 <p><code class="phx-inline">phx.RevoluteJoint</code> realizes a kinematic constraint with one degree
 of freedom: a rotation about a shared axis (a hinge). The connection points and the rotation axes
 are defined in the local space of each body.</p>
+<p>The joint can also drive itself. Its motor regulates the joint velocity to
+<code class="phx-inline">TargetVelocity</code> as long as it needs less than
+<code class="phx-inline">MaxTorque</code>, and delivers <code class="phx-inline">MaxTorque</code>
+whenever the target is out of reach. Both properties can be changed while the simulation runs or
+driven from Simulink.</p>
 
 <h2 class="phx-h2">Creation</h2>
 <h3 class="phx-h3">Syntax</h3>
@@ -50,7 +55,9 @@ axes with name-value arguments (<code class="phx-inline">PointA</code>, <code cl
 <tr><td class="name">PointB</td><td class="dflt">[0 0 0]</td><td>Connection point in the local space of body B.</td></tr>
 <tr><td class="name">AxisA</td><td class="dflt">[0 0 1]</td><td>Rotation-axis direction in the local space of body A.</td></tr>
 <tr><td class="name">AxisB</td><td class="dflt">[0 0 1]</td><td>Rotation-axis direction in the local space of body B.</td></tr>
-<tr><td class="name">Angle</td><td class="type">double (read-only)</td><td>Current angle about the joint axis, <span class="phx-unit">rad</span> (dependent).</td></tr>
+<tr><td class="name">TargetVelocity</td><td class="dflt">0</td><td>Target motor velocity about the joint axis, <span class="phx-unit">rad/s</span>. The sign gives the direction of rotation.</td></tr>
+<tr><td class="name">MaxTorque</td><td class="dflt">0</td><td>Maximal torque the motor can deliver, <span class="phx-unit">N&middot;m</span>. Must be non-negative; 0 means no motor.</td></tr>
+<tr><td class="name">Angle</td><td class="type">double (read-only)</td><td>Current angle about the joint axis, <span class="phx-unit">rad</span> (dependent). Wraps to <code class="phx-inline">[-pi, pi]</code>.</td></tr>
 <tr><td class="name">Overlay</td><td class="dflt">false</td><td>Draw the joint as an overlay (always on top).</td></tr>
 </table>
 <p>Reaction feedback (<code class="phx-inline">ForceA</code>, <code class="phx-inline">TorqueA</code>,
@@ -65,6 +72,30 @@ inherited joint frames, so writing those frames another way
 axis too. What has <b>no effect</b> is the remaining rotation <i>about</i> the axis: the hinge is
 handed only its points and axes, and derives its own reference for
 <code class="phx-inline">Angle</code> from them.</p>
+
+<h2 class="phx-h2">Driving the joint</h2>
+<p>The motor is a saturated velocity source, so the two properties cover several kinds of drive
+without any control law of your own:</p>
+<table class="phx-tbl">
+<tr><th>To get</th><th>TargetVelocity</th><th>MaxTorque</th></tr>
+<tr><td class="name">No motor (default)</td><td class="dflt">any</td><td class="dflt">0</td></tr>
+<tr><td class="name">Speed drive</td><td class="dflt">the wanted speed, signed</td><td class="dflt">the torque limit</td></tr>
+<tr><td class="name">Pure torque source</td><td class="dflt">deliberately out of reach, e.g. <code class="phx-inline">sign(tau)*1e6</code></td><td class="dflt"><code class="phx-inline">abs(tau)</code></td></tr>
+<tr><td class="name">Friction brake</td><td class="dflt">0</td><td class="dflt">the holding torque</td></tr>
+</table>
+<p>A speed drive holds its target exactly while it stays under the limit, so nothing needs tuning.
+A torque source works because the motor cannot reach an impossible target and therefore saturates,
+delivering the limit and nothing else. A target of zero turns the same mechanism into Coulomb
+friction: the joint is held until the load exceeds <code class="phx-inline">MaxTorque</code> and
+then slips.</p>
+
+<div class="phx-note">
+<span class="lbl">Note.</span> Unlike an external torque applied with
+<a href="phx.Body.html">phx.Body</a>.<code class="phx-inline">applyTorque</code>, the motor is part
+of the constraint, so the <b>reaction lands on the other body</b>. Driving a wheel hinged to a
+chassis therefore pushes back on the chassis, which is what a real motor mounted on it does. With
+two free bodies both turn, in opposite directions, split inversely by their moments of inertia -
+the motor sets their relative velocity, not the absolute speed of either one.</div>
 
 <h2 class="phx-h2">Examples</h2>
 <h4 class="phx-h4">Hinge a pendulum to a static base</h4>
@@ -83,6 +114,26 @@ delete(sim);</pre>
 <img src="img/revolutejoint.png" alt="Arm hanging from a revolute joint">
 <figcaption>The arm swings from the hinge on the static base about the y axis.</figcaption>
 </figure>
+
+<h4 class="phx-h4">Spin a disc up with the motor, then brake it</h4>
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+base = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>);
+disc = phx.Body(<span class="str">"Position"</span>, [0 0 0.3], ...
+    <span class="str">"Shape"</span>, {<span class="str">"Cylinder"</span>, <span class="str">"Diameter"</span>, 0.4, <span class="str">"Height"</span>, 0.1, <span class="str">"Axis"</span>, <span class="str">"z"</span>});
+
+hub = phx.RevoluteJoint(base, disc, <span class="str">"PointA"</span>, [0 0 0.3], ...
+    <span class="str">"TargetVelocity"</span>, 6, <span class="str">"MaxTorque"</span>, 5);
+
+sim = phx.Simulation;
+sim.step(1, 100, 1);                <span class="cmt">% spins up to the target</span>
+disp(disc.AngularVelocity(3))       <span class="cmt">% 6.00 rad/s</span>
+
+hub.TargetVelocity = 0;             <span class="cmt">% same motor, now a brake</span>
+hub.MaxTorque = 1;
+sim.step(2, 200, 1);
+disp(disc.AngularVelocity(3))       <span class="cmt">% 0.00 rad/s</span>
+delete(sim);</pre>
 
 <div class="phx-seealso">
 <span class="lbl">See also</span>

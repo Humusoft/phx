@@ -1,13 +1,16 @@
 function phxex_vengine(opts)
 %PHXEX_VENGINE V-configuration multi-cylinder piston engine (slider-crank)
 %
-% A torque-driven crankshaft (phx.shape.Extrusion) on two main bearings spins a
+% A motor-driven crankshaft (phx.shape.Extrusion) on two main bearings spins a
 % bank of slider-crank cylinders: crank pin -> rod (phx.RevoluteJoint) -> wrist
 % pin (phx.SphericalJoint) -> piston on a phx.PrismaticJoint, in two banks opened
 % by the bank angle. The block is dynamic, connected to a static pedestal by one
 % compliant phx.BushingJoint, so the demo reads the engine's vibration from the
 % block motion and the joint reaction (mount.ForceA). Cylinder count, bank angle,
 % stroke, bore and rod length are settable.
+%
+% The drive is the front main bearing's motor: TargetVelocity sets the shaft
+% speed, MaxTorque paces the spin-up.
 %
 % phxex_vengine("NumCylinders", 6, "BankAngle", 60) runs a 60-degree V6.
 %
@@ -47,7 +50,7 @@ function phxex_vengine(opts)
     % --- Scene ----------------------------------------------------------
     [viewer, ax] = phx.extra.Viewer("clear", "DefaultCameraPosition", [0.9 0.6 0.3], "Texture", "Checker");
 
-    [crank, block, mount, cat, cyl] = buildScene(ax, nPair, halfV, r, L, bore, zc, throwSpc, rodOff);
+    [crank, block, mount, cat, cyl, drive] = buildScene(ax, nPair, halfV, r, L, bore, zc, throwSpc, rodOff);
 
     reach = L + r;
     xL = (nPair-1)/2*throwSpc + rodOff + 1.5*bore;
@@ -65,23 +68,22 @@ function phxex_vengine(opts)
     % phxex_camvalve (the jointed parts pass through each other anyway).
     sim = phx.Simulation(ax, "EngineSettings", phx.engine.BulletSettings("Margin", 0));
 
-    % --- Run: drive the crankshaft with a torque, governed to target rpm --
+    % --- Run: the bearing motor holds the crankshaft at the target rpm -----
     dt = 1e-3; subFrame = 10;
     tEnd = 3.0;                              % spin-up + steady running
     nStep = round(tEnd/dt);
 
-    wTarget = 2*pi*opts.Rpm/60;              % target spin rate (rad/s)
-    Kp = 0.12;                               % governor gain (N*m per rad/s error)
-    tauMax = 30;                             % drive-torque clamp (N*m)
+    % Set once; the motor is on target from about 1 s on, so the steady window
+    % (second half of the record) sees no spin-up.
+    drive.TargetVelocity = 2*pi*opts.Rpm/60; % target spin rate (rad/s)
+    drive.MaxTorque = 3;                     % what the motor may deliver (N*m)
 
     for i = 1:nStep
-        w = crank.AngularVelocity(1);        % spin rate about the shaft axis
-        tau = max(min(Kp*(wTarget - w), tauMax), -tauMax);
-        crank.applyTorque([tau 0 0], false); % drive torque about world X
         sim.step(dt, 1, mod(i, subFrame) == 0);
         if mod(i, subFrame) == 0
-            viewer.displayText(sprintf("V%d   bank %.0f%c   %.0f / %.0f rpm   drive %.1f Nm", ...
-                opts.NumCylinders, opts.BankAngle, char(176), w*60/(2*pi), opts.Rpm, tau), ...
+            viewer.displayText(sprintf("V%d   bank %.0f%c   %.0f / %.0f rpm", ...
+                opts.NumCylinders, opts.BankAngle, char(176), ...
+                crank.AngularVelocity(1)*60/(2*pi), opts.Rpm), ...
                 "replace", 1, 16, [0.8 0.4 0]);
         end
     end
@@ -146,7 +148,7 @@ function phxex_vengine(opts)
 end
 
 % ---------------------------------------------------------------------------
-function [crank, block, mount, cat, cyl] = buildScene(ax, nPair, halfV, r, L, bore, zc, throwSpc, rodOff)
+function [crank, block, mount, cat, cyl, drive] = buildScene(ax, nPair, halfV, r, L, bore, zc, throwSpc, rodOff)
 % Build the crankshaft, the block plate on its mount, and every slider-crank loop
 
     crankR = r*0.25;
@@ -200,8 +202,9 @@ function [crank, block, mount, cat, cyl] = buildScene(ax, nPair, halfV, r, L, bo
 
     % Two main bearings: a revolute joint at each shaft end ties the crankshaft
     % to the block, leaving it free only to spin about its own axis (world X).
+    % The loop ends on the front bearing, left in drive for the caller to drive.
     for e = [-1 +1]
-        phx.RevoluteJoint(block, crank, "PointA", [e*crankLen/2, 0, zc] - blkPos, "PointB", [e*crankLen/2, 0, 0], ...
+        drive = phx.RevoluteJoint(block, crank, "PointA", [e*crankLen/2, 0, zc] - blkPos, "PointB", [e*crankLen/2, 0, 0], ...
             "AxisA", [1 0 0], "AxisB", [1 0 0], "Visible", false);
     end
 

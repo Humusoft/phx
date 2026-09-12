@@ -123,9 +123,9 @@ classdef Thruster < phx.base.Object
                     % The thrust is fixed to the body: apply it as a local
                     % force at the local mounting point (the engine rotates
                     % it into the global frame)
-                    phx.engine.io('apply', world, body.ObjectHandle, 'force', obj.Thrust*obj.Direction, obj.Point, true, true);
+                    [~] = phx.engine.io('apply', world, body.ObjectHandle, 'force', obj.Thrust*obj.Direction, obj.Point, true, true);
                     if obj.ReactionFactor ~= 0
-                        phx.engine.io('apply', world, body.ObjectHandle, 'torque', obj.ReactionFactor*obj.Thrust*obj.Direction, true);
+                        [~] = phx.engine.io('apply', world, body.ObjectHandle, 'torque', obj.ReactionFactor*obj.Thrust*obj.Direction, true);
                     end
                 end
             end

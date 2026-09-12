@@ -62,7 +62,12 @@ classdef Camera < phx.base.Object
             obj.ParentAxes = ParentA.ParentAxes;
 
             % Process input arguments
-            obj.Parents = addChild([ParentA ParentB], obj);
+            if ParentA == ParentB
+                addChild(ParentA, obj); % two same bodies would cause a warning
+                obj.Parents = {ParentA ParentB};
+            else
+                obj.Parents = addChild([ParentA ParentB], obj);
+            end
             phx.internal.applyArguments(Options, obj);
 
             % Get default viewer or axes object
@@ -76,6 +81,7 @@ classdef Camera < phx.base.Object
             end
 
             % Create graphics objects
+            obj.Viewer.CameraPosition = phx.internal.transformPoint(obj.Parents{1}.Matrix, obj.PointA);
             phx.Camera.updateView({obj}, 0.01);
         end
     end

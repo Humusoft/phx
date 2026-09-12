@@ -358,6 +358,6 @@ class as a starting point.
 
 - **phx-constraints-forces** — joints, springs, ropes, thrusters, buoyancy, fields,
   `applyForce`/`applyTorque`, scripted and closed-loop control.
-- **phx-logging-view** — Logger, Trace, Measure, Zone, PlanarShadow, Camera, the interactive Viewer, plotting.
+- **phx-logging-view** — Logger, Trace, Measure, Zone, Raycast, PlanarShadow, Camera, the interactive Viewer, plotting.
 - **phx-engine-gotchas** — the `phx.engine.io` gateway, engine variants, error IDs, known quirks, tests.
 - **phx-simulink** — drive a PHX scene from Simulink via the PhxModel co-simulation block.

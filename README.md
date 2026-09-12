@@ -3,7 +3,7 @@
 **Object-oriented MATLAB API and Simulink blocks for 3D rigid-body physics.**
 
 PHX Toolbox allows you to build models from physical objects such as bodies with different
-shapes, joints, springs, ropes, force fields, or custom elements. The model is drawn
+shapes, joints, springs, ropes, force fields, sensors, or custom elements. The model is drawn
 directly into MATLAB axes and can be simulated immediately with one command. Simulation is
 powered by the [Bullet](https://github.com/bulletphysics/bullet3) physics engine, enhanced
 to allow co-simulation with custom MATLAB elements. 
@@ -15,13 +15,19 @@ to allow co-simulation with custom MATLAB elements.
 
 ## Features
 
-* Rigid-body dynamics with collisions and contacts (boxes, spheres, cylinders,
-cones, capsules, meshes, terrain, imported OBJ/STL, …)
-* Joints (revolute, spherical, gear, …), springs and ropes
-* Force and field elements (buoyancy, thrusters, resistance, dipole/monopole fields)
-* Logging, tracing and measurement tools, interactive viewer
+* Rigid-body dynamics with collisions and contacts — boxes, spheres, cylinders, cones,
+capsules, extrusions, revolutions, rocks, terrain heightfields and imported OBJ/STL/PLY meshes
+* Joints (revolute, prismatic, cylindrical, spherical, gear, fixed, bushing and a generic
+6-DOF joint with limits), springs and ropes routed over pulleys
+* Motorized joints — an angular or linear velocity target with a torque or force limit,
+which doubles as a pure torque/force source or a holding brake
+* Force and field elements (thrusters, resistance, buoyancy, dipole/monopole fields)
+* Prefab assemblies — arenas, jointed chains, scattered bodies, brick walls, URDF import
+* Sensing and analysis — loggers, traces, measurements, detection zones, ray sensors
+* Automation and control — timed scripts, per-step callbacks, closed-loop control from MATLAB
+* Interactive viewer with textures, sky backgrounds, tracking cameras and projected shadows
 * Simulink block for closed-loop co-simulation
-* Headless stepping for batch runs and experiments
+* Headless stepping for batch runs, optimization and experiments
 
 PHX Toolbox also includes a set of AI skills for use with common AI agents. They are
 installed with the toolbox in its `skills` folder (and live here in `.claude/skills`);
@@ -55,8 +61,17 @@ sim = phx.Simulation;
 sim.step(1, 100, 1);                   % simulate 1 s in 100 substeps, redrawing
 ```
 
-More examples are in the [`examples/`](examples) folder (all named `phxex_*`), and
-a guided introduction is in [`doc/GettingStarted.mlx`](doc/GettingStarted.mlx).
+## Documentation
+
+Once installed, the full documentation is in the MATLAB Help browser under
+**Supplemental Software → PHX Toolbox**: a Getting Started topic, a User Guide covering
+core concepts, bodies and shapes, joints, forces, assemblies, logging, automation, the
+interactive viewer and the AI agent skills, plus an illustrated Examples gallery and the
+class reference. `phxdoc phx.Body` opens a single reference page directly.
+
+Over 50 ready-to-run examples are in the [`examples/`](examples) folder (all named
+`phxex_*`) — each one is a single command in the Command Window. A guided introduction
+is in [`doc/GettingStarted.mlx`](doc/GettingStarted.mlx).
 
 ## License
 

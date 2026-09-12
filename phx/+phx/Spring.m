@@ -165,7 +165,7 @@ classdef Spring < phx.base.Object
                     Force = [0 0 0];
                 end
 
-                %phx.engine.io('apply', world, [A.ObjectHandle B.ObjectHandle], 'forces', [Force, -Force], [obj.PointA, obj.PointB], false, true);
+                %[~] = phx.engine.io('apply', world, [A.ObjectHandle B.ObjectHandle], 'forces', [Force, -Force], [obj.PointA, obj.PointB], false, true);
                 i2 = i*2;
                 i6 = i*6;
                 allHandles(i2 - 1) = A.ObjectHandle;
@@ -177,7 +177,7 @@ classdef Spring < phx.base.Object
                 obj.Force = Force;
             end
 
-            phx.engine.io('apply', world, allHandles, 'forces', allForces, allPoints, false, true);
+            [~] = phx.engine.io('apply', world, allHandles, 'forces', allForces, allPoints, false, true);
         end
 
         function updateView(cellObjs, dt, time, world)

@@ -163,8 +163,8 @@ classdef Joint < phx.base.Object
 
         function value = get.ForceA(obj)
             if ~isempty(obj.ObjectHandle)
-                f = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'feedback')';
-                value = f{1}';
+                [f, ~, ~, ~] = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'feedback');
+                value = f';
             else
                 value = [NaN NaN NaN];
             end
@@ -172,8 +172,8 @@ classdef Joint < phx.base.Object
 
         function value = get.TorqueA(obj)
             if ~isempty(obj.ObjectHandle)
-                f = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'feedback')';
-                value = f{2}';
+                [~, f, ~, ~] = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'feedback');
+                value = f';
             else
                 value = [NaN NaN NaN];
             end
@@ -181,8 +181,8 @@ classdef Joint < phx.base.Object
 
         function value = get.ForceB(obj)
             if ~isempty(obj.ObjectHandle)
-                f = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'feedback')';
-                value = f{3}';
+                [~, ~, f, ~] = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'feedback');
+                value = f';
             else
                 value = [NaN NaN NaN];
             end
@@ -190,8 +190,8 @@ classdef Joint < phx.base.Object
 
         function value = get.TorqueB(obj)
             if ~isempty(obj.ObjectHandle)
-                f = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'feedback')';
-                value = f{4}';
+                [~, ~, ~, f] = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'feedback');
+                value = f';
             else
                 value = [NaN NaN NaN];
             end

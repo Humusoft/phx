@@ -45,6 +45,7 @@ Prefer headless bodies (`[]` axes) unless the test is about the drawing.
 | `tJointFrames` | engine | `Engine` | the joint-frame coincidence rule documented on `phx.base.Joint`: a mismatch along a *free* DOF is inert, a mismatch in a *constrained* one is pulled out gradually, a `FixedJoint` leaves no free direction |
 | `tRevolutionEnvelope` | engine | `Engine` | the bounding-cylinder collision envelope of `phx.shape.Revolution` |
 | `tZone` | graphics (pipeline tests also engine) | `Graphics` / `Engine` | entry/exit detection, the static-anchor watch rule, passive zones, seeding on rebuild |
+| `tRaycast` | graphics (geometry tests also engine) | `Graphics` / `Engine` | hit point/normal/distance, anchor-local rays, NaN misses, both sensor modes, the objectID to phx.Body lookup |
 | `tPlanarShadow` | graphics (projection tests also engine) | `Graphics` / `Engine` | shadow projection onto the plane, light models, anchoring, extent, decimation |
 | `tAssemblyConventions` | graphics | — / `Graphics` | the four rules every `phx.assembly` builder obeys: axes target, headless build, rigid base pose, conflicting rotation options |
 | `tAssembly` | graphics (three `Engine` cases) | `Graphics` / `Engine` | what each builder lays out: arena dimensions, chain link poses and joint types, scatter placement, the running bond of a wall; plus a ball kept inside the arena, a swinging chain and a collapsing wall |

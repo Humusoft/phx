@@ -209,7 +209,7 @@ classdef Rope < phx.base.Object
 
                     F = F';
                     pl = obj.Points';
-                    phx.engine.io('apply', world, handles, 'forces', F(:)', pl(:)', false, true);
+                    [~] = phx.engine.io('apply', world, handles, 'forces', F(:)', pl(:)', false, true);
                 end
             end
         end

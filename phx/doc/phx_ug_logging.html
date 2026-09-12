@@ -15,7 +15,7 @@
 <h1 class="phx-title">Measuring and Logging Data</h1>
 <p class="phx-purpose">Observing simulation results with Logger, Trace, Measure and Zone</p>
 
-<p>Simulation results are observed with four helpers:</p>
+<p>Simulation results are observed with five helpers:</p>
 <ul>
 <li><code class="phx-inline">phx.Logger</code> &mdash; records property values over time (position,
     velocity, force&nbsp;&hellip;).</li>
@@ -24,6 +24,8 @@
     between two bodies.</li>
 <li><code class="phx-inline">phx.Zone</code> &mdash; counts the bodies inside a box-shaped region and
     reports when they enter or leave it.</li>
+<li><code class="phx-inline">phx.Raycast</code> &mdash; casts rays into the scene and reports the
+    range, the surface normal and the body each of them hits.</li>
 </ul>
 
 <pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
@@ -69,6 +71,33 @@ delete(sim);</pre>
 <p>For a pure end-of-run tally, make the zone passive with
 <code class="phx-inline">"SimulationOrder", "none"</code> (it then costs nothing per step) and read it once
 after stepping with <code class="phx-inline">update(z)</code>.</p>
+
+<p>Where a zone asks &ldquo;what is in this box&rdquo;, a <code class="phx-inline">phx.Raycast</code>
+asks &ldquo;what is in this direction, and how far&rdquo;. The rays are defined in the local frame of
+an anchor body, so they follow it, and every result is a matrix with one column per ray:</p>
+
+<pre class="phx-code">phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Position"</span>, [0 0 -0.5], ...
+    <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [20 20 1]});
+ball = phx.Body(<span class="str">"Position"</span>, [0 0 8], <span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>, <span class="str">"Diameter"</span>, 1});
+
+<span class="cmt">% a fan of 32 rays sharing the body origin, 30 m long</span>
+n = 32;
+th = linspace(-pi/4, pi/4, n);
+r = phx.Raycast(ball, <span class="str">"Origins"</span>, [0; 0; 0], ...
+    <span class="str">"Ends"</span>, 30*[sin(th); zeros(1, n); -cos(th)]);
+
+sim = phx.Simulation;
+sim.step(1, 200, 1);
+disp(r.Distances(r.Hits));   <span class="cmt">% ranges of the rays that returned</span>
+delete(sim);</pre>
+
+<p>Columns of rays that hit nothing carry <code class="phx-inline">NaN</code> rather than zeros, so
+<code class="phx-inline">plot3</code> of <code class="phx-inline">Points</code> breaks over the misses
+instead of drawing lines back to the origin. <code class="phx-inline">Hits</code> is the mask of valid
+columns and <code class="phx-inline">Bodies</code> names the bodies behind them. Like a zone, a sensor
+created with <code class="phx-inline">"SimulationOrder", "none"</code> is never cast while stepping
+and is read on demand with <code class="phx-inline">update(r)</code> &mdash; worth doing whenever the
+sensor is sampled more slowly than the simulation steps.</p>
 
 <div class="phx-seealso">
 <span class="lbl">Topics</span>

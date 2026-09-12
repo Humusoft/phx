@@ -34,6 +34,7 @@ function catalog = exampleCatalog
         entry("phxex_slide",       "Basics and geometry",            5)
         entry("phxex_terrain",     "Basics and geometry",            8)
         entry("phxex_textures",    "Basics and geometry",           10)
+        entry("phxex_raycast",     "Basics and geometry",            7)  % sim time ~10 s, where the orbit aims the fan at the camera
 
         entry("phxex_jenga",       "Contacts, stacking and granular", 6)
         entry("phxex_stack",       "Contacts, stacking and granular", 6)
@@ -65,6 +66,7 @@ function catalog = exampleCatalog
         entry("phxex_sim_swingover", "Vehicles, robots and control", 24, "Simulink version: a scheduled trolley path swings the load over the wall")
         entry("phxex_gyrostab",    "Vehicles, robots and control",   20)
         entry("phxex_stairfall",   "Vehicles, robots and control",    8)
+        entry("phxex_walker",      "Vehicles, robots and control",    1)  % the chase camera is still close in at the start
 
         entry("phxex_magnets",     "Fields, magnetism and fluids",   15)
         entry("phxex_magpendulum", "Fields, magnetism and fluids",   12)
@@ -76,6 +78,7 @@ function catalog = exampleCatalog
         entry("phxex_capacitor",   "Fields, magnetism and fluids",   25)
         entry("phxex_buoyancy",    "Fields, magnetism and fluids",   15)
 
+        entry("phxex_bowling",     "Analysis and workflows",         15)
         entry("phxex_optimize",    "Analysis and workflows",         40)
         entry("phxex_validate",    "Analysis and workflows",         20)
         entry("phxex_determinism", "Analysis and workflows",         15)

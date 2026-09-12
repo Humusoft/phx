@@ -155,7 +155,7 @@ classdef Monopole < phx.base.Object
                 end
 
                 Fp = obj.Attractivity*Fp;
-                phx.engine.io('apply', world, obj.ehs, 'centralforces', Fp', false);
+                [~] = phx.engine.io('apply', world, obj.ehs, 'centralforces', Fp', false);
             end
         end
         

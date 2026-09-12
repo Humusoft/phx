@@ -4,10 +4,11 @@ description: >
   Record and observe a PHX simulation — log object properties over time with
   phx.Logger, draw motion trails with phx.Trace, measure distances/velocities
   between bodies with phx.Measure, detect and count bodies in a region with
-  phx.Zone, cast shadows onto a plane with phx.PlanarShadow (only when the user
-  asks for them), and set up the view with phx.Camera and the interactive
-  phx.extra.Viewer. Use when capturing signals for plots, detecting events in a
-  scene, or configuring how a PHX scene is displayed.
+  phx.Zone, sense range/normal/body along rays with phx.Raycast, cast shadows
+  onto a plane with phx.PlanarShadow (only when the user asks for them), and set
+  up the view with phx.Camera and the interactive phx.extra.Viewer. Use when
+  capturing signals for plots, detecting events in a scene, sensing distances or
+  line of sight, or configuring how a PHX scene is displayed.
 ---
 
 # PHX logging & visualization
@@ -100,6 +101,56 @@ Notes: `Visible`/`Overlay` control the drawn translucent box; the watch set is
 resolved at pipeline build time (a scene change re-enumerates it), and a zone
 anchored to a **static** body watches only non-static bodies.
 Demos: `phxex_galton` (passive bins), `phxex_soil` (active zone + HUD).
+
+## phx.Raycast — ray sensor
+
+A set of rays anchored to a body (so they follow and rotate with it) reporting
+what each one hits. Use it for range finders, lidar sweeps, ground/altitude
+probes, line-of-sight checks and picking. Where a Zone asks "what is in this
+box", a Raycast asks "what is in this direction, and how far".
+
+```matlab
+% Active sensor: cast every substep, results always current
+n = 64;
+th = linspace(-pi/4, pi/4, n);
+lidar = phx.Raycast(scanner, ...
+    "Origins", [0; 0; 0], ...                  % 3x1 = shared by all rays,
+    "Ends", 30*[sin(th); zeros(1,n); -cos(th)]);  % or 3xN, one per ray
+
+lidar.Points      % 3xN world hit points, NaN in the miss columns
+lidar.Normals     % 3xN unit normals, facing the ray
+lidar.Distances   % 1xN metres from the origin, NaN where nothing was hit
+lidar.Hits        % 1xN logical mask of the rays that returned
+lidar.Bodies      % phx.Body array of the hit bodies, numel == nnz(Hits)
+lidar.Count       % number of rays
+```
+
+Rays run from a column of `Origins` to the matching column of `Ends`, both in the
+**anchor's local frame** — a fan is usually one shared origin plus N ends. There
+is no separate direction/range pair; scale the ends instead (`30*D`).
+
+**Misses are `NaN`, not zeros**, so `plot3(P(1,:),P(2,:),P(3,:))` breaks over them
+instead of drawing lines back to the origin. Each ray reports the *nearest* body;
+a ray starting inside a body does not hit that body.
+
+**Manual sensors cost nothing per substep.** Create with `"SimulationOrder",
+"none"` and call `update(sensors)` for a reading — the right shape whenever the
+sensor is sampled more slowly than the simulation steps. It takes an array:
+
+```matlab
+r = phx.Raycast(rover, "Ends", [0; 0; -5], "SimulationOrder", "none");
+for k = 1:20
+    sim.step(0.05, 10, -1);
+    update(r);                      % one reading per 10 substeps
+    if r.Hits, disp(r.Distances); end
+end
+```
+
+Notes: the mode is read when the pipelines are built, so set `SimulationOrder` at
+construction — assigning it later does nothing until a rebuild. Assigning `Ends` a
+different number of columns voids the stored results (they report `NaN` until the
+next cast). `Visible`/`Overlay` control the drawn rays and hit markers, which are
+truncated at the hit point.
 
 ## phx.Measure — live measurement
 

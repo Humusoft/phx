@@ -452,9 +452,9 @@ classdef Body < phx.base.Object
             end
 
             if isempty(Point)
-                phx.engine.io('apply', obj.WorldHandle, obj.ObjectHandle, 'centralforce', Force, IsLocalForce);
+                [~] = phx.engine.io('apply', obj.WorldHandle, obj.ObjectHandle, 'centralforce', Force, IsLocalForce);
             else
-                phx.engine.io('apply', obj.WorldHandle, obj.ObjectHandle, 'force', Force, Point, IsLocalForce, IsLocalPoint);
+                [~] = phx.engine.io('apply', obj.WorldHandle, obj.ObjectHandle, 'force', Force, Point, IsLocalForce, IsLocalPoint);
             end
         end
 
@@ -475,7 +475,7 @@ classdef Body < phx.base.Object
                 IsLocalTorque (:, 1) logical = true
             end
 
-            phx.engine.io('apply', obj.WorldHandle, obj.ObjectHandle, 'torque', Torque, IsLocalTorque);
+            [~] = phx.engine.io('apply', obj.WorldHandle, obj.ObjectHandle, 'torque', Torque, IsLocalTorque);
         end
 
         function groupTransform(objs, transforms)

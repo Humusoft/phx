@@ -100,7 +100,7 @@ classdef Simulation < phx.base.Object
                     end
                     bodies = obj.addObjects(bodies);
                 case {'phx.Body', 'cell'}
-                    bodies = addParent(simObjects, obj, "phx.base.Object");
+                    bodies = addParent(simObjects, obj, "phx.Body");
                     bodies = bodies(:)'; % ensure row format
                     obj.Children = [obj.Children bodies];
                 otherwise
@@ -321,10 +321,8 @@ classdef Simulation < phx.base.Object
     methods (Static, Access = protected)
         function resolveState(cellObjs, dt, time, world)
             obj = cellObjs{1};
-            c = phx.engine.io('step', world, dt);
-            if iscell(c)
-                bid = c{1};
-                mtx = c{2};
+            [bid, mtx] = phx.engine.io('step', world, dt);
+            if ~islogical(bid)
                 BID = obj.SortedBodiesID;
                 [~, locb] = matlab.internal.math.ismemberhelper(bid, BID(:, 2), true);
                 for i = 1:numel(bid)

@@ -172,7 +172,7 @@ classdef Dipole < phx.base.Object
                 Fp = obj.Attractivity*Fp;
                 % Global forces applied at the pole offsets, given as local
                 % points so the engine takes each moment about the body center
-                phx.engine.io('apply', world, [obj.ehs obj.ehs], 'forces', Fp', [obj.Axis; -obj.Axis]', false, true);
+                [~] = phx.engine.io('apply', world, [obj.ehs obj.ehs], 'forces', Fp', [obj.Axis; -obj.Axis]', false, true);
             end
         end
         

@@ -14,6 +14,16 @@ classdef RevoluteJoint < phx.base.Joint
 %   phx.RevoluteJoint(___, name, value, ...) creates a joint and sets properties
 %   values according to given name-value pairs.
 %
+%   The joint can be driven by a motor. The motor regulates the joint velocity
+%   to TargetVelocity as long as it needs less than MaxTorque, which is zero
+%   (no motor) by default. Because the motor saturates, a deliberately
+%   unreachable TargetVelocity turns it into a pure torque source delivering
+%   MaxTorque, and TargetVelocity = 0 makes it a friction brake holding the
+%   joint until the load exceeds MaxTorque.
+%
+%   Both motor properties can be changed while the simulation runs or set from
+%   Simulink.
+%
 %   See also phx.SphericalJoint, phx.CylindricalJoint
 
 %   Copyright 2026 HUMUSOFT s.r.o.
@@ -30,6 +40,15 @@ classdef RevoluteJoint < phx.base.Joint
     end
 
     properties
+        % Target motor velocity in the joint axis (rad/s)
+        % The sign gives the direction of rotation.
+        TargetVelocity (1, 1) double = 0
+
+        % Maximal torque the motor can deliver (N*m), 0 = no motor
+        % The motor regulates to TargetVelocity while it needs less than this;
+        % when the target is out of reach it simply delivers MaxTorque.
+        MaxTorque (1, 1) double {mustBeNonnegative} = 0
+
         % Draw joint as overlay
         Overlay (1, 1) logical = false
     end
@@ -71,6 +90,29 @@ classdef RevoluteJoint < phx.base.Joint
                 value = NaN;
             end
         end
+
+        function set.TargetVelocity(obj, value)
+            obj.TargetVelocity = value;
+            obj.applyMotor;
+        end
+
+        function set.MaxTorque(obj, value)
+            obj.MaxTorque = value;
+            obj.applyMotor;
+        end
+    end
+
+    methods (Access = private)
+        function applyMotor(obj)
+        %applyMotor Pushes the motor setting to the engine.
+        % A zero MaxTorque switches the motor off rather than clamping it to
+        % zero, so that the solver does not assemble its constraint row at all.
+
+            if ~isempty(obj.ObjectHandle)
+                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'motor', ...
+                    obj.MaxTorque > 0, obj.TargetVelocity, obj.MaxTorque);
+            end
+        end
     end
 
     methods (Access = protected)
@@ -80,6 +122,9 @@ classdef RevoluteJoint < phx.base.Joint
                 obj.WorldHandle = world;
                 obj.ObjectHandle = phx.engine.io('add', world, 'hingeconstraint', obj.Parents{1}.ObjectHandle, obj.Parents{2}.ObjectHandle, ...
                     obj.PointA, obj.PointB, obj.AxisA, obj.AxisB, true, ~obj.MutualCollisions);
+                % The constraint is created anew on every pipeline rebuild, so
+                % the motor setting has to be reapplied here
+                obj.applyMotor;
             end
         end
 

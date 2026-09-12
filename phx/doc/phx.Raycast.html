@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.Raycast</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.Raycast</div>
+
+<h1 class="phx-title">phx.Raycast</h1>
+<p class="phx-purpose">Ray sensor probing the scene for bodies</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.Raycast &nbsp;|&nbsp; Superclass: <a href="phx.base.Object.html">phx.base.Object</a></p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.Raycast</code> casts a set of rays into the scene and reports what each
+of them hits: the hit point, the surface normal, the distance travelled and the
+<a href="phx.Body.html">phx.Body</a> that was hit. It is the building block for range finders, lidar
+sweeps, ground probes, line-of-sight tests and picking.</p>
+
+<p>The rays are anchored to a parent body and defined in its local frame, so a sensor mounted on a
+moving body sweeps along with it. A ray runs from a column of <code class="phx-inline">Origins</code>
+to the matching column of <code class="phx-inline">Ends</code>; give
+<code class="phx-inline">Origins</code> a single column to share one origin between every ray, which
+is the usual shape of a fan or a sweep.</p>
+
+<p>All results are matrices aligned column by column with the rays.
+<code class="phx-inline">Points</code>, <code class="phx-inline">Normals</code> and
+<code class="phx-inline">Distances</code> hold <code class="phx-inline">NaN</code> in the columns of
+rays that hit nothing, so a plot of the hit points breaks over the misses instead of collapsing to
+the origin. The <code class="phx-inline">Hits</code> mask says which columns are valid, and
+<code class="phx-inline">Bodies</code> lists the bodies of those columns, so
+<code class="phx-inline">numel(Bodies)</code> equals <code class="phx-inline">nnz(Hits)</code>. Each
+ray reports the <em>nearest</em> body along it. A ray that starts inside a body does not hit that
+body.</p>
+
+<p>The sensor runs in one of two modes. An active sensor casts its rays every substep and its result
+properties are always current. A sensor created with
+<code class="phx-inline">SimulationOrder&nbsp;=&nbsp;"none"</code> is never evaluated while stepping,
+costs nothing per step, and is refreshed on demand with
+<a href="#update"><code class="phx-inline">update</code></a> &mdash; the right choice for a sensor
+sampled far more slowly than the simulation runs.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">r = phx.Raycast(body)</span>
+<span class="phx-syntax">r = phx.Raycast(___,Name,Value)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">r = phx.Raycast(body)</code> creates a single ray of unit length pointing
+along the -Z axis of the anchor <code class="phx-inline">body</code>. Use
+<code class="phx-inline">Origins</code> and <code class="phx-inline">Ends</code> to lay out the rays
+in the local frame of the anchor.</p>
+</div>
+
+<h3 class="phx-h3">Input Arguments</h3>
+<table class="phx-tbl">
+<tr><th>Argument</th><th>Type</th><th>Description</th></tr>
+<tr><td class="name">body</td><td class="type">phx.Body (scalar)</td><td>Anchor body defining the ray frame. The rays move and rotate with it.</td></tr>
+</table>
+
+<h2 class="phx-h2">Properties</h2>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">Origins</td><td class="dflt">[0;0;0]</td><td>Ray origins in the local frame of the anchor, <span class="phx-unit">m</span>. Either 3-by-N, one origin per ray, or 3-by-1 shared by every ray.</td></tr>
+<tr><td class="name">Ends</td><td class="dflt">[0;0;-1]</td><td>Ray end points in the local frame of the anchor, <span class="phx-unit">m</span>. The number of columns defines the number of rays.</td></tr>
+<tr><td class="name">Overlay</td><td class="dflt">false</td><td>Draw the rays as an overlay (always on top).</td></tr>
+<tr><td class="name">Points</td><td class="type">3-by-N double (read-only)</td><td>Hit points in the global frame, <span class="phx-unit">m</span>. <code class="phx-inline">NaN</code> where nothing was hit.</td></tr>
+<tr><td class="name">Normals</td><td class="type">3-by-N double (read-only)</td><td>Unit surface normals at the hit points in the global frame, facing the incoming ray. <code class="phx-inline">NaN</code> where nothing was hit.</td></tr>
+<tr><td class="name">Distances</td><td class="type">1-by-N double (read-only)</td><td>Distance from the ray origin to the hit point, <span class="phx-unit">m</span>. <code class="phx-inline">NaN</code> where nothing was hit.</td></tr>
+<tr><td class="name">Hits</td><td class="type">1-by-N logical (read-only)</td><td>Mask of the rays that hit something.</td></tr>
+<tr><td class="name">Bodies</td><td class="type">phx.Body array (read-only)</td><td>Bodies that were hit, in ray order. Only the rays in <code class="phx-inline">Hits</code> are represented.</td></tr>
+<tr><td class="name">Count</td><td class="type">double (read-only)</td><td>Number of rays.</td></tr>
+</table>
+
+<p>The inherited <code class="phx-inline">SimulationOrder</code> property (from
+<a href="phx.base.Object.html">phx.base.Object</a>) selects when the rays are cast:
+<code class="phx-inline">"after"</code> (the default) casts them every substep after the solve;
+<code class="phx-inline">"none"</code> makes the sensor manual, cast only on demand via
+<code class="phx-inline">update</code>. The mode is read when the simulation builds its pipelines, so
+set it when you create the sensor.</p>
+
+<p>Assigning <code class="phx-inline">Ends</code> a different number of columns discards the stored
+results: the previous columns no longer correspond to the new rays, so
+<code class="phx-inline">Points</code>, <code class="phx-inline">Normals</code> and
+<code class="phx-inline">Distances</code> report <code class="phx-inline">NaN</code> until the next
+cast.</p>
+
+<h2 class="phx-h2">Methods</h2>
+<table class="phx-tbl">
+<tr><th>Method</th><th>Description</th></tr>
+<tr><td class="name" id="update">update(r)</td><td>Cast the rays now and refresh the result properties. Use it to read <code class="phx-inline">Points</code> / <code class="phx-inline">Distances</code> / <code class="phx-inline">Bodies</code> from a manual sensor, which is not cast during stepping. Accepts an array of sensors.</td></tr>
+</table>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">Ground probe under a falling body</h4>
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Position"</span>, [0 0 -0.5], ...
+    <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [20 20 1]});
+ball = phx.Body(<span class="str">"Position"</span>, [0 0 8], <span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>, <span class="str">"Diameter"</span>, 1});
+
+<span class="cmt">% one ray straight down from the body, 20 m long</span>
+probe = phx.Raycast(ball, <span class="str">"Ends"</span>, [0; 0; -20]);
+
+sim = phx.Simulation;
+<span class="kw">for</span> k = 1:200
+    sim.step(0.005, 1, 1);
+    <span class="kw">if</span> probe.Hits && probe.Distances &lt; 2
+        disp(<span class="str">"altitude "</span> + probe.Distances);
+    <span class="kw">end</span>
+<span class="kw">end</span>
+delete(sim);</pre>
+
+<figure class="phx-fig">
+<img src="img/raycast.png" alt="Single ray from a ball straight down to the floor, with a marker where it lands">
+<figcaption>The probe ray drawn from the ball to the surface it hits, not to its full length &mdash; the marker sits at <code class="phx-inline">Points</code> and the drawn segment is <code class="phx-inline">Distances</code> long. A ray that hits nothing is drawn out to its end point instead.</figcaption>
+</figure>
+
+<h4 class="phx-h4">Lidar fan sweeping a scene</h4>
+<pre class="phx-code"><span class="cmt">% 64 rays in a fan, all sharing the sensor origin</span>
+n = 64;
+th = linspace(-pi/4, pi/4, n);
+lidar = phx.Raycast(scanner, <span class="str">"Origins"</span>, [0; 0; 0], ...
+    <span class="str">"Ends"</span>, 30*[sin(th); zeros(1, n); -cos(th)]);
+
+sim = phx.Simulation;
+sim.step(1, 200, 1);
+
+<span class="cmt">% NaN in the misses, so the plot breaks instead of returning to the origin</span>
+P = lidar.Points;
+plot3(P(1, :), P(2, :), P(3, :), <span class="str">"o"</span>);
+disp(nnz(lidar.Hits) + <span class="str">" of "</span> + lidar.Count + <span class="str">" rays returned"</span>);
+delete(sim);</pre>
+
+<h4 class="phx-h4">Manual sensor sampled on demand</h4>
+<pre class="phx-code"><span class="cmt">% a manual sensor costs nothing per step; cast it when you need a reading</span>
+r = phx.Raycast(rover, <span class="str">"Ends"</span>, [0; 0; -5], ...
+    <span class="str">"SimulationOrder"</span>, <span class="str">"none"</span>);
+
+sim = phx.Simulation;
+<span class="kw">for</span> k = 1:20
+    sim.step(0.05, 10, -1);
+    update(r);                  <span class="cmt">% one reading per 10 substeps</span>
+    <span class="kw">if</span> r.Hits
+        disp(r.Bodies(1).Name + <span class="str">" at "</span> + r.Distances);
+    <span class="kw">end</span>
+<span class="kw">end</span>
+delete(sim);</pre>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.Zone.html">phx.Zone</a>,
+<a href="phx.Measure.html">phx.Measure</a>,
+<a href="phx.Trace.html">phx.Trace</a>,
+<a href="phx.Body.html">phx.Body</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_logging.html">Measuring and logging</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>
