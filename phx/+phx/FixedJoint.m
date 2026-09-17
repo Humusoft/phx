@@ -59,16 +59,12 @@ classdef FixedJoint < phx.base.Joint
         function valid = initObject(obj, world)
             valid = numel(obj.Parents) == 2 && all(cellfun(@isvalid, obj.Parents));
             if valid
+                % The constraint is rebuilt from scratch here, so the
+                % previous one has to be taken out of the world first.
+                obj.destroyObject;
                 obj.WorldHandle = world;
                 obj.ObjectHandle = phx.engine.io('add', world, 'fixedconstraint', obj.Parents{1}.ObjectHandle, obj.Parents{2}.ObjectHandle, obj.TransformA(:), obj.TransformB(:), ~obj.MutualCollisions);
                 %phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'error', 0.5, 0.5);
-            end
-        end
-
-        function destroyObject(obj)
-            if ~isempty(obj.ObjectHandle)
-                phx.engine.io('remove', obj.WorldHandle, obj.ObjectHandle);
-                obj.ObjectHandle = [];
             end
         end
     end

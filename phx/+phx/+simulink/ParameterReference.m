@@ -29,6 +29,11 @@ classdef ParameterReference
         Indices (1, :) double
         Size (1, 1) double
         Kind (1, 1) string = "property"
+
+        % Fast reader of the whole property, built by bindGetter. Reading
+        % through it costs a fraction of the dynamic obj.(Property) access,
+        % because the property name is a literal inside the handle.
+        Getter function_handle = function_handle.empty
     end
 
     methods
@@ -47,6 +52,22 @@ classdef ParameterReference
                 obj.Indices = [];
             end
             obj.Size = numel(obj.Indices);
+        end
+
+        function obj = bindGetter(obj)
+        %bindGetter Build the fast property reader
+        %
+        %   The handle is compiled once, with the property name spelled out
+        %   as a literal, so calling it is a static property access. The name
+        %   reaches this point from the block dialog and is spliced into code,
+        %   hence the identifier check on top of the validation already done
+        %   by phx.simulink.BlockBackend.resolveRefs.
+
+            if ~isvarname(obj.Property)
+                error("phx:PhxModel:invalidPropertyName", ...
+                    "'%s' is not a valid property name.", obj.Property);
+            end
+            obj.Getter = str2func("@(o) o." + obj.Property);
         end
     end
 

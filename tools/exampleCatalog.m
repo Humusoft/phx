@@ -53,6 +53,7 @@ function catalog = exampleCatalog
         entry("phxex_camvalve",    "Mechanisms and machines",        10)
         entry("phxex_screwconv",   "Mechanisms and machines",        12)
         entry("phxex_conveyors",   "Mechanisms and machines",        15)
+        entry("phxex_bowlfeeder",  "Mechanisms and machines",        40)  % wall-clock, ~5x slower than real time; lands with parts on the track
         entry("phxex_trainwheel",  "Mechanisms and machines",         8)
         entry("phxex_tackle",      "Mechanisms and machines",        10)
 

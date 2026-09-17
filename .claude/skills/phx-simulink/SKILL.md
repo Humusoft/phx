@@ -95,14 +95,24 @@ Because ports are properties, choose them semantically:
 
 ## Co-simulation execution & feedback loops
 
-Per sample time the block does **step → write inputs → read outputs**, so outputs
-reflect the just-advanced state and inputs take effect on the *next* step (a built-in
-one-step delay that conveniently keeps the block from being an algebraic feedthrough).
+Per sample time the block does **read outputs** (`Outputs`), then **write inputs → step**
+(`Update`). The state advance lives in `Update` because Simulink calls it exactly once per
+major time step, while `Outputs` may be called more often and must stay side-effect free.
 
-**Closing a feedback loop** (output → controller → input): Simulink still treats the
-block's input port as direct-feedthrough, so a pure feedback wiring raises an algebraic
-loop. Insert a **Memory** (or Unit Delay) block in the loop to break it — this matches
-the co-sim semantics and is what the ball-in-bowl demo does.
+Consequences: the ports carry the scene state **at the current time** (at `t = 0` the
+initial scene, before any physics), and an input arriving at `t` drives the step from `t`
+to `t+dt`, so its effect shows up on the outputs one sample later — a built-in one-step
+delay.
+
+**Closing a feedback loop** (output → controller → input): wire it directly. Because the
+inputs are consumed in `Update` and never read in `Outputs`, the block declares
+`DirectFeedthrough = false`, which breaks the loop by itself — **no Memory or Unit Delay
+block is needed**, and adding one only piles a second sample of delay onto the built-in
+one. `phxex_sim_ballplate2` and `phxex_sim_sorter` close their loops this way.
+
+(Before this, the block declared direct feedthrough and a plain feedback wiring raised
+`Simulink:Engine:AlgLoopTroubleInFixedStepNoSolverSwitch`; the algebraic-loop solver also
+re-entered `Outputs` — and therefore `Sim.step` — several times per sample time.)
 
 ## Substeps & KINEMATIC control (the key gotcha)
 
@@ -151,7 +161,7 @@ set_param([M '/PHX'], ...
     'InputRefs',   'Plate.EulerAngles(1:2)', ...
     'OutputRefs',  sprintf('Ball1.Position(1:2)\nBall2.Position(1:2)'), ...
     'ShowViewer',  'on', 'Substeps', '1', 'SimulationStep', '0.005');
-% ... add controller blocks, wire output -> controller -> Memory -> PHX input ...
+% ... add controller blocks, wire output -> controller -> PHX input (no delay block) ...
 set_param(M, 'Solver', 'FixedStepDiscrete', 'FixedStep', '0.005', 'StopTime', '20');
 save_system(M);
 ```
@@ -175,7 +185,8 @@ with `FixedStep` = the block's `SimulationStep`. Run headless with
 
 - **Kinematic control → `Substeps = 1` + small sample time** (above). Substeps>1 only for
   dynamic-only scenes.
-- **Feedback loop → insert a Memory/Unit Delay** to break the algebraic loop.
+- **Feedback loop → wire it directly**, no Memory/Unit Delay: the block is not a direct
+  feedthrough and already carries one sample of delay. A delay block adds a second one.
 - **Reference an object by `Name`** — set unique `Name`s in the scene builder; an unset/
   duplicate name can't be addressed.
 - **Scalar `Friction` broadcasts to `[drag roll spin]`** — `0.6` also sets rolling
@@ -185,6 +196,7 @@ with `FixedStep` = the block's `SimulationStep`. Run headless with
 
 ## Related skills
 
-- **phx-scene-basics** — build the scene (`phx.Body`, shapes, `Name`, `Type`) the block loads.
+- **phx-scene-basics** — build the scene (`phx.Body`, shapes, `Name`, `Type`) the block loads,
+  and save it to the `.mat` the `ModelSource` points at.
 - **phx-constraints-forces** — joints/springs/thrusters and the in-MATLAB control-loop analogue.
 - **phx-engine-gotchas** — `phx.engine.io`, pipeline rebuilds, `dt` stability, error IDs, tests.

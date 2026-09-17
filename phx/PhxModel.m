@@ -62,10 +62,14 @@ function setup(block)
         BB.OutputRefs = phx.simulink.BlockBackend.resolveRefs(BB.OutputRefs, iface, "output");
     end
 
-    % Setup input ports
+    % Setup input ports. The inputs are consumed in Update, together with the
+    % step, and never in Outputs, so the block is not a direct feedthrough: an output at
+    % time t never depends on an input at time t. Declaring that keeps a plain
+    % feedback wiring (PHX -> controller -> PHX) from raising an algebraic loop.
     block.NumInputPorts = numel(BB.InputRefs);
     for i = 1:block.NumInputPorts
         phx.simulink.BlockBackend.sfInput(block, i, 'double', 'Real', 'Sample', 'Fixed', BB.InputRefs(i).Size);
+        block.InputPort(i).DirectFeedthrough = false;
     end
 
     % Setup output ports (property references + optional camera image as the last port)
@@ -93,15 +97,18 @@ function setup(block)
     block.SetSimViewingDevice(true);
     block.OperatingPointCompliance = 'UseEmpty';
 
-    % Register methods called at run-time
-    block.RegBlockMethod('Start', @Start);
-    block.RegBlockMethod('Outputs', @Outputs);
-    block.RegBlockMethod('Terminate', @Terminate);
+    % Register methods called at run-time. The backend is captured in the
+    % closures instead of being looked up per call: setup runs once per block
+    % instance, so each instance carries its own BB and no run-time method ever
+    % touches get_param (5.3 us per call in a running model, most of it already
+    % in the block.BlockHandle property access).
+    block.RegBlockMethod('Start', @(b) Start(b, BB));
+    block.RegBlockMethod('Outputs', @(b) Outputs(b, BB));
+    block.RegBlockMethod('Update', @(b) Update(b, BB));
+    block.RegBlockMethod('Terminate', @(b) Terminate(b, BB));
 end
 
-function Start(block)
-    BB = get_param(block.BlockHandle, 'UserData');
-
+function Start(block, BB)
     % % Load model
     % [~, file, ext] = fileparts(BB.Source);
     % switch lower(ext)
@@ -143,6 +150,7 @@ function Start(block)
             if isequal(BB.InputRefs(i).Indices, 1:numel(object{1}.(BB.InputRefs(i).Property)))
                 BB.InputRefs(i).Indices = []; % optimization
             end
+            BB.InputRefs(i) = BB.InputRefs(i).bindGetter();
         else
             error("phx:PhxModel:inputObjectNotFound", "Object ""%s"" not found.", BB.InputRefs(i).ObjectName)
         end
@@ -156,19 +164,58 @@ function Start(block)
             if isequal(BB.OutputRefs(i).Indices, 1:numel(object{1}.(BB.OutputRefs(i).Property)))
                 BB.OutputRefs(i).Indices = []; % optimization
             end
+            BB.OutputRefs(i) = BB.OutputRefs(i).bindGetter();
         else
             error("phx:PhxModel:outputObjectNotFound", "Object ""%s"" not found.", BB.OutputRefs(i).ObjectName)
         end
     end
 end
 
-function Outputs(block)
-    % BB = get_param(block.BlockHandle, 'UserData');
+function Outputs(block, BB)
+    % Read the scene; the step itself runs in Update. Outputs must stay a pure
+    % function of the scene state, because Simulink is free to call it more than
+    % once per major time step (an algebraic loop elsewhere, a rejected solver
+    % step) and the physics must not be advanced twice for one sample time.
+    % The port values are therefore the state at the current time.
 
-    persistent BB
+    % Get output data (property references). Reading through ref.Getter and
+    % indexing afterwards beats the dynamic ref.Object.(ref.Property) access.
+    for i = 1:numel(BB.OutputRefs)
+        ref = BB.OutputRefs(i);
+        if isempty(ref.Indices)
+            block.OutputPort(i).Data = ref.Getter(ref.Object);
+        else
+            value = ref.Getter(ref.Object);
+            block.OutputPort(i).Data = value(ref.Indices);
+        end
+    end
 
-    if block.CurrentTime == 0
-        BB = get_param(block.BlockHandle, 'UserData');
+    % Rendered-image output (synthetic camera): capture the viewer as redrawn by
+    % the preceding step and resize to the declared resolution.
+    if BB.CameraOn
+        frame = getframe(BB.hA);
+        block.OutputPort(BB.CameraPort).Data = imresize(frame.cdata, BB.CameraResolution);
+    end
+end
+
+function Update(block, BB)
+    % Advance the scene by one sample time. Update is called exactly once per
+    % major time step, which is what makes it the right place for a state
+    % change; Outputs only reads. The inputs are written first, so the values
+    % arriving at time t drive the step from t to t+dt.
+
+    % Set input data. A partial write has to read the property first; doing that
+    % read through ref.Getter and writing the whole value back is cheaper than
+    % letting ref.Object.(ref.Property)(ref.Indices) = ... do it dynamically.
+    for i = 1:block.NumInputPorts
+        ref = BB.InputRefs(i);
+        if isempty(ref.Indices)
+            ref.Object.(ref.Property) = block.InputPort(i).Data;
+        else
+            value = ref.Getter(ref.Object);
+            value(ref.Indices) = block.InputPort(i).Data;
+            ref.Object.(ref.Property) = value;
+        end
     end
 
     % Simulation step
@@ -179,37 +226,9 @@ function Outputs(block)
     else
         BB.Sim.step(dt, BB.Substeps, -1);
     end
-
-    % Set input data
-    for i = 1:block.NumInputPorts
-        ref = BB.InputRefs(i);
-        if isempty(ref.Indices)
-            ref.Object.(ref.Property) = block.InputPort(i).Data;
-        else
-            ref.Object.(ref.Property)(ref.Indices) = block.InputPort(i).Data;
-        end
-    end
-
-    % Get output data (property references)
-    for i = 1:numel(BB.OutputRefs)
-        ref = BB.OutputRefs(i);
-        if isempty(ref.Indices)
-            block.OutputPort(i).Data = ref.Object.(ref.Property);
-        else
-            block.OutputPort(i).Data = ref.Object.(ref.Property)(ref.Indices);
-        end
-    end
-
-    % Rendered-image output (synthetic camera): capture the viewer after the
-    % step's redraw and resize to the declared resolution.
-    if BB.CameraOn
-        frame = getframe(BB.hA);
-        block.OutputPort(BB.CameraPort).Data = imresize(frame.cdata, BB.CameraResolution);
-    end
 end
 
-function Terminate(block)
-    BB = get_param(block.BlockHandle, 'UserData');
+function Terminate(~, BB)
     delete(BB.Sim);
 end
 

@@ -66,6 +66,10 @@ char/string is treated as a MAT file to load; a struct is scanned for its <code 
 <tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
 <tr><td class="name">Gravity</td><td class="dflt">[0 0 -9.81]</td>
 <td>Global gravitational acceleration applied to the world, <span class="phx-unit">m/s&sup2;</span>.</td></tr>
+<tr><td class="name">RedrawMode</td><td class="dflt">"interactive"</td>
+<td>How the figure is refreshed when the view is redrawn: <code class="phx-inline">"full"</code>,
+<code class="phx-inline">"interactive"</code>, <code class="phx-inline">"performance"</code> or
+<code class="phx-inline">"none"</code>. See <a href="#redrawmode">Redraw modes</a> below.</td></tr>
 <tr><td class="name">ExcludeInvisible</td><td class="dflt">true</td>
 <td>Exclude all initially invisible objects from rendering.</td></tr>
 <tr><td class="name">HideInvalid</td><td class="dflt">false</td>
@@ -79,6 +83,49 @@ char/string is treated as a MAT file to load; a struct is scanned for its <code 
 <p>Properties inherited from <a href="phx.base.Object.html">phx.base.Object</a> include
 <code class="phx-inline">Children</code>, <code class="phx-inline">Parents</code>,
 <code class="phx-inline">Name</code> and <code class="phx-inline">UserData</code>.</p>
+
+<h3 class="phx-h3" id="redrawmode">Redraw modes</h3>
+<p><code class="phx-inline">RedrawMode</code> controls how the figure is refreshed on those substeps
+where <code class="phx-inline">step</code> redraws the view. It does not change how often the view is
+redrawn &mdash; that is set by the <code class="phx-inline">redrawStep</code> argument of
+<code class="phx-inline">step</code> &mdash; only the kind of update that is performed.</p>
+
+<p>The default is <code class="phx-inline">"interactive"</code>, so that a running scene stays a window
+you can work with rather than a picture that merely updates. It costs roughly 20&ndash;35&nbsp;% of the
+wall-clock time of <code class="phx-inline">"performance"</code> in a redraw-bound scene; set
+<code class="phx-inline">"performance"</code> explicitly when that matters. Headless runs
+(<code class="phx-inline">redrawStep</code> of <code class="phx-inline">-1</code>) never redraw, so this
+property does not affect them at all.</p>
+
+<table class="phx-tbl">
+<tr><th>Value</th><th>Update</th><th>Description</th></tr>
+<tr><td class="name">"full"</td><td class="type">drawnow</td>
+<td>Smoothest rendering, at the highest cost. The callback queue is flushed, so figure callbacks,
+timers and UI interaction are serviced during the simulation.</td></tr>
+<tr><td class="name">"interactive"</td><td class="type">pause(0)</td>
+<td>Default. Slightly slower than <code class="phx-inline">"performance"</code>, but callbacks are
+serviced, so the figure stays live while the simulation runs: the scene can be orbited, zoomed and
+picked, and the buttons of an app or of <a href="phx.extra.Viewer.html">phx.extra.Viewer</a> keep
+responding.</td></tr>
+<tr><td class="name">"performance"</td><td class="type">incremental update</td>
+<td>The fastest rendering: only the changed graphics are pushed to the screen. The update does not
+service the callback queue, so the figure does not react to the mouse or the keyboard while a step is
+running. Choose it for long runs that are only watched, and for timing measurements.</td></tr>
+<tr><td class="name">"none"</td><td class="type">&mdash;</td>
+<td>No screen update at all. The graphics objects themselves are still updated, so the figure catches
+up once MATLAB becomes idle again.</td></tr>
+</table>
+
+<div class="phx-note">
+<span class="lbl">Note.</span> A redraw that services callbacks is a re-entrancy point: with
+<code class="phx-inline">"full"</code> or <code class="phx-inline">"interactive"</code>, user
+callbacks can run in the middle of <code class="phx-inline">step</code>. Do not delete the simulation
+or its bodies from such a callback. For runs that need no picture at all, suppress rendering in
+<code class="phx-inline">step</code> (<code class="phx-inline">redrawStep</code> of
+<code class="phx-inline">-1</code>) rather than setting <code class="phx-inline">RedrawMode</code> to
+<code class="phx-inline">"none"</code>: <code class="phx-inline">"none"</code> skips only the screen
+update, while the redraw pipeline keeps running &mdash; on a 200-body scene that is several times
+the cost of a genuinely headless step.</div>
 
 <h2 class="phx-h2">Object Functions</h2>
 <table class="phx-tbl">
@@ -101,7 +148,8 @@ char/string is treated as a MAT file to load; a struct is scanned for its <code 
 substep. With <code class="phx-inline">redrawStep</code> the view is additionally redrawn every
 <code class="phx-inline">redrawStep</code>-th substep. Use a value of <code class="phx-inline">-1</code>
 to suppress rendering entirely (headless runs). Smaller substeps improve the stability of stiff
-constraint networks.</p>
+constraint networks. The way each redraw is performed is set by the
+<a href="#redrawmode">RedrawMode</a> property.</p>
 </div>
 
 <h3 class="phx-h3">addObjects</h3>

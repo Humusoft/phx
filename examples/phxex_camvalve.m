@@ -151,8 +151,8 @@ function [cam, valve, info] = buildScene(ax, rBase, lift, noseSpan, camThick, ..
         "Shape", camShape, "Friction", [0.2 0 0]);
 
     % Poppet valve: revolved head + stem + bucket tappet, sliding along Z.
-    % rStem kept >~7 mm so the revolved stem clears Geometry.revolution's
-    % absolute 1 mm degenerate-face cull (a thinner stem draws invisible).
+    % The outline runs from the head face at z = 0 to the tappet top at
+    % z = Lvalve, where the cam rides on the flat face.
     rHead = 0.030; hHead = 0.012; rStem = 0.010; rCap = 0.030; hCap = 0.008;
     vProfile = [0 0; 0 rHead; hHead rHead; hHead rStem; ...
                 Lvalve-hCap rStem; Lvalve-hCap rCap; Lvalve rCap; Lvalve 0];

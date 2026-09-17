@@ -28,8 +28,6 @@ classdef Simulation < phx.base.Object
         EPComplete % compute and redraw
 
         SortedBodiesID
-
-        FirstRedraw = true
     end
 
     properties (SetAccess = private)
@@ -38,6 +36,13 @@ classdef Simulation < phx.base.Object
     end
 
     properties
+        % Figure update mode
+        %   full - smoothest rendering, UI callbacks are processed
+        %   interactive - faster rendering, UI callbacks are processed
+        %   performance - fastest rendering, the figure does not react during a step
+        %   none - no screen update, the figure is refreshed once MATLAB is idle
+        RedrawMode {mustBeMember(RedrawMode, ["full", "interactive", "performance", "none"])} = "interactive"
+
         % Exclude all initially invisible objects from rendering
         ExcludeInvisible (1, 1) logical = true
 
@@ -182,14 +187,13 @@ classdef Simulation < phx.base.Object
                 time = time + dt;
 
                 if animate
-                    %drawnow;
-                    %pause(0);
-
-                    if obj.FirstRedraw
-                        drawnow;
-                        obj.FirstRedraw = false;
-                    else
-                        matlab.graphics.internal.drawnow.startUpdate;
+                    switch obj.RedrawMode
+                        case "performance"
+                            matlab.graphics.internal.drawnow.startUpdate;
+                        case "interactive"
+                            pause(0);
+                        case "full"
+                            drawnow;
                     end
                 end
             end

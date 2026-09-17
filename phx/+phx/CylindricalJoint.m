@@ -73,18 +73,14 @@ classdef CylindricalJoint < phx.base.Joint
         function valid = initObject(obj, world)
             valid = numel(obj.Parents) == 2 && all(cellfun(@isvalid, obj.Parents));
             if valid
+                % The constraint is rebuilt from scratch here, so the
+                % previous one has to be taken out of the world first.
+                obj.destroyObject;
                 obj.WorldHandle = world;
                 obj.ObjectHandle = phx.engine.io('add', world, 'generic6dofconstraint', obj.Parents{1}.ObjectHandle, obj.Parents{2}.ObjectHandle, ...
                     obj.TransformA(:), obj.TransformB(:), 'xyz', ~obj.MutualCollisions);
                 phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'linlimits', [0 0 1], [0 0 -1]);
                 phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'anglimits', [0 0 1], [0 0 -1]);
-            end
-        end
-
-        function destroyObject(obj)
-            if ~isempty(obj.ObjectHandle)
-                phx.engine.io('remove', obj.WorldHandle, obj.ObjectHandle);
-                obj.ObjectHandle = [];
             end
         end
     end

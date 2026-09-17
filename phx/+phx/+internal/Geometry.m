@@ -260,13 +260,18 @@ classdef Geometry
                 F(nf*i-nf+1:nf*i, :) = f + (i - 1)*r;
             end
 
-            % Remove degenerated faces
+            % Remove degenerated faces. A face is degenerate only when two of
+            % its vertices coincide, which is what the zero-radius rings of
+            % caps, poles and closed tips produce. The tolerance is relative
+            % to the profile so that it stays a test of coincidence at any
+            % scale instead of culling small but valid faces.
+            tol = 1e-9*max([max(ZX, [], 1) - min(ZX, [], 1), eps]);
             v1 = V(F(:, 1), :);
             v2 = V(F(:, 2), :);
             v3 = V(F(:, 3), :);
-            b12 = sum(abs(v1 - v2), 2) < 0.001;
-            b23 = sum(abs(v2 - v3), 2) < 0.001;
-            b31 = sum(abs(v3 - v1), 2) < 0.001;
+            b12 = sum(abs(v1 - v2), 2) < tol;
+            b23 = sum(abs(v2 - v3), 2) < tol;
+            b31 = sum(abs(v3 - v1), 2) < tol;
             b = or(or(b12, b23), b31);
             F(b, :) = [];
         end

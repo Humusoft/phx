@@ -1,5 +1,5 @@
 % PHX
-% Version 1.0.10 (R2026a) 12-Sep-2026
+% Version 1.0.11 (R2026a) 17-Sep-2026
 %
 % PHX is an object-oriented physics toolbox for MATLAB, layered over the
 % Bullet physics engine. Scenes are built from phx.* objects that draw into
@@ -13,6 +13,7 @@
 %   phx.shape.Box          - Box shape
 %   phx.shape.Sphere       - Sphere shape
 %   phx.shape.Cylinder     - Cylinder shape
+%   phx.shape.Tube         - Tube, pipe or funnel shape
 %   phx.shape.Cone         - Cone shape
 %   phx.shape.Capsule      - Capsule shape
 %   phx.shape.Globe        - Globe shape

@@ -132,6 +132,19 @@ classdef tPipelineRebuild < PhxTestCase
             tc.verifyEqual(tPipelineRebuild.redrawCount(sim), 2);
         end
 
+        function rebuildDoesNotAccumulateConstraints(tc)
+            % A joint is rebuilt on every updatePipelines. If the previous
+            % engine constraint is not removed first, the leftovers keep
+            % solving alongside the new one and the joint silently stiffens.
+            % A sprung joint makes that visible: its sag must not depend on
+            % how many times the pipelines were rebuilt.
+            tc.requireEngine;
+            sag = @(nRebuilds) tPipelineRebuild.settledSag(nRebuilds);
+
+            tc.verifyEqual(sag(3), sag(0), "RelTol", 1e-6, ...
+                "Rebuilding the pipelines changed the stiffness of a joint.");
+        end
+
         function deletingTheLastBodyEmptiesThePipelines(tc)
             % An emptied simulation still has to be steppable.
             tc.requireEngine;
@@ -193,6 +206,24 @@ classdef tPipelineRebuild < PhxTestCase
             else
                 n = str2double(n{1});
             end
+        end
+
+        function z = settledSag(nRebuilds)
+            % Settled height of a mass hung off a sprung joint, after the
+            % pipelines have been rebuilt a given number of times.
+            anchor = phx.Body([], "Position", [0 0 0], "Type", "static");
+            load = phx.Body([], "Position", [0 0 -1], "Mass", 10);
+            phx.BushingJoint(anchor, load, "PointA", [0 0 0], "PointB", [0 0 1], ...
+                "LinearStiffness", [1000 1000 1000], "LinearDamping", [10 10 10]);
+            sim = phx.Simulation([anchor load]);
+            cleanup = onCleanup(@() delete(sim)); %#ok<NASGU>
+
+            for k = 1:nRebuilds
+                sim.addObjects(phx.Body([], "Position", [10*k 0 20]));
+            end
+
+            sim.step(3.0, 1500, -1);
+            z = load.Position(3);
         end
 
         function deleteIfValid(obj)

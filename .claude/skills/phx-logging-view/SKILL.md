@@ -229,6 +229,12 @@ Pass the returned `ax` as the first argument to every `phx.Body(ax, ...)` (and t
 pans, middle drag orbits, scroll zooms, double click selects. Keys: F1 help, F2
 lighting mode, F3 view mode, F5 free-run, Home default view, PgUp/PgDn cycle views.
 
+All of that keeps working *while* `sim.step` runs, because `phx.Simulation` defaults to
+`RedrawMode = "interactive"` (it services UI callbacks). Two consequences: those callbacks
+fire in the middle of a step, so never delete the simulation from one; and if you set
+`RedrawMode` to `"performance"` for speed, the window goes dead for the duration of the
+run — mouse, keys and buttons included. See phx-scene-basics.
+
 **`Texture`.** The equirectangular background of the sky sphere (shown in `ViewMode`
 `"texture"`). Takes an image path *or* the name of a built-in texture bundled with the
 toolbox — **`"sky"` (the default), `"nebula"`, `"gradient"`, `"checker"`, `"tiles"`** —

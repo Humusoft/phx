@@ -387,7 +387,6 @@ function phxex_swingover
         btnBuild.Enable = ~tf && isempty(sim);
         btnRun.Enable = ~tf && ~isempty(sim);
         btnBack.Enable = ~tf && ~isempty(sim);
-        drawnow;
     end
 
     function tf = bailOut

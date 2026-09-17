@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Saving and Loading Scenes</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; User Guide &rsaquo; Saving and loading scenes</div>
+
+<h1 class="phx-title">Saving and Loading Scenes</h1>
+<p class="phx-purpose">Keeping a built scene in a MAT file and bringing it back</p>
+
+<p>A scene is a set of <code class="phx-inline">phx.Body</code> objects, so it is stored with the
+ordinary MATLAB <code class="phx-inline">save</code> command and read back with
+<code class="phx-inline">load</code> &mdash; there is no separate scene format. Saving the bodies is
+enough: everything attached to a body (its shapes, joints, springs, ropes, thrusters, loggers,
+zones&nbsp;&hellip;) is a <i>child</i> of that body and is written to the file with it.</p>
+
+<p>A MAT scene is what the <a href="PhxModel.html">Simulink block</a> reads, what the viewer&rsquo;s
+<b>Load model</b> / <b>Save model</b> context-menu items write, and the usual way to keep a large
+model &mdash; an imported robot, a vehicle &mdash; out of the script that simulates it.</p>
+
+<h2 class="phx-h2">Saving a scene</h2>
+
+<p>Save the variables holding the bodies. Their names do not matter: on loading, PHX picks every
+<code class="phx-inline">phx.Body</code> it finds in the file and ignores anything else stored
+alongside them.</p>
+
+<pre class="phx-code">ground = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [6 6 0.3]});
+arm    = phx.Body(<span class="str">"Position"</span>, [0 0 2], <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [1 0.2 0.2]});
+phx.RevoluteJoint(ground, arm, <span class="str">"PointA"</span>, [0 0 2]);
+
+save(<span class="str">"scene.mat"</span>, <span class="str">"ground"</span>, <span class="str">"arm"</span>);   <span class="cmt">% the joint is a child of both, it travels along</span></pre>
+
+<p>To store whatever is currently drawn in an axes &mdash; the form the viewer uses &mdash; collect
+the bodies first:</p>
+
+<pre class="phx-code">bodies = phx.Simulation.findBodies(ax);
+save(<span class="str">"scene.mat"</span>, <span class="str">"bodies"</span>);</pre>
+
+<p>For a larger model it pays to keep the parts named, so that the script loading it can address them
+individually. Build a struct and write it out field by field with
+<code class="phx-inline">-struct</code>:</p>
+
+<pre class="phx-code">model.chassis = chassis;
+model.wheels  = [wheelFL wheelFR wheelRL wheelRR];
+save(<span class="str">"saved_buggy.mat"</span>, <span class="str">"-struct"</span>, <span class="str">"model"</span>);</pre>
+
+<div class="phx-note">
+<span class="lbl">Note.</span> Save the bodies, never the <code class="phx-inline">phx.Simulation</code>
+object. The simulation owns a live engine world, which cannot be serialized; a file containing one
+reloads as a broken object.
+</div>
+
+<h2 class="phx-h2">Loading a scene</h2>
+
+<p><code class="phx-inline">phx.Simulation</code> accepts a file name and loads the scene itself.
+This is the shortest form, and it needs no figure:</p>
+
+<pre class="phx-code">sim = phx.Simulation(<span class="str">"scene.mat"</span>);
+sim.step(2, 400, -1);          <span class="cmt">% headless run, no redraw</span>
+delete(sim);</pre>
+
+<p>The bodies come back unparented &mdash; their graphics exist but belong to no axes. Hand them one
+with <code class="phx-inline">propagate</code>, which sets a property on an object and all of its
+children:</p>
+
+<pre class="phx-code">clf; ax = gca; view(3); axis equal; grid on; camlight headlight;
+
+sim = phx.Simulation(<span class="str">"scene.mat"</span>);
+sim.propagate(<span class="str">"ParentAxes"</span>, ax);   <span class="cmt">% show the whole scene in these axes</span>
+sim.step(2, 400, 1);</pre>
+
+<p>When the parts have to be reached by name, load the file yourself and keep the struct. The bodies
+are parented as a group, and the simulation is created from the same struct (or from the axes, once
+the scene is drawn there):</p>
+
+<pre class="phx-code">model = load(<span class="str">"saved_buggy.mat"</span>);
+propagate(cell2mat(struct2cell(model)), <span class="str">"ParentAxes"</span>, ax);
+
+model.chassis.Color = [1 0 0];                                <span class="cmt">% parts stay addressable</span>
+groupTransform(cell2mat(struct2cell(model)), <span class="str">"Translation"</span>, [-3 0 0]);
+
+sim = phx.Simulation(model);</pre>
+
+<p>Bodies within a loaded scene are found by name as usual, with
+<code class="phx-inline">sim.findBy("Name", "chassis")</code>. A file can also be dropped into a
+simulation that is already running &mdash; <code class="phx-inline">addObjects</code> takes a file
+name too and rebuilds the execution pipelines:</p>
+
+<pre class="phx-code">added = sim.addObjects(<span class="str">"scene.mat"</span>);</pre>
+
+<h2 class="phx-h2">What the file holds</h2>
+
+<p>Saved with the bodies:</p>
+
+<ul>
+<li>The object tree &mdash; shapes, joints, springs, ropes, force elements, loggers and every other
+    child of a saved body, with its properties.</li>
+<li>The graphics of each object (the <code class="phx-inline">hgtransform</code> and its primitives,
+    colors and textures included), so a reloaded scene looks the way it was built.</li>
+<li>The full kinematic state &mdash; pose and both velocities. They are read from the engine as the
+    file is written, and deleting a simulation copies them back into the objects as well, so a scene
+    saved during or after a run reloads exactly where it stopped. The velocities are handed to the
+    engine again when the scene is next simulated, and the motion continues instead of restarting
+    from rest.</li>
+</ul>
+
+<p>Rebuilt when the scene is simulated again:</p>
+
+<ul>
+<li>The engine counterpart of every object &mdash; engine handles are transient and are recreated by
+    the first <code class="phx-inline">phx.Simulation</code> the scene is added to.</li>
+<li>The execution pipelines, which the simulation builds for the loaded objects.</li>
+<li>The link to an axes: a loaded scene is unparented until
+    <code class="phx-inline">ParentAxes</code> is set.</li>
+</ul>
+
+<div class="phx-note">
+<span class="lbl">Tip.</span> The shipped examples follow this split: a
+<code class="phx-inline">model_*.m</code> script builds the bodies and saves them, and the
+<code class="phx-inline">phxex_*.m</code> demo loads the MAT file, parents it into the viewer and
+simulates it. Keeping the model in a file takes a long build out of every run and lets several demos
+share one machine.
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Classes</span>
+<a href="phx.Simulation.html">phx.Simulation</a>,
+<a href="phx.Body.html">phx.Body</a>,
+<a href="phx.base.Object.html">phx.base.Object</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_concepts.html">Core concepts</a>,
+<a href="phx_ug_viewer.html">Interactive viewer</a>,
+<a href="PhxModel.html">PHX Simulink block</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox User Guide</div>
+
+</div>
+</body>
+</html>

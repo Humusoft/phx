@@ -18,9 +18,10 @@ classdef Mesh < phx.base.Shape & phx.base.ShapeMesh
 %     "box", "cylinder", "sphere" - a bounding primitive fitted to the mesh
 %        (cylinder and sphere keep rolling bodies smooth, unlike a hull); the
 %        cylinder is aligned along the Axis property ("x", "y" or "z"),
-%     "convex"  - the convex hull of the mesh (dynamic, the default),
-%     "concave" - the exact triangle mesh (best kept static). Set FlipFaces
-%        to reverse the triangle winding when the solid side comes out wrong.
+%     "convex"  - the convex hull of the mesh (the default),
+%     "concave" - the exact triangle mesh, which keeps cavities and holes at
+%        a higher collision cost than a hull. Set FlipFaces to reverse the
+%        triangle winding when the solid side comes out wrong.
 %   Mass properties are computed from the mesh volume and Density, falling
 %   back to the bounding box for non-solid meshes.
 %

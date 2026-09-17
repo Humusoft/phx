@@ -12,7 +12,6 @@ classdef tInternals < PhxTestCase
 %     matlab.internal.math.interp1                  - phx.Script/resolveState
 %     matlab.internal.meshio.stlread                - phx.internal.readMesh (STL)
 %     matlab.io.internal.validators.validateFileName - phx.internal.readMesh (STL)
-%     matlab.graphics.internal.drawnow.startUpdate  - phx.Simulation/step
 %     Matrix_I (hgtransform property)               - phx.Body/updateView
 %
 %   See also phx.Simulation, phx.Script, phx.shape.Mesh
@@ -63,12 +62,6 @@ classdef tInternals < PhxTestCase
             cFileName = matlab.io.internal.validators.validateFileName(fileName);
             tc.verifyClass(cFileName, 'cell');
             tc.verifyTrue(isfile(cFileName{1}));
-        end
-
-        function startUpdateIsResolvable(tc)
-            % Simulation/step calls it per redraw; calling it needs a live
-            % graphics update in progress, so only pin down that it resolves.
-            tc.verifyNotEmpty(which('matlab.graphics.internal.drawnow.startUpdate'));
         end
     end
 

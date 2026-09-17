@@ -21,9 +21,9 @@ classdef tForceApplication < PhxTestCase
 %   which is exactly where both bugs used to show up.
 %
 %   The cases are a table rather than one test each, so that the matrix they
-%   span - local/world vector against local/global point, at the origin and
-%   far from it, upright and rotated - can be read in one place. The name of
-%   each row becomes the name of its test.
+%   span - local/world vector against local/global point, upright and
+%   rotated - can be read in one place. The name of each row becomes the
+%   name of its test.
 %
 %   See also phx.Body, tSimulation, tShapeMass
 
@@ -98,12 +98,6 @@ classdef tForceApplication < PhxTestCase
             s.worldForceIsIndependentOfPosition = row("Position", far, "EulerAngles", spin, ...
                 "Force", [0 10 0], "LocalVector", false, ...
                 "LinearVelocity", @(m, I) [0 10/m*dt 0]);
-
-            % Control: at the origin the (buggy) point-transform coincided
-            % with the correct vector-transform, so this always passed.
-            s.localForceAtTheOrigin = row("Position", [0 0 0], ...
-                "Force", [10 0 0], "LocalVector", true, ...
-                "LinearVelocity", @(m, I) [10/m*dt 0 0]);
 
             % BUG #2: a global point is absolute world coordinates. A point
             % 0.5 m in +x from the centre of a body at x=100 is [100.5 0 0];

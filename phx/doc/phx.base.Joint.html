@@ -112,11 +112,36 @@ in a simulation.</td></tr>
 <tr><td class="name">EulerAnglesB</td><td class="dflt">[0 0 0]</td><td>Euler angles (z&rarr;y&rarr;x order) of the joint frame relative to body B; the rotation part of <code class="phx-inline">TransformB</code> (dependent).</td></tr>
 <tr><td class="name">AxisAngleA</td><td class="dflt">[0 0 1 0]</td><td>Axis and angle of the joint frame relative to body A; the rotation part of <code class="phx-inline">TransformA</code> (dependent).</td></tr>
 <tr><td class="name">AxisAngleB</td><td class="dflt">[0 0 1 0]</td><td>Axis and angle of the joint frame relative to body B; the rotation part of <code class="phx-inline">TransformB</code> (dependent).</td></tr>
+<tr><td class="name">Angle</td><td class="type">double (read-only)</td><td>Rotation of the second joint frame about the joint axis, measured from the first one, <span class="phx-unit">rad</span> (dependent).</td></tr>
+<tr><td class="name">Distance</td><td class="type">double (read-only)</td><td>Offset of the second joint frame along the joint axis, measured from the first one, <span class="phx-unit">m</span> (dependent).</td></tr>
 <tr><td class="name">ForceA</td><td class="type">1&times;3 double (read-only)</td><td>Reaction force acting on body A, <span class="phx-unit">N</span>.</td></tr>
 <tr><td class="name">TorqueA</td><td class="type">1&times;3 double (read-only)</td><td>Reaction torque acting on body A, <span class="phx-unit">N&middot;m</span>.</td></tr>
 <tr><td class="name">ForceB</td><td class="type">1&times;3 double (read-only)</td><td>Reaction force acting on body B, <span class="phx-unit">N</span>.</td></tr>
 <tr><td class="name">TorqueB</td><td class="type">1&times;3 double (read-only)</td><td>Reaction torque acting on body B, <span class="phx-unit">N&middot;m</span>.</td></tr>
 </table>
+
+<h3 class="phx-h3">The joint coordinates</h3>
+<p><code class="phx-inline">Angle</code> and <code class="phx-inline">Distance</code> are the same
+measurement taken twice: each projects the pose of the second joint frame, relative to the first,
+onto the joint axis &mdash; once the rotation about it and once the offset along it. Because they
+are read off the frames rather than asked of the constraint, every joint reports them, whatever
+kind of constraint backs it, and they are available before the scene is ever stepped.</p>
+<p>Where the joint leaves exactly that one degree of freedom free, the reading is the joint
+coordinate itself: the hinge angle of a <a href="phx.RevoluteJoint.html">phx.RevoluteJoint</a>, the
+travel of a <a href="phx.PrismaticJoint.html">phx.PrismaticJoint</a>, both at once for a
+<a href="phx.CylindricalJoint.html">phx.CylindricalJoint</a>. Where the joint locks it, the reading
+does not go exactly to zero but to the error the solver currently leaves &mdash; small, and a useful
+sign of how hard the constraint is working.</p>
+
+<div class="phx-note">
+<span class="lbl">Note.</span> Where a joint leaves <b>more</b> than that one rotation free, as a
+<a href="phx.SphericalJoint.html">phx.SphericalJoint</a> does,
+<code class="phx-inline">Angle</code> still reports only the turn about the joint axis and ignores
+the tilt off it &mdash; it is a projection, not the angle of the shortest arc between the frames.
+Tilted a quarter turn the projection also loses its meaning, the way any Euler angle does at that
+pose. <code class="phx-inline">Angle</code> wraps to <code class="phx-inline">[-pi, pi]</code> and
+does not accumulate, so count the turns yourself when a joint spins through more than half of one.
+</div>
 <p>Before the joint is initialized in a simulation, the four feedback properties return
 <code class="phx-inline">[NaN NaN NaN]</code>. Joints also inherit the full
 <a href="phx.base.Object.html">phx.base.Object</a> property set (<code class="phx-inline">Children</code>,

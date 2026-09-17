@@ -87,6 +87,16 @@ delete(sim);                                             <span class="cmt">% cle
 </ul>
 </div>
 
+<p>While <i>redrawStep</i> says how <i>often</i> the view is redrawn, the
+<a href="phx.Simulation.html#redrawmode">RedrawMode</a> property says <i>how</i>. The default
+<code class="phx-inline">"interactive"</code> keeps the figure alive during the run &mdash; the scene
+can be orbited, zoomed and picked while it is being simulated. Switch to
+<code class="phx-inline">"performance"</code> when nobody is going to touch the window and the run
+should be as fast as possible (it saves roughly 20&ndash;35&nbsp;% of the time of a redraw-bound
+scene):</p>
+
+<pre class="phx-code">sim = phx.Simulation(ax, <span class="str">"RedrawMode"</span>, <span class="str">"performance"</span>);</pre>
+
 <div class="phx-note">
 <span class="lbl">Note.</span> A smaller step (more <i>substeps</i>) = a more stable but slower
 computation. Tightly coupled scenes &mdash; joint networks, stacks in contact &mdash; call for a

@@ -31,8 +31,6 @@ classdef Joint < phx.base.Object
 %   Licensed under the PHX Preview License v1.0; see LICENSE and NOTICE.
 %   ^..^
 
-% TODO motorized joints
-
     properties (Access = protected)
         WorldHandle = []
     end
@@ -76,6 +74,17 @@ classdef Joint < phx.base.Object
         
         % Rotation of the connecting point of the second body (axis and angle)
         AxisAngleB (1, 4) double
+
+        % Angle of the second joint coordinate system about the joint axis
+        % The part of the relative rotation that turns about the axis, measured
+        % from the first coordinate system, positive by the right-hand rule and
+        % wrapped to [-pi, pi].
+        Angle (1, 1) double
+
+        % Distance of the second joint coordinate system along the joint axis
+        % The part of the relative offset that lies along the axis, measured
+        % from the first coordinate system and positive on its positive side.
+        Distance (1, 1) double
 
         % Force acting on the body A
         ForceA (1, 3) double
@@ -161,6 +170,29 @@ classdef Joint < phx.base.Object
             obj.TransformB(1:3, 1:3) = phx.internal.Math.rotAA(value(1:3), value(4));
         end
 
+        function value = get.Angle(obj)
+            p = obj.Parents;
+            if numel(p) == 2
+                Ma = p{1}.Matrix*obj.TransformA;
+                Mb = p{2}.Matrix*obj.TransformB;
+                R = Ma(1:3, 1:3)'*Mb(1:3, 1:3);
+                value = atan2(R(2, 1), R(1, 1));
+            else
+                value = NaN;
+            end
+        end
+
+        function value = get.Distance(obj)
+            p = obj.Parents;
+            if numel(p) == 2
+                Ma = p{1}.Matrix*obj.TransformA;
+                Mb = p{2}.Matrix*obj.TransformB;
+                value = (Mb(13:15) - Ma(13:15))*Ma(9:11)';
+            else
+                value = NaN;
+            end
+        end
+
         function value = get.ForceA(obj)
             if ~isempty(obj.ObjectHandle)
                 [f, ~, ~, ~] = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'feedback');
@@ -196,6 +228,18 @@ classdef Joint < phx.base.Object
                 value = [NaN NaN NaN];
             end
         end        
+    end
+
+    methods (Access = protected)
+        function destroyObject(obj)
+            % Every joint is a single engine constraint, so they all tear it
+            % down the same way. Concrete joints only build it in initObject.
+            if ~isempty(obj.ObjectHandle)
+                phx.engine.io('remove', obj.WorldHandle, obj.ObjectHandle);
+                obj.ObjectHandle = [];
+            end
+        end
+
     end
 
 end

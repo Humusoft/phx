@@ -40,6 +40,24 @@ classes pass `~obj.MutualCollisions` there (`'sliderconstraint'` for
 write straight through to the engine: `'restitution'` (Body.Restitution, contact
 bounciness combined from both bodies) alongside the existing `'friction'`/`'collisions'`.
 
+**Joint motor and readout fields** (`set` and `get` both take the same triple):
+
+```matlab
+phx.engine.io('set', w, h, 'motor', on, targetVel, maxTorque);        % hingeconstraint
+phx.engine.io('set', w, h, 'linearmotor', on, targetVel, maxForce);   % sliderconstraint
+phx.engine.io('set', w, h, 'angularmotor', on, targetVel, maxForce);  % sliderconstraint
+ad = phx.engine.io('get', w, h, 'angledist');   % sliderconstraint -> [angle; distance]
+```
+
+Three traps measured on these: the limit is taken **signed**, so a negative
+`maxTorque`/`maxForce` inverts the solver's clamp interval and the motor then fights its
+own target — always pass a magnitude. `'angledist'` **lags one step** (it reports the
+frames as the solver last saw them), which is why `phx.base.Joint` works `Angle` and
+`Distance` out in MATLAB instead — that is also ~4x faster than the `get`. And the
+slider's `'angularmotor'` does nothing on a `phx.PrismaticJoint`, whose rotation is
+locked by Bullet's default angular limits; there is no gateway field to unlock them,
+which is why `phx.CylindricalJoint` is built on `'generic6dofconstraint'` instead.
+
 **`apply` fields and their frame flags** — the payload layout differs per field, and
 getting it wrong silently applies a force in the wrong frame (this caused real bugs in
 `Thruster`/`Dipole`, now locked in by `tForceApplication`):

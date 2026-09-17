@@ -105,7 +105,8 @@ classdef Monopole < phx.base.Object
             x = (-p(1):s:p(1)) + c(1);
             y = (-p(2):s:p(2)) + c(2);
             z = (-p(3):s:p(3)) + c(3);
-            obj.GridPoints = combvec(x, y, z);
+            [gx, gy, gz] = ndgrid(x, y, z);
+            obj.GridPoints = [gx(:)'; gy(:)'; gz(:)'];
             count = size(obj.GridPoints, 2);
             seg = obj.VectorSegments + 2;
             obj.hL = matlab.graphics.primitive.world.LineStrip('Parent', obj.Graphics, 'LineWidth', 0.5, 'ColorBinding', 'object', 'ColorData', uint8([obj.Color*255 255]'), 'StripData', uint32(1:seg:(count*seg + 1)), 'Layer', phx.internal.choose({'middle', 'front'}, obj.Overlay + 1));

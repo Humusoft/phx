@@ -153,6 +153,42 @@ classdef tStoredState < PhxTestCase
             tc.verifyEqual(b.Position, pos + [0.5 1 1.5], "AbsTol", 1e-6);
         end
 
+        function solverVelocitySurvivesSimulationTeardown(tc)
+            % poseAndVelocitySurviveSimulationTeardown drives the body with a
+            % velocity the caller set and no gravity, so the MATLAB-side copy
+            % stays correct on its own and would mask a missing read-back.
+            % Here the solver produces the velocity, so it exists only in the
+            % world: phx.Simulation.destroyObject has to fetch it before the
+            % world is cleared, which means the bodies must still be in the
+            % engine at that point. Splitting a fall across two simulations
+            % has to match running it in one.
+            tc.requireEngine;
+            whole = tc.spawnBody([0 0 10]);
+            ref = phx.Simulation(whole);
+            tc.addTeardown(@() tStoredState.deleteIfValid(ref));
+            ref.step(1.5, 300, -1);
+            expected = whole.Position(3);
+            delete(ref);
+
+            split = tc.spawnBody([0 0 10]);
+            first = phx.Simulation(split);
+            tc.addTeardown(@() tStoredState.deleteIfValid(first));
+            first.step(1.0, 200, -1);
+            falling = split.LinearVelocity(3);
+            tc.assumeLessThan(falling, -1);     % guard the premise
+            delete(first);
+
+            tc.verifyEqual(split.LinearVelocity(3), falling, "AbsTol", 1e-9, ...
+                "The body lost the velocity the solver gave it.");
+
+            second = phx.Simulation(split);
+            tc.addTeardown(@() tStoredState.deleteIfValid(second));
+            second.step(0.5, 100, -1);
+
+            tc.verifyEqual(split.Position(3), expected, "AbsTol", 1e-6, ...
+                "A fall split across two simulations diverged from one run.");
+        end
+
         function restoreStateMidRunWritesThroughToTheEngine(tc)
             % Restoring while the world is alive must not only refresh the
             % MATLAB-side values: the engine has to see them too.
@@ -191,6 +227,15 @@ classdef tStoredState < PhxTestCase
             sim.step(0.5, 50, -1);
 
             tc.verifyEqual(b.Transform, first, "AbsTol", 1e-12);
+        end
+    end
+
+    methods (Static, Access = private)
+        function deleteIfValid(obj)
+            % Teardown for the tests that delete their simulations themselves.
+            if isvalid(obj)
+                delete(obj);
+            end
         end
     end
 

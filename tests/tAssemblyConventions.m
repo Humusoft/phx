@@ -44,12 +44,15 @@ classdef tAssemblyConventions < PhxTestCase
         function explicitAxesTargetIsHonored(tc, Builder)
             % Two plain axes rather than subplots: all this needs is a target
             % that is not the current one, and subplot is by far the slower
-            % way to get it.
+            % way to get it. Setting CurrentAxes rather than calling
+            % axes(axCurrent) is not a style choice: the function form raises
+            % and re-exposes the figure, which costs ~0.4 s per call even on
+            % an invisible one and used to dominate the whole test class.
             f = figure("Visible", "off");
             tc.addTeardown(@() close(f));
             axTarget = axes(f);
             axCurrent = axes(f);
-            axes(axCurrent);
+            f.CurrentAxes = axCurrent;
 
             bodies = tc.build(Builder, axTarget);
 

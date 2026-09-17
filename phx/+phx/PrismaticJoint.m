@@ -28,6 +28,16 @@ classdef PrismaticJoint < phx.base.Joint
 %   phx.PrismaticJoint(___, name, value, ...) creates a joint and sets properties
 %   values according to given name-value pairs.
 %
+%   The joint can be driven by a motor. The motor regulates the sliding velocity
+%   to TargetVelocity as long as it needs less than MaxForce, which is zero (no
+%   motor) by default. Because the motor saturates, a deliberately unreachable
+%   TargetVelocity turns it into a pure force source delivering MaxForce, and
+%   TargetVelocity = 0 makes it a friction brake holding the joint until the
+%   load exceeds MaxForce.
+%
+%   Both motor properties can be changed while the simulation runs or set from
+%   Simulink.
+%
 %   See also phx.RevoluteJoint, phx.CylindricalJoint, phx.FixedJoint
 
 %   Copyright 2026 HUMUSOFT s.r.o.
@@ -51,11 +61,30 @@ classdef PrismaticJoint < phx.base.Joint
     end
 
     properties
+        % Target motor velocity along the joint axis (m/s)
+        % The sign gives the direction of travel.
+        TargetVelocity (1, 1) double = 0
+
+        % Maximal force the motor can deliver (N), 0 = no motor
+        % The motor regulates to TargetVelocity while it needs less than this;
+        % when the target is out of reach it simply delivers MaxForce.
+        MaxForce (1, 1) double {mustBeNonnegative} = 0
+
         % Draw joint as overlay
         Overlay (1, 1) logical = false
     end
 
     methods
+        function set.TargetVelocity(obj, value)
+            obj.TargetVelocity = value;
+            obj.applyMotor;
+        end
+
+        function set.MaxForce(obj, value)
+            obj.MaxForce = value;
+            obj.applyMotor;
+        end
+
         function obj = PrismaticJoint(ParentA, ParentB, Options)
             arguments
                 ParentA (1, 1) {mustBeA(ParentA, "phx.Body")}
@@ -80,23 +109,37 @@ classdef PrismaticJoint < phx.base.Joint
         end
     end
 
+    methods (Access = private)
+        function applyMotor(obj)
+        %applyMotor Pushes the motor setting to the engine.
+        % A zero MaxForce switches the motor off rather than clamping it to
+        % zero, so that the solver does not assemble its constraint row at all.
+        % Only the linear motor is driven - a prismatic joint locks the
+        % rotation, so the slider's angular motor would have nothing to turn.
+
+            if ~isempty(obj.ObjectHandle)
+                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'linearmotor', ...
+                    obj.MaxForce > 0, obj.TargetVelocity, obj.MaxForce);
+            end
+        end
+    end
+
     methods (Access = protected)
         function valid = initObject(obj, world)
             valid = numel(obj.Parents) == 2 && all(cellfun(@isvalid, obj.Parents));
             if valid
+                % The constraint is rebuilt from scratch here, so the
+                % previous one has to be taken out of the world first.
+                obj.destroyObject;
                 obj.WorldHandle = world;
                 M = phx.PrismaticJoint.EngineFrame;
                 TA = obj.TransformA*M;
                 TB = obj.TransformB*M;
                 obj.ObjectHandle = phx.engine.io('add', world, 'sliderconstraint', obj.Parents{1}.ObjectHandle, obj.Parents{2}.ObjectHandle, ...
                     TA(:), TB(:), true, ~obj.MutualCollisions);
-            end
-        end
-
-        function destroyObject(obj)
-            if ~isempty(obj.ObjectHandle)
-                phx.engine.io('remove', obj.WorldHandle, obj.ObjectHandle);
-                obj.ObjectHandle = [];
+                % The constraint is created anew on every pipeline rebuild, so
+                % the motor setting has to be reapplied here
+                obj.applyMotor;
             end
         end
     end

@@ -66,6 +66,10 @@ free translation, and a roll about it the zero of the free rotation.</p>
 <code class="phx-inline">MutualCollisions</code> switch (collisions between the connected bodies,
 default <code class="phx-inline">false</code>) are inherited from
 <a href="phx.base.Joint.html">phx.base.Joint</a>.</p>
+<p>The joint coordinates <code class="phx-inline">Angle</code> and
+<code class="phx-inline">Distance</code> are inherited from there too &mdash; the rotation
+about the joint axis and the offset along it, both measured from the first joint frame to
+the second. This joint leaves both of them free, so the two together are its full state.</p>
 <div class="phx-note">
 <span class="lbl">Note.</span> Unlike <a href="phx.PrismaticJoint.html">phx.PrismaticJoint</a>, this
 joint leaves the rotation about the axis free, so <code class="phx-inline">AxisA</code> and

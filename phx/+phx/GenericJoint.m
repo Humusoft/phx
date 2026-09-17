@@ -104,19 +104,15 @@ classdef GenericJoint < phx.base.Joint
         function valid = initObject(obj, world)
             valid = numel(obj.Parents) == 2 && all(cellfun(@isvalid, obj.Parents));
             if valid
+                % The constraint is rebuilt from scratch here, so the
+                % previous one has to be taken out of the world first.
+                obj.destroyObject;
                 obj.WorldHandle = world;
                 obj.ObjectHandle = phx.engine.io('add', world, 'generic6dofconstraint', obj.Parents{1}.ObjectHandle, obj.Parents{2}.ObjectHandle, obj.TransformA(:), obj.TransformB(:), 'xyz', ~obj.MutualCollisions);
                 phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'linlimits', obj.LowerLinearLimits, obj.UpperLinearLimits);
                 % The engine measures the angles the other way round, so the
                 % limits are negated and swapped to keep the right-handed sense
                 phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'anglimits', -obj.UpperAngularLimits, -obj.LowerAngularLimits);
-            end
-        end
-
-        function destroyObject(obj)
-            if ~isempty(obj.ObjectHandle)
-                phx.engine.io('remove', obj.WorldHandle, obj.ObjectHandle);
-                obj.ObjectHandle = [];
             end
         end
     end

@@ -30,10 +30,10 @@ is not rendered).</p>
 <p>The collision shape is selected by <code class="phx-inline">Envelope</code>. A bounding
 <code class="phx-inline">"box"</code>, <code class="phx-inline">"cylinder"</code> or <code class="phx-inline">"sphere"</code>
 fits a smooth primitive to the mesh (cylinder and sphere keep rolling bodies from juddering), while
-<code class="phx-inline">"convex"</code> uses the convex hull (dynamic, the default) and
-<code class="phx-inline">"concave"</code> uses the exact triangle mesh (best kept static). Mass properties are
-computed from the mesh volume and <code class="phx-inline">Density</code>, falling back to the bounding box for
-non-solid meshes.</p>
+<code class="phx-inline">"convex"</code> uses the convex hull (the default) and
+<code class="phx-inline">"concave"</code> uses the exact triangle mesh, which keeps cavities and holes at a higher
+collision cost than a hull. Mass properties are computed from the mesh volume and
+<code class="phx-inline">Density</code>, falling back to the bounding box for non-solid meshes.</p>
 
 <h2 class="phx-h2">Creation</h2>
 <h3 class="phx-h3">Syntax</h3>

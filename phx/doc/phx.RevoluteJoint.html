@@ -57,7 +57,6 @@ axes with name-value arguments (<code class="phx-inline">PointA</code>, <code cl
 <tr><td class="name">AxisB</td><td class="dflt">[0 0 1]</td><td>Rotation-axis direction in the local space of body B.</td></tr>
 <tr><td class="name">TargetVelocity</td><td class="dflt">0</td><td>Target motor velocity about the joint axis, <span class="phx-unit">rad/s</span>. The sign gives the direction of rotation.</td></tr>
 <tr><td class="name">MaxTorque</td><td class="dflt">0</td><td>Maximal torque the motor can deliver, <span class="phx-unit">N&middot;m</span>. Must be non-negative; 0 means no motor.</td></tr>
-<tr><td class="name">Angle</td><td class="type">double (read-only)</td><td>Current angle about the joint axis, <span class="phx-unit">rad</span> (dependent). Wraps to <code class="phx-inline">[-pi, pi]</code>.</td></tr>
 <tr><td class="name">Overlay</td><td class="dflt">false</td><td>Draw the joint as an overlay (always on top).</td></tr>
 </table>
 <p>Reaction feedback (<code class="phx-inline">ForceA</code>, <code class="phx-inline">TorqueA</code>,
@@ -65,13 +64,19 @@ axes with name-value arguments (<code class="phx-inline">PointA</code>, <code cl
 <code class="phx-inline">MutualCollisions</code> switch (collisions between the connected bodies,
 default <code class="phx-inline">false</code>) are inherited from
 <a href="phx.base.Joint.html">phx.base.Joint</a>.</p>
+<p>The joint coordinates <code class="phx-inline">Angle</code> and
+<code class="phx-inline">Distance</code> are inherited from there too &mdash; the rotation
+about the joint axis and the offset along it, both measured from the first joint frame to
+the second. Here <code class="phx-inline">Angle</code> is the hinge angle itself, while <code class="phx-inline">Distance</code> stays near zero and shows only what the solver leaves of the locked translation.</p>
 <p><code class="phx-inline">AxisA</code>/<code class="phx-inline">AxisB</code> are the Z axis of the
 inherited joint frames, so writing those frames another way
 (<code class="phx-inline">EulerAngles*</code>, <code class="phx-inline">AxisAngle*</code>,
 <code class="phx-inline">TransformA</code>/<code class="phx-inline">TransformB</code>) moves the hinge
-axis too. What has <b>no effect</b> is the remaining rotation <i>about</i> the axis: the hinge is
-handed only its points and axes, and derives its own reference for
-<code class="phx-inline">Angle</code> from them.</p>
+axis too. The remaining rotation <i>about</i> the axis does not change what the joint constrains
+&mdash; the hinge is handed only its points and axes &mdash; but it does move the zero of
+<code class="phx-inline">Angle</code>, which is read between the two joint frames. Roll one frame
+and the reading shifts with it, so a hinge whose frames start turned against each other reports the
+angle that actually stands between them.</p>
 
 <h2 class="phx-h2">Driving the joint</h2>
 <p>The motor is a saturated velocity source, so the two properties cover several kinds of drive

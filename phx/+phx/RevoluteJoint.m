@@ -53,11 +53,6 @@ classdef RevoluteJoint < phx.base.Joint
         Overlay (1, 1) logical = false
     end
 
-    properties (Dependent)
-        % Angle in the joint axis
-        Angle (1, 1) double
-    end
-
     methods
         function obj = RevoluteJoint(ParentA, ParentB, Options)
             arguments
@@ -80,15 +75,6 @@ classdef RevoluteJoint < phx.base.Joint
             obj.hL = matlab.graphics.primitive.world.LineStrip('Parent', obj.Graphics, 'LineWidth', 1.0, 'ColorBinding', 'object', 'ColorData', clr, 'Layer', phx.internal.choose({'middle', 'front'}, obj.Overlay + 1));
             obj.hM = matlab.graphics.primitive.world.Marker('Parent', obj.Graphics, 'EdgeColorData', clr, 'Style', 'circle', 'Size', 10, 'Layer', phx.internal.choose({'middle', 'front'}, obj.Overlay + 1));
             phx.RevoluteJoint.updateView({obj});
-        end
-
-        function value = get.Angle(obj)
-            objectHandle = obj.ObjectHandle;
-            if ~isempty(objectHandle)
-                value  = phx.engine.io('get', obj.WorldHandle, objectHandle, 'angle');
-            else
-                value = NaN;
-            end
         end
 
         function set.TargetVelocity(obj, value)
@@ -119,19 +105,15 @@ classdef RevoluteJoint < phx.base.Joint
         function valid = initObject(obj, world)
             valid = numel(obj.Parents) == 2 && all(cellfun(@isvalid, obj.Parents));
             if valid
+                % The constraint is rebuilt from scratch here, so the
+                % previous one has to be taken out of the world first.
+                obj.destroyObject;
                 obj.WorldHandle = world;
                 obj.ObjectHandle = phx.engine.io('add', world, 'hingeconstraint', obj.Parents{1}.ObjectHandle, obj.Parents{2}.ObjectHandle, ...
                     obj.PointA, obj.PointB, obj.AxisA, obj.AxisB, true, ~obj.MutualCollisions);
                 % The constraint is created anew on every pipeline rebuild, so
                 % the motor setting has to be reapplied here
                 obj.applyMotor;
-            end
-        end
-
-        function destroyObject(obj)
-            if ~isempty(obj.ObjectHandle)
-                phx.engine.io('remove', obj.WorldHandle, obj.ObjectHandle);
-                obj.ObjectHandle = [];
             end
         end
     end

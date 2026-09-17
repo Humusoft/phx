@@ -21,6 +21,11 @@
 of freedom: a translation along a shared sliding axis. The sliding axis is the local Z axis of the
 joint frame of each connected body; the remaining five degrees of freedom are locked, so the bodies
 keep their relative orientation and slide without rotating.</p>
+<p>The joint can also drive itself. Its motor regulates the sliding velocity to
+<code class="phx-inline">TargetVelocity</code> as long as it needs less than
+<code class="phx-inline">MaxForce</code>, and delivers <code class="phx-inline">MaxForce</code>
+whenever the target is out of reach. Both properties can be changed while the simulation runs or
+driven from Simulink.</p>
 
 <h2 class="phx-h2">Creation</h2>
 <h3 class="phx-h3">Syntax</h3>
@@ -58,6 +63,8 @@ each other; an offset along the sliding axis merely shifts the zero of the free 
 <tr><td class="name">PointB</td><td class="dflt">[0 0 0]</td><td>Connection point in the local space of body B; the translation part of <code class="phx-inline">TransformB</code> (dependent).</td></tr>
 <tr><td class="name">EulerAnglesA</td><td class="dflt">[0 0 0]</td><td>Euler angles (z&rarr;y&rarr;x order) of the joint frame relative to body A; the rotation part of <code class="phx-inline">TransformA</code> (dependent).</td></tr>
 <tr><td class="name">EulerAnglesB</td><td class="dflt">[0 0 0]</td><td>Euler angles (z&rarr;y&rarr;x order) of the joint frame relative to body B; the rotation part of <code class="phx-inline">TransformB</code> (dependent).</td></tr>
+<tr><td class="name">TargetVelocity</td><td class="dflt">0</td><td>Target motor velocity along the joint axis, <span class="phx-unit">m/s</span>. The sign gives the direction of travel.</td></tr>
+<tr><td class="name">MaxForce</td><td class="dflt">0</td><td>Maximal force the motor can deliver, <span class="phx-unit">N</span>. Must be non-negative; 0 means no motor.</td></tr>
 <tr><td class="name">Overlay</td><td class="dflt">false</td><td>Draw the joint as an overlay (always on top).</td></tr>
 </table>
 <p>Reaction feedback (<code class="phx-inline">ForceA</code>, <code class="phx-inline">TorqueA</code>,
@@ -65,6 +72,10 @@ each other; an offset along the sliding axis merely shifts the zero of the free 
 <code class="phx-inline">MutualCollisions</code> switch (collisions between the connected bodies,
 default <code class="phx-inline">false</code>) are inherited from
 <a href="phx.base.Joint.html">phx.base.Joint</a>.</p>
+<p>The joint coordinates <code class="phx-inline">Angle</code> and
+<code class="phx-inline">Distance</code> are inherited from there too &mdash; the rotation
+about the joint axis and the offset along it, both measured from the first joint frame to
+the second. Here <code class="phx-inline">Distance</code> is the travel itself, while <code class="phx-inline">Angle</code> stays near zero and shows only what the solver leaves of the locked rotation.</p>
 <div class="phx-note">
 <span class="lbl">Note.</span> This joint locks the rotation about the sliding axis as well, so
 <code class="phx-inline">AxisA</code>/<code class="phx-inline">AxisB</code> do not fully describe it:
@@ -75,6 +86,30 @@ do. When they do not, set <code class="phx-inline">TransformA</code> and
 helpers) so that the frames coincide in every axis &mdash; otherwise the solver twists the bodies
 into line over the first steps.
 </div>
+
+<h2 class="phx-h2">Driving the joint</h2>
+<p>The motor is a saturated velocity source, so the two properties cover several kinds of drive
+without any control law of your own:</p>
+<table class="phx-tbl">
+<tr><th>To get</th><th>TargetVelocity</th><th>MaxForce</th></tr>
+<tr><td class="name">No motor (default)</td><td class="dflt">any</td><td class="dflt">0</td></tr>
+<tr><td class="name">Speed drive</td><td class="dflt">the wanted speed, signed</td><td class="dflt">the force limit</td></tr>
+<tr><td class="name">Pure force source</td><td class="dflt">deliberately out of reach, e.g. <code class="phx-inline">sign(f)*1e6</code></td><td class="dflt"><code class="phx-inline">abs(f)</code></td></tr>
+<tr><td class="name">Friction brake</td><td class="dflt">0</td><td class="dflt">the holding force</td></tr>
+</table>
+<p>A speed drive holds its target exactly while it stays under the limit, so nothing needs tuning.
+A force source works because the motor cannot reach an impossible target and therefore saturates,
+delivering the limit and nothing else. A target of zero turns the same mechanism into Coulomb
+friction: the joint is held until the load exceeds <code class="phx-inline">MaxForce</code> and then
+slips, at the acceleration the surplus load is worth.</p>
+
+<div class="phx-note">
+<span class="lbl">Note.</span> <code class="phx-inline">MaxForce</code> is a force in newtons, not a
+fraction of anything, so size it against the load the joint actually carries &mdash; a body of a
+cubic metre of default density already weighs a tonne. Like the motor of a
+<a href="phx.RevoluteJoint.html">phx.RevoluteJoint</a>, this one is part of the constraint, so its
+reaction lands on the other body: a carriage driven along a rail pushes back on whatever holds the
+rail.</div>
 
 <h2 class="phx-h2">Examples</h2>
 <h4 class="phx-h4">Bounce a slider down an inclined rail</h4>
@@ -97,6 +132,24 @@ delete(sim);</pre>
 <img src="img/prismaticjoint.png" alt="Slider bouncing down an inclined prismatic rail">
 <figcaption>The slider descends the inclined rail and rebounds off the base, kept aligned by the joint's locked rotation.</figcaption>
 </figure>
+
+<h4 class="phx-h4">Raise a lift car with the motor, then hold it there</h4>
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+base = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>);
+car  = phx.Body(<span class="str">"Position"</span>, [0 0 0.5], ...
+    <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [0.6 0.6 0.4]});   <span class="cmt">% 144 kg, 1413 N</span>
+
+rail = phx.PrismaticJoint(base, car, <span class="str">"TargetVelocity"</span>, 0.5, <span class="str">"MaxForce"</span>, 4e3);
+
+sim = phx.Simulation;
+sim.step(2, 200, 1);            <span class="cmt">% climbs at 0.5 m/s against its own weight</span>
+disp(rail.Distance)             <span class="cmt">% 1.50 - the 0.5 m it started at plus 1 m travelled</span>
+
+rail.TargetVelocity = 0;        <span class="cmt">% the same motor, now a brake holding the car up</span>
+sim.step(2, 200, 1);
+disp(rail.Distance)             <span class="cmt">% 1.50 still, and the car is at rest</span>
+delete(sim);</pre>
 
 <div class="phx-seealso">
 <span class="lbl">See also</span>

@@ -41,19 +41,23 @@ Joint classes:
   `Lower/UpperAngularLimits` (rad): per axis, lower>upper = free (default), lower==upper =
   locked, lower<upper = limited travel. Very stiff springs are clamped by the solver
   (ceiling ~ mass·inertia/dt²) — add substeps or use `FixedJoint` for truly rigid.
-- `phx.RevoluteJoint` — hinge; 1 rotational DOF (`PointA/B`, `AxisA/B`, dependent `Angle`).
+- `phx.RevoluteJoint` — hinge; 1 rotational DOF (`PointA/B`, `AxisA/B`). **Motorized:**
+  `TargetVelocity` (rad/s) + `MaxTorque` (N·m) — see the motor section below.
 - `phx.PrismaticJoint` — slider; 1 translational DOF along `AxisA/B`, i.e. the **local Z
   axis of the joint frame** — the same axis convention as the hinge, so the default frames
   slide along world Z. Mind that this joint also **locks the rotation about** that axis,
   which `AxisA/B` do not describe: they suffice when both bodies share an orientation, but
   otherwise set the frames in full via `TransformA/B` (4×4) or the dependent `PointA/B` +
   `EulerAnglesA/B` (z→y→x) views, so both frames coincide in *every* axis.
+  **Motorized:** `TargetVelocity` (m/s) + `MaxForce` (N).
   See `phxex_camvalve` (valve train), `phxex_vengine`, `phxex_joints`.
 - `phx.CylindricalJoint` — shaft in a sleeve; 2 DOF, translation along **and** rotation about
   `AxisA/B` (the joint frame's local Z). A prismatic and a revolute joint on one axis. Unlike
   the prismatic joint it leaves the rotation about the axis free, so `AxisA/B` alone fully
-  describe it — the frames need not agree on their roll about the axis. No limits; for end
-  stops use `phx.GenericJoint` with the Z axes bounded.
+  describe it — the frames need not agree on their roll about the axis. `Angle` and
+  `Distance` report both of its coordinates. No limits (for end stops use
+  `phx.GenericJoint` with the Z axes bounded) and **no motor** — it is built on the 6DOF
+  constraint, not on the slider that carries the motor.
 - `phx.SphericalJoint` — ball; 3 rotational DOF.
 - `phx.GearJoint` — couples the rotation of two bodies by a ratio.
 - `phx.GenericJoint` — 6 DOF, each axis of the joint frame independently locked, bounded
@@ -82,9 +86,18 @@ consistently with the bodies' initial poses:
   vertical slider), while the components **perpendicular** to it define the line the
   body is pinned to. Only those need to be right.
 
-Note also that a prismatic joint has **no dependent readout of its extension** (unlike
-`RevoluteJoint.Angle`) — read the slide position from the body pose. Reaction loads
-are available on every joint as `ForceA`/`TorqueA`/`ForceB`/`TorqueB`.
+**Joint coordinates.** `phx.base.Joint` gives *every* joint two read-only dependent
+properties: `Angle` (rad) is the rotation of the second joint frame about the joint axis
+and `Distance` (m) its offset along that axis, both measured from the first frame. They
+are worked out from the frames, so they read the pose the bodies hold right now and need
+no simulation. Where the joint leaves that DOF free they are the joint coordinate itself
+(hinge angle, slider travel, both at once on a cylindrical joint); where it locks it they
+sit near zero and show the error the solver leaves. `Angle` is a **projection onto the
+axis**, not the shortest arc, so on a `SphericalJoint` it reports only the turn about the
+axis and ignores the tilt; it wraps to ±π and does not accumulate, so unwrap it yourself
+(`unwrap` in MATLAB, the DSP `Unwrap` block with `running = on` in Simulink) when a joint
+spins through more than half a turn. Reaction loads are available on every joint as
+`ForceA`/`TorqueA`/`ForceB`/`TorqueB`.
 
 **Prefab chains:** a whole chain of jointed links (pendulum, hanging chain, rope
 with collisions) is one call — `phx.assembly.chain(points, "Axis", [0 1 0],
@@ -197,8 +210,42 @@ body.applyTorque(T, false);                      % ... or in world space
 Mind the two independent frame flags: `isLocalForce` rotates the vector with the body,
 `isLocalPoint` interprets the point of application in body coordinates. Passing a world
 force at a local point (or vice versa) is legal and often what you want — e.g. gravity-
-like world force applied at a local hardpoint. `applyTorque` is the usual way to drive a
-wheel or a shaft, since PHX joints carry no motors.
+like world force applied at a local hardpoint. To drive a wheel or a shaft use the
+**joint motor** below, not `applyTorque` — an external torque on a jointed body puts no
+reaction on the body it is hinged to, so the chassis never feels the push it should.
+
+## Joint motors — phx.RevoluteJoint, phx.PrismaticJoint
+
+Both joints can drive themselves. The motor is a **saturated velocity source**: it holds
+`TargetVelocity` while it needs less than `MaxTorque` (N·m) / `MaxForce` (N), and delivers
+exactly that limit when the target is out of reach. Two numbers therefore cover four kinds
+of drive:
+
+| To get | TargetVelocity | MaxTorque / MaxForce |
+|---|---|---|
+| no motor (default) | anything | `0` |
+| speed drive | the wanted speed, signed | the limit |
+| pure torque/force source | out of reach, `sign(u)*1e6` | `abs(u)` |
+| friction brake | `0` | the holding torque/force |
+
+```matlab
+hub = phx.RevoluteJoint(base, disc, "TargetVelocity", 6, "MaxTorque", 5);
+sim.step(1, 100, 1);            % spins up to 6 rad/s and holds it
+hub.TargetVelocity = 0;         % same motor, now a brake
+hub.MaxTorque = 1;              % lets go once the load passes 1 N*m
+```
+
+- Both properties are plain settable doubles: change them mid-run, drive them from a
+  `phx.Script` curve or a `phx.Function` control law, or wire them to Simulink ports.
+- The limits are **physical units**, not fractions — a cubic metre of default density
+  already weighs a tonne, so size them against the real load. `0` means no motor at all.
+- The motor is part of the constraint, so its **reaction lands on the other body**. Two
+  free bodies both turn, in opposite directions, split inversely by their inertias; the
+  motor sets their *relative* velocity, not the absolute speed of either.
+- Position control is not built in. Do it yourself by writing `TargetVelocity` each step
+  from the `Angle`/`Distance` error — that is the one mode that costs a per-step write.
+- `phx.CylindricalJoint` has no motor, and a prismatic joint's rotation is locked, so its
+  slider has nothing to turn.
 
 ## Driving parameters over time — phx.Script
 
@@ -275,8 +322,8 @@ delete(sim);
 ```
 
 `sim.step` renders on its own here too — no `drawnow`/`pause(0)` belongs in this loop
-unless you draw your own overlay or need the figure to stay clickable; see
-**phx-scene-basics**.
+unless you draw your own overlay; keeping the figure clickable is already the default
+`RedrawMode`'s job. See **phx-scene-basics**.
 
 A controlled vehicle that momentarily hovers near-still keeps responding to thrust
 because Bullet sleeping is off by default (`BulletSettings.AutoActivated=false`);

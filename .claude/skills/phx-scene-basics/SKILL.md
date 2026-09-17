@@ -5,8 +5,9 @@ description: >
   the Bullet engine). Use when creating phx.Body objects, attaching phx.shape.*
   geometry, importing meshes (STL/OBJ/PLY) or URDF models, using the phx.assembly
   prefab builders (arena, chain, scatter, wall, import), drawing the scene into
-  phx.extra.Viewer (the default) or plain axes, stepping a phx.Simulation, or
-  running a PHX scene headlessly. Start here before the other phx-* skills.
+  phx.extra.Viewer (the default) or plain axes, stepping a phx.Simulation,
+  saving a scene to a MAT file or loading one back, or running a PHX scene
+  headlessly. Start here before the other phx-* skills.
 ---
 
 # PHX scene basics
@@ -147,10 +148,11 @@ phx.Body("Shape", {"Sphere",   "Radius", 0.5});               % or "Diameter", 1
 phx.Body("Shape", {"Cylinder", "Radius", 0.3, "Height", 2, "Axis", "z"});
 phx.Body("Shape", {"Cone",     "Radius", 0.3, "Height", 1});
 phx.Body("Shape", {"Capsule",  "Radius", 0.25, "Height", 1});
+phx.Body("Shape", {"Tube",     "InnerDiameter", 0.5, "Height", 1, "Taper", -0.8});
 phx.Body("Shape", {"path/to/model.stl", "Scale", 0.06*[1 1 1], "Material", "glossy"});
 ```
 
-Available: `Box`, `Sphere`, `Cylinder`, `Cone`, `Capsule`, `Globe`, `Mesh`,
+Available: `Box`, `Sphere`, `Cylinder`, `Tube`, `Cone`, `Capsule`, `Globe`, `Mesh`,
 `Extrusion`, `Revolution`, `Rock`, `Terrain`. Sizing properties are
 shape-specific — `Box` uses `Size`; round shapes accept **`Radius`** *or* `Diameter`
 (interchangeable), and the axial extent is **`Height`** (not `Length`) with a modeling
@@ -205,8 +207,13 @@ decides whether an imported body behaves:
 - `"box"` / `"cylinder"` / `"sphere"` — a fitted bounding primitive; prefer these for
   bodies that must **roll smoothly** (a hull is faceted). `"cylinder"` is aligned
   along `Axis` (`"x"`/`"y"`/`"z"`).
-- `"concave"` — the exact triangle mesh; **keep it static** (terrain, funnels, tracks).
+- `"concave"` — the exact triangle mesh, the only envelope that keeps cavities and
+  holes open (terrain, funnels, tracks). It works for dynamic bodies too, at a higher
+  collision cost than a hull.
   Set `FlipFaces` to reverse the winding if the solid side comes out inverted.
+
+`phx.shape.Tube` defaults to `Envelope = "concave"`, unlike every other shape — a
+convex hull would seal the bore shut and nothing could be poured through it.
 
 `phx.shape.Revolution` takes `Envelope` too: `"convex"` (default), `"concave"`, or
 `"cylinder"` fitted about the revolution axis, its radius the largest radius in the
@@ -280,8 +287,11 @@ parts = phx.assembly.import("scene.obj", "Envelope", "convex");
 
 URDF mapping: revolute/continuous → `phx.RevoluteJoint`, **prismatic →
 `phx.PrismaticJoint`**, fixed → `phx.FixedJoint` (planar/floating are substituted
-by `FixedJoint` + a warning). Joints are passive (no motors) — actuate them
-yourself. Geometries map to `Box`/`Cylinder`/`Sphere`/`Capsule`/`Mesh`; `MeshPath`
+by `FixedJoint` + a warning). The imported joints come with their motors off; drive
+them by setting `TargetVelocity` + `MaxTorque` (revolute) or `MaxForce` (prismatic) on
+the joints the importer returns — see the phx-constraints-forces skill. Nothing in the
+URDF sets those, so the limits are yours to size.
+Geometries map to `Box`/`Cylinder`/`Sphere`/`Capsule`/`Mesh`; `MeshPath`
 resolves `package://` URIs (the URDF's own folder is always searched too).
 
 ## phx.Simulation — lifecycle
@@ -290,7 +300,7 @@ resolves `package://` URIs (the URDF's own folder is always searched too).
 sim = phx.Simulation(ax);             % a specific axes — the viewer's, the usual form
 sim = phx.Simulation;                 % all bodies in gca (+ their children)
 sim = phx.Simulation(bodies);         % a Body array / cell array (children auto-included)
-sim = phx.Simulation("scene.mat");    % bodies saved in a MAT file
+sim = phx.Simulation("scene.mat");    % bodies saved in a MAT file (see Saving & loading)
 
 sim.Gravity = [0 0 -9.81];            % default; settable
 sim.step(interval, substeps, redrawStep);
@@ -308,12 +318,78 @@ Run it repeatedly to interleave control logic between steps (read body state, se
 actuator, step again) — see the **phx-constraints-forces** skill for the control-loop
 pattern. Keep `dt` small (≤ 5 ms) for tight constraint networks or they go unstable.
 
+`sim.RedrawMode` decides *how* each of those redraws reaches the figure (`redrawStep`
+decides *how often*):
+- `"interactive"` — the default (`pause(0)`). The figure stays live during the run: the
+  user can orbit/pan/zoom the scene, select and drag bodies, and press the viewer's keys
+  or your app's buttons while the simulation is running. Leave it alone unless you have a
+  reason not to.
+- `"performance"` — the fastest (an incremental graphics update that doesn't service the
+  callback queue, so the window doesn't react while a step runs). Worth ~20–35 % of the
+  wall-clock time of a redraw-bound scene; set it for long runs nobody will touch and for
+  anything that reports a timing number.
+- `"full"` — smoothest and most expensive (`drawnow`); rarely needed over the default.
+- `"none"` — no screen update at all; the graphics objects are still updated, so the
+  figure catches up once MATLAB goes idle. **Not a headless shortcut** — the redraw
+  pipeline keeps running, so a headless run wants `redrawStep = -1` (measured several
+  times cheaper per substep on a 200-body scene), which also makes `RedrawMode` moot.
+
+```matlab
+sim = phx.Simulation(ax, "RedrawMode", "performance");   % nobody will touch the window
+```
+
+Because the default services callbacks, an animated `step` is a **re-entrancy point**: a
+button callback, key press or timer can fire in the middle of it. Don't `delete` the
+simulation or its bodies from such a callback — set a flag and act on it between steps.
+
 `step` already renders when `redrawStep >= 0`, so **don't add `drawnow` or `pause(0)` to
-the stepping loop** — the animation shows up without them and an extra flush per substep
-only costs time. Add a single `drawnow` in the *outer* loop iteration only when you have a
-reason the scene itself doesn't cover: you draw your own overlay next to the scene (`text`,
-`plot`, `viewer.displayText`), or a long run must stay clickable / interruptible while it
-proceeds.
+the stepping loop** — the animation shows up without them, and keeping the figure
+responsive is `RedrawMode`'s job, not an extra flush per substep. Add a single `drawnow`
+in the *outer* loop iteration only when you draw your own overlay next to the scene
+(`text`, `plot`, `viewer.displayText`), which the scene's own redraw doesn't cover.
+
+## Saving & loading scenes (MAT files)
+
+A scene is just `phx.Body` handle objects, so plain `save`/`load` is the whole mechanism —
+there is no export format. **Save the bodies**: everything attached to one (shapes, joints,
+springs, ropes, force elements, loggers, zones) is a *child* of that body and is written
+with it. Variable names are irrelevant on the way back in — loading picks every `phx.Body`
+in the file and ignores the rest.
+
+```matlab
+save("scene.mat", "ground", "arm");            % the joint between them travels along
+bodies = phx.Simulation.findBodies(ax);        % or grab whatever is drawn in an axes
+save("scene.mat", "bodies");                   % (this is what the viewer's Save model does)
+
+model.chassis = chassis; model.wheels = [wFL wFR wRL wRR];
+save("saved_buggy.mat", "-struct", "model");   % keeps the parts named
+```
+
+**Never save a `phx.Simulation`** — it owns a live engine world; the file reloads as a
+broken object (measured: `Unrecognized field name "updatePipelines"` on load, then an
+error in the destructor).
+
+```matlab
+sim = phx.Simulation("scene.mat");   % loads the file itself; works headless
+sim.propagate("ParentAxes", ax);     % loaded bodies are UNPARENTED until you do this
+sim.addObjects("other.mat");         % a file can also be dropped into a running sim
+
+model = load("saved_buggy.mat");     % keep the struct when parts must stay addressable
+propagate(cell2mat(struct2cell(model)), "ParentAxes", ax);
+groupTransform(cell2mat(struct2cell(model)), "Translation", [-3 0 0]);
+sim = phx.Simulation(model);         % a struct source is scanned for its phx.Body fields
+```
+
+What survives: the object tree, all properties, the graphics (colors/textures included),
+and the **full kinematic state** — pose plus linear and angular velocity, whether you save
+mid-run or after `delete(sim)` (velocities are read from the engine as the file is
+written; `delete(sim)` also copies them back into the objects). They are pushed back into
+the engine on the next run, so a reloaded scene *continues* instead of restarting from
+rest (measured: ball saved at `v = -4.9050`, one 1 ms step after reload gives `-4.9148`).
+Engine handles are transient and the pipelines are rebuilt — nothing else to restore.
+
+Convention in `examples/`: `model_*.m` builds the bodies and saves them, `phxex_*.m` loads
+the MAT file, parents it into the viewer and simulates it.
 
 ## Practical tips (physical tuning)
 

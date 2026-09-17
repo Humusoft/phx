@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.shape.Tube</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.shape.Tube</div>
+
+<h1 class="phx-title">phx.shape.Tube</h1>
+<p class="phx-purpose">Tube, pipe or funnel shape</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.shape.Tube &nbsp;|&nbsp; Superclasses: <a href="phx.base.Shape.html">phx.base.Shape</a>, <a href="phx.base.ShapeMesh.html">phx.base.ShapeMesh</a></p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.shape.Tube</code> is a straight or tapered tube with an open bore.
+<code class="phx-inline">Taper</code> narrows the bore towards one end while the wall keeps its
+thickness, so a single shape covers a pipe, a funnel, a hopper and a closed cup.</p>
+
+<p>The collision shape is selected by <code class="phx-inline">Envelope</code>. The default
+<code class="phx-inline">"concave"</code> triangle mesh is the only one that leaves the bore open, so
+it is what a tube that has to hold or pass anything needs; <code class="phx-inline">"convex"</code>
+uses the convex hull of the mesh and seals the tube shut, while a bounding
+<code class="phx-inline">"cylinder"</code> keeps a rolling body smooth where a faceted hull would
+not. Mass properties are always computed from the actual triangular mesh and
+<code class="phx-inline">Density</code>.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">shape = phx.shape.Tube</span>
+<span class="phx-syntax">shape = phx.shape.Tube(Name,Value)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">shape = phx.shape.Tube</code> creates a unit tube with default parameters.
+<code class="phx-inline">phx.shape.Tube(Name,Value)</code> sets properties with name-value
+arguments.</p>
+</div>
+
+<h2 class="phx-h2">Properties</h2>
+<h3 class="phx-h3">Geometry</h3>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">InnerDiameter</td><td class="dflt">0.9</td><td>Inner diameter of the bore at the wide end, <span class="phx-unit">m</span>.</td></tr>
+<tr><td class="name">InnerRadius</td><td class="type">double (dependent)</td><td>Inner radius at the wide end, <span class="phx-unit">m</span>. Setting it updates <code class="phx-inline">InnerDiameter</code>.</td></tr>
+<tr><td class="name">WallThickness</td><td class="dflt">0.05</td><td>Thickness of the tube wall, <span class="phx-unit">m</span>.</td></tr>
+<tr><td class="name">Diameter</td><td class="type">double (dependent)</td><td>Outer diameter, <span class="phx-unit">m</span>, that is <code class="phx-inline">InnerDiameter</code> plus two walls. Setting it keeps the wall and updates the bore.</td></tr>
+<tr><td class="name">Radius</td><td class="type">double (dependent)</td><td>Outer radius, <span class="phx-unit">m</span>. Setting it updates <code class="phx-inline">Diameter</code>.</td></tr>
+<tr><td class="name">Height</td><td class="dflt">1</td><td>Tube height along the modeling axis, <span class="phx-unit">m</span>.</td></tr>
+<tr><td class="name">Taper</td><td class="dflt">0</td><td>Taper of the bore, &minus;1 to 1. Zero is a straight tube; a positive value narrows the bore at the end on the positive side of <code class="phx-inline">Axis</code> and a negative value at the opposite end. The magnitude is the fraction by which the inner radius shrinks, so 0.3 leaves a bore 70&nbsp;% as wide and 1 closes it completely. The wall keeps its thickness all along.</td></tr>
+<tr><td class="name">Axis</td><td class="dflt">"z"</td><td>Modeling axis: <code class="phx-inline">"x"</code>, <code class="phx-inline">"y"</code> or <code class="phx-inline">"z"</code>.</td></tr>
+<tr><td class="name">Segments</td><td class="dflt">24</td><td>Number of segments around the circumference.</td></tr>
+<tr><td class="name">Density</td><td class="dflt">1000</td><td>Volumetric density, <span class="phx-unit">kg/m&sup3;</span>.</td></tr>
+<tr><td class="name">Envelope</td><td class="dflt">"concave"</td><td>Collision envelope: <code class="phx-inline">"concave"</code> triangle mesh, <code class="phx-inline">"convex"</code> hull, or bounding <code class="phx-inline">"cylinder"</code> about the tube axis. The cylinder takes its radius from the wide end and its half height from <code class="phx-inline">Height</code>, centred on the shape origin.</td></tr>
+</table>
+
+<p>Appearance properties are inherited from <a href="phx.base.ShapeMesh.html">phx.base.ShapeMesh</a>
+and skeletal properties from <a href="phx.base.Shape.html">phx.base.Shape</a>.</p>
+
+<div class="phx-note">
+<span class="lbl">Note.</span> The origin of the shape stays at the middle of its axial span, not at
+its centre of mass, so a strongly tapered tube pivots about its geometric centre. This matches
+<a href="phx.shape.Revolution.html">phx.shape.Revolution</a> and keeps the shape from shifting in the
+axes when <code class="phx-inline">Taper</code> is changed.
+</div>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">Ball caught by a funnel</h4>
+<pre class="phx-code">phx.extra.Viewer(<span class="str">"clear"</span>, <span class="str">"DefaultCameraPosition"</span>, [3 3 2]);
+
+phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Position"</span>, [0 0 1], ...
+    <span class="str">"Shape"</span>, {<span class="str">"Tube"</span>, <span class="str">"Taper"</span>, -0.8, <span class="str">"Height"</span>, 0.8});
+phx.Body(<span class="str">"Position"</span>, [0.1 0 2], <span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>, <span class="str">"Diameter"</span>, 0.3});
+
+sim = phx.Simulation;
+sim.step(3, 600, 1);</pre>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.Body.html">phx.Body</a>,
+<a href="phx.shape.Cylinder.html">phx.shape.Cylinder</a>,
+<a href="phx.shape.Revolution.html">phx.shape.Revolution</a>,
+<a href="phx.base.Shape.html">phx.base.Shape</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_bodies.html">Bodies and shapes</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

@@ -14,6 +14,7 @@
         <tocitem target="phx_ug_assemblies.html">Prefab assemblies</tocitem>
         <tocitem target="phx_ug_logging.html">Measuring and logging</tocitem>
         <tocitem target="phx_ug_control.html">Automation and control</tocitem>
+        <tocitem target="phx_ug_scenes.html">Saving and loading scenes</tocitem>
         <tocitem target="phx_ug_viewer.html">Interactive viewer</tocitem>
         <tocitem target="phx_ug_skills.html">AI agent skills</tocitem>
     </tocitem>
@@ -66,6 +67,7 @@
             <tocitem target="phx.shape.Box.html">phx.shape.Box</tocitem>
             <tocitem target="phx.shape.Sphere.html">phx.shape.Sphere</tocitem>
             <tocitem target="phx.shape.Cylinder.html">phx.shape.Cylinder</tocitem>
+            <tocitem target="phx.shape.Tube.html">phx.shape.Tube</tocitem>
             <tocitem target="phx.shape.Cone.html">phx.shape.Cone</tocitem>
             <tocitem target="phx.shape.Capsule.html">phx.shape.Capsule</tocitem>
             <tocitem target="phx.shape.Globe.html">phx.shape.Globe</tocitem>

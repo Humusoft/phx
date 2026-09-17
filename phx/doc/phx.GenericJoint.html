@@ -88,6 +88,10 @@ name-value arguments.</p>
 <code class="phx-inline">MutualCollisions</code> switch (collisions between the connected bodies,
 default <code class="phx-inline">false</code>) are inherited from
 <a href="phx.base.Joint.html">phx.base.Joint</a>.</p>
+<p>The joint coordinates <code class="phx-inline">Angle</code> and
+<code class="phx-inline">Distance</code> are inherited from there too &mdash; the rotation
+about the joint axis and the offset along it, both measured from the first joint frame to
+the second. Which of the two is free depends on the limits you set; both are measured either way.</p>
 <p>The degrees of freedom are all three axes of the joint frames, each with its own limits, so there
 is no single free axis for the inherited
 <code class="phx-inline">AxisA</code>/<code class="phx-inline">AxisB</code> to describe. They are
