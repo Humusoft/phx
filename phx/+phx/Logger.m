@@ -133,6 +133,11 @@ classdef Logger < phx.base.Object
     end
 
     methods (Access = protected)
+        function valid = checkObject(obj)
+            % A logger reads whatever it is attached to.
+            valid = all(cellfun(@isvalid, obj.Parents));
+        end
+
         function valid = initObject(obj, world)
             parents = obj.Parents;
             parameters = obj.Parameters;
@@ -144,7 +149,7 @@ classdef Logger < phx.base.Object
                 end
             end
 
-            valid = all(cellfun(@isvalid, obj.Parents));
+            valid = obj.checkObject;
         end
 
         function destroyObject(obj) %#ok<MANU> function prototype

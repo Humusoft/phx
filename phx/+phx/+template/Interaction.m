@@ -65,14 +65,21 @@ classdef Interaction < phx.base.Object
     end
 
     methods (Access = protected)
+        function valid = checkObject(obj)
+            % Report whether the object has the inputs it needs, which is
+            % usually a question about its Parents. This must stay free of
+            % side effects: it is also asked whenever the object graph
+            % changes, not only while the simulation is being built.
+            valid = numel(obj.Parents) == 2 && all(cellfun(@isvalid, obj.Parents));
+        end
+
         function valid = initObject(obj, world)
             % If needed, it is possible to initialize the default state of
             % the object here (e.g. create auxiliary lookup tables) or
             % communicate with the engine
 
-            % The function should also return if the object state is
-            % considered as valid
-            valid = numel(obj.Parents) == 2 && all(cellfun(@isvalid, obj.Parents));
+            % The object reports through checkObject whether it is usable
+            valid = obj.checkObject;
         end
 
         function destroyObject(obj)

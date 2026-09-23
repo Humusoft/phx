@@ -51,8 +51,8 @@ function bricks = wall(varargin)
 %     two). Same convention as phx.Body.EulerAngles.
 %
 %   The bricks are returned as plain bodies, so they can be restyled or
-%   picked apart afterwards (note that setting Color on the returned bodies
-%   overwrites the random tint):
+%   picked apart afterwards; setting Color on the returned bodies overwrites
+%   the random tint:
 %       phx.assembly.arena("Size", [6 4 0.2]);
 %       bricks = phx.assembly.wall("Size", [3 0.25 1.2], "Rows", 10, ...
 %           "Columns", 6, "EulerAngles", [0 0 pi/2], ...
@@ -98,9 +98,8 @@ function bricks = build(ax, Options)
         error("phx:wall:invalidColumns", "Open even rows hold one brick less than the odd ones, so a wall with HalfBricks set to false needs at least two columns (got %d).", nCols);
     end
 
-    % A brick fills its share of the wall volume: the rows split the height,
-    % the columns split the length of an odd row and the brick is as thick
-    % as the wall itself
+    % A brick fills its share of the wall volume: rows split the height,
+    % columns split the length of an odd row, and it is as thick as the wall
     len = Options.Size(1)/nCols;
     thickness = Options.Size(2);
     height = Options.Size(3)/nRows;
@@ -110,9 +109,8 @@ function bricks = build(ax, Options)
     end
     bricks = phx.Body.empty;
     for row = 1:nRows
-        % Brick lengths of the row and the x coordinate its left side starts
-        % at; the even rows are shifted by half a brick and either closed by
-        % half bricks or left open at both ends
+        % Brick lengths of the row and where its left side starts; even rows
+        % are shifted by half a brick, then closed by half bricks or left open
         if mod(row, 2) == 1
             lengths = repmat(len, 1, nCols);
             left = -Options.Size(1)/2;
@@ -125,8 +123,7 @@ function bricks = build(ax, Options)
         end
 
         for col = 1:numel(lengths)
-            % Each brick gets its own shade; with no tint the generator is
-            % left alone, so the wall does not disturb other random layouts
+            % Each brick gets its own shade (no draw when the tint is off)
             color = Options.Color;
             if Options.RandomTint > 0
                 color = color*(1 - rand*Options.RandomTint);

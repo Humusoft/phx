@@ -42,6 +42,7 @@ classdef Monopole < phx.base.Object
         Attractivity (1, 1) double = -1
 
         % Position of vector field origin
+        % Can be moved while the simulation runs, e.g. to follow a body
         VectorFieldCenter (1, 3) double = [0 0 0]
 
         % Vector field size [x y z]
@@ -83,6 +84,26 @@ classdef Monopole < phx.base.Object
             value = -obj.Attractivity*value;
         end
 
+        function set.VectorFieldCenter(obj, value)
+            obj.VectorFieldCenter = value;
+            buildGrid(obj);
+        end
+
+        function set.VectorFieldSize(obj, value)
+            obj.VectorFieldSize = value;
+            buildGrid(obj);
+        end
+
+        function set.VectorFieldStep(obj, value)
+            obj.VectorFieldStep = value;
+            buildGrid(obj);
+        end
+
+        function set.VectorSegments(obj, value)
+            obj.VectorSegments = value;
+            buildStrip(obj);
+        end
+
         function obj = Monopole(Parents, Options)
             arguments
                 Parents (1, :) {mustBeA(Parents, "phx.Body")}
@@ -99,6 +120,18 @@ classdef Monopole < phx.base.Object
             phx.internal.applyArguments(Options, obj);
 
             % Create graphics objects
+            buildGrid(obj);
+            count = size(obj.GridPoints, 2);
+            seg = obj.VectorSegments + 2;
+            obj.hL = matlab.graphics.primitive.world.LineStrip('Parent', obj.Graphics, 'LineWidth', 0.5, 'ColorBinding', 'object', 'ColorData', uint8([obj.Color*255 255]'), 'StripData', uint32(1:seg:(count*seg + 1)), 'Layer', phx.internal.choose({'middle', 'front'}, obj.Overlay + 1));
+            phx.Monopole.updateView({obj}, [], 0, []);
+        end
+    end
+
+    methods (Access = private)
+        function buildGrid(obj)
+            % Sample the vector field box; called from the constructor and
+            % whenever one of the grid properties really changes
             p = obj.VectorFieldSize/2;
             c = obj.VectorFieldCenter;
             s = obj.VectorFieldStep;
@@ -107,10 +140,16 @@ classdef Monopole < phx.base.Object
             z = (-p(3):s:p(3)) + c(3);
             [gx, gy, gz] = ndgrid(x, y, z);
             obj.GridPoints = [gx(:)'; gy(:)'; gz(:)'];
-            count = size(obj.GridPoints, 2);
-            seg = obj.VectorSegments + 2;
-            obj.hL = matlab.graphics.primitive.world.LineStrip('Parent', obj.Graphics, 'LineWidth', 0.5, 'ColorBinding', 'object', 'ColorData', uint8([obj.Color*255 255]'), 'StripData', uint32(1:seg:(count*seg + 1)), 'Layer', phx.internal.choose({'middle', 'front'}, obj.Overlay + 1));
-            phx.Monopole.updateView({obj}, [], 0, []);
+            buildStrip(obj);
+        end
+
+        function buildStrip(obj)
+            % Re-cut the line strip into one polyline per grid point
+            if ~isempty(obj.hL)
+                count = size(obj.GridPoints, 2);
+                seg = obj.VectorSegments + 2;
+                obj.hL.StripData = uint32(1:seg:(count*seg + 1));
+            end
         end
     end
 

@@ -26,6 +26,10 @@ classdef Revolution < phx.base.Shape & phx.base.ShapeMesh
 
     properties
         % Revolution profile along modeling axis
+        % Matrix Mx2 where each row is one point of the generatrix as
+        % [axis radius]. The curve is reversed automatically when it runs the
+        % way that would turn the solid inside out; it is not closed, because a
+        % generatrix ending on the axis already closes the body by revolving.
         Profile (:, 2) double
 
         % Modeling axis of the revolution
@@ -53,6 +57,24 @@ classdef Revolution < phx.base.Shape & phx.base.ShapeMesh
             if isnan(obj.Color(1))
                 obj.Color = phx.base.ShapeMesh.newColor;
             end
+        end
+
+        function obj = set.Profile(obj, value)
+            % The vertex normals and the triangle winding both follow the
+            % direction the generatrix runs in - and, unlike the extrusion,
+            % they already agree - so a generatrix drawn the other way comes
+            % out inside out in the picture and in the collision mesh alike.
+            % Close it through the axis and require the enclosed area to be
+            % negative; for a generatrix that is already a closed loop the two
+            % points added on the axis coincide and contribute nothing, so the
+            % one test covers both kinds.
+            if size(value, 1) > 1
+                g = [value; value(end, 1) 0; value(1, 1) 0];
+                if sum(g(1:end - 1, 1).*g(2:end, 2) - g(2:end, 1).*g(1:end - 1, 2)) > 0
+                    value = flipud(value);
+                end
+            end
+            obj.Profile = value;
         end
 
         function drawTo(obj, target)
@@ -90,7 +112,6 @@ classdef Revolution < phx.base.Shape & phx.base.ShapeMesh
                     ph = phx.internal.PrimitiveHelper(primitive);
                     vertices = ph.Vertices';
                     faces = int32(ph.LinearizedFaces - 1);
-                    % faces = int32(fliplr(ph.LinearizedFaces) - 1);
                     sh_id = phx.engine.io('prepare', body.WorldHandle, uint64(0), 'concaveshape', vertices(:), numel(vertices)/3, faces, numel(faces)/3);
                     phx.engine.io('prepare', body.WorldHandle, sh_id, 'dynamictrimesh');
                     phx.engine.io('prepare', body.WorldHandle, sh_id, 'validation');

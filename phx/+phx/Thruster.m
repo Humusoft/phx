@@ -97,8 +97,13 @@ classdef Thruster < phx.base.Object
     end
 
     methods (Access = protected)
-        function valid = initObject(obj, world)
+        function valid = checkObject(obj)
+            % A thruster pushes exactly one body.
             valid = isscalar(obj.Parents) && all(cellfun(@isvalid, obj.Parents));
+        end
+
+        function valid = initObject(obj, world)
+            valid = obj.checkObject;
         end
 
         function destroyObject(obj)

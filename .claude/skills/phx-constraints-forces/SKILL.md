@@ -192,6 +192,9 @@ discrete equilibria — raise `Resolution` for them. Demos: `phxex_buoyancy`,
 - `phx.Resistance` — velocity-dependent drag (aerodynamic/hydrodynamic resistance).
 - `phx.Dipole` / `phx.Monopole` — magnetic/charge-like field sources; bodies carrying
   them attract/repel (see `phxex_magnets`, `phxex_charges`, `phxex_maglev`).
+- Not an element but the same job: to drive bodies through contact (conveyor belts,
+  roller tracks, a self-propelled vehicle), give a body the `SurfaceVelocity` property
+  rather than scripting its pose — see phx-scene-basics and `phxex_beltmaze`.
 
 ### Ad-hoc forces — `Body.applyForce` / `applyTorque`
 

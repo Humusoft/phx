@@ -61,11 +61,9 @@ function parts = build(ax, Options)
     s = Options.Size;
     t = Options.Thickness;
 
-    % The floor plate extends under the walls and its top surface passes
-    % through the arena origin. The walls stand on the floor: the two x
-    % walls fit exactly between the two y walls, which span the full outer
-    % width and close the corners, so the inner space is exactly s(1) by
-    % s(2) by s(3).
+    % The floor plate extends under the walls with its top surface through the
+    % arena origin; the x walls fit between the y walls, which span the full
+    % outer width and close the corners, so the inner space is exactly s
     sizes = {[s(1) + 2*t, s(2) + 2*t, t]
              [t, s(2), s(3)]
              [t, s(2), s(3)]

@@ -24,7 +24,7 @@ function phxex_vengine(opts)
         opts.Stroke       (1, 1) double = 0.09    % piston stroke (m)
         opts.Bore         (1, 1) double = 0.086   % cylinder bore = piston diameter (m)
         opts.RodLength    (1, 1) double = 0.15    % connecting-rod length (m)
-        opts.Rpm          (1, 1) double = 600     % crankshaft speed (rev/min)
+        opts.Rpm          (1, 1) double = 660     % crankshaft speed (rev/min)
     end
 
     if mod(opts.NumCylinders, 2) ~= 0

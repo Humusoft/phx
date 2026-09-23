@@ -43,7 +43,7 @@ function phxex_capsize(duration, maxAmplitude)
     beam = 1.6;
     depth = 0.7;
     deckTop = depth/2;
-    profile = [0 -1; 0.68 -0.71; 1 0.29; 1 1; -1 1; -1 0.29; -0.68 -0.71; 0 -1] ...
+    profile = [0 -1; 0.68 -0.71; 1 0.29; 1 1; -1 1; -1 0.29; -0.68 -0.71] ...
         .*[beam/2, depth/2];
     % Long parallel midbody so that all crates stand on equally wide deck
     spineX = [-2.7 -2.3 -1.4 1.2 2.1 2.6 2.9]';   % stern ... bow

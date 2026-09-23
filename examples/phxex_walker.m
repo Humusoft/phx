@@ -29,7 +29,7 @@ function phxex_walker(freq, duty)
 
     arguments
         freq (1, 1) double = 1.0
-        duty (1, 1) double = 0.85
+        duty (1, 1) double = 0.80
     end
 
     % Robot
@@ -101,7 +101,7 @@ function phxex_walker(freq, duty)
     sim = phx.Simulation;
     x0 = chassis.Position(1);
     for t = dt:dt:duration
-        sim.step(dt, 20, 20);       % 1 ms substeps, one redraw per frame
+        sim.step(dt, 10, 10);       % 2 ms substeps, one redraw per frame
         travel = chassis.Position(1) - x0;
         viewer.displayText(sprintf("%4.1f s   %+.2f m   %+.2f m/s", ...
             sim.Time, travel, travel/sim.Time));

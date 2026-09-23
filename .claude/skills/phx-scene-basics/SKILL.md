@@ -115,6 +115,35 @@ b = phx.Body(ax, ...
   give the floor nonzero `Restitution` too. Realized bounce heights come out noticeably
   below the ideal `e²·h` (solver losses at contact), so tune `e` empirically against the
   bounce you want rather than computing it.
+- **`SurfaceVelocity` — a virtual moving surface (conveyor belts).** A `[vx vy vz]`
+  vector, default `[0 0 0]`, settable live. The body itself does **not** move; contacts
+  with it are solved as if its surface were sliding at that velocity, so resting bodies
+  are dragged along. A belt is therefore an ordinary **static** box with one extra
+  number, no scripting and no moving geometry:
+
+  ```matlab
+  belt = phx.Body(ax, "Type", "static", "Position", [0 0 -0.1], ...
+      "Friction", [0.9 0 0], "SurfaceVelocity", [1.2 0 0], ...
+      "Shape", {"Box", "Size", [8 2 0.2]});
+  ```
+
+  - The vector is in the **body frame**, so a turned or tilted belt drives along its own
+    x axis. Build belts along local `+x` and rotate the body; the `arrows.png` texture in
+    `examples/res` also points along local `+x`, so it then matches the drive for free.
+  - It is an ordinary contact constraint, so it is **friction-limited**: both bodies need
+    a nonzero `Friction(1)`, a frictionless belt transmits nothing however fast it runs.
+    Cargo converges to exactly the commanded speed, and the reaction pushes back on the
+    belt (a belt free to move recoils, momentum is conserved).
+  - Put it on the **moving** body instead and it drives that body the *opposite* way: it
+    describes the relative motion of the touching surfaces. That gives a self-propelled
+    body, e.g. a tracked vehicle with no track to model. Differential speeds on two such
+    tracks do **not** steer it, though.
+  - It cannot express a **rotating** surface (it is one constant vector), so turntables
+    and rollers spinning about their own axis are out of scope.
+  - Building a belt network (see `phxex_beltmaze`): where one belt hands over to another
+    running across it, sweep the drive vector ~15 deg sideways so the cargo lands on the
+    middle of the next belt instead of riding its edge, and never let a guard rail reach
+    into that hand-over square or the cargo jams against the rail's end.
 - **Pose** is read/written through these *dependent* properties (they hit the engine
   live): `Position`, `Orientation` (3x3), `Quaternion`, `AxisAngle`, `EulerAngles`,
   `Transform` (4x4). Reading `b.Position` mid-simulation returns the current state.
@@ -252,6 +281,10 @@ p = phx.assembly.chain([0 0 0; 0.4 0 0; 0.8 0 0], "Anchor", "start", "Axis", [0 
 % GLOBAL rng like rand — reproduce with rng(seed), no state is saved/restored.
 % A cell shape spec builds a new shape per body (phx.shape.Rock => variety);
 % a shape object is shared by all bodies.
+% RandomTint (0..1, default 0) darkens each body on its own like in wall:
+% bodyColor = color*(1 - rand*RandomTint) over the Color row OR, with no Color,
+% over the body's palette color (that palette cycles per created shape, NOT
+% from the rng — so seeding reproduces the layout and the tint, not the base hue).
 rocks = phx.assembly.scatter({"Rock", "Radius", 0.4}, 30, ...
     "Region", [7 7 4], "Spacing", 0.8, "Position", [0 0 1], ...
     "RandomOrientation", true, "Color", hsv(30));

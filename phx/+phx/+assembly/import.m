@@ -1,5 +1,5 @@
 function [bodies, joints] = import(varargin)
-%phx.assembly.import Import a multi-body model from a file
+%phx.assembly.import Import a multi-body model from a file or a rigidBodyTree
 %
 %   bodies = phx.assembly.import(file) reads a model from the given file and
 %   creates the phx.Body objects it describes. The file format is selected
@@ -14,6 +14,16 @@ function [bodies, joints] = import(varargin)
 %   first argument: phx.assembly.import(ax, file, ___), where an empty target
 %   ([]) creates the bodies without graphics for headless simulations.
 %
+%   bodies = phx.assembly.import(tree) imports a rigidBodyTree object of
+%   Robotics System Toolbox instead of a file, one body per rigid body of
+%   the tree that carries mass or geometry, its base included (the bodies
+%   that carry neither are frames and are merged away, see below). This
+%   also reaches the formats that
+%   importrobot reads but this function does not - Xacro and SDF files,
+%   robot description text and Simscape Multibody models - and the robot
+%   library of loadrobot:
+%       bodies = phx.assembly.import(loadrobot("kinovaGen3"));
+%
 %   For an OBJ file the mesh objects become separate dynamic bodies with a
 %   convex collision envelope (set Envelope to override); each body frame
 %   sits at its object's centroid. Only genuine 3D solids are imported - flat
@@ -22,11 +32,11 @@ function [bodies, joints] = import(varargin)
 %   phx.shape.Mesh instead to load a whole OBJ as a single merged body. The
 %   URDF path is described below.
 %
-%   A URDF file creates a phx.Body for every link. The bodies are drawn into
-%   the current axes and placed at the world poses of the robot in its zero
-%   (home) configuration, with the base (root link frame) at the world
-%   origin unless a pose is given by the Position and Orientation or
-%   EulerAngles options.
+%   A URDF file or a rigidBodyTree creates a phx.Body for every link. The
+%   bodies are drawn into the current axes and placed at the world poses of
+%   the robot in its zero (home) configuration, with the base (root link
+%   frame) at the world origin unless a pose is given by the Position and
+%   Orientation or EulerAngles options.
 %
 %   [bodies, joints] = phx.assembly.import(file) also returns all created
 %   joints in a struct whose field names are the joint names.
@@ -43,6 +53,10 @@ function [bodies, joints] = import(varargin)
 %   - MeshPath: root folder used to resolve "package://" URIs and relative
 %     file names of mesh geometries. Mesh files are always searched relative
 %     to the folder of the URDF file as well.
+%   - Configuration: joint configuration a rigidBodyTree is imported at,
+%     default homeConfiguration(tree). It takes the data format of the tree
+%     (see rigidBodyTree.DataFormat); a plain vector of joint positions is
+%     accepted for the "struct" format as well.
 %
 %   To simulate the imported robot, pass the bodies to a simulation; the
 %   joints are collected automatically through the object hierarchy. All
@@ -74,8 +88,46 @@ function [bodies, joints] = import(varargin)
 %     expressed in the axes of the body frame and its diagonal is used as
 %     the Inertia property.
 %
+%   rigidBodyTree to PHX mapping (the same rules as for URDF, with the
+%   differences below):
+%   - Geometry comes from the visuals of each rigid body, which the tree
+%     reports already tessellated (getVisual), so every shape becomes a
+%     phx.shape.Mesh and no mesh files are searched for - the MeshPath
+%     option does not apply. A visual that the tree describes as a box,
+%     cylinder or sphere gets the matching bounding collision envelope
+%     instead of a convex hull, which keeps such bodies rolling smoothly;
+%     anything else (a mesh in particular) uses the "convex" envelope.
+%   - Joints are limited to the three types a rigidBodyTree knows: "fixed",
+%     "revolute" and "prismatic". Both joint frames come from the fixed
+%     transforms of each rigidBodyJoint - the predecessor frame from
+%     JointToParentTransform, the successor frame from ChildToJointTransform -
+%     so a tree built from Denavit-Hartenberg parameters assembles just as one
+%     imported from a description file, and the Angle of a revolute joint (the
+%     Distance of a prismatic one) reads the joint position of the tree. A
+%     configuration solved by inverseKinematics can therefore be commanded to
+%     the joint motors as it stands - remembering that Angle is wrapped to
+%     [-pi, pi] while a solver is free to return angles beyond it.
+%   - A rigid body with no mass and no geometry, attached by a fixed joint, is
+%     a frame rather than a part - the tool or sensor origin a description has
+%     to hang on a body of its own. It is merged into the nearest ancestor
+%     that is a part, so neither it nor its joint appears in the returned
+%     structs, and whatever the tree hangs off it is attached there instead.
+%     The frame itself is still available from the tree, through getTransform.
+%   - The tree is imported at the configuration given by the Configuration
+%     option, not only at the home configuration.
+%   - Masses come from the Mass and Inertia properties of each rigid body.
+%     A rigidBodyTree states the inertia about the origin of the body frame,
+%     so it is referred back to the centre of mass on the way in. The base of
+%     a tree carries no mass properties at all and borrows those of the
+%     lightest body of the tree, rather than the token ones a link without an
+%     inertial element gets: a gram at the root of a chain of kilograms is a
+%     mass ratio the solver answers with joints that visibly pull apart. It is
+%     only a stand-in - a robot standing on its own base wants a mass of its
+%     own, or a static base.
+%
 %   Limitations of the importer:
-%   - Joint limits of revolute and prismatic joints are ignored.
+%   - Joint limits of revolute and prismatic joints are ignored (including
+%     the PositionLimits of a rigidBodyTree).
 %   - Joints of type "planar" have no direct PHX equivalent yet and are
 %     approximated by a phx.GenericJoint that frees the two in-plane
 %     translations and the rotation about the plane normal; the warning
@@ -93,6 +145,9 @@ function [bodies, joints] = import(varargin)
 %     serves as the collision shape. Additional geometry elements are
 %     reported by the warning phx:import:extraGeometry.
 %   - Of the material definitions only the diffuse color is applied.
+%   - The geometry of a rigidBodyTree is read from its visuals; collision
+%     geometry attached to a rigid body separately (addCollision) is not
+%     used. Bodies of a rigidBodyTree carry no texture coordinates.
 %
 %   See also phx.Body, phx.RevoluteJoint, phx.PrismaticJoint, phx.FixedJoint, phx.Simulation
 
@@ -105,34 +160,48 @@ function [bodies, joints] = import(varargin)
     if isempty(args)
         error("phx:import:missingFile", "A model file name is required.");
     end
-    file = string(args{1});
-    [~, ~, ext] = fileparts(file);
-
-    % Base-pose options are shared, the rest belongs to one branch only. The
-    % branch functions validate them again (types, membership); checking the
-    % names here just turns MATLAB's generic MATLAB:TooManyInputs into a
-    % phx:import:unsupportedOption that says which format the option belongs to.
+    % Base-pose options are shared, the rest belongs to one branch only; the
+    % branch functions validate them again, this check only names the format
+    % an option belongs to instead of MATLAB's generic MATLAB:TooManyInputs.
     BASE = ["Position", "Orientation", "EulerAngles"];
     MESH = ["Scale", "Envelope", "FlipFaces", "Density"];
     URDF = "MeshPath";
+    TREE = "Configuration";
+
+    % A rigidBodyTree arrives as an object, so it is dispatched before the file
+    % name is read
+    if isa(args{1}, "rigidBodyTree")
+        checkOptions(args, [BASE TREE], "a rigidBodyTree", ...
+            {MESH, "OBJ, STL and PLY files"; URDF, "URDF files"});
+        [bodies, joints] = importTree(ax, args{:});
+        return
+    end
+
+    file = string(args{1});
+    [~, ~, ext] = fileparts(file);
 
     switch lower(ext)
         case {".urdf", ".xml"}
-            checkOptions(args, [BASE URDF], "URDF", MESH, "OBJ, STL and PLY files");
+            checkOptions(args, [BASE URDF], "URDF files", ...
+                {MESH, "OBJ, STL and PLY files"; TREE, "a rigidBodyTree"});
             [bodies, joints] = importURDF(ax, args{:});
         case ".obj"
-            checkOptions(args, [BASE MESH], "OBJ", URDF, "URDF files");
+            checkOptions(args, [BASE MESH], "OBJ files", ...
+                {URDF, "URDF files"; TREE, "a rigidBodyTree"});
             [bodies, joints] = importOBJ(ax, args{:});
         case {".stl", ".ply"}
-            checkOptions(args, [BASE MESH], upper(extractAfter(lower(ext), ".")), URDF, "URDF files");
+            checkOptions(args, [BASE MESH], upper(extractAfter(lower(ext), ".")) + " files", ...
+                {URDF, "URDF files"; TREE, "a rigidBodyTree"});
             [bodies, joints] = importMeshFile(ax, args{:});
         otherwise
             error("phx:import:unsupportedFormat", "Unsupported model file format '%s'; supported formats are URDF, OBJ, STL and PLY.", ext);
     end
 end
 
-function checkOptions(args, allowed, format, foreign, foreignFormats)
+function checkOptions(args, allowed, format, foreign)
 % Reject option names this branch does not take, naming the format they suit.
+% foreign is an N-by-2 cell array pairing the option names of the other
+% branches with the formats those options belong to.
     for i = 2:2:numel(args) - 1
         name = args{i};
         if ~(isstring(name) || ischar(name)) || isscalar(string(name)) == false
@@ -142,13 +211,15 @@ function checkOptions(args, allowed, format, foreign, foreignFormats)
         if any(strcmpi(name, allowed))
             continue
         end
-        if any(strcmpi(name, foreign))
-            error("phx:import:unsupportedOption", ...
-                "Option '%s' does not apply to %s files; it applies to %s. Valid options here are %s.", ...
-                name, format, foreignFormats, strjoin("'" + allowed + "'", ", "));
+        for k = 1:size(foreign, 1)
+            if any(strcmpi(name, foreign{k, 1}))
+                error("phx:import:unsupportedOption", ...
+                    "Option '%s' does not apply to %s; it applies to %s. Valid options here are %s.", ...
+                    name, format, foreign{k, 2}, strjoin("'" + allowed + "'", ", "));
+            end
         end
         error("phx:import:unsupportedOption", ...
-            "Unknown option '%s' for %s files. Valid options are %s.", ...
+            "Unknown option '%s' for %s. Valid options are %s.", ...
             name, format, strjoin("'" + allowed + "'", ", "));
     end
 end
@@ -174,10 +245,9 @@ function [bodies, joints] = importURDF(ax, file, Options)
     urdfDir = string(info.folder);
     fullFile = fullfile(info.folder, info.name);
 
-    % readstruct parses the XML natively (no JVM/Xerces start-up, unlike
-    % xmlread, which costs tens of seconds on its first call) into a MATLAB
-    % struct: element attributes become fields with an "Attribute" suffix and
-    % repeated child elements become struct arrays.
+    % readstruct parses the XML natively (xmlread would start the JVM) into a
+    % struct: attributes become fields with an "Attribute" suffix, repeated
+    % child elements become struct arrays.
     try
         root = readstruct(fullFile, "FileType", "xml", "AttributeSuffix", "Attribute");
     catch err
@@ -329,14 +399,10 @@ function [bodies, joints] = importURDF(ax, file, Options)
                 if ~any(def.axis)
                     error("phx:import:invalidAttribute", "Joint '%s' has a zero-length plane normal.", def.name);
                 end
-                % TEMPORARY substitution: PHX has no dedicated planar joint
-                % yet, so the motion (two translations in the plane plus a
-                % rotation about the plane normal) is approximated with a
-                % phx.GenericJoint - the plane normal (URDF axis) is put on
-                % the joint Z, which frees the two in-plane translations (X, Y)
-                % and the rotation about Z while locking the rest. Z also keeps
-                % the free rotation off the generic joint's degenerate Y axis.
-                % Replace with a direct phx.PlanarJoint once it exists.
+                % No dedicated planar joint yet: the plane normal goes on the
+                % joint Z, which frees the two in-plane translations and the
+                % rotation about Z (and keeps that rotation off the generic
+                % joint's degenerate Y axis)
                 warning("phx:import:substitutedJoint", "Joint '%s' of type 'planar' has no direct PHX equivalent yet and was approximated by a phx.GenericJoint.", def.name);
                 TP = axisAlignedFrame(TJ, def.axis/norm(def.axis));
                 j = phx.GenericJoint(parentBody, childBody, ...
@@ -346,13 +412,9 @@ function [bodies, joints] = importURDF(ax, file, Options)
                     "LowerAngularLimits", [0 0 1], "UpperAngularLimits", [0 0 -1], ...
                     "Name", def.name);
             case "floating"
-                % A floating joint imposes no constraint - all six degrees of
-                % freedom are free - so no PHX joint is created and the child
-                % link is left as a free dynamic body at its zero-configuration
-                % pose. This matches the URDF semantics of a free-floating link
-                % (e.g. a mobile robot's base) more faithfully than any
-                % constraint could. The link therefore has no entry in the
-                % returned joints struct.
+                % All six degrees of freedom are free, so the child link stays
+                % a free body at its zero-configuration pose and gets no entry
+                % in the returned joints struct
                 warning("phx:import:floatingJoint", "Joint '%s' of type 'floating' imposes no constraint; link '%s' is left free and no joint is created.", def.name, def.child);
                 continue
             otherwise
@@ -362,6 +424,274 @@ function [bodies, joints] = importURDF(ax, file, Options)
         joints.(jointFields(k)) = j;
     end
 
+end
+
+%% rigidBodyTree import --------------------------------------------------
+
+function [bodies, joints] = importTree(ax, tree, Options)
+% Import a rigidBodyTree as one phx.Body per rigid body of the tree. The class
+% of tree stays out of the arguments block on purpose: naming it there would
+% pull Robotics System Toolbox into every other import path.
+    arguments
+        ax
+        tree
+        Options.Position (1, 3) double = [0 0 0]
+        Options.Orientation (3, 3) double = eye(3)
+        Options.EulerAngles (1, 3) double = [0 0 0]
+        Options.Configuration = []
+    end
+
+    TBase = basePose(Options, "import");
+    config = treeConfiguration(tree, Options.Configuration);
+
+    % The base is a rigid body of its own and becomes a phx.Body as well, but
+    % the tree lists it apart from the bodies it carries
+    names = [string(tree.BaseName) string(tree.BodyNames)];
+    rigidBodies = [{tree.Base} reshape(tree.Bodies, 1, [])];
+    nLinks = numel(names);
+
+    bodies = struct;
+    joints = struct;
+
+    % Mass properties standing in for the base, which a tree never gives any.
+    % The base carries the whole robot, and the generic placeholder of
+    % massProperties is a gram - a ratio of thousands to one against the link
+    % above it, which the solver answers with joints that visibly pull apart
+    % (on the arms of loadrobot the anchors separate by 0.19 m with a gram
+    % base against 0.017 m with the lightest real body of the tree standing
+    % in). A link that is merely massless gets no such help: those are tool
+    % and sensor frames hung on the end of a chain, and mass invented there is
+    % payload the robot does not carry.
+    placeholder = lightestBody(rigidBodies(2:end));
+
+    % World pose of every body frame in the requested configuration;
+    % getTransform walks the tree itself, so the fixed joint transforms need no
+    % interpretation here
+    TLink = cell(1, nLinks);
+    TLink{1} = TBase;
+    parentID = zeros(1, nLinks);
+    for i = 2:nLinks
+        TLink{i} = TBase*getTransform(tree, config, names(i), tree.BaseName);
+        parentID(i) = find(names == string(rigidBodies{i}.Parent.Name), 1);
+    end
+
+    % A rigid body with no mass and no geometry, bolted on by a fixed joint, is
+    % a frame rather than a part: the tool or sensor origin a description has to
+    % hang on a link of its own. Making it a phx.Body would invent a mass and a
+    % joint where the model has neither, so it is merged into the nearest
+    % ancestor that is a part, and whatever hangs off it is attached there.
+    part = true(1, nLinks);
+    host = 1:nLinks; % the body each link's parts and joints belong to
+    for i = 2:nLinks
+        body = rigidBodies{i};
+        part(i) = body.Mass > 0 || ~isempty(getVisual(body)) || string(body.Joint.Type) ~= "fixed";
+        if ~part(i)
+            host(i) = host(parentID(i)); % the tree lists parents before children
+        end
+    end
+
+    % Create the bodies; the body frame sits at the origin of the used
+    % geometry so that the PHX shape (always centred at the body origin)
+    % appears at the correct place
+    if isa(ax, "missing")
+        ax = gca;
+    end
+    fields = matlab.lang.makeUniqueStrings(matlab.lang.makeValidName(names));
+    bodyList = cell(1, nLinks);
+    TBody = cell(1, nLinks);
+    for i = find(part)
+        [shape, G] = treeShape(rigidBodies{i}, names(i));
+
+        b = phx.Body(ax, "Name", names(i), "Shape", shape);
+        b.Transform = TLink{i}*G;
+        [b.Mass, b.Inertia] = massProperties(treeInertial(rigidBodies{i}, i == 1, placeholder), G);
+
+        TBody{i} = b.Transform;
+        bodyList{i} = b;
+        bodies.(fields(i)) = b;
+    end
+
+    moving = find(part(2:end)) + 1;
+    if isempty(moving)
+        return % a bare base carries no joint
+    end
+
+    % Create the joints; every rigid body but the base is attached to its
+    % parent by exactly one joint, so the tree needs no validation
+    jointNames = strings(1, numel(moving));
+    for k = 1:numel(moving)
+        jointNames(k) = string(rigidBodies{moving(k)}.Joint.Name);
+    end
+    jointFields = matlab.lang.makeUniqueStrings(matlab.lang.makeValidName(jointNames));
+
+    for k = 1:numel(moving)
+        i = moving(k);
+        joint = rigidBodies{i}.Joint;
+        anchorID = host(parentID(i)); % a merged parent passes its joints on
+
+        % The two fixed transforms of the joint carry both frames: the parent
+        % side holds the predecessor frame (JointToParentTransform), the child
+        % side the successor frame (ChildToJointTransform divided out of the
+        % child pose). They differ by exactly the joint motion, so the created
+        % joint reads the joint position of the tree in its Angle or Distance
+        % instead of counting from the imported pose. Both are rolled to put
+        % the joint axis on Z, which is the axis PHX joints move about.
+        % The predecessor frame is still the one of the true parent link, only
+        % expressed in the body that took that link over.
+        R = axisFrame(joint);
+        TA = cleanTransform(TBody{anchorID}\(TLink{parentID(i)}*joint.JointToParentTransform*R));
+        TB = cleanTransform(TBody{i}\(TLink{i}/joint.ChildToJointTransform*R));
+        parentBody = bodyList{anchorID};
+        childBody = bodyList{i};
+
+        switch string(joint.Type)
+            case "revolute"
+                j = phx.RevoluteJoint(parentBody, childBody, ...
+                    "TransformA", TA, "TransformB", TB, "Name", joint.Name);
+            case "prismatic"
+                j = phx.PrismaticJoint(parentBody, childBody, ...
+                    "TransformA", TA, "TransformB", TB, "Name", joint.Name);
+            case "fixed"
+                j = phx.FixedJoint(parentBody, childBody, ...
+                    "TransformA", TA, "TransformB", TB, "Name", joint.Name);
+            otherwise
+                error("phx:import:unsupportedJoint", "Joint '%s' has unhandled type '%s'.", joint.Name, joint.Type);
+        end
+
+        joints.(jointFields(k)) = j;
+    end
+
+end
+
+function config = treeConfiguration(tree, requested)
+% Resolve the Configuration option into the data format of the tree.
+    if isempty(requested)
+        config = homeConfiguration(tree);
+        return
+    end
+
+    config = requested;
+    if isnumeric(config) && string(tree.DataFormat) == "struct"
+        % A plain vector of joint positions reads better than a struct array,
+        % so it is accepted for the default "struct" data format as well
+        config = homeConfiguration(tree);
+        if numel(requested) ~= numel(config)
+            error("phx:import:invalidConfiguration", ...
+                "The Configuration vector has %d element(s) but the tree has %d joint position(s).", ...
+                numel(requested), numel(config));
+        end
+        for k = 1:numel(config)
+            config(k).JointPosition = requested(k);
+        end
+    end
+end
+
+function [shape, G] = treeShape(body, name)
+% Build a PHX shape from the first visual of a rigid body. getVisual hands over
+% every visual already tessellated, primitives included, together with its pose
+% in the body frame - so nothing is loaded from disk and every shape is a mesh.
+    visuals = getVisual(body);
+    if isempty(visuals)
+        G = eye(4);
+        shape = phx.shape.Sphere("Radius", 0.005);
+        return
+    end
+    if numel(visuals) > 1
+        warning("phx:import:extraGeometry", "Link '%s' has %d geometry elements; only the first one is imported.", name, numel(visuals));
+    end
+
+    visual = visuals(1);
+    G = cleanTransform(visual.Tform);
+    V = visual.Triangulation.Points;
+    F = visual.Triangulation.ConnectivityList;
+    if meshVolume(V, F) < 0
+        F = F(:, [1 3 2]); % turn the triangles outward
+    end
+
+    shape = phx.shape.Mesh("Vertices", V, "Faces", F, ...
+        "Scale", visual.Scale, "Centered", false, ...
+        "Envelope", treeEnvelope(body.Visuals));
+    shape.Color = visual.Color(1:3); % rgba, the alpha is not used
+end
+
+function v = meshVolume(V, F)
+% Signed volume of a closed triangle mesh, negative when the triangles wind
+% inward. A rigidBodyTree gives both windings - the meshes of a robot wind
+% inward, a tessellated sphere outward - and PHX shades a mesh by its winding,
+% so an inward one would be lit from inside.
+    V = V - mean(V, 1); % about the centroid, so an off-origin mesh stays honest
+    v = sum(dot(cross(V(F(:, 1), :), V(F(:, 2), :), 2), V(F(:, 3), :), 2))/6;
+end
+
+function envelope = treeEnvelope(descriptions)
+% Collision envelope matching the primitive a visual is described by, as in
+% "Box Size [0.2 0.3 0.4]" or "Sphere Radius 0.1" (the descriptions come in the
+% order of the visuals). The wording is the only place the primitive survives
+% getVisual, which tessellates it, so an unrecognized one is no error - it just
+% leaves the convex hull in place. A cylinder needs no Axis: both a
+% rigidBodyTree cylinder and the phx.shape.Mesh envelope run along Z.
+    envelope = "convex";
+    if isempty(descriptions)
+        return
+    end
+
+    kind = lower(extractBefore(string(descriptions{1}) + " ", " "));
+    if ismember(kind, ["box", "cylinder", "sphere"])
+        envelope = kind;
+    end
+end
+
+function R = axisFrame(joint)
+% Rotation turning a joint frame into one whose Z is the joint axis. A fixed
+% joint has no axis and needs none, its two frames only have to coincide.
+    R = eye(4);
+    if string(joint.Type) == "fixed"
+        return
+    end
+
+    axis = joint.JointAxis;
+    if ~all(isfinite(axis)) || ~any(axis)
+        error("phx:import:invalidAttribute", "Joint '%s' has a zero-length or undefined axis.", joint.Name);
+    end
+    R(1:3, 1:3) = phx.internal.Math.alignZ(eye(3), axis(:)/norm(axis));
+end
+
+function placeholder = lightestBody(bodies)
+% Mass and inertia tensor of the lightest rigid body that has any, to stand in
+% for the bodies that have none. An empty tensor falls back to the generic
+% placeholder of massProperties.
+    placeholder = struct("mass", [], "inertiaTensor", []);
+    for k = 1:numel(bodies)
+        m = bodies{k}.Mass;
+        if m > 0 && (isempty(placeholder.mass) || m < placeholder.mass)
+            I = bodies{k}.Inertia;
+            placeholder.mass = m;
+            placeholder.inertiaTensor = [I(1) I(6) I(5); I(6) I(2) I(4); I(5) I(4) I(3)];
+        end
+    end
+end
+
+function link = treeInertial(body, isBase, placeholder)
+% Mass properties of a rigid body in the form massProperties expects. Inertia
+% is [Ixx Iyy Izz Iyz Ixz Ixy] in the axes of the body frame, so unlike a URDF
+% inertial element it brings no frame of its own - but it is taken about the
+% ORIGIN of that frame, while PHX, like the engine underneath, wants a tensor
+% about the centre of mass. The parallel-axis term the tree carries is
+% therefore taken back out; leaving it in makes a link up to five times harder
+% to turn than it is (measured on the arms of loadrobot).
+    link.inertialT = eye(4);
+    if isBase
+        % The base exposes no mass properties at all and borrows them
+        link.mass = placeholder.mass;
+        link.inertiaTensor = placeholder.inertiaTensor;
+        return
+    end
+
+    link.mass = body.Mass;
+    I = body.Inertia;
+    T = [I(1) I(6) I(5); I(6) I(2) I(4); I(5) I(4) I(3)];
+    d = body.CenterOfMass(:);
+    link.inertiaTensor = T - body.Mass*(dot(d, d)*eye(3) - d*d');
 end
 
 %% OBJ / mesh import -----------------------------------------------------
@@ -795,12 +1125,9 @@ function T = cleanTransform(T)
 end
 
 function T = axisAlignedFrame(TJ, axis)
-% World joint frame whose local axis Z points along the given axis (URDF axis,
-% expressed in the joint frame); the other two axes complete a right-handed
-% orthonormal basis and the origin sits at the joint point. Deriving both
-% body-side frames from this single world frame keeps them consistent, so the
-% joint neither deforms nor snaps at the first step. Used to align a prismatic
-% sliding axis or a planar plane normal, both of which are the local axis Z.
+% World joint frame with its local Z along the given axis (a URDF axis expressed
+% in the joint frame) and its origin at the joint point. Both body-side frames
+% are derived from this one frame, so they stay consistent.
     T = eye(4);
     T(1:3, 1:3) = phx.internal.Math.alignZ(eye(3), TJ(1:3, 1:3)*axis(:));
     T(1:3, 4) = TJ(1:3, 4);

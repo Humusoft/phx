@@ -118,8 +118,13 @@ classdef Measure < phx.base.Object
     end
 
     methods (Access = protected)
-        function valid = initObject(obj, world)
+        function valid = checkObject(obj)
+            % A measurement is taken between two bodies, so it needs both.
             valid = numel(obj.Parents) == 2 && all(cellfun(@isvalid, obj.Parents));
+        end
+
+        function valid = initObject(obj, world)
+            valid = obj.checkObject;
         end
 
         function destroyObject(obj) %#ok<MANU> function prototype

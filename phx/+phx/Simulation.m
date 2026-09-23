@@ -28,6 +28,9 @@ classdef Simulation < phx.base.Object
         EPComplete % compute and redraw
 
         SortedBodiesID
+
+        % Nesting depth of holdPipelines
+        PipelineHold = 0
     end
 
     properties (SetAccess = private)
@@ -209,8 +212,67 @@ classdef Simulation < phx.base.Object
         end
     end
 
+    methods (Access = private)
+        function addPipelineEntries(obj, simObjects, classes, mask, hook, alsoCompute)
+        %addPipelineEntries Appends one pipeline entry per class in the mask.
+        %
+        %   The objects picked by mask are grouped by class, in first-seen
+        %   order, and each group becomes a struct(Function, Objects) whose
+        %   Function is that class's static hook. With alsoCompute the entry
+        %   goes into both pipelines, otherwise only into the redraw one.
+
+            picked = classes(mask);
+            if isempty(picked)
+                return
+            end
+            children = simObjects(mask);
+            uClasses = unique(picked, "stable");
+            for i = 1:numel(uClasses)
+                entry = struct("Function", str2func(uClasses(i)+"."+hook), ...
+                    "Objects", {children(picked == uClasses(i))});
+                if alsoCompute
+                    obj.EPCompute(end + 1) = entry;
+                end
+                obj.EPComplete(end + 1) = entry;
+            end
+        end
+    end
+
     methods (Access = ?phx.base.Object)
+        function holdPipelines(obj)
+        %holdPipelines Defers pipeline rebuilds until the matching release.
+        %
+        %   Deleting an object can cascade into deleting others, and each of
+        %   those would otherwise rebuild the pipelines on its own. Holding
+        %   collapses the whole cascade into the single rebuild that the
+        %   matching releasePipelines performs. Calls nest.
+        %
+        % See also phx.Simulation.releasePipelines
+
+            obj.PipelineHold = obj.PipelineHold + 1;
+        end
+
+        function releasePipelines(obj)
+        %releasePipelines Ends a hold and rebuilds the pipelines.
+        %
+        %   The outermost release does the rebuild; nested ones only count
+        %   down. A hold is only ever taken around a change to the object
+        %   graph, so there is always something to rebuild for.
+        %
+        % See also phx.Simulation.holdPipelines
+
+            obj.PipelineHold = max(obj.PipelineHold - 1, 0);
+            if obj.PipelineHold == 0
+                obj.updatePipelines;
+            end
+        end
+
         function updatePipelines(obj)
+            % Held: the release rebuilds once for the whole cascade
+            if obj.PipelineHold > 0
+                return
+            end
+
             % Prepare empty execution pipelines structs
             epStruct = @(f, o) struct("Function", f, "Objects", o);
             obj.EPCompute = epStruct([], []);
@@ -243,46 +305,36 @@ classdef Simulation < phx.base.Object
             end
             obj.SortedBodiesID = sortrows(obj.SortedBodiesID, 2);
 
-            % Prepare filtering constants
-            if obj.ExcludeInvisible
-                visible = true;
-            else
-                visible = "*";
+            % Read everything the grouping below needs in a single pass. The
+            % properties are named literally, so these are plain static reads;
+            % filtering the cell array four times over asked for each of them
+            % by name and paid for a dynamic lookup every time.
+            n = numel(simObjects);
+            simOrder = strings(1, n);
+            redrawOrder = strings(1, n);
+            shown = true(1, n);
+            classes = strings(1, n);
+            for i = 1:n
+                child = simObjects{i};
+                simOrder(i) = child.SimulationOrder;
+                redrawOrder(i) = child.RedrawOrder;
+                classes(i) = class(child);
+                if obj.ExcludeInvisible
+                    shown(i) = child.Visible;
+                end
             end
 
             % Resolve state for objects preceding movement
-            children = phx.Simulation.cellfilter(simObjects, "SimulationOrder", "before");
-            iClasses = string(cellfun(@class, children, 'UniformOutput', false));
-            uClasses = unique(iClasses, "stable");
-            for i = 1:numel(uClasses)
-                obj.EPCompute(end + 1) = epStruct(str2func(uClasses(i)+".resolveState"), {children(iClasses == uClasses(i))});
-                obj.EPComplete(end + 1) = obj.EPCompute(end);
-            end
+            obj.addPipelineEntries(simObjects, classes, simOrder == "before", "resolveState", true);
 
             % Update view for objects preceding movement
-            children = phx.Simulation.cellfilter(simObjects, "RedrawOrder", "before", "Visible", visible);
-            iClasses = string(cellfun(@class, children, 'UniformOutput', false));
-            uClasses = unique(iClasses, "stable");
-            for i = 1:numel(uClasses)
-                obj.EPComplete(end + 1) = epStruct(str2func(uClasses(i)+".updateView"), {children(iClasses == uClasses(i))});
-            end
+            obj.addPipelineEntries(simObjects, classes, redrawOrder == "before" & shown, "updateView", false);
 
             % Resolve state for objects following movement
-            children = phx.Simulation.cellfilter(simObjects, "SimulationOrder", "after");
-            iClasses = string(cellfun(@class, children, 'UniformOutput', false));
-            uClasses = unique(iClasses, "stable");
-            for i = 1:numel(uClasses)
-                obj.EPCompute(end + 1) = epStruct(str2func(uClasses(i)+".resolveState"), {children(iClasses == uClasses(i))});
-                obj.EPComplete(end + 1) = obj.EPCompute(end);
-            end
+            obj.addPipelineEntries(simObjects, classes, simOrder == "after", "resolveState", true);
 
             % Update view for objects following movement
-            children = phx.Simulation.cellfilter(simObjects, "RedrawOrder", "after", "Visible", visible);
-            iClasses = string(cellfun(@class, children, 'UniformOutput', false));
-            uClasses = unique(iClasses, "stable");
-            for i = 1:numel(uClasses)
-                obj.EPComplete(end + 1) = epStruct(str2func(uClasses(i)+".updateView"), {children(iClasses == uClasses(i))});
-            end
+            obj.addPipelineEntries(simObjects, classes, redrawOrder == "after" & shown, "updateView", false);
 
             % Remove first array element (because it is empty)
             obj.EPComplete(1) = [];
@@ -336,28 +388,6 @@ classdef Simulation < phx.base.Object
         end
 
         function updateView(cellObjs, dt, time, world)
-        end
-
-        function out = cellfilter(in, varargin)
-            for j = 1:2:numel(varargin)
-                paramName = varargin{j};
-                paramValue = varargin{j + 1};
-                if isequal(paramValue, "*")
-                    continue
-                end
-                if startsWith(paramName, "~")
-                    paramName = paramName{1}(2:end);
-                    filterFunc = @(c) ~isempty(c) && c.(paramName) == paramValue;
-                else
-                    filterFunc = @(c) ~isempty(c) && c.(paramName) ~= paramValue;
-                end
-                for i = 1:numel(in)
-                    if filterFunc(in{i})
-                        in{i} = [];
-                    end
-                end
-            end
-            out = in(~cellfun(@isempty, in));
         end
     end
 

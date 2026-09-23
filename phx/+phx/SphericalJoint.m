@@ -58,11 +58,12 @@ classdef SphericalJoint < phx.base.Joint
 
     methods (Access = protected)
         function valid = initObject(obj, world)
-            valid = numel(obj.Parents) == 2 && all(cellfun(@isvalid, obj.Parents));
-            if valid
-                % The constraint is rebuilt from scratch here, so the
-                % previous one has to be taken out of the world first.
-                obj.destroyObject;
+            valid = obj.checkObject;
+            if valid && isempty(obj.ObjectHandle)
+                % The engine takes most of the constraint parameters only as
+                % it creates the constraint, so the constraint is built once
+                % and then kept across pipeline rebuilds. Parameters that can
+                % be changed later write through from their own setters.
                 obj.WorldHandle = world;
                 obj.ObjectHandle = phx.engine.io('add', world, 'pointtopointconstraint', obj.Parents{1}.ObjectHandle, obj.Parents{2}.ObjectHandle, obj.PointA, obj.PointB, ~obj.MutualCollisions);
             end

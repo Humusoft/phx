@@ -28,7 +28,11 @@ classdef Extrusion < phx.base.Shape & phx.base.ShapeMesh
 
         % Extrusion profile
         % Matrix Mx2 where each row represent one point of the 2D profile
-        % curve. For closed profile the first and last point should be the same.
+        % curve. The curve is closed automatically when the first and the last
+        % point differ, and reversed when it runs clockwise, so neither the
+        % closing point nor the direction is the caller's concern. It must not
+        % intersect itself, and an open outline is not supported - use
+        % phx.shape.Mesh for a shell with no volume.
         Profile (:, 2) double
 
         % Profile scale
@@ -59,6 +63,35 @@ classdef Extrusion < phx.base.Shape & phx.base.ShapeMesh
             end
         end
 
+        function obj = set.Profile(obj, value)
+            % An open outline has no inside, so it has neither a volume to take
+            % the mass from nor a side to face; close it and keep the shape a
+            % solid. Use phx.shape.Mesh for an open shell. An outline written
+            % as cos/sin over linspace(0, 2*pi, n) misses closure by rounding
+            % alone - sin(2*pi) is 2e-16, not 0 - so snap a gap that small
+            % shut instead of appending a point next to the last one, which
+            % would only leave a sliver behind.
+            if size(value, 1) > 1
+                gap = norm(value(1, :) - value(end, :));
+                if gap > 1e-9*max(max(value, [], 1) - min(value, [], 1))
+                    value(end + 1, :) = value(1, :);
+                elseif gap > 0
+                    value(end, :) = value(1, :);
+                end
+            end
+
+            % Both the vertex normals and the triangle winding follow the
+            % direction the outline runs in, so a clockwise one turns the shape
+            % inside out: faces lit from within, and a collision mesh that lets
+            % another mesh through. Run it counter-clockwise whichever way the
+            % caller drew it.
+            if size(value, 1) > 2 && sum(value(1:end - 1, 1).*value(2:end, 2) ...
+                    - value(2:end, 1).*value(1:end - 1, 2)) < 0
+                value = flipud(value);
+            end
+            obj.Profile = value;
+        end
+
         function drawTo(obj, target)
             obj.drawSkelet(target, obj.Color);
             [V, N, F, T] = phx.internal.Geometry.extrusion(obj.Spine, obj.Scale, obj.Profile, true, true);
@@ -86,7 +119,6 @@ classdef Extrusion < phx.base.Shape & phx.base.ShapeMesh
                     ph = phx.internal.PrimitiveHelper(primitive);
                     vertices = ph.Vertices';
                     faces = int32(ph.LinearizedFaces - 1);
-                    % faces = int32(fliplr(ph.LinearizedFaces) - 1);
                     sh_id = phx.engine.io('prepare', body.WorldHandle, uint64(0), 'concaveshape', vertices(:), numel(vertices)/3, faces, numel(faces)/3);
                     phx.engine.io('prepare', body.WorldHandle, sh_id, 'dynamictrimesh');
                     phx.engine.io('prepare', body.WorldHandle, sh_id, 'validation');

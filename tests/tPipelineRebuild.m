@@ -12,6 +12,10 @@ classdef tPipelineRebuild < PhxTestCase
 %   through a body deleted mid-run leaving a steppable simulation behind
 %   (the crash fixed by the 1.0.6 engine).
 %
+%   Deleting a body also deletes whatever cannot work without it - a joint
+%   or a spring that would be left with a single body. That is what keeps an
+%   engine constraint from outliving one of the bodies it references.
+%
 %   Bodies are headless ([] axes) except in the redraw tests, which need an
 %   hgtransform to read the drawn pose from and therefore also carry the
 %   "Graphics" tag.
@@ -68,14 +72,14 @@ classdef tPipelineRebuild < PhxTestCase
         end
 
         function jointedBodyDeletionLeavesSimulationSteppable(tc)
-            % Deleting the middle body of a jointed chain leaves two joints
-            % pointing at a dead parent. The rebuild has to survive that.
+            % Deleting the middle body of a jointed chain takes both joints
+            % with it, and the rest of the chain carries on.
             tc.requireEngine;
             base = tc.spawnBody([0 0 0], "Type", "static");
             middle = tc.spawnBody([0 0 2]);
             tip = tc.spawnBody([0 0 4]);
-            phx.RevoluteJoint(base, middle, "PointA", [0 0 1], "PointB", [0 0 -1]);
-            phx.RevoluteJoint(middle, tip, "PointA", [0 0 1], "PointB", [0 0 -1]);
+            lower = phx.RevoluteJoint(base, middle, "PointA", [0 0 1], "PointB", [0 0 -1]);
+            upper = phx.RevoluteJoint(middle, tip, "PointA", [0 0 1], "PointB", [0 0 -1]);
             sim = phx.Simulation([base middle tip]);
             tc.addTeardown(@() tPipelineRebuild.deleteIfValid(sim));
 
@@ -87,6 +91,35 @@ classdef tPipelineRebuild < PhxTestCase
             tc.verifyTrue(all(isfinite(tip.Position)));
             delete(sim);
             tc.verifyFalse(isvalid(sim));
+            tc.verifyFalse(isvalid(lower));
+            tc.verifyFalse(isvalid(upper));
+        end
+
+        function deletingABodyDeletesWhatCannotWorkWithoutIt(tc)
+            % A joint needs two bodies and a spring needs two bodies, so
+            % losing one takes them with it: a half-connected joint is
+            % something that could not have been constructed in the first
+            % place, and its engine constraint must not outlive the body it
+            % references. Objects that can do without the body stay.
+            tc.requireEngine;
+            anchor = tc.spawnBody([0 0 0], "Type", "static");
+            middle = tc.spawnBody([0 0 2]);
+            far = tc.spawnBody([0 0 4]);
+            joint = phx.RevoluteJoint(anchor, middle, "PointA", [0 0 1], "PointB", [0 0 -1]);
+            spring = phx.Spring(middle, far, "Stiffness", 100);
+            elsewhere = phx.Spring(anchor, far, "Stiffness", 100);
+            sim = phx.Simulation([anchor middle far]);
+            tc.addTeardown(@() tPipelineRebuild.deleteIfValid(sim));
+
+            sim.step(0.2, 40, -1);
+            delete(middle);
+
+            tc.verifyFalse(isvalid(joint), "The joint outlived the body it constrained.");
+            tc.verifyFalse(isvalid(spring), "The spring outlived the body it pulled.");
+            tc.verifyTrue(isvalid(elsewhere), "An unrelated spring was deleted too.");
+
+            sim.step(0.2, 40, -1);
+            tc.verifyTrue(all(isfinite(far.Position)));
         end
 
         function bodyIdentitySurvivesDeleteAndAdd(tc)
@@ -143,6 +176,34 @@ classdef tPipelineRebuild < PhxTestCase
 
             tc.verifyEqual(sag(3), sag(0), "RelTol", 1e-6, ...
                 "Rebuilding the pipelines changed the stiffness of a joint.");
+        end
+
+        function cascadingDeleteStillLeavesRebuiltPipelines(tc)
+            % A cascading delete holds the pipelines so the whole cascade
+            % costs one rebuild instead of one per deleted object. The hold
+            % has to be released and the rebuild actually performed: stale
+            % pipelines would keep the deleted body in the redraw set.
+            tc.requireEngine;
+            % All three are dynamic: a static body is left out of the redraw
+            % pipeline, which would make the counts below harder to read.
+            anchor = tc.spawnBody([0 0 0]);
+            middle = tc.spawnBody([0 0 2]);
+            far = tc.spawnBody([0 0 4]);
+            phx.RevoluteJoint(anchor, middle, "PointA", [0 0 1], "PointB", [0 0 -1]);
+            phx.Spring(middle, far, "Stiffness", 100);
+            sim = phx.Simulation([anchor middle far]);
+            tc.addTeardown(@() tPipelineRebuild.deleteIfValid(sim));
+            tc.assumeEqual(tPipelineRebuild.redrawCount(sim), 3);
+
+            delete(middle);                 % takes the joint and the spring
+
+            tc.verifyEqual(tPipelineRebuild.redrawCount(sim), 2, ...
+                "The pipelines were not rebuilt after the cascade.");
+
+            % And a further edit still rebuilds, i.e. the hold was released.
+            sim.addObjects(tc.spawnBody([6 0 4]));
+            tc.verifyEqual(tPipelineRebuild.redrawCount(sim), 3, ...
+                "The pipeline hold outlived the delete that took it.");
         end
 
         function deletingTheLastBodyEmptiesThePipelines(tc)

@@ -39,7 +39,7 @@ Supply a <code class="phx-inline">Spine</code> and a <code class="phx-inline">Pr
 <table class="phx-tbl">
 <tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
 <tr><td class="name">Spine</td><td class="type">N&times;3 double</td><td>Spine curve; each row is a 3-D point along the sweep.</td></tr>
-<tr><td class="name">Profile</td><td class="type">M&times;2 double</td><td>Cross-section profile; each row is a 2-D point. For a closed profile, repeat the first point at the end.</td></tr>
+<tr><td class="name">Profile</td><td class="type">M&times;2 double</td><td>Cross-section profile; each row is a 2-D point. The outline is closed automatically when the first and the last point differ, and reversed when it runs clockwise, so neither the closing point nor the direction is yours to get right. It must not intersect itself; for an open shell with no volume use <a href="phx.shape.Mesh.html">phx.shape.Mesh</a>.</td></tr>
 <tr><td class="name">Scale</td><td class="type">1&times;2 | N&times;2 double</td><td>Profile scale: a single 2-element vector, or one row per spine point.</td></tr>
 <tr><td class="name">Axis</td><td class="dflt">"z"</td><td>Modeling axis: <code class="phx-inline">"x"</code>, <code class="phx-inline">"y"</code> or <code class="phx-inline">"z"</code>.</td></tr>
 <tr><td class="name">Envelope</td><td class="dflt">"convex"</td><td>Collision envelope: <code class="phx-inline">"convex"</code> or <code class="phx-inline">"concave"</code>.</td></tr>

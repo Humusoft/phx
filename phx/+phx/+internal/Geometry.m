@@ -295,47 +295,46 @@ classdef Geometry
                 end
             end
 
-            % Prepare for caps
-            if BeginCap
-                bcShift = Spine(2, :) - Spine(1, :);
-                Scale = [0 0 0; Scale(1, :); Scale];
-                Spine = [Spine(1, :) - 2*bcShift; Spine(1, :) - bcShift; Spine];
-            end
-            if EndCap
-                ecShift = Spine(end, :) - Spine(end - 1, :);
-                Scale = [Scale; Scale(end, :); 0 0 0];
-                Spine = [Spine; Spine(end, :) + ecShift; Spine(end, :) + 2*ecShift];
-            end
-
             % Prepare segment profile
             v0 = [Profile(:, 1)*0 Profile(:, 1:2)];
 
-            % Compute segment normals
-            n0 = v0 - circshift(v0, [2 0]);
-            n0 = [n0(:, 1) n0(:, 3) -n0(:, 2)];
-            for i = 1:size(n0, 1)
-                n0(i, :) = n0(i, :)/norm(n0(i, :));
+            % Compute segment normals. The normal at a profile point is the
+            % chord between its two neighbours - a central difference, centred
+            % on the point itself - rotated by -90 deg in the profile plane.
+            % The earlier v0(k) - v0(k-2) spanned the same chord but was centred
+            % on k-1, which rotated the shading of every extrusion by one
+            % profile segment (45 deg on an 8-segment profile, 2.5 deg on a
+            % 144-segment one). A closed profile repeats its first point, so at
+            % the seam the neighbours are taken across it, not onto the
+            % duplicate, and the two coincident points get the same normal.
+            nP = size(v0, 1);
+            prev = [1, 1:nP - 1];
+            next = [2:nP, nP];
+            if nP > 2 && norm(v0(1, :) - v0(nP, :)) <= 1e-9*max(1, norm(v0(1, :)))
+                prev(1) = nP - 1;
+                next(nP) = 2;
             end
+            n0 = v0(next, :) - v0(prev, :);
+            n0 = [n0(:, 1) n0(:, 3) -n0(:, 2)];
+            n0 = n0./vecnorm(n0, 2, 2);
 
             % Compute segment texture coordinates
             Segments = size(Profile, 1) - 1;
             t0 = [linspace(0, 1, Segments + 1)', v0(:, 1)];
 
-            % Face indexes for first part
+            % Face indexes for first part. The winding runs so that a triangle
+            % normal, (spine step) x (profile tangent), comes out parallel to
+            % the vertex normals above rather than against them. The two used to
+            % disagree, which left every caller a choice between shading that
+            % faces out and a collision mesh that faces out - never both.
             f = (1:Segments)';
-            f0 = [f, f + Segments + 2, f + 1; f, f + Segments + 1, f + Segments + 2];
+            f0 = [f, f + 1, f + Segments + 2; f, f + Segments + 2, f + Segments + 1];
 
-            % Texture Y-coord through spine
+            % Texture Y-coord through spine. The caps no longer ride on the
+            % spine, so this runs over the real spine points alone; each cap
+            % inherits the coordinates of the ring it sits on.
             nS = size(Spine, 1);
-            if ~BeginCap && ~EndCap
-                tY = linspace(0, 1, nS);
-            elseif ~BeginCap && EndCap
-                tY = [linspace(0, 1, nS - 2) 1 1];
-            elseif BeginCap && ~EndCap
-                tY = [0 0 linspace(0, 1, nS - 2)];
-            elseif BeginCap && EndCap
-                tY = [0 0 linspace(0, 1, nS - 4) 1 1];
-            end
+            tY = linspace(0, 1, nS);
 
             % Main part: one cross-section per spine point. Row 1 of R is the
             % local tangent, so the profile plane is truly perpendicular to the
@@ -390,17 +389,55 @@ classdef Geometry
                 end
             end
 
-            % Modify caps segments
+            % Close the ends with a real triangulation of the profile outline.
+            % Each cap gets its own copy of the ring it sits on, so it carries
+            % the flat cap normal while inheriting that ring's texture
+            % coordinates - the texture runs across the rim exactly as before.
+            % The outline used to be collapsed onto a point instead, which put
+            % zero-area triangles into roughly 60 % of the faces and fanned the
+            % cap from the profile origin, so any outline not star-shaped about
+            % that origin got cap triangles hanging outside the solid.
+            if BeginCap || EndCap
+                cf = phx.internal.Geometry.capFaces(Profile);
+            end
             if BeginCap
-                V(1:lp*2, :) = V(1:lp*2, :) + bcShift;
-                V(1:lp, :) = V(1:lp, :) + bcShift;
-                N(1:lp*2, :) = zeros(lp*2, 3) - bcShift/norm(bcShift);
+                V = [V(1:lp, :); V];
+                N = [repmat(-Tg(1, :), lp, 1); N];
+                T = [T(1:lp, :); T];
+                F = [cf(:, [1 3 2]); F + lp];      % faces away from the spine
             end
             if EndCap
-                V(end - lp*2 + 1:end, :) = V(end - lp*2 + 1:end, :) - ecShift;
-                V(end - lp + 1:end, :) = V(end - lp + 1:end, :) - ecShift;
-                N(end - lp*2 + 1:end, :) = zeros(lp*2, 3) + ecShift/norm(ecShift);
+                nV = size(V, 1);
+                V = [V; V(nV - lp + 1:nV, :)];
+                N = [N; repmat(Tg(nS, :), lp, 1)];
+                T = [T; T(nV - lp + 1:nV, :)];
+                F = [F; cf + nV];
             end
+        end
+
+        function F = capFaces(Profile)
+            %capFaces Triangulate a closed profile outline into cap faces
+            %
+            %   Indexes refer to the rows of Profile and the winding is
+            %   counter-clockwise in profile coordinates, which puts the face
+            %   normal along the local sweep tangent.
+
+            F = zeros(0, 3);
+            P = Profile;
+            if size(P, 1) > 1 && norm(P(1, :) - P(end, :)) <= ...
+                    1e-9*max(max(P, [], 1) - min(P, [], 1))
+                P(end, :) = [];                    % drop the repeated closing point
+            end
+            if size(P, 1) < 3
+                return
+            end
+
+            % KeepCollinearPoints keeps the outline's own vertices, so the cap
+            % shares them with the ring it closes instead of introducing points
+            % that carry no texture coordinate of their own.
+            tr = triangulation(polyshape(P, "Simplify", false, "KeepCollinearPoints", true));
+            [~, loc] = ismembertol(tr.Points, P, 1e-12, "ByRows", true, "DataScale", 1);
+            F = loc(tr.ConnectivityList);
         end
 
         function [V, N, F, T] = sphere(ASize, Segments)

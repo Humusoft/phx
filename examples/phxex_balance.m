@@ -35,13 +35,9 @@ function phxex_balance(Kp, Kd)
     plateSize = [4 4 0.2];
     ballR = 0.3;
 
-    % Catch floor far below in case the ball falls off
-    phx.Body(ax, "Type", "static", "Position", [0 0 -6], "Shape", {"Box", "Size", [40 40 1], "Color", 1});
-
     % Kinematic plate - we drive its tilt; the ball only feels it via contact
     plate = phx.Body(ax, "Type", "kinematic", "Position", [0 0 0], ...
-        "Shape", {"Box", "Size", plateSize, "Color", [0.6 0.7 0.8], ...
-        "Texture", "checker", "TextureBlend", 0.3});
+        "Shape", {"Box", "Size", plateSize, "Color", 1, "Texture", "checker", "TextureBlend", 0.3});
 
     % Ball dropped from a position above the plate
     p0 = [1.5 1.5];

@@ -307,6 +307,11 @@ classdef Raycast < phx.base.Object
     end
 
     methods (Access = protected)
+        function valid = checkObject(obj)
+            % The rays are anchored to a body, so at least one is needed.
+            valid = ~isempty(obj.Parents) && all(cellfun(@isvalid, obj.Parents));
+        end
+
         function valid = initObject(obj, world)
             obj.WorldHandle = world;
             obj.Dirty = true;   % O(1) per rebuild; get.Bodies does the work
@@ -319,7 +324,7 @@ classdef Raycast < phx.base.Object
             obj.Dst = nan(1, n);
             obj.IDs = zeros(1, n, "uint64");
 
-            valid = ~isempty(obj.Parents) && all(cellfun(@isvalid, obj.Parents));
+            valid = obj.checkObject;
         end
 
         function destroyObject(obj)

@@ -35,7 +35,7 @@ function out = phxex_drum(Options)
         Options.DrumRadius (1, 1) double {mustBePositive} = 3.4
         Options.Froude (1, 1) double {mustBePositive} = 0.10
         Options.Revolutions (1, 1) double = 6
-        Options.Seed (1, 1) double = 0
+        Options.Seed (1, 1) double = 1
     end
 
     d = Options.Diameters;
@@ -63,7 +63,7 @@ function out = phxex_drum(Options)
 
     drum = makeDrum(ax, R, L);
     [balls, class] = fillDrum(ax, R, L, d, counts);
-    reach = R - d(class)'/2;
+    reach = R - reshape(d(class), [], 1)/2;
 
     % Settle the mixed charge into a bed, then turn at a constant speed. The
     % drum angle is driven by a script, so it is the time integral of the
@@ -141,28 +141,56 @@ function parts = makeDrum(ax, R, L)
 end
 
 function [balls, class] = fillDrum(ax, R, L, d, counts)
-% Place the charge by rejection sampling over the whole cavity, so it starts
-% well mixed - the precondition for claiming that the sorting came from the
-% rotation and not from the way the drum was filled.
+% Place the charge over the whole cavity, so it starts well mixed - the
+% precondition for claiming that the sorting came from the rotation and not
+% from the way the drum was filled. The charge fills about 40% of the cavity,
+% which is past the point where dropping balls in one at a time and retrying
+% on a clash can still find room, so the whole cloud is drawn at once and
+% overlapping pairs are then pushed apart until none is left.
     class = repelem(1:numel(d), counts);
-    class = class(randperm(numel(class)))';
-    dBall = d(class)';
+    class = reshape(class(randperm(numel(class))), [], 1);
+    dBall = reshape(d(class), [], 1);
+    n = numel(dBall);
 
-    P = zeros(numel(dBall), 3);
-    for i = 1:numel(dBall)
-        for attempt = 1:4000
-            radius = (R - dBall(i)/2 - 0.02)*sqrt(rand);
-            phi = rand*2*pi;
-            P(i, :) = [radius*cos(phi), (rand - 0.5)*(L - dBall(i) - 0.02), radius*sin(phi)];
-            if i == 1 || all(vecnorm(P(1:i-1, :) - P(i, :), 2, 2) - (dBall(1:i-1) + dBall(i))/2 > 0.01)
-                break
-            end
+    rMax = R - dBall/2 - 0.02;      % keep the centres clear of the barrel
+    span = L - dBall - 0.02;        % and of the two end walls
+    radius = rMax.*sqrt(rand(n, 1));
+    phi = rand(n, 1)*2*pi;
+    P = [radius.*cos(phi), (rand(n, 1) - 0.5).*span, radius.*sin(phi)];
+
+    touch = (dBall + dBall')/2;     % centre distance at which a pair touches
+    touch(1:n+1:end) = 0;           % a ball never clashes with itself
+    for iter = 1:400
+        dx = P(:, 1) - P(:, 1)';
+        dy = P(:, 2) - P(:, 2)';
+        dz = P(:, 3) - P(:, 3)';
+        D = sqrt(dx.*dx + dy.*dy + dz.*dz);
+        D(1:n+1:end) = inf;
+        clash = touch - D;
+        if max(clash(:)) <= 0
+            break
         end
+
+        % Drive every clashing pair apart along its centre line, aiming a
+        % little beyond contact so the cloud opens up in a few dozen passes
+        push = max(clash + 0.01, 0)./D;
+        P = P + [sum(push.*dx, 2), sum(push.*dy, 2), sum(push.*dz, 2)];
+
+        % Pushing can shove a ball through a wall, so fold it back in
+        rr = hypot(P(:, 1), P(:, 3));
+        outside = rr > rMax;
+        P(outside, [1 3]) = P(outside, [1 3]).*(rMax(outside)./rr(outside));
+        P(:, 2) = min(max(P(:, 2), -span/2), span/2);
+    end
+    if max(clash(:)) > 0
+        warning("phxex_drum:overlap", ...
+            "%d ball pairs still overlap; the charge is too dense to place.", ...
+            nnz(clash > 0)/2);
     end
 
     colors = classColors(numel(d));
     balls = phx.Body.empty;
-    for i = 1:numel(dBall)
+    for i = 1:n
         balls(i) = phx.Body(ax, "Position", P(i, :), "Friction", [0.3 0.01 0.005], ...
             "Color", colors(class(i), :), "Shape", {"Sphere", "Diameter", dBall(i)});
     end

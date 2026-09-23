@@ -106,7 +106,7 @@ function [parts, outlet] = buildFeeder(ax, b, f, Az, nParts, ground)
     th = linspace(0, 2*pi*b.Turns, round(72*b.Turns) + 1)';
     spine = [b.R*cos(th) b.R*sin(th) b.Pitch*th/(2*pi)];
     drop = b.Width/2*tan(b.Bank);                   % outer edge sits this much lower
-    profile = [0 -drop; b.Width drop; b.Width drop-b.Ledge; 0 -drop-b.Ledge; 0 -drop];
+    profile = [0 -drop; b.Width drop; b.Width drop-b.Ledge; 0 -drop-b.Ledge];
     widen = min(1, th/(2*pi*b.Ramp));
 
     track = phx.Body(ax, "Type", "kinematic", "Friction", 0.5, ...

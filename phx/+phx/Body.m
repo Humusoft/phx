@@ -30,7 +30,6 @@ classdef Body < phx.base.Object
     end
 
     properties (SetAccess = private)
-        ShadowGraphics
         States = struct
     end
 
@@ -117,6 +116,12 @@ classdef Body < phx.base.Object
         % Collision group
         % CollisionGroup = 0 % TODO implement collision groups
 
+        % Virtual velocity of the body surface (m/s) in the body frame, e.g. for
+        % conveyor belts; the body does not move, but contacts with it are solved
+        % as if its surface were sliding, so other bodies are dragged along within
+        % the limits of the contact friction
+        SurfaceVelocity (1, 3) double {mustBeFinite} = [0 0 0]
+
         % Custom callback for double-click action on any part of this body
         % (works only in the phx.extra.Viewer)
         OnDoubleClickFcn = []
@@ -153,16 +158,6 @@ classdef Body < phx.base.Object
                 end
                 if sum(inertia) ~= 0
                     obj.Inertia = inertia;
-                end
-            end
-        end
-
-        function shadowCopy(objs, axs)
-            for obj = objs
-                obj.ShadowGraphics = gobjects(size(axs));
-                for i = 1:numel(axs)
-                    obj.ShadowGraphics(i) = copy(obj.Graphics);
-                    obj.ShadowGraphics(i).Parent = axs(i);
                 end
             end
         end
@@ -394,6 +389,13 @@ classdef Body < phx.base.Object
             obj.Collisions = enable;
             if ~isempty(obj.ObjectHandle)
                 phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'collisions', enable);
+            end
+        end
+
+        function set.SurfaceVelocity(obj, value)
+            obj.SurfaceVelocity = value;
+            if ~isempty(obj.ObjectHandle)
+                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'surfacevelocity', value);
             end
         end
 
@@ -789,6 +791,7 @@ classdef Body < phx.base.Object
                 obj.Friction = obj.Friction;
                 obj.Restitution = obj.Restitution;
                 obj.Collisions = obj.Collisions;
+                obj.SurfaceVelocity = obj.SurfaceVelocity;
             else
                 valid = true;
             end
@@ -811,9 +814,6 @@ classdef Body < phx.base.Object
             for i = 1:numel(cellObjs)
                 obj = cellObjs{i};
                 obj.Graphics.Matrix_I = obj.Matrix;
-                for j = 1:numel(obj.ShadowGraphics)
-                    obj.ShadowGraphics(j).Matrix_I = obj.Matrix;
-                end
             end
         end
     end

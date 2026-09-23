@@ -34,7 +34,6 @@ function phxbench(group)
     if g2, phxex_joints(false); end
     if g3, phxex_maglev; end
     if g2, phxex_multisim; end
-    if g2, phxex_multiview; end
     if g2, phxex_noview; end
     if g3, phxex_optimize; end
     if g3, phxex_rocket; end

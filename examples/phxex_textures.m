@@ -28,10 +28,11 @@ function phxex_textures
     end
 
     % Create dynamic boxes with random colors and sizes
-    boxShape = phx.shape.Box("Texture", resdir+"companion_cube.jpg", "Density", 0.5);
+    boxShape = phx.shape.Box("TextureBlend", 0.75, "Density", 0.5);
+    boxShape = boxShape.colormapTexture(peaks(-1:0.01:1), gray(12));
     for i = 1:16
         boxShape.Size = rand*[10 10 10]; % Generate a random size
-        phx.Body(ax, "Position", [(rand(1, 2)-0.5)*50 20+i*2]*2, "EulerAngles", rand(1, 3), "Shape", boxShape);
+        phx.Body(ax, "Position", [(rand(1, 2)-0.5)*50 20+i*2]*2, "EulerAngles", rand(1, 3), "Shape", boxShape.nextColor);
     end
 
     % Import buggy

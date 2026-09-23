@@ -236,6 +236,11 @@ classdef PlanarShadow < phx.base.Object
 
             phx.PlanarShadow.updateView({obj});
 
+            valid = obj.checkObject;
+        end
+
+        function valid = checkObject(obj)
+            % The shadow is cast by the bodies it is attached to.
             valid = all(cellfun(@isvalid, obj.Parents));
         end
 

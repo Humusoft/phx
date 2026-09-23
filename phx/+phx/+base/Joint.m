@@ -175,8 +175,8 @@ classdef Joint < phx.base.Object
             if numel(p) == 2
                 Ma = p{1}.Matrix*obj.TransformA;
                 Mb = p{2}.Matrix*obj.TransformB;
-                R = Ma(1:3, 1:3)'*Mb(1:3, 1:3);
-                value = atan2(R(2, 1), R(1, 1));
+                xb = Mb(1:3)'; % X axis of frame B
+                value = atan2(Ma(5:7)*xb, Ma(1:3)*xb);
             else
                 value = NaN;
             end
@@ -231,6 +231,12 @@ classdef Joint < phx.base.Object
     end
 
     methods (Access = protected)
+        function valid = checkObject(obj)
+            % A joint constrains exactly two bodies, so it can only run while
+            % both of them are still there.
+            valid = numel(obj.Parents) == 2 && all(cellfun(@isvalid, obj.Parents));
+        end
+
         function destroyObject(obj)
             % Every joint is a single engine constraint, so they all tear it
             % down the same way. Concrete joints only build it in initObject.

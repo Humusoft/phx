@@ -87,6 +87,11 @@ classdef Camera < phx.base.Object
     end
 
     methods (Access = protected)
+        function valid = checkObject(obj)
+            % The camera looks from one body at another, so it needs both.
+            valid = numel(obj.Parents) == 2 && all(cellfun(@isvalid, obj.Parents));
+        end
+
         function valid = initObject(obj, world)
             if obj.RecordFile ~= ""
                 obj.Video = VideoWriter(obj.RecordFile, "MPEG-4");
@@ -95,7 +100,7 @@ classdef Camera < phx.base.Object
                 obj.NextTime = 0;
             end
 
-            valid = numel(obj.Parents) == 2 && all(cellfun(@isvalid, obj.Parents));
+            valid = obj.checkObject;
         end
 
         function destroyObject(obj) %#ok<MANU> function prototype

@@ -52,7 +52,7 @@ classdef Viewer < handle
         % Additional objects
         FreerunSim = []
         Triad = []
-        Lights = []
+        Lights = gobjects(0)
         SkySphere = []
         HUD = []
 
@@ -426,14 +426,14 @@ classdef Viewer < handle
 
             % Add dither to prevent banding (except of small images used as
             % a solid color sample)
-            imres = size(texture);
-            if imres(1) > 128
-                tr = rng;
-                noise = randi(7, [128 128 imres(3)], 'uint8') - 4;
-                noise = repmat(noise, ceil(imres./size(noise)));
-                texture = texture + noise(1:imres(1), 1:imres(2), :);
-                rng(tr);
-            end
+            % imres = size(texture);
+            % if imres(1) > 128
+            %     tr = rng;
+            %     noise = randi(4, [128 128 imres(3)], 'uint8') - 1;
+            %     noise = repmat(noise, ceil(imres./size(noise)));
+            %     texture = texture + noise(1:imres(1), 1:imres(2), :);
+            %     rng(tr);
+            % end
 
             % Apply texture
             texture(:, :, 4) = uint8(255);
@@ -446,7 +446,7 @@ classdef Viewer < handle
             obj.Lighting = value;
 
             delete(obj.Lights);
-            obj.Lights = [];
+            obj.Lights = gobjects(0);
 
             switch value
                 case "headlight"

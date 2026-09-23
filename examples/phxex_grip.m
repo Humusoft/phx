@@ -39,10 +39,6 @@ function phxex_grip(mu, squeeze)
     jawW = 0.04;           % thickness of each jaw
     jawGap0 = objW + 0.12; % initial open gap between inner jaw faces
 
-    % Static floor / drop catcher
-    phx.Body(ax, "Type", "static", "Position", [0 0 -0.5], ...
-        "Shape", {"Box", "Size", [4 4 0.1], "Color", 1});
-
     % Static table the object initially rests on
     phx.Body(ax, "Type", "static", "Position", [0 0 -0.05], ...
         "Shape", {"Box", "Size", [1 1 0.1], "Color", 0.9});
@@ -122,7 +118,7 @@ function phxex_grip(mu, squeeze)
     end
 
     % Plot jaw vs object height to visualise any slip
-    figure(2);
+    clf(figure(2));
     jp = logJaw.getChannel(1);     % jaw Position [x y z]
     op = logObj.getChannel(1);     % object Position [x y z]
     plot(logJaw.Time, jp(:, 3), "LineWidth", 1.5); hold on;

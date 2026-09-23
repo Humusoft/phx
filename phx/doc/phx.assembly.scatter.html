@@ -52,6 +52,7 @@ the bodies without graphics.</p>
 <tr><td class="name">Spacing</td><td class="dflt">0</td><td>Minimum distance between body centres (0 = no limit). When the requested count does not fit, the error <code class="phx-inline">phx:scatter:regionFull</code> is raised.</td></tr>
 <tr><td class="name">RandomOrientation</td><td class="dflt">false</td><td>Give every body a uniformly random orientation.</td></tr>
 <tr><td class="name">Color</td><td class="dflt">&mdash;</td><td>Body colors: one common 1&times;3 RGB color or an n&times;3 matrix with one color per body. Applied over the shape color.</td></tr>
+<tr><td class="name">RandomTint</td><td class="dflt">0</td><td>Random shade variation between the bodies (0..1). Every body is then darkened by its own random factor, <code class="phx-inline">bodyColor&nbsp;=&nbsp;color*(1&nbsp;&minus;&nbsp;rand*RandomTint)</code>, where <em>color</em> is the one given by <code class="phx-inline">Color</code> or, without it, the body's own color from the shape palette &mdash; so the shades differ while the hue stays. 0 leaves the colors untouched.</td></tr>
 <tr><td class="name">Friction</td><td class="dflt">[0.5 0 0]</td><td>Friction coefficients of all bodies.</td></tr>
 <tr><td class="name">Position</td><td class="dflt">[0 0 0]</td><td>World position of the region frame.</td></tr>
 <tr><td class="name">Orientation</td><td class="dflt">eye(3)</td><td>World rotation of the region as a 3&times;3 rotation matrix.</td></tr>

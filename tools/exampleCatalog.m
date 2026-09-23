@@ -53,6 +53,7 @@ function catalog = exampleCatalog
         entry("phxex_camvalve",    "Mechanisms and machines",        10)
         entry("phxex_screwconv",   "Mechanisms and machines",        12)
         entry("phxex_conveyors",   "Mechanisms and machines",        15)
+        entry("phxex_beltmaze",    "Mechanisms and machines",         8)
         entry("phxex_bowlfeeder",  "Mechanisms and machines",        40)  % wall-clock, ~5x slower than real time; lands with parts on the track
         entry("phxex_trainwheel",  "Mechanisms and machines",         8)
         entry("phxex_tackle",      "Mechanisms and machines",        10)
@@ -68,6 +69,7 @@ function catalog = exampleCatalog
         entry("phxex_gyrostab",    "Vehicles, robots and control",   20)
         entry("phxex_stairfall",   "Vehicles, robots and control",    8)
         entry("phxex_walker",      "Vehicles, robots and control",    1)  % the chase camera is still close in at the start
+        entry("phxex_kinova",      "Vehicles, robots and control",   13)  % wall-clock; the plan and the import take about 4.5 s before the arm moves
 
         entry("phxex_magnets",     "Fields, magnetism and fluids",   15)
         entry("phxex_magpendulum", "Fields, magnetism and fluids",   12)
@@ -75,6 +77,7 @@ function catalog = exampleCatalog
         entry("phxex_crystal",     "Fields, magnetism and fluids",   25)
         entry("phxex_rotmagdip",   "Fields, magnetism and fluids",   10)
         entry("phxex_maglev",      "Fields, magnetism and fluids",   10)
+        entry("phxex_magcrane",    "Fields, magnetism and fluids",   13)  % mid-travel, the shell hanging under the live magnet
         entry("phxex_sorter",      "Fields, magnetism and fluids",   12)
         entry("phxex_capacitor",   "Fields, magnetism and fluids",   25)
         entry("phxex_buoyancy",    "Fields, magnetism and fluids",   15)

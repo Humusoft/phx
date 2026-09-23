@@ -237,9 +237,9 @@ run — mouse, keys and buttons included. See phx-scene-basics.
 
 **`Texture`.** The equirectangular background of the sky sphere (shown in `ViewMode`
 `"texture"`). Takes an image path *or* the name of a built-in texture bundled with the
-toolbox — **`"sky"` (the default), `"nebula"`, `"gradient"`, `"checker"`, `"tiles"`** —
-matched case-insensitively. An unknown name errors (`phx:Viewer:fileNotFound`) rather
-than falling back, so do not invent names.
+toolbox — **`"sky"` (the default), `"nebula"`, `"hall"`, `"gradient"`, `"checker"`,
+`"tiles"`** — matched case-insensitively. An unknown name errors
+(`phx:Viewer:fileNotFound`) rather than falling back, so do not invent names.
 
 > The viewer is also what makes **shape** textures visible at all: only its axes take the
 > world-primitive draw path that carries texture data. In plain axes a textured

@@ -34,6 +34,8 @@ classdef tAssembly < PhxTestCase
                 "Color", zeros(3)), "phx:scatter:invalidColor");
             tc.verifyError(@() phx.assembly.scatter({"Sphere"}, 10, ...
                 "Region", [0.1 0.1 0], "Spacing", 1), "phx:scatter:regionFull");
+            tc.verifyError(@() phx.assembly.scatter({"Sphere"}, 5, ...
+                "RandomTint", 1.5), "MATLAB:validators:mustBeInRange");
         end
 
         function invalidChainInputsRaiseErrors(tc)
@@ -169,6 +171,52 @@ classdef tAssembly < PhxTestCase
                 "RandomOrientation", true, "Color", palette);
             tc.verifyEqual(vertcat(again.Transform), vertcat(bodies.Transform), ...
                 "AbsTol", 1e-12, "The same seed did not reproduce the layout.");
+        end
+
+        function scatterRandomTintShadesTheBodies(tc)
+            tc.prepareAxes;
+            color = [0.4 0.55 0.7];
+            tint = 0.4;
+            n = 8;
+            shape = {"Sphere", "Diameter", 0.2};
+
+            rng(4);
+            bodies = phx.assembly.scatter(shape, n, "Color", color, "RandomTint", tint);
+            shades = vertcat(bodies.Color);
+
+            % Every body keeps the hue and is darkened by its own factor
+            % within the requested band
+            factors = shades(:, 1)/color(1);
+            tc.verifyEqual(shades, factors.*color, "AbsTol", 1e-12, ...
+                "A body was tinted per channel instead of darkened.");
+            tc.verifyGreaterThan(min(factors), 1 - tint, "A body was darkened too much.");
+            tc.verifyLessThanOrEqual(max(factors), 1, "A body came out brighter than Color.");
+            tc.verifyGreaterThan(max(factors) - min(factors), 0.05, ...
+                "The bodies did not get different shades.");
+
+            % The shades are reproducible through the global generator, just
+            % like the layout
+            rng(4);
+            again = phx.assembly.scatter(shape, n, "Color", color, "RandomTint", tint);
+            tc.verifyEqual(vertcat(again.Color), shades, "AbsTol", 1e-12, ...
+                "The same seed did not reproduce the shades.");
+
+            % The default leaves the colors untouched and draws nothing, so
+            % untinted callers see exactly the pre-tint behaviour
+            rng(4);
+            plain = phx.assembly.scatter(shape, n, "Color", color);
+            plainNext = rand;
+            tc.verifyEqual(vertcat(plain.Color), repmat(color, n, 1), "AbsTol", 1e-12, ...
+                "The default tint changed the colors.");
+
+            rng(4);
+            phx.assembly.scatter(shape, n, "Color", color, "RandomTint", 0);
+            tc.verifyEqual(rand, plainNext, "RandomTint 0 consumed random numbers.");
+
+            rng(4);
+            phx.assembly.scatter(shape, n, "Color", color, "RandomTint", tint);
+            tc.verifyNotEqual(rand, plainNext, ...
+                "A positive RandomTint did not draw from the generator.");
         end
 
         function wallLaysBricksInARunningBond(tc)

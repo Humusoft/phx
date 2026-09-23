@@ -124,7 +124,17 @@ classdef Mesh < phx.base.Shape & phx.base.ShapeMesh
         end
 
         function [mass, inertia] = computeMass(obj)
+            % Weigh the body where it is drawn. Centered moves the origin to
+            % the centre of the bounding box for display, and the inertia has
+            % to follow: integrating the raw vertices instead returns the
+            % moments about the source file's own origin, inflated by the
+            % parallel-axis term m*d^2 of however far that origin sits from the
+            % model. The mass itself never noticed, being independent of where
+            % the body sits.
             [V, F] = obj.mergedGeometry;
+            if obj.Centered
+                V = V - obj.Center;
+            end
             V = V.*obj.Scale;
             [mass, I0] = phx.internal.Geometry.meshMass(V, F, obj.Density);
             inertia = I0([1 5 9]);

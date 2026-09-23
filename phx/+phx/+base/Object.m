@@ -84,25 +84,7 @@ classdef Object < matlab.mixin.SetGetExactNames
 
         function delete(objs)
             for obj = objs
-                parentSim = obj.getParentSim;
-
-                % Perform class-specific destroy tasks
-                obj.destroyObject;
-
-                % Remove this object from parent's children
-                removeChild(obj.Parents, obj);
-
-                % Remove this object from children's parents and automatically
-                % delete this children if it has no other parents
-                removeParent(obj.Children, obj);
-
-                % Delete graphics objects
-                delete(obj.Graphics);
-
-                % Rebuild pipelines in the associated simulation
-                if ~isempty(parentSim)
-                    parentSim.updatePipelines;
-                end
+                obj.deleteOne;
             end
         end
 
@@ -310,6 +292,15 @@ classdef Object < matlab.mixin.SetGetExactNames
                 obj = objs{i};
                 id = cellfun(@(c) c == parent, obj.Parents, "UniformOutput", 1);
                 obj.Parents(id) = [];
+
+                % Losing a parent can leave an object without the inputs it
+                % needs: a joint with a single body is something that could
+                % not have been built in the first place. It goes now, while
+                % the parent it still references is in the engine for it to
+                % let go of.
+                if ~obj.checkObject
+                    delete(obj);
+                end
             end
         end
 
@@ -334,6 +325,65 @@ classdef Object < matlab.mixin.SetGetExactNames
             end
             [~, id] = unique(uid, "stable");
             cellObjs = cellObjs(id);
+        end
+    end
+
+    methods (Access = protected)
+        function deleteOne(obj)
+            % Body of the destructor for a single object. It lives in its own
+            % function so that the pipeline hold below is released by onCleanup
+            % on the way out, whether that is a normal return or an error.
+            parentSim = obj.getParentSim;
+            if ~isempty(parentSim)
+                % Deleting this object changes the object graph, so the
+                % pipelines have to be rebuilt afterwards - and it can cascade
+                % into deleting others, each of which would rebuild them
+                % again. The hold collapses the lot into the single rebuild
+                % that the release performs on the way out.
+                parentSim.holdPipelines;
+                held = onCleanup(@() parentSim.releasePipelines); %#ok<NASGU>
+            end
+
+            % Detach from the object graph first, while this object is
+            % still there to be referenced. Anything that has to follow it
+            % out of the engine gets its chance here: a constraint keeps
+            % raw references to both of its bodies, and removing it once
+            % either body is gone is not safe.
+
+            % Remove this object from parent's children
+            removeChild(obj.Parents, obj);
+
+            % Remove this object from children's parents, deleting those
+            % that cannot work without it
+            removeParent(obj.Children, obj);
+
+            % Perform class-specific destroy tasks
+            obj.destroyObject;
+
+            % Delete graphics objects
+            delete(obj.Graphics);
+        end
+
+        function valid = checkObject(obj) %#ok<MANU>
+        %checkObject Reports whether the object has what it needs to run.
+        %
+        %   Side-effect-free predicate answering one question: are this
+        %   object's inputs - above all its Parents - sufficient for it to
+        %   take part in a simulation? It is safe to call at any time, and
+        %   initObject calls it before building anything.
+        %
+        %   Objects that need nothing in particular (a phx.Resistance acts on
+        %   whatever is there) inherit this default and are always ready. A
+        %   phx.base.Joint needs exactly two live bodies, so it overrides it.
+        %
+        %   Note that initObject may still return false for an object this
+        %   accepts, when the construction itself fails - a phx.Body with no
+        %   shape to build from, for instance. checkObject is about the
+        %   inputs, initObject about the result.
+        %
+        % See also phx.base.Object.initObject, phx.base.Joint
+
+            valid = true;
         end
     end
 

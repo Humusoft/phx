@@ -65,7 +65,7 @@ function phxex_stairfall(pushSpeed, duration)
     phx.Body(ax, "Position", [-0.2 0 H+0.2], "Shape", {"Mesh", "Source", resdir+"cat.stl", "Scale", 0.01, "Envelope", "box", "Color", 1});
 
     % Import the humanoid right at the edge of the landing, leaning over it
-    lean = 0.522; %randi(1000)/1000
+    lean = 0.529; %randi(1000)/1000
     [bodies, joints] = phx.assembly.import(resdir + "human.urdf", ...
         "Position", [-0.16 0 H + 1.01], "EulerAngles", [0 lean 0]);
 

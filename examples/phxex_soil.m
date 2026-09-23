@@ -20,8 +20,7 @@ function phxex_soil
     phx.Body(ax, "Type", "static", "Position", [38 -25.5 6], "Shape", {"Box", "Size", [25 1 12], "Color", [1 1 1]});
 
     % Random rocks scattered over the digging area
-    rocks = phx.assembly.scatter({"Rock", "Radius", 3}, 50, "Region", [20 40 20], ...
-        "Spacing", 3, "Position", [40 0 2], "Color", (rand(50, 1) + [1 0.5 0])/2);
+    rocks = phx.assembly.scatter({"Rock", "Radius", 3}, 50, "Region", [20 40 20], "Spacing", 3, "Position", [40 0 2], "Color", [0.9 0.6 0.4], "RandomTint", 0.7);
     
     % Create a kinematic body (bucket) for interaction
     exc = phx.Body(ax, "Type", "kinematic", "Position", [0 0 11], "Shape", {resdir+"Bucket.stl", "Scale", 0.2, "Centered", true, "Color", 0.4, "Envelope", "concave", "Style", "flat"});

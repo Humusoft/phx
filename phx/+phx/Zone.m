@@ -243,6 +243,11 @@ classdef Zone < phx.base.Object
     end
 
     methods (Access = protected)
+        function valid = checkObject(obj)
+            % The zone is anchored to a body, so at least one is needed.
+            valid = ~isempty(obj.Parents) && all(cellfun(@isvalid, obj.Parents));
+        end
+
         function valid = initObject(obj, world)
             if obj.SimulationOrder == "none"
                 % Passive zone: never stepped, tallied on demand via update().
@@ -259,7 +264,7 @@ classdef Zone < phx.base.Object
                 obj.Dirty = false;
             end
 
-            valid = ~isempty(obj.Parents) && all(cellfun(@isvalid, obj.Parents));
+            valid = obj.checkObject;
         end
 
         function destroyObject(obj) %#ok<MANU> function prototype

@@ -59,8 +59,13 @@ classdef Script < phx.base.Object
     end
 
     methods (Access = protected)
-        function valid = initObject(obj, world)
+        function valid = checkObject(obj)
+            % A script drives whatever it is attached to; any live set will do.
             valid = all(cellfun(@isvalid, obj.Parents));
+        end
+
+        function valid = initObject(obj, world)
+            valid = obj.checkObject;
         end
 
         function destroyObject(obj) %#ok<MANU> function prototype

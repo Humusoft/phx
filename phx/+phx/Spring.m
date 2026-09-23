@@ -132,8 +132,13 @@ classdef Spring < phx.base.Object
     end
 
     methods (Access = protected)
-        function valid = initObject(obj, world)
+        function valid = checkObject(obj)
+            % A spring pulls two bodies together, so it needs both of them.
             valid = numel(obj.Parents) == 2 && all(cellfun(@isvalid, obj.Parents));
+        end
+
+        function valid = initObject(obj, world)
+            valid = obj.checkObject;
         end
 
         function destroyObject(obj) %#ok<MANU> function prototype
@@ -152,8 +157,8 @@ classdef Spring < phx.base.Object
                 A = obj.Parents{1};
                 B = obj.Parents{2};
     
-                pa = phx.internal.transformPoint(obj.Parents{1}.Matrix, obj.PointA);
-                pb = phx.internal.transformPoint(obj.Parents{2}.Matrix, obj.PointB);
+                pa = phx.internal.transformPoint(A.Matrix, obj.PointA);
+                pb = phx.internal.transformPoint(B.Matrix, obj.PointB);
                 dp = (pb - pa)';
                 nrm = sqrt(dp(1)*dp(1) + dp(2)*dp(2) + dp(3)*dp(3));
                 dp = dp/nrm;

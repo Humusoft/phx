@@ -59,6 +59,12 @@ classdef Trace < phx.base.Object
     end
 
     methods (Access = protected)
+        function valid = checkObject(obj)
+            % A trace follows the body it is attached to, which it reads as
+            % Parents{1} - so losing it leaves nothing to trace.
+            valid = ~isempty(obj.Parents) && all(cellfun(@isvalid, obj.Parents));
+        end
+
         function valid = initObject(obj, world)
             % Prepare data structures
             p = phx.internal.transformPoint(obj.Parents{1}.Matrix, obj.Point);
@@ -66,7 +72,7 @@ classdef Trace < phx.base.Object
             obj.hL.VertexData = obj.XYZData;
             obj.hL.StripData = uint32([1 obj.TracePoints+1]);
 
-            valid = all(cellfun(@isvalid, obj.Parents));
+            valid = obj.checkObject;
         end
 
         function destroyObject(obj)

@@ -153,9 +153,14 @@ classdef Rope < phx.base.Object
     end
 
     methods (Access = protected)
+        function valid = checkObject(obj)
+            % A rope is strung through at least two bodies.
+            valid = numel(obj.Parents) >= 2 && all(cellfun(@isvalid, obj.Parents));
+        end
+
         function valid = initObject(obj, world)
             obj.LastLength = NaN; % reset the damping memory on (re)builds
-            valid = numel(obj.Parents) >= 2 && all(cellfun(@isvalid, obj.Parents));
+            valid = obj.checkObject;
         end
 
         function destroyObject(obj) %#ok<MANU> function prototype

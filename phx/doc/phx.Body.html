@@ -73,6 +73,14 @@ bounce of a contact combines the values of <em>both</em> colliding bodies, so bo
 nonzero for the contact to bounce.</td></tr>
 <tr><td class="name">Collisions</td><td class="dflt">true</td>
 <td>Enable or disable collisions for this body.</td></tr>
+<tr><td class="name">SurfaceVelocity</td><td class="dflt">[0 0 0]</td>
+<td>Virtual velocity of the body surface, <span class="phx-unit">m/s</span>, given in the
+<em>body</em> frame &mdash; for conveyor belts, rollers and treadmills. The body itself does not
+move; contacts with it are solved as if its surface were sliding at this velocity, so other
+bodies are dragged along. The drag is limited by friction exactly as an ordinary contact is,
+so both bodies need a nonzero <code class="phx-inline">Friction(1)</code> for the surface to
+pull. Set on the moving body rather than on the belt, it drives that body the opposite way,
+because the value describes the <em>relative</em> motion of the contacting surfaces.</td></tr>
 <tr><td class="name">Shape</td><td class="type">phx.shape.* | cell (write-only)</td>
 <td>Geometry worn by the body. Assign a <code class="phx-inline">phx.shape.*</code> object or a cell array such as <code class="phx-inline">{"Box","Size",[2 1 1]}</code>.</td></tr>
 <tr><td class="name">OnDoubleClickFcn</td><td class="dflt">[]</td>
