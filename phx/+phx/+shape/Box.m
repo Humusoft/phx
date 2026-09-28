@@ -1,4 +1,4 @@
-classdef Box < phx.base.Shape & phx.base.ShapeMesh
+classdef Box < phx.base.Shape
 %phx.shape.Box Box shape
 %
 %   Visual appearance is based on a simple triangular mesh.
@@ -39,12 +39,11 @@ classdef Box < phx.base.Shape & phx.base.ShapeMesh
             % Process input arguments
             obj = phx.internal.applyArguments(Options, obj);
             if isnan(obj.Color(1))
-                obj.Color = phx.base.ShapeMesh.newColor;
+                obj.Color = phx.base.Shape.newColor;
             end
         end
 
         function drawTo(obj, target)
-            obj.drawSkelet(target, obj.Color);
             if obj.ForcePatch
                 [V, N, F] = phx.internal.Geometry.quadBox(obj.Size);
                 primitive = obj.drawMesh(target, V, N, F, [], []);

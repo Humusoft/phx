@@ -88,8 +88,6 @@ function phxex_maglev(kp, kd)
     % On-screen readout
     viewer.displayText("Earnshaw...");
 
-    % Sleeping must stay disabled: a hovering ball is almost at rest and
-    % a deactivated body would ignore the magnetic force and disturbances
     sim = phx.Simulation(ax);
     dt = 0.005;
     subSteps = 10;

@@ -27,6 +27,7 @@ classdef Spring < phx.base.Object
     properties (Access = private)
         hL
         CMap
+        LastLength = NaN
     end
 
     properties (SetAccess = private)
@@ -78,9 +79,15 @@ classdef Spring < phx.base.Object
             obj.RedrawOrder = "after";
             obj.ParentAxes = ParentA.ParentAxes;
 
-            % Process input arguments
-            obj.Parents = addChild([ParentA ParentB], obj);
-            phx.internal.applyArguments(Options, obj);
+            % Process input arguments; a failure leaves no half-built object
+            % attached to the parents
+            try
+                obj.Parents = addChild([ParentA ParentB], obj);
+                phx.internal.applyArguments(Options, obj);
+            catch err
+                obj.abandon([ParentA ParentB]);
+                rethrow(err);
+            end
 
             % Create graphics objects
             obj.hL = matlab.graphics.primitive.world.LineStrip('Parent', obj.Graphics, 'LineWidth', 2.0, 'ColorBinding', 'object', 'ColorData', uint8([obj.Color*255 255]'), 'Layer', phx.internal.choose({'middle', 'front'}, obj.Overlay + 1));
@@ -138,6 +145,7 @@ classdef Spring < phx.base.Object
         end
 
         function valid = initObject(obj, world)
+            obj.LastLength = NaN; % reset the damping memory on (re)builds
             valid = obj.checkObject;
         end
 
@@ -163,7 +171,12 @@ classdef Spring < phx.base.Object
                 nrm = sqrt(dp(1)*dp(1) + dp(2)*dp(2) + dp(3)*dp(3));
                 dp = dp/nrm;
                 len = nrm - obj.FreeLength;
-                vel = (len - obj.Length)/dt;
+                if isnan(obj.LastLength)
+                    vel = 0;
+                else
+                    vel = (len - obj.LastLength)/dt;
+                end
+                obj.LastLength = len;
                 if nrm ~= 0
                     Force = (obj.Stiffness*len + obj.Damping*vel)*dp;
                 else

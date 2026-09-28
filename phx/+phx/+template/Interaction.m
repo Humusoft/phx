@@ -46,12 +46,17 @@ classdef Interaction < phx.base.Object
             % of the parent objects
             obj.ParentAxes = ParentA.ParentAxes;
 
-            % Using the private method of the phx.base.Object superclass to
-            % correctly bind this object to its parents
-            obj.Parents = addChild([ParentA ParentB], obj);
-
-            % Process optional input arguments passed as name-value pairs
-            phx.internal.applyArguments(Options, obj);
+            % Using the protected method of the phx.base.Object superclass to
+            % correctly bind this object to its parents, then process the
+            % optional name-value arguments. If either fails, abandon undoes
+            % the binding, so no half-built object stays with the parents.
+            try
+                obj.Parents = addChild([ParentA ParentB], obj);
+                phx.internal.applyArguments(Options, obj);
+            catch err
+                obj.abandon([ParentA ParentB]);
+                rethrow(err);
+            end
 
             % If the interaction is to have a graphic form, it is advisable
             % to create all necessary graphic objects here and then just

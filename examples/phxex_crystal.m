@@ -82,8 +82,6 @@ function phxex_crystal(nBalls, annealTime, seed)
     % On-screen readout
     viewer.displayText("Dropping...");
 
-    % Sleeping must stay disabled, otherwise slow-moving balls would stop
-    % responding to the field and thermal forces
     sim = phx.Simulation(ax);
     dt = 0.005;
     subSteps = 10;

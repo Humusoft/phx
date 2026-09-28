@@ -12,7 +12,7 @@ description: >
 
 # PHX scene basics
 
-PHX is a MATLAB toolbox (package root `phx/+phx`, targets R2026a) — a thin
+PHX is a MATLAB toolbox (package root `phx/+phx`, targets R2026b) — a thin
 object-oriented layer over the Bullet physics engine reached through one MEX
 gateway (`phx.engine.io`). You build a scene from `phx.*` handle objects that
 draw into MATLAB axes via `hgtransform`, then step it with a `phx.Simulation`.
@@ -60,8 +60,7 @@ A typical scene is 5–10 lines. The viewer wants the **whole figure** — it is
 to share a window — so use plain MATLAB axes instead when:
 
 - the scene is a throwaway/minimal illustration (`phxex_minimal`),
-- the visualization must live in a **subplot** or an app layout, or several views show
-  the same simulation (`phxex_multiview`),
+- the visualization must live in a **subplot** or an app layout (`phxex_multisim`),
 - there is no visualization at all (pass `[]` as the axes — `phxex_noview`).
 
 Plain-axes form: configure `gca` yourself, then let the objects default to it (bodies
@@ -187,8 +186,8 @@ shape-specific — `Box` uses `Size`; round shapes accept **`Radius`** *or* `Dia
 (interchangeable), and the axial extent is **`Height`** (not `Length`) with a modeling
 `Axis` (`"x"`/`"y"`/`"z"`) on `Cylinder`/`Cone`/`Capsule`. Most accept `Color` and
 `Density` (auto-computes mass/inertia if you don't set them), and texture/material
-options. `SkeletPoints` adds attachment points used by joints/springs:
-`{"Box", "SkeletPoints", [1.5 0 0; -1.5 0 0]}`.
+options. Shapes carry no attachment points: where a joint or spring grabs a body is set
+on the connector itself (`PointA`/`PointB` in body-local coordinates).
 
 **Appearance.** `Material` picks the shading preset — `"unlit"`, `"matte"`,
 `"plastic"` (default), `"glossy"` or `"metal"`. Reach for `"unlit"` when the color
@@ -209,7 +208,7 @@ ball  = phx.shape.Globe("Diameter", 1, "Color", [0.9 0.3 0.3], ...
 
 `"checker"` at a low blend is the standard trick for making a spinning or rolling body
 read as a solid object — without it, a uniformly colored sphere looks static. An unknown
-name errors (`phx:ShapeMesh:fileNotFound`) instead of falling back, and the shape names
+name errors (`phx:Shape:fileNotFound`) instead of falling back, and the shape names
 are a *different* set from the viewer's sky textures (`"nebula"` is not a shape texture),
 so use only the four above.
 
@@ -468,5 +467,5 @@ class as a starting point.
 - **phx-constraints-forces** — joints, springs, ropes, thrusters, buoyancy, fields,
   `applyForce`/`applyTorque`, scripted and closed-loop control.
 - **phx-logging-view** — Logger, Trace, Measure, Zone, Raycast, PlanarShadow, Camera, the interactive Viewer, plotting.
-- **phx-engine-gotchas** — the `phx.engine.io` gateway, engine variants, error IDs, known quirks, tests.
+- **phx-engine-gotchas** — the `phx.engine.io` gateway, error IDs, known quirks, tests.
 - **phx-simulink** — drive a PHX scene from Simulink via the PhxModel co-simulation block.

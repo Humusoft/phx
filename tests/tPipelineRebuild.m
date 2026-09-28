@@ -31,7 +31,7 @@ classdef tPipelineRebuild < PhxTestCase
             tc.requireEngine;
             first = tc.spawnBody([0 0 20]);
             sim = phx.Simulation(first);
-            tc.addTeardown(@() tPipelineRebuild.deleteIfValid(sim));
+            tc.addTeardown(@() PhxTestCase.deleteIfValid(sim));
 
             sim.step(0.2, 20, -1);
             late = tc.spawnBody([5 0 20]);
@@ -57,7 +57,7 @@ classdef tPipelineRebuild < PhxTestCase
             gate = tc.spawnBody([0 1 1], "Type", "static");
             ball = tc.spawnBody([0 0 5]);
             sim = phx.Simulation([ground gate ball]);
-            tc.addTeardown(@() tPipelineRebuild.deleteIfValid(sim));
+            tc.addTeardown(@() PhxTestCase.deleteIfValid(sim));
 
             sim.step(0.2, 20, -1);
             delete(gate);
@@ -81,7 +81,7 @@ classdef tPipelineRebuild < PhxTestCase
             lower = phx.RevoluteJoint(base, middle, "PointA", [0 0 1], "PointB", [0 0 -1]);
             upper = phx.RevoluteJoint(middle, tip, "PointA", [0 0 1], "PointB", [0 0 -1]);
             sim = phx.Simulation([base middle tip]);
-            tc.addTeardown(@() tPipelineRebuild.deleteIfValid(sim));
+            tc.addTeardown(@() PhxTestCase.deleteIfValid(sim));
 
             sim.step(0.2, 40, -1);
             delete(middle);
@@ -109,7 +109,7 @@ classdef tPipelineRebuild < PhxTestCase
             spring = phx.Spring(middle, far, "Stiffness", 100);
             elsewhere = phx.Spring(anchor, far, "Stiffness", 100);
             sim = phx.Simulation([anchor middle far]);
-            tc.addTeardown(@() tPipelineRebuild.deleteIfValid(sim));
+            tc.addTeardown(@() PhxTestCase.deleteIfValid(sim));
 
             sim.step(0.2, 40, -1);
             delete(middle);
@@ -132,7 +132,7 @@ classdef tPipelineRebuild < PhxTestCase
                 bodies(i) = tc.spawnBody([i*2 0 10]);
             end
             sim = phx.Simulation(bodies);
-            tc.addTeardown(@() tPipelineRebuild.deleteIfValid(sim));
+            tc.addTeardown(@() PhxTestCase.deleteIfValid(sim));
 
             sim.step(0.1, 10, -1);
             delete(bodies(2));
@@ -155,7 +155,7 @@ classdef tPipelineRebuild < PhxTestCase
             tc.requireEngine;
             bodies = [tc.spawnBody([0 0 10]) tc.spawnBody([2 0 10])];
             sim = phx.Simulation(bodies);
-            tc.addTeardown(@() tPipelineRebuild.deleteIfValid(sim));
+            tc.addTeardown(@() PhxTestCase.deleteIfValid(sim));
             tc.verifyEqual(tPipelineRebuild.redrawCount(sim), 2);
 
             sim.addObjects(tc.spawnBody([4 0 10]));
@@ -192,7 +192,7 @@ classdef tPipelineRebuild < PhxTestCase
             phx.RevoluteJoint(anchor, middle, "PointA", [0 0 1], "PointB", [0 0 -1]);
             phx.Spring(middle, far, "Stiffness", 100);
             sim = phx.Simulation([anchor middle far]);
-            tc.addTeardown(@() tPipelineRebuild.deleteIfValid(sim));
+            tc.addTeardown(@() PhxTestCase.deleteIfValid(sim));
             tc.assumeEqual(tPipelineRebuild.redrawCount(sim), 3);
 
             delete(middle);                 % takes the joint and the spring
@@ -211,7 +211,7 @@ classdef tPipelineRebuild < PhxTestCase
             tc.requireEngine;
             b = tc.spawnBody([0 0 10]);
             sim = phx.Simulation(b);
-            tc.addTeardown(@() tPipelineRebuild.deleteIfValid(sim));
+            tc.addTeardown(@() PhxTestCase.deleteIfValid(sim));
 
             sim.step(0.1, 10, -1);
             delete(b);
@@ -233,7 +233,7 @@ classdef tPipelineRebuild < PhxTestCase
             shown = phx.Body(ax, "Position", [0 0 10]);
             hidden = phx.Body(ax, "Position", [3 0 10], "Visible", false);
             sim = phx.Simulation([shown hidden]);
-            tc.addTeardown(@() tPipelineRebuild.deleteIfValid(sim));
+            tc.addTeardown(@() PhxTestCase.deleteIfValid(sim));
 
             sim.step(0.2, 20, 1);
 
@@ -248,7 +248,7 @@ classdef tPipelineRebuild < PhxTestCase
             ax = tc.prepareAxes;
             hidden = phx.Body(ax, "Position", [3 0 10], "Visible", false);
             sim = phx.Simulation(hidden, "ExcludeInvisible", false);
-            tc.addTeardown(@() tPipelineRebuild.deleteIfValid(sim));
+            tc.addTeardown(@() PhxTestCase.deleteIfValid(sim));
 
             sim.step(0.2, 20, 1);
 
@@ -285,13 +285,6 @@ classdef tPipelineRebuild < PhxTestCase
 
             sim.step(3.0, 1500, -1);
             z = load.Position(3);
-        end
-
-        function deleteIfValid(obj)
-            % Teardown for the tests that delete the simulation themselves.
-            if isvalid(obj)
-                delete(obj);
-            end
         end
     end
 

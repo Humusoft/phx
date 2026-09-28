@@ -1,4 +1,4 @@
-classdef Capsule < phx.base.Shape & phx.base.ShapeMesh
+classdef Capsule < phx.base.Shape
 %phx.shape.Capsule Capsule shape
 %
 %   Visual appearance is based on a geometry of revolved profile with 
@@ -52,7 +52,7 @@ classdef Capsule < phx.base.Shape & phx.base.ShapeMesh
             % Process input arguments
             obj = phx.internal.applyArguments(Options, obj);
             if isnan(obj.Color(1))
-                obj.Color = phx.base.ShapeMesh.newColor;
+                obj.Color = phx.base.Shape.newColor;
             end
         end
 
@@ -65,8 +65,6 @@ classdef Capsule < phx.base.Shape & phx.base.ShapeMesh
         end
 
         function drawTo(obj, target)
-            obj.drawSkelet(target, obj.Color);
-
             sh = sin(linspace(0, pi/2, obj.Segments/3))*obj.Radius;
             sr = cos(linspace(0, pi/2, obj.Segments/3))*obj.Radius;
             sl = fliplr(sr);

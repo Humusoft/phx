@@ -40,8 +40,10 @@ classdef Viewer < handle
 
         Shift = false
         PressedKeys = [0 0 0 0 0 0 0 0]
-        LastInteresctionPoint = [0 0 0]
+        LastIntersectionPoint = [0 0 0]
         LastHitPoint = [0 0]
+        CursorPoint = [NaN NaN NaN]
+        DragOffset = [0 0 0]
         LastHitObject = []
         PreviousBodyState = ""
         NavMode = "none"
@@ -59,6 +61,7 @@ classdef Viewer < handle
         % Timers and menus
         AnimationTimer = []
         FreerunTimer = []
+        SceneItems = gobjects(0)
     end
 
     properties (SetAccess = private, WeakHandle)
@@ -119,6 +122,11 @@ classdef Viewer < handle
         % It is invoked as fcn(viewer); read the SelectedBody property to get
         % the new selection. Intended for embedding the viewer in apps.
         SelectionChangedFcn = []
+
+        % Show the Clear, Load model and Save model commands in the Scene
+        % context menu. Apps that embed the viewer and manage the scene
+        % themselves turn them off.
+        SceneMenu (1, 1) logical = true
     end
 
     properties (Dependent)
@@ -166,7 +174,7 @@ classdef Viewer < handle
             % Assign navigation callbacks
             obj.Figure.WindowButtonDownFcn = @obj.navBtnDown;
             obj.Figure.WindowButtonUpFcn = @obj.navBtnUp;
-            obj.Figure.WindowButtonMotionFcn = [];
+            obj.Figure.WindowButtonMotionFcn = @obj.navMotion;
             obj.Figure.WindowKeyPressFcn = @obj.navKeyPress;
             obj.Figure.WindowKeyReleaseFcn = @obj.navKeyRelease;
             obj.Figure.WindowScrollWheelFcn = @obj.navScrollWheel;
@@ -208,9 +216,10 @@ classdef Viewer < handle
                 uimenu(sub, 'Text', 'Coordinate system', 'MenuSelectedFcn', @obj.menuAdditionalCoordSys);
                 uimenu(sub, 'Text', 'Convex hull', 'MenuSelectedFcn', @obj.menuAdditionalConvHull);
             sub = uimenu(obj.ContextMenu, 'Text', 'Scene', 'Separator', 'on');
-                uimenu(sub, 'Text', 'Clear', 'Separator', 'on', 'MenuSelectedFcn', @(~, ~) obj.cla);
-                uimenu(sub, 'Text', 'Load model...', 'MenuSelectedFcn', @obj.menuLoad);
-                uimenu(sub, 'Text', 'Save model...', 'MenuSelectedFcn', @obj.menuSave);
+                obj.SceneItems = [
+                    uimenu(sub, 'Text', 'Clear', 'Separator', 'on', 'MenuSelectedFcn', @(~, ~) obj.cla)
+                    uimenu(sub, 'Text', 'Load model...', 'MenuSelectedFcn', @obj.menuLoad)
+                    uimenu(sub, 'Text', 'Save model...', 'MenuSelectedFcn', @obj.menuSave)];
                 uimenu(sub, 'Text', 'Change environment...', 'Separator', 'on', 'MenuSelectedFcn', @obj.menuChangeTexture);
 
             % Sky sphere
@@ -249,7 +258,6 @@ classdef Viewer < handle
             if obj.Texture == ""
                 obj.Texture = "sky";
             end
-            %obj.Axes.CameraViewAngle = obj.DefaultCameraViewAngle;
             if ~isfield(Options, "Lighting")
                 obj.Lighting = obj.Lighting;
             end
@@ -470,7 +478,7 @@ classdef Viewer < handle
                 obj.Lights.Position = pos;
             end
 
-            % Update sky sphere scale and axes limits
+            % Update sky sphere scale
             r = norm(pos)*obj.SkySphereSize;
             obj.SkySphere.Matrix([1 6 11]) = [r r r];
         end
@@ -480,7 +488,6 @@ classdef Viewer < handle
         end
 
         function set.CameraTarget(obj, pos)
-            %disp("Target"+mat2str(pos));
             obj.Axes.CameraTarget = pos;
 
             % Update triad scale and position
@@ -497,7 +504,15 @@ classdef Viewer < handle
             obj.Figure.Position = pos;
         end
 
+        function set.SceneMenu(obj, value)
+            obj.SceneMenu = value;
+            set(obj.SceneItems(isvalid(obj.SceneItems)), 'Visible', value);
+        end
+
         function cla(obj)
+            % Deselect first, so that SelectionChangedFcn reports the change
+            % before the selected body disappears with the others
+            obj.deselect;
             n = numel(obj.Axes.Children);
             id = true(1, n);
             for i = 1:n
@@ -505,7 +520,6 @@ classdef Viewer < handle
             end
             delete(obj.Axes.Children(id));
             obj.LastHitObject = [];
-            obj.SelectedBody = [];
         end
 
         function delete(obj)
@@ -630,7 +644,7 @@ classdef Viewer < handle
             end
 
             % Store hit data
-            obj.LastInteresctionPoint = event.IntersectionPoint;
+            obj.LastIntersectionPoint = event.IntersectionPoint;
             obj.LastHitPoint = event.Point;
             obj.LastHitObject = event.HitObject;
 
@@ -652,12 +666,13 @@ classdef Viewer < handle
             end
 
             % Perform actions by a mouse button
+            onSelected = ~isempty(obj.SelectedBody) && isequal(obj.SelectedBody, body);
             switch obj.Figure.SelectionType
                 case 'open'
                     % double click
                     if ~isempty(body)
                         if isempty(body.OnDoubleClickFcn)
-                            if ~isempty(obj.SelectedBody) && isequal(obj.SelectedBody, body)
+                            if onSelected
                                 obj.deselect;
                             else
                                 obj.select(body);
@@ -673,23 +688,22 @@ classdef Viewer < handle
                     end
                 case 'normal'
                     % left button
-                    if isempty(obj.SelectedBody) || ~isequal(obj.SelectedBody, body)
-                        obj.NavMode = "pan";
-                    else
+                    if onSelected
                         obj.NavMode = "movebody";
+                        obj.DragOffset = body.Position - obj.LastIntersectionPoint;
+                    else
+                        obj.NavMode = "pan";
                     end
-                    obj.Figure.WindowButtonMotionFcn = @obj.navBtnMotion;
                 case 'alt'
                     % right button
                     obj.ContextMenu.open(event.Point(1), event.Point(2));
                 case 'extend'
                     % middle button (or left+shift)
-                    if isempty(obj.SelectedBody) || ~isequal(obj.SelectedBody, body)
-                        obj.NavMode = "orbit";
-                    else
+                    if onSelected
                         obj.NavMode = "rotatebody";
+                    else
+                        obj.NavMode = "orbit";
                     end
-                    obj.Figure.WindowButtonMotionFcn = @obj.navBtnMotion;
             end
 
             obj.Triad.Matrix(13:15) = obj.CameraPosition; % put triad at invisible place (so it appears only during movement)
@@ -698,25 +712,29 @@ classdef Viewer < handle
 
         function navBtnUp(obj, source, event)
             obj.NavMode = "none";
-            obj.Figure.WindowButtonMotionFcn = [];
             obj.Triad.Visible = "off";
+        end
+
+        function navMotion(obj, source, event)
+            % Track the 3D point under the cursor; navigate while a button
+            % is held
+            obj.CursorPoint = event.IntersectionPoint;
+            if obj.NavMode ~= "none"
+                obj.navBtnMotion(source, event);
+            end
         end
 
         function navBtnMotion(obj, source, event)
             dp = obj.LastHitPoint - event.Point;
             switch obj.NavMode
                 case "pan"
-                    dp = dp*0.002;
-                    v = obj.CameraTarget - obj.CameraPosition;
-                    xa = cross(obj.Axes.CameraUpVector, v);
-                    M = makehgtform("zrotate", dp(1), "axisrotate", xa, dp(2));
-                    obj.CameraTarget = obj.CameraPosition + v*M(1:3, 1:3);
+                    obj.panCamera(dp*0.002);
                 case "orbit"
                     dp = dp*0.004;
-                    if obj.LastHitObject == obj.SkySphere.Children(1) || any(isnan(obj.LastInteresctionPoint))
+                    if obj.LastHitObject == obj.SkySphere.Children(1) || any(isnan(obj.LastIntersectionPoint))
                         C = [0 0 0];
                     else
-                        C = obj.LastInteresctionPoint;
+                        C = obj.LastIntersectionPoint;
                     end
                     t = obj.CameraTarget;
                     p = obj.CameraPosition;
@@ -725,19 +743,32 @@ classdef Viewer < handle
                     obj.CameraTarget = C + (t - C)*M(1:3, 1:3);
                     obj.CameraPosition = C + (p - C)*M(1:3, 1:3);
                 case "movebody"
-                    len = norm(obj.CameraPosition - obj.LastInteresctionPoint)*0.01;
-                    m = view(obj.Axes);
-                    m = m(1:3, 1:3);
-                    dp3 = [dp(1) 0 dp(2)];
+                    % Keep the grabbed point under the cursor ray: on the
+                    % horizontal plane through it, or on the grabbed axis
+                    cp = obj.Axes.CurrentPoint;
+                    ray = cp(2, :) - cp(1, :);
+                    g0 = obj.LastIntersectionPoint;
                     if isempty(obj.DragAxis)
-                        vec = len*dp3*m.*[0.1 0.1 0];
+                        g = cp(1, :) + (g0(3) - cp(1, 3))/ray(3)*ray;
                     else
-                        vec = len*dp3*m.*[0.1 0.1 -0.1];
-                        vec = vec*obj.SelectedBody.Orientation;
-                        vec = vec.*obj.DragAxis;
-                        vec = vec*obj.SelectedBody.Orientation';
+                        % Point of the axis line closest to the ray
+                        u = obj.DragAxis*obj.SelectedBody.Orientation';
+                        u = u/norm(u);
+                        w = g0 - cp(1, :);
+                        b = dot(u, ray);
+                        c = dot(ray, ray);
+                        g = g0 + (b*dot(ray, w) - c*dot(u, w))/(c - b^2)*u;
                     end
-                    obj.SelectedBody.Position = obj.SelectedBody.Position - vec;
+                    pc = obj.CameraPosition;
+                    if ~all(isfinite(g)) || dot(g - pc, obj.CameraTarget - pc) <= 0 || ...
+                            norm(g - pc) > norm(pc)*obj.SkySphereSize
+                        return % behind the camera or beyond the sky
+                    end
+                    p = g + obj.DragOffset;
+                    if isempty(obj.DragAxis)
+                        p(3) = obj.SelectedBody.Position(3);
+                    end
+                    obj.SelectedBody.Position = p;
                 case "rotatebody"
                     if isempty(obj.DragAxis)
                         a = [0 0 1];
@@ -747,9 +778,16 @@ classdef Viewer < handle
                     m = makehgtform("axisrotate", a, -dp(1)*0.01);
                     obj.SelectedBody.Orientation = obj.SelectedBody.Orientation*m(1:3, 1:3);
             end
-            %obj.Axes.CameraUpVector = [0 0 1];
-            %obj.Lights.Position = obj.CameraPosition;
             obj.LastHitPoint = event.Point;
+        end
+
+        function panCamera(obj, angles)
+            % Turn the camera target around the camera position: angles(1)
+            % about the world Z axis, angles(2) up or down (in radians)
+            v = obj.CameraTarget - obj.CameraPosition;
+            xa = cross(obj.Axes.CameraUpVector, v);
+            M = makehgtform("zrotate", angles(1), "axisrotate", xa, angles(2));
+            obj.CameraTarget = obj.CameraPosition + v*M(1:3, 1:3);
         end
 
         function navScrollWheel(obj, source, event)
@@ -762,15 +800,11 @@ classdef Viewer < handle
             else
                 p = obj.CameraPosition;
                 t = obj.CameraTarget;
-                %t = (obj.Axes.CameraTarget + obj.LastInteresctionPoint)/2;
-                %obj.Axes.CameraTarget = t;
                 dp = p - t;
-                if any(isnan(obj.LastInteresctionPoint))
-                    do = [0 0 0] - t;
+                if any(isnan(obj.CursorPoint))
+                    do = -t;
                 else
-                    % cp = obj.Figure.CurrentPoint;
-                    % do = matlab.graphics.interaction.internal.calculateIntersectionPoint(cp, obj.Axes) - t;
-                    do = obj.LastInteresctionPoint - t;
+                    do = obj.CursorPoint - t;
                 end
 
                 if event.VerticalScrollCount > 0
@@ -883,7 +917,7 @@ classdef Viewer < handle
             mf = obj.PressedKeys(5) - obj.PressedKeys(6);
             ms = obj.PressedKeys(7) - obj.PressedKeys(8);
             if obj.ArrowsEnable && (oz ~= 0 || oy ~= 0)
-                campan(-oz*2, oy*2);
+                obj.panCamera(deg2rad([-oz oy]*2));
             end
             if obj.WASDEnable && (mf ~= 0 || ms ~= 0)
                 d = (obj.CameraTarget - obj.CameraPosition);
@@ -909,13 +943,12 @@ classdef Viewer < handle
 
         function menuLookAt(obj, source, event)
             p1 = obj.CameraTarget;
-            p2 = obj.LastInteresctionPoint;
+            p2 = obj.LastIntersectionPoint;
             for i = 0:0.05:1
-                obj.Axes.CameraTarget = p1 + (p2 - p1)*i;
+                obj.CameraTarget = p1 + (p2 - p1)*i;
                 obj.Axes.CameraUpVector = [0 0 1];
                 drawnow;
             end
-            obj.Axes.CameraTarget = obj.LastInteresctionPoint;
         end
 
         function menuSnapshot(obj, source, event)

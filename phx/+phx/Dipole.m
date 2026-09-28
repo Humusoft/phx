@@ -33,11 +33,13 @@ classdef Dipole < phx.base.Object
 
     properties
         % Dipole charge
+        % One value per body; a scalar is applied to all bodies (default 1)
         Charge (:, 1) double
 
         % Dipole axis
         % Specifies the dipole orientation (direction) and the pole offset
-        % from the center (magnitude)
+        % from the center (magnitude). One row per body; a single row is
+        % applied to all bodies.
         Axis (:, 3) double = [1 0 0]
 
         % Attractivity
@@ -123,16 +125,38 @@ classdef Dipole < phx.base.Object
             obj.SimulationOrder = "before";
             obj.RedrawOrder = "after";
             obj.ParentAxes = Parents(1).ParentAxes;
+            obj.Color = [0.5 0.5 0.5];
 
-            % Process input arguments
-            obj.Parents = addChild(Parents, obj);
-            phx.internal.applyArguments(Options, obj);
+            % Process input arguments; a failure leaves no half-built object
+            % attached to the parents
+            try
+                obj.Parents = addChild(Parents, obj);
+                phx.internal.applyArguments(Options, obj);
+                n = numel(Parents);
+                if isempty(obj.Charge)
+                    obj.Charge = ones(n, 1);
+                elseif isscalar(obj.Charge)
+                    obj.Charge = repmat(obj.Charge, n, 1);
+                elseif numel(obj.Charge) ~= n
+                    error("phx:Dipole:chargeSize", ...
+                        "Charge must have one value per body (%d), or be a scalar; it has %d.", n, numel(obj.Charge));
+                end
+                if size(obj.Axis, 1) == 1
+                    obj.Axis = repmat(obj.Axis, n, 1);
+                elseif size(obj.Axis, 1) ~= n
+                    error("phx:Dipole:axisSize", ...
+                        "Axis must have one row per body (%d), or a single row; it has %d.", n, size(obj.Axis, 1));
+                end
+            catch err
+                obj.abandon(Parents);
+                rethrow(err);
+            end
 
             % Create graphics objects
             buildGrid(obj);
             count = size(obj.GridPoints, 2);
             seg = obj.VectorSegments + 2;
-            obj.hL = matlab.graphics.primitive.world.LineStrip('Parent', obj.Graphics, 'LineWidth', 0.5, 'ColorBinding', 'object', 'ColorData', uint8([127 127 127 255]'), 'StripData', uint32(1:seg:(count*seg + 1)), 'Layer', phx.internal.choose({'middle', 'front'}, obj.Overlay + 1));
+            obj.hL = matlab.graphics.primitive.world.LineStrip('Parent', obj.Graphics, 'LineWidth', 0.5, 'ColorBinding', 'object', 'ColorData', uint8([obj.Color*255 255]'), 'StripData', uint32(1:seg:(count*seg + 1)), 'Layer', phx.internal.choose({'middle', 'front'}, obj.Overlay + 1));
             phx.Dipole.updateView({obj}, [], 0, []);
         end
     end

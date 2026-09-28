@@ -29,7 +29,7 @@ classdef tZone < PhxTestCase
     methods (Test, TestTags = {'Graphics'})
         function emptyWatchIsCountZero(tc)
             % Watch-all with no simulation resolves to an empty watch set.
-            anchor = tc.mkBody([0 0 0], "static");
+            anchor = tc.spawnBodyOn(tc.Ax, [0 0 0], "static");
             z = phx.Zone(anchor, "Size", [2 2 2]);
             z.update();
             tc.verifyEqual(z.Count, 0);
@@ -37,8 +37,8 @@ classdef tZone < PhxTestCase
         end
 
         function detectsEntryAndExitViaUpdate(tc)
-            anchor = tc.mkBody([0 0 0], "static");
-            target = tc.mkBody([5 0 0], "dynamic");   % starts outside
+            anchor = tc.spawnBodyOn(tc.Ax, [0 0 0], "static");
+            target = tc.spawnBodyOn(tc.Ax, [5 0 0], "dynamic");   % starts outside
             z = phx.Zone(anchor, "Size", [2 2 2], "Bodies", target, ...
                 "EnteredFcn", @(zn, b) tc.onEnter(b), ...
                 "ExitedFcn",  @(zn, b) tc.onExit(b));
@@ -64,8 +64,8 @@ classdef tZone < PhxTestCase
 
         function anchorExcludedFromWatchSet(tc)
             % The anchor is never its own content, even if explicitly listed.
-            anchor = tc.mkBody([0 0 0], "static");
-            b = tc.mkBody([0 0 0], "dynamic");
+            anchor = tc.spawnBodyOn(tc.Ax, [0 0 0], "static");
+            b = tc.spawnBodyOn(tc.Ax, [0 0 0], "dynamic");
             z = phx.Zone(anchor, "Size", [4 4 4], "Bodies", [anchor b]);
             z.update();
             tc.verifyEqual(z.Count, 1);
@@ -73,8 +73,8 @@ classdef tZone < PhxTestCase
         end
 
         function boxBoundaryRespectsSize(tc)
-            anchor = tc.mkBody([0 0 0], "static");
-            b = tc.mkBody([0 0 0], "dynamic");
+            anchor = tc.spawnBodyOn(tc.Ax, [0 0 0], "static");
+            b = tc.spawnBodyOn(tc.Ax, [0 0 0], "dynamic");
             z = phx.Zone(anchor, "Size", [2 2 2], "Bodies", b);   % box [-1,1]^3
 
             b.Position = [0.99 0 0]; z.update();
@@ -84,8 +84,8 @@ classdef tZone < PhxTestCase
         end
 
         function positionOffsetsTheZone(tc)
-            anchor = tc.mkBody([0 0 0], "static");
-            b = tc.mkBody([0 0 0], "dynamic");
+            anchor = tc.spawnBodyOn(tc.Ax, [0 0 0], "static");
+            b = tc.spawnBodyOn(tc.Ax, [0 0 0], "dynamic");
             z = phx.Zone(anchor, "Position", [5 0 0], "Size", [2 2 2], "Bodies", b);
 
             b.Position = [5 0 0]; z.update();
@@ -97,8 +97,8 @@ classdef tZone < PhxTestCase
         function zoneMovesWithTheAnchor(tc)
             % The zone frame is relative to the anchor, so moving the anchor
             % moves the zone; a fixed body drops out of it.
-            anchor = tc.mkBody([0 0 0], "kinematic");
-            b = tc.mkBody([0 0 0], "static");
+            anchor = tc.spawnBodyOn(tc.Ax, [0 0 0], "kinematic");
+            b = tc.spawnBodyOn(tc.Ax, [0 0 0], "static");
             z = phx.Zone(anchor, "Size", [2 2 2], "Bodies", b);
 
             z.update();
@@ -197,15 +197,6 @@ classdef tZone < PhxTestCase
     end
 
     methods (Access = private)
-        function b = mkBody(tc, pos, type)
-            arguments
-                tc
-                pos (1, 3) double
-                type (1, 1) string = "dynamic"
-            end
-            b = phx.Body(tc.Ax, "Position", pos, "Type", type);
-        end
-
         function onEnter(tc, b)
             tc.EnterLog(end + 1) = b;
         end

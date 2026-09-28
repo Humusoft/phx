@@ -27,8 +27,10 @@ function results = runtests_phx(scope)
     root = fileparts(here);
 
     % Make the phx package visible without permanently touching the path.
-    addpath(fullfile(root, "phx"));
-    cleanup = onCleanup(@() rmpath(fullfile(root, "phx"))); %#ok<NASGU>
+    % Restore the caller's path as it was: a plain rmpath would also remove
+    % a phx folder the caller had on the path before the run.
+    oldPath = addpath(fullfile(root, "phx"));
+    cleanup = onCleanup(@() path(oldPath)); %#ok<NASGU>
 
     suite = TestSuite.fromFolder(here);
 

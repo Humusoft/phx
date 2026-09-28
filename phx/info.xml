@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding="utf-8"?>
 <productinfo>
 
-    <matlabrelease>R2026a</matlabrelease>
+    <matlabrelease>R2026b</matlabrelease>
     <name>PHX</name>
     <type>toolbox</type>
     <icon></icon>

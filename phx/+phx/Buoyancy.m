@@ -97,9 +97,15 @@ classdef Buoyancy < phx.base.Object
             obj.ParentAxes = Parents(1).ParentAxes;
             obj.Color = [0.25 0.55 0.8];
 
-            % Process input arguments
-            obj.Parents = addChild(Parents, obj);
-            phx.internal.applyArguments(Options, obj);
+            % Process input arguments; a failure leaves no half-built object
+            % attached to the parents
+            try
+                obj.Parents = addChild(Parents, obj);
+                phx.internal.applyArguments(Options, obj);
+            catch err
+                obj.abandon(Parents);
+                rethrow(err);
+            end
 
             % Create graphics objects (translucent liquid surface)
             if all(obj.SurfaceSize > 0)

@@ -130,7 +130,7 @@ function parts = build(ax, points, Options)
             "Shape", [shape {"Color", Options.Color, "Density", Options.Density}], ...
             "Friction", Options.Friction);
 
-        R{i} = alignZ(segments(i, :)/lengths(i));
+        R{i} = phx.internal.Math.alignZ(eye(3), segments(i, :));
         T = eye(4);
         T(1:3, 1:3) = R{i};
         T(1:3, 4) = (points(i, :) + points(i + 1, :))'/2;
@@ -164,17 +164,6 @@ function parts = build(ax, points, Options)
     parts.links = links;
     parts.joints = joints;
     parts.anchors = anchors;
-end
-
-function R = alignZ(dir)
-% Rotation matrix turning the z axis into the given unit direction
-    c = cross([0 0 1], dir);
-    s = norm(c);
-    if s < 1e-12
-        R = phx.internal.Math.rotAA([1 0 0], pi*(dir(3) < 0));
-    else
-        R = phx.internal.Math.rotAA(c/s, atan2(s, dir(3)));
-    end
 end
 
 function j = makeJoint(bodyA, bodyB, pa, pb, axis, RA, RB)

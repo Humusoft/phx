@@ -35,25 +35,31 @@ classdef Script < phx.base.Object
             obj.RedrawOrder = "none";
             obj.ParentAxes = [];
 
-            % Process input arguments
-            obj.Parents = addChild(Parents, obj, "phx.base.Object");
+            % Process input arguments; a failure leaves no half-built object
+            % attached to the parents
+            try
+                obj.Parents = addChild(Parents, obj, "phx.base.Object");
 
-            % Add curves
-            n = numel(Curves);
-            obj.Curves(1:n, [4 5]) = {'linear'};
-            for i = 1:n
-                curve = Curves{i};
-                if isnumeric(curve{2})
-                    s = numel(curve);
-                    obj.Curves(i, 1:s) = curve;
-                    obj.Curves{i, 1} = char(obj.Curves{i, 1});
-                    obj.Curves{i, 4} = char(obj.Curves{i, 4});
-                    obj.Curves{i, 5} = char(obj.Curves{i, 5});
-                else
-                    obj.Curves{i, 1} = char(curve{1});
-                    obj.Curves{i, 2} = eval(['@(t)' char(curve{2})]);
-                    obj.Curves(i, 3:5) = {[]};
+                % Add curves
+                n = numel(Curves);
+                obj.Curves(1:n, [4 5]) = {'linear'};
+                for i = 1:n
+                    curve = Curves{i};
+                    if isnumeric(curve{2})
+                        s = numel(curve);
+                        obj.Curves(i, 1:s) = curve;
+                        obj.Curves{i, 1} = char(obj.Curves{i, 1});
+                        obj.Curves{i, 4} = char(obj.Curves{i, 4});
+                        obj.Curves{i, 5} = char(obj.Curves{i, 5});
+                    else
+                        obj.Curves{i, 1} = char(curve{1});
+                        obj.Curves{i, 2} = eval(['@(t)' char(curve{2})]);
+                        obj.Curves(i, 3:5) = {[]};
+                    end
                 end
+            catch err
+                obj.abandon(Parents);
+                rethrow(err);
             end
         end
     end

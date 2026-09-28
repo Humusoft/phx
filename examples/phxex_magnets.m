@@ -82,8 +82,6 @@ function phxex_magnets(nBalls, annealTime, seed)
     % On-screen readout
     viewer.displayText("Dropping...");
 
-    % Sleeping must stay disabled, otherwise slow magnets would stop
-    % responding to the dipole field
     sim = phx.Simulation(ax);
     dt = 0.005;
     subSteps = 10;

@@ -38,10 +38,14 @@ classdef Camera < phx.base.Object
         % (0 for rigid tracking, Inf for a static camera)
         TrackingLag (1, 1) double {mustBeNonnegative} = 0
 
-        % PHX viewer
+        % PHX viewer or axes the camera drives
+        % Defaults to the viewer of the figure the first body is drawn in,
+        % or to that body's axes
         Viewer = []
 
         % Video file name
+        % Recording starts with the first simulation build and the file is
+        % finalized when the camera is deleted
         RecordFile (1, 1) string
 
         % Video frame rate based on simulation time
@@ -61,23 +65,34 @@ classdef Camera < phx.base.Object
             obj.RedrawOrder = "after";
             obj.ParentAxes = ParentA.ParentAxes;
 
-            % Process input arguments
-            if ParentA == ParentB
-                addChild(ParentA, obj); % two same bodies would cause a warning
-                obj.Parents = {ParentA ParentB};
-            else
-                obj.Parents = addChild([ParentA ParentB], obj);
-            end
-            phx.internal.applyArguments(Options, obj);
-
-            % Get default viewer or axes object
-            if isempty(obj.Viewer)
-                v = getappdata(gcf, "phxViewer");
-                if ~isempty(v)
-                    obj.Viewer = v;
+            % Process input arguments; a failure leaves no half-built object
+            % attached to the parents
+            try
+                if ParentA == ParentB
+                    addChild(ParentA, obj); % two same bodies would cause a warning
+                    obj.Parents = {ParentA ParentB};
                 else
-                    obj.Viewer = gca;
+                    obj.Parents = addChild([ParentA ParentB], obj);
                 end
+                phx.internal.applyArguments(Options, obj);
+
+                % Default to the viewer (or axes) the scene is drawn in
+                if isempty(obj.Viewer)
+                    ax = ParentA.ParentAxes;
+                    if isempty(ax)
+                        error("phx:Camera:noView", ...
+                            "The camera needs a Viewer, or a first body drawn in axes.");
+                    end
+                    v = getappdata(ancestor(ax, "figure"), "phxViewer");
+                    if ~isempty(v) && isvalid(v)
+                        obj.Viewer = v;
+                    else
+                        obj.Viewer = ax;
+                    end
+                end
+            catch err
+                obj.abandon([ParentA ParentB]);
+                rethrow(err);
             end
 
             % Create graphics objects
@@ -93,7 +108,9 @@ classdef Camera < phx.base.Object
         end
 
         function valid = initObject(obj, world)
-            if obj.RecordFile ~= ""
+            % Open the video once; later pipeline rebuilds keep recording
+            % into the same file
+            if obj.RecordFile ~= "" && isempty(obj.Video)
                 obj.Video = VideoWriter(obj.RecordFile, "MPEG-4");
                 obj.Video.FrameRate = obj.RecordFPS;
                 obj.Video.open;
@@ -103,7 +120,7 @@ classdef Camera < phx.base.Object
             valid = obj.checkObject;
         end
 
-        function destroyObject(obj) %#ok<MANU> function prototype
+        function destroyObject(obj)
             if ~isempty(obj.Video)
                 obj.Video.close;
             end
@@ -132,8 +149,15 @@ classdef Camera < phx.base.Object
                 end
 
                 if ~isempty(obj.Video) && time >= obj.NextTime
-                    obj.Video.writeVideo(getframe(gcf));
-                    obj.NextTime = time + 1/obj.RecordFPS;
+                    if isa(obj.Viewer, "phx.extra.Viewer")
+                        fig = obj.Viewer.Figure;
+                    else
+                        fig = ancestor(obj.Viewer, "figure");
+                    end
+                    obj.Video.writeVideo(getframe(fig));
+                    % Keep to the frame rate on average; if redraws come less
+                    % often than frames, take one frame per redraw
+                    obj.NextTime = max(obj.NextTime + 1/obj.RecordFPS, time);
                 end
             end
         end

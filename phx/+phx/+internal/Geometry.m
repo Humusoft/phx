@@ -285,14 +285,14 @@ classdef Geometry
             if size(Spine, 1) < 2
                 return
             end
-            if size(Spine, 1) ~= size(Scale, 1)
-                Scale = ones(size(Spine, 1), 3)*Scale(1);
+            % One scale row per spine point; a single row applies to all of them
+            if size(Scale, 1) ~= size(Spine, 1)
+                Scale = repmat(Scale(1, :), size(Spine, 1), 1);
+            end
+            if size(Scale, 2) == 1
+                Scale = repmat(Scale, [1 3]);
             else
-                if size(Scale, 2) == 1
-                    Scale = repmat(Scale, [1 3]);
-                else
-                    Scale = [ones(size(Scale, 1), 1) Scale(:, [1 2])];
-                end
+                Scale = [ones(size(Scale, 1), 1) Scale(:, [1 2])];
             end
 
             % Prepare segment profile

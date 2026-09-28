@@ -15,16 +15,22 @@ function phxex_joints(showGraphs)
     xlim([-5 5]); ylim([-5 5]); zlim([-5 5]);
 
     % Create static body A
-    A = phx.Body("Type", "static", "Shape", {"Box", "SkeletPoints", [1.5 0 0; -3 0 3]}, "Restitution", 0.5);
+    A = phx.Body("Type", "static", "Shape", {"Box"}, "Restitution", 0.5);
 
     % Create dynamic body B
-    B = phx.Body("Position", [3 0 0], "Shape", {"Box", "SkeletPoints", [-1.5 0 0; 0 -1.5 0]});
+    B = phx.Body("Position", [3 0 0], "Shape", {"Box"});
 
     % Create dynamic body C
-    C = phx.Body("Position", [3 -3 0], "Shape", {"Box", "SkeletPoints", [0 1.5 0]});
+    C = phx.Body("Position", [3 -3 0], "Shape", {"Box"});
 
     % Create dynamic body D
-    D = phx.Body("Position", [3 -3 -1.5], "Shape", {"Box", "SkeletPoints", [0 0 1.5]});
+    D = phx.Body("Position", [3 -3 -1.5], "Shape", {"Box"});
+
+    % Draw arms from the body centres to their joint points
+    line(A.Graphics, [-3 0 1.5], [0 0 0], [3 0 0], "LineWidth", 2, "Color", A.Color, "Marker", ".", "MarkerSize", 20);
+    line(B.Graphics, [-1.5 0 0], [0 0 -1.5], [0 0 0], "LineWidth", 2, "Color", B.Color, "Marker", ".", "MarkerSize", 20);
+    line(C.Graphics, [0 0], [0 1.5], [0 0], "LineWidth", 2, "Color", C.Color, "Marker", ".", "MarkerSize", 20);
+    line(D.Graphics, [0 0], [0 0], [0 1.5], "LineWidth", 2, "Color", D.Color, "Marker", ".", "MarkerSize", 20);
 
     % Create dynamic body E
     E = phx.Body("Position", [-3 0 3], "EulerAngles", [0 pi/4 0], "Shape", {"Box"}, "Restitution", 1);

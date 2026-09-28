@@ -17,10 +17,11 @@ runtests_phx("pure")    % headless: no engine, no graphics
 
 Every test class derives from `PhxTestCase`, which holds what they all need:
 `requireEngine` (assume the MEX away when it is missing), `spawnBody` (a
-headless `phx.Body`), `prepareAxes` (an axes in an invisible figure),
-`bodyShape`, `verifyAnchorsCoincide` and the temporary-file writers
-`writeTextFile` / `writeSTL`. It declares no tests of its own, so it adds
-nothing to the suite.
+headless `phx.Body`), `spawnBodyOn` (a body drawn into given axes),
+`prepareAxes` (an axes in an invisible figure), `bodyShape`,
+`verifyAnchorsCoincide`, the teardown `PhxTestCase.deleteIfValid` (for objects
+a test may delete itself) and the temporary-file writers `writeTextFile` /
+`writeSTL`. It declares no tests of its own, so it adds nothing to the suite.
 
 Prefer headless bodies (`[]` axes) unless the test is about the drawing.
 
@@ -34,7 +35,7 @@ Prefer headless bodies (`[]` axes) unless the test is about the drawing.
 | `tInternals` | nothing (one `Graphics` case) | — / `Graphics` | the undocumented MATLAB internals PHX deliberately uses (perf) still exist and behave |
 | `tReadPly` | nothing | — | the pure-MATLAB PLY reader: ASCII/binary (both endiannesses), vertices, normals, color, polygon fan-triangulation |
 | `tExtrusion` | nothing | — | the rotation-minimizing frame of the swept-profile generator |
-| `tSimulation` | engine (one `Graphics` case) | `Engine` | free fall, static bodies, time accumulation, determinism, draw-path independence of mesh collision hulls |
+| `tSimulation` | engine (one `Graphics` case) | `Engine` / `Graphics` | free fall, static bodies, time accumulation, determinism, draw-path independence of mesh collision hulls |
 | `tPipelineRebuild` | engine (two `Graphics` cases) | `Engine` / `Graphics` | rebuilding the execution pipelines: a body added or deleted mid-run, body identity across a rebuild, invisible bodies kept out of the redraw, and the mid-run `delete` that used to crash the process |
 | `tStoredState` | graphics (transfer tests also engine) | `Graphics` / `Engine` | the named kinematic-state store (`storeState`/`restoreState`/`clearStates`) and the pose & velocity transfer across engine initialization and teardown |
 | `tForceApplication` | engine | `Engine` | local/world force & torque frames, absolute vs COM-relative point of application, as one table of cases (guards the 2026-07-17 wrapper fixes) |
@@ -46,6 +47,7 @@ Prefer headless bodies (`[]` axes) unless the test is about the drawing.
 | `tJointFrames` | engine | `Engine` | the joint-frame coincidence rule documented on `phx.base.Joint`: a mismatch along a *free* DOF is inert, a mismatch in a *constrained* one is pulled out gradually, a `FixedJoint` leaves no free direction |
 | `tJointMotors` | engine (two property cases need graphics only) | `Engine` / `Graphics` | the revolute and prismatic motor: reaching and holding `TargetVelocity`, saturating into a pure torque/force source, the zero-target brake against a load, a zero limit meaning off, both properties writing through to a running world, and the motor effort appearing in the reaction feedback |
 | `tRevolutionEnvelope` | engine | `Engine` | the bounding-cylinder collision envelope of `phx.shape.Revolution` |
+| `tTube` | nothing (mesh cases graphics, envelope cases engine) | — / `Graphics` / `Engine` | the bore, wall and outer size of `phx.shape.Tube`, mass against the annulus formulas, the taper, a closed outward-facing mesh, and a body built for every envelope with the concave bore left open |
 | `tZone` | graphics (pipeline tests also engine) | `Graphics` / `Engine` | entry/exit detection, the static-anchor watch rule, passive zones, seeding on rebuild |
 | `tRaycast` | graphics (geometry tests also engine) | `Graphics` / `Engine` | hit point/normal/distance, anchor-local rays, NaN misses, both sensor modes, the objectID to phx.Body lookup |
 | `tPlanarShadow` | graphics (projection tests also engine) | `Graphics` / `Engine` | shadow projection onto the plane, light models, anchoring, extent, decimation |
@@ -57,7 +59,7 @@ Prefer headless bodies (`[]` axes) unless the test is about the drawing.
 | `tExampleGallery` | nothing (source checkout only) | — | the generated Examples gallery, its thumbnails and the toc stay in sync with `examples/` |
 | `tDocLinks` | nothing (source checkout only) | — | no HTML help page links to or shows a file that is not there |
 
-- **`Graphics`** — a body owns an `hgtransform`, so a display-capable session is needed (invisible figures are used).
+- **`Graphics`** — the test creates figures (invisible ones), so a display-capable session is needed. Headless bodies (`[]` axes) need no display and run untagged.
 - **`Engine`** — needs the `phx.engine.io` MEX; gracefully *assumed away* (filtered, not failed) when absent.
 
 ## Next steps (not yet covered)

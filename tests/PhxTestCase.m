@@ -4,7 +4,7 @@ classdef PhxTestCase < matlab.unittest.TestCase
 %   Base class of the t* test classes. It carries the helpers that were
 %   otherwise copied into almost every one of them: the engine assumption,
 %   headless and on-axes body spawning, the shape lookup, the joint-anchor
-%   check and the temporary-file writers.
+%   check, the deleteIfValid teardown and the temporary-file writers.
 %
 %   It declares no Test methods, so it contributes nothing to the suite that
 %   runtests_phx builds from this folder.
@@ -28,6 +28,18 @@ classdef PhxTestCase < matlab.unittest.TestCase
             % Headless body ([] axes) at the given position; any further
             % name-value pairs are passed to the constructor.
             b = phx.Body([], "Position", position, varargin{:});
+        end
+
+        function b = spawnBodyOn(~, ax, position, type)
+            % Body of the default shape drawn into the given axes, at the
+            % given position and of the given type.
+            arguments
+                ~
+                ax
+                position (1, 3) double
+                type (1, 1) string = "dynamic"
+            end
+            b = phx.Body(ax, "Position", position, "Type", type);
         end
 
         function ax = prepareAxes(tc)
@@ -115,6 +127,15 @@ classdef PhxTestCase < matlab.unittest.TestCase
             end
             lines(end + 1) = "endsolid";
             file = tc.writeTextFile(name, strjoin(lines, newline));
+        end
+    end
+
+    methods (Static, Access = protected)
+        function deleteIfValid(obj)
+            % Teardown for the tests that may delete the object themselves.
+            if isvalid(obj)
+                delete(obj);
+            end
         end
     end
 

@@ -165,14 +165,14 @@ classdef tStoredState < PhxTestCase
             tc.requireEngine;
             whole = tc.spawnBody([0 0 10]);
             ref = phx.Simulation(whole);
-            tc.addTeardown(@() tStoredState.deleteIfValid(ref));
+            tc.addTeardown(@() PhxTestCase.deleteIfValid(ref));
             ref.step(1.5, 300, -1);
             expected = whole.Position(3);
             delete(ref);
 
             split = tc.spawnBody([0 0 10]);
             first = phx.Simulation(split);
-            tc.addTeardown(@() tStoredState.deleteIfValid(first));
+            tc.addTeardown(@() PhxTestCase.deleteIfValid(first));
             first.step(1.0, 200, -1);
             falling = split.LinearVelocity(3);
             tc.assumeLessThan(falling, -1);     % guard the premise
@@ -182,7 +182,7 @@ classdef tStoredState < PhxTestCase
                 "The body lost the velocity the solver gave it.");
 
             second = phx.Simulation(split);
-            tc.addTeardown(@() tStoredState.deleteIfValid(second));
+            tc.addTeardown(@() PhxTestCase.deleteIfValid(second));
             second.step(0.5, 100, -1);
 
             tc.verifyEqual(split.Position(3), expected, "AbsTol", 1e-6, ...
@@ -227,15 +227,6 @@ classdef tStoredState < PhxTestCase
             sim.step(0.5, 50, -1);
 
             tc.verifyEqual(b.Transform, first, "AbsTol", 1e-12);
-        end
-    end
-
-    methods (Static, Access = private)
-        function deleteIfValid(obj)
-            % Teardown for the tests that delete their simulations themselves.
-            if isvalid(obj)
-                delete(obj);
-            end
         end
     end
 

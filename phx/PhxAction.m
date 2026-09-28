@@ -52,8 +52,12 @@ function setup(block)
     block.SampleTimes = [-1 0];               % inherited
     block.DialogPrmsTunable = repmat({'Nontunable'}, 1, 4);
     block.SetAccelRunOnTLC(false);
-    block.RegBlockMethod('Start', @Start);
-    block.RegBlockMethod('Outputs', @Outputs);
+
+    % The backend is captured in the closures: setup runs once per block
+    % instance, so every PhxAction block in a model keeps its own state
+    AB = phx.simulink.ActionBackend;
+    block.RegBlockMethod('Start', @(b) Start(b, AB));
+    block.RegBlockMethod('Outputs', @(b) Outputs(b, AB));
     block.RegBlockMethod('Terminate', @Terminate);
     block.RegBlockMethod('SetInputPortDimensions', @SetInputPortDimensions);
     block.RegBlockMethod('SetInputPortDimensionsMode', @SetInputPortDimensionsMode);
@@ -68,8 +72,8 @@ function SetInputPortDimensionsMode(block, idx, mode)
     block.InputPort(idx).DimensionsMode = mode;
 end
 
-function Start(block)
-    AB = phx.simulink.ActionBackend;
+function Start(block, AB)
+    % Start from a clean state on every run
     AB.Code = block.DialogPrm(1).Data;
     AB.MainSID = block.DialogPrm(4).Data;
     outSizes = block.DialogPrm(3).Data;
@@ -80,15 +84,14 @@ function Start(block)
         if isscalar(d), d = [d 1]; end       % held value matches the port size
         AB.Out{k} = zeros(d);
     end
-    set_param(block.BlockHandle, 'UserData', AB);
+    AB.State = struct;
+    AB.PrevTrig = 0;
+    AB.Resolved = false;
+    AB.Sim = [];
+    AB.Ax = [];
 end
 
-function Outputs(block)
-    persistent AB
-    if block.CurrentTime == 0
-        AB = get_param(block.BlockHandle, 'UserData');
-    end
-
+function Outputs(block, AB)
     % Lazy bind to the scene-defining PhxModel block (all Starts have run by now)
     if ~AB.Resolved
         if ~isempty(AB.MainSID)

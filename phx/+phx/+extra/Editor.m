@@ -123,7 +123,10 @@ classdef Editor < handle
             % Create the embedded viewer on our axes and listen to selection.
             % RestrictedNavigation keeps mouse navigation inside the axes area,
             % which matters because the viewer only occupies part of the window.
-            obj.Viewer = phx.extra.Viewer(obj.Axes, "RestrictedNavigation", true);
+            % The scene is managed through the File menu, so the viewer's own
+            % Clear/Load/Save commands are hidden: they would bypass the tree,
+            % the inspector and the design types.
+            obj.Viewer = phx.extra.Viewer(obj.Axes, "RestrictedNavigation", true, "SceneMenu", false);
             obj.Viewer.SelectionChangedFcn = @(~) obj.onSelectionChanged;
 
             % Refresh the inspector pose after a drag finishes
@@ -266,7 +269,7 @@ classdef Editor < handle
             % Pure rendering/appearance internals are hidden to keep the
             % mini-editor focused on geometry.
             skip = ["Radius", "Style", "Material", "ForcePatch", ...
-                "SkeletColor", "SkeletStyle", "Texture", "TextureBlend"];
+                "Texture", "TextureBlend"];
             names = {};
             kinds = strings(1, 0);
             for p = metaclass(shp).PropertyList'

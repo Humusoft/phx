@@ -1,4 +1,4 @@
-classdef Globe < phx.base.Shape & phx.base.ShapeMesh
+classdef Globe < phx.base.Shape
 %phx.shape.Globe Globe shape
 %
 %   Visual appearance is based on a geometry of revolved profile with 
@@ -53,7 +53,7 @@ classdef Globe < phx.base.Shape & phx.base.ShapeMesh
             % Process input arguments
             obj = phx.internal.applyArguments(Options, obj);
             if isnan(obj.Color(1))
-                obj.Color = phx.base.ShapeMesh.newColor;
+                obj.Color = phx.base.Shape.newColor;
             end
 
             % Prepare geometry
@@ -69,7 +69,6 @@ classdef Globe < phx.base.Shape & phx.base.ShapeMesh
         end
 
         function drawTo(obj, target)
-            obj.drawSkelet(target, obj.Color);
             primitive = obj.drawMesh(target, obj.Vertices*obj.Radius, obj.Normals, obj.Faces, obj.TextCoords, obj.getTexture);
             setappdata(primitive, "phxShape", obj);
         end

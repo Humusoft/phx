@@ -24,7 +24,7 @@ classdef tPlanarShadow < PhxTestCase
     % --- Construction and property validation ---------------------------
     methods (Test, TestTags = {'Graphics'})
         function defaultsAreTheHorizontalGroundPlane(tc)
-            s = phx.PlanarShadow(tc.mkBody([0 0 1]));
+            s = phx.PlanarShadow(tc.spawnBodyOn(tc.Ax, [0 0 1]));
             tc.verifyEqual(s.Position, [0 0 0]);
             tc.verifyEqual(s.Normal, [0 0 1]);
             tc.verifyEqual(s.LightDirection, [0 0 -1]);
@@ -34,8 +34,8 @@ classdef tPlanarShadow < PhxTestCase
         end
 
         function shadowIsLinkedToEveryCaster(tc)
-            b1 = tc.mkBody([0 0 1]);
-            b2 = tc.mkBody([1 0 1]);
+            b1 = tc.spawnBodyOn(tc.Ax, [0 0 1]);
+            b2 = tc.spawnBodyOn(tc.Ax, [1 0 1]);
             s = phx.PlanarShadow([b1 b2]);
             tc.verifyNumElements(s.Parents, 2);
             tc.verifyTrue(b1.Children{1} == s);
@@ -43,8 +43,8 @@ classdef tPlanarShadow < PhxTestCase
         end
 
         function anchorAcceptsBodyOrEmpty(tc)
-            b = tc.mkBody([0 0 1]);
-            plate = tc.mkBody([0 0 0], "static");
+            b = tc.spawnBodyOn(tc.Ax, [0 0 1]);
+            plate = tc.spawnBodyOn(tc.Ax, [0 0 0], "static");
             s = phx.PlanarShadow(b, "Anchor", plate);
             tc.verifyTrue(s.Anchor == plate);
 
@@ -54,7 +54,7 @@ classdef tPlanarShadow < PhxTestCase
         end
 
         function invalidPropertiesAreRejected(tc)
-            b = tc.mkBody([0 0 1]);
+            b = tc.spawnBodyOn(tc.Ax, [0 0 1]);
             s = phx.PlanarShadow(b);
             tc.verifyError(@() set(s, "Anchor", 42), "MATLAB:validators:mustBeA");
             tc.verifyError(@() set(s, "Anchor", [b b]), "MATLAB:validators:mustBeScalarOrEmpty");
@@ -126,7 +126,7 @@ classdef tPlanarShadow < PhxTestCase
             % geometry and to ignore Offset. Against a bounding-box corner,
             % or against the offset plane, a body resting on the surface
             % falls to the far side and its shadow blinks out.
-            b = tc.mkBody([0 0 0.3], "static");
+            b = tc.spawnBodyOn(tc.Ax, [0 0 0.3], "static");
             b.Shape = {"Sphere", "Radius", 0.3};
             s = phx.PlanarShadow(b, "Offset", 0.05);
             tc.mkSim();
@@ -138,7 +138,7 @@ classdef tPlanarShadow < PhxTestCase
         function anchoredPlaneFollowsTheAnchor(tc)
             % The plane is the top face of a plate tilted about x, so every
             % shadow vertex must satisfy the plane equation of that face.
-            plate = tc.mkBody([0 0 0], "static");
+            plate = tc.spawnBodyOn(tc.Ax, [0 0 0], "static");
             plate.EulerAngles = [0.3 0 0];
             b = tc.mkBox([0 0 2]);
             s = phx.PlanarShadow(b, "Anchor", plate, "Position", [0 0 0.1], "Offset", 0);
@@ -162,7 +162,7 @@ classdef tPlanarShadow < PhxTestCase
 
         function detailDecimatesTheCachedGeometry(tc)
             % A coarser silhouette still lands in the plane under the body
-            b = tc.mkBody([0 0 2], "static");
+            b = tc.spawnBodyOn(tc.Ax, [0 0 2], "static");
             b.Shape = {"Sphere", "Radius", 0.5, "Division", 4};
             full = phx.PlanarShadow(b, "Offset", 0);
             coarse = phx.PlanarShadow(b, "Offset", 0, "Detail", 0.1);
@@ -186,7 +186,7 @@ classdef tPlanarShadow < PhxTestCase
         end
 
         function deletedAnchorSilencesTheShadow(tc)
-            plate = tc.mkBody([0 0 0], "static");
+            plate = tc.spawnBodyOn(tc.Ax, [0 0 0], "static");
             b = tc.mkBox([0 0 2]);
             s = phx.PlanarShadow(b, "Anchor", plate);
             tc.mkSim();
@@ -198,15 +198,6 @@ classdef tPlanarShadow < PhxTestCase
     end
 
     methods (Access = private)
-        function b = mkBody(tc, pos, type)
-            arguments
-                tc
-                pos (1, 3) double
-                type (1, 1) string = "dynamic"
-            end
-            b = phx.Body(tc.Ax, "Position", pos, "Type", type);
-        end
-
         function b = mkBox(tc, pos, type)
             arguments
                 tc

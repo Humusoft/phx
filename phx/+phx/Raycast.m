@@ -127,9 +127,15 @@ classdef Raycast < phx.base.Object
             obj.ParentAxes = Parent.ParentAxes;
             obj.Color = [1 0.4 0];
 
-            % Process input arguments
-            obj.Parents = addChild(Parent, obj);
-            phx.internal.applyArguments(Options, obj);
+            % Process input arguments; a failure leaves no half-built object
+            % attached to the parents
+            try
+                obj.Parents = addChild(Parent, obj);
+                phx.internal.applyArguments(Options, obj);
+            catch err
+                obj.abandon(Parent);
+                rethrow(err);
+            end
 
             % Create graphics objects
             obj.buildRays;

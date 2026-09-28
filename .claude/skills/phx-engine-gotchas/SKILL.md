@@ -75,15 +75,6 @@ MATLAB. A local point is taken relative to the body origin; the engine computes 
 moment arm about the centre of mass itself. Applied forces last **one step** and are
 cleared afterwards. The public wrappers are `Body.applyForce`/`Body.applyTorque`.
 
-## Engine variants (internal)
-
-The active MEX can be swapped for an alternate build (`debug`, `verbose`, `time`,
-plus multithreaded `...Mt` variants) via the internal `phx.engine.switchEngine`
-helper. This is an **internal/advanced facility, not part of the typical user
-workflow** — mentioned only so you recognize it; don't reach for it in normal
-scene-building code. The default `release` build is what runs unless someone has
-deliberately switched it.
-
 ## phx.engine.BulletSettings — initial engine config
 
 Pass engine-specific initial settings via the simulation's `EngineSettings`:

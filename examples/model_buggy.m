@@ -14,11 +14,14 @@ function model_buggy
     chassis = phx.Body("Position", [0 0 10], "Shape", {"Mesh", "Source", resdir+"BuggyBody.stl", "Details", 0.2, "Scale", 0.01, "Color", [0.9 0.9 0.9], "Envelope", "convex"}, "Mass", 300, "Inertia", [100 100 100], "Name", "Chassis");
 
     % Create wheels with marks
-    shpWheel = phx.shape.Mesh("Source", resdir+"BuggyWheelFL.stl", "Details", 0.2, "Scale", 0.01, "Color", [0.3 0.3 0.3], "Envelope", "cylinder", "Axis", "x", "SkeletPoints", [1 0 1.6; 1 0 2.2], "SkeletStyle", "line", "SkeletColor", [1 1 1]);
+    shpWheel = phx.shape.Mesh("Source", resdir+"BuggyWheelFL.stl", "Details", 0.2, "Scale", 0.01, "Color", [0.3 0.3 0.3], "Envelope", "cylinder", "Axis", "x");
     wheelFL = phx.Body("Position", [-9 -7 4], "EulerAngles", [0 0 -pi/2], "Shape", shpWheel, "Mass", 30, "Inertia", [2 2 2], "Name", "WheelFL");
     wheelFR = phx.Body("Position", [-9 7 4], "EulerAngles", [0 0 pi/2], "Shape", shpWheel, "Mass", 30, "Inertia", [2 2 2], "Name", "WheelFR");
     wheelRL = phx.Body("Position", [11 -7 4], "EulerAngles", [0 0 -pi/2], "Shape", shpWheel, "Mass", 30, "Inertia", [2 2 2], "Name", "WheelRL");
     wheelRR = phx.Body("Position", [11 7 4], "EulerAngles", [0 0 pi/2], "Shape", shpWheel, "Mass", 30, "Inertia", [2 2 2], "Name", "WheelRR");
+    for wheel = [wheelFL wheelFR wheelRL wheelRR]
+        line([1 1], [0 0], [1.6 2.2], "LineWidth", 2, "Color", [1 1 1], "Parent", wheel.Graphics);
+    end
 
     % Create arms
     shpArm = phx.shape.Box("Size", [0.5 4 0.5], "Color", [0.4 0.8 1]);

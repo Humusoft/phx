@@ -30,14 +30,14 @@ classdef tRaycast < PhxTestCase
     % --- Configuration and reporting (engine-free) ----------------------
     methods (Test, TestTags = {'Graphics'})
         function defaultIsOneDownwardRay(tc)
-            rc = phx.Raycast(tc.mkBody([0 0 0]));
+            rc = phx.Raycast(tc.spawnBodyOn(tc.Ax, [0 0 0], "static"));
             tc.verifyEqual(rc.Count, 1);
             tc.verifyEqual(rc.Origins, [0; 0; 0]);
             tc.verifyEqual(rc.Ends, [0; 0; -1]);
         end
 
         function outputsAreAlignedAndEmptyBeforeAnyCast(tc)
-            rc = phx.Raycast(tc.mkBody([0 0 0]), "Ends", zeros(3, 4));
+            rc = phx.Raycast(tc.spawnBodyOn(tc.Ax, [0 0 0], "static"), "Ends", zeros(3, 4));
             tc.verifyEqual(size(rc.Points), [3 4]);
             tc.verifyEqual(size(rc.Normals), [3 4]);
             tc.verifyEqual(size(rc.Distances), [1 4]);
@@ -50,7 +50,7 @@ classdef tRaycast < PhxTestCase
         end
 
         function countAndOutputsFollowEnds(tc)
-            rc = phx.Raycast(tc.mkBody([0 0 0]), "Ends", zeros(3, 2));
+            rc = phx.Raycast(tc.spawnBodyOn(tc.Ax, [0 0 0], "static"), "Ends", zeros(3, 2));
             tc.verifyEqual(rc.Count, 2);
             rc.Ends = zeros(3, 7);
             tc.verifyEqual(rc.Count, 7);
@@ -60,7 +60,7 @@ classdef tRaycast < PhxTestCase
         end
 
         function noRaysIsEmptyNotAnError(tc)
-            rc = phx.Raycast(tc.mkBody([0 0 0]), "Ends", zeros(3, 0));
+            rc = phx.Raycast(tc.spawnBodyOn(tc.Ax, [0 0 0], "static"), "Ends", zeros(3, 0));
             tc.verifyEqual(rc.Count, 0);
             tc.verifyEmpty(rc.Points);
             tc.verifyEmpty(rc.Hits);
@@ -73,7 +73,7 @@ classdef tRaycast < PhxTestCase
         end
 
         function updateWithoutSimulationErrors(tc)
-            rc = phx.Raycast(tc.mkBody([0 0 0]), "SimulationOrder", "none");
+            rc = phx.Raycast(tc.spawnBodyOn(tc.Ax, [0 0 0], "static"), "SimulationOrder", "none");
             tc.verifyError(@() rc.update(), "phx:Raycast:noSimulation");
         end
     end
@@ -314,10 +314,6 @@ classdef tRaycast < PhxTestCase
     end
 
     methods (Access = private)
-        function b = mkBody(tc, pos)
-            b = phx.Body(tc.Ax, "Position", pos, "Type", "static");
-        end
-
         function [floor, probe] = probeBodies(tc, height)
             % Floor with its top face at z = 0 and a static probe body
             % hovering the given height above it. No simulation yet - the
@@ -332,12 +328,11 @@ classdef tRaycast < PhxTestCase
             % Build the simulation from the axes, which collects the bodies
             % and reaches their children - the sensor among them.
             sim = phx.Simulation(tc.Ax, "Gravity", [0 0 0]);
-            tc.addTeardown(@() tc.deleteIfValid(sim));
+            tc.addTeardown(@() PhxTestCase.deleteIfValid(sim));
         end
 
         function p = fallRun(tc, withSensor)
-            ax = axes(figure("Visible", "off"));
-            tc.addTeardown(@() close(ancestor(ax, "figure")));
+            ax = tc.prepareAxes;
             phx.Body(ax, "Type", "static", "Position", [0 0 -0.5], ...
                 "Shape", {"Box", "Size", [40 40 1]});
             ball = phx.Body(ax, "Position", [3 2 6], "Mass", 1, ...
@@ -351,12 +346,6 @@ classdef tRaycast < PhxTestCase
             end
             p = ball.Position;
             delete(sim);
-        end
-
-        function deleteIfValid(~, obj)
-            if isvalid(obj)
-                delete(obj);
-            end
         end
     end
 

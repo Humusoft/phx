@@ -1,4 +1,4 @@
-classdef Cone < phx.base.Shape & phx.base.ShapeMesh
+classdef Cone < phx.base.Shape
 %phx.shape.Cone Cone shape
 %
 %   Visual appearance is based on a geometry of revolved profile with 
@@ -52,7 +52,7 @@ classdef Cone < phx.base.Shape & phx.base.ShapeMesh
             % Process input arguments
             obj = phx.internal.applyArguments(Options, obj);
             if isnan(obj.Color(1))
-                obj.Color = phx.base.ShapeMesh.newColor;
+                obj.Color = phx.base.Shape.newColor;
             end
         end
 
@@ -65,8 +65,6 @@ classdef Cone < phx.base.Shape & phx.base.ShapeMesh
         end
 
         function drawTo(obj, target)
-            obj.drawSkelet(target, obj.Color);
-
             [V, N, F, T] = phx.internal.Geometry.revolution([-0.5 0.5; 0.5 0], obj.Segments, true, false);
             V = V.*[obj.Diameter obj.Diameter obj.Height];
             [V, N] = phx.internal.Geometry.switchZAxis(obj.Axis, V, N);

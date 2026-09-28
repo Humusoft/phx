@@ -84,6 +84,14 @@ function examples = scanExamples(exampleDir)
 % catalog gives a summary to (a model has no H1 line to read one from).
     catalog = exampleCatalog;
     files = [dir(fullfile(exampleDir, "phxex_*.m")); dir(fullfile(exampleDir, "phxex_*.slx"))];
+
+    % A catalog row whose example was renamed or removed would go unnoticed
+    [~, found] = fileparts(string({files.name}));
+    stale = setdiff(catalog.Name, found);
+    if ~isempty(stale)
+        warning("buildExampleDocs:staleCatalog", ...
+            "exampleCatalog lists examples that do not exist: %s", join(stale, ", "));
+    end
     examples = struct("Name", {}, "Summary", {}, "Category", {}, "Delay", {}, ...
         "Press", {}, "IsModel", {}, "Rank", {}, "Thumbnail", {}, "HasThumbnail", {});
 

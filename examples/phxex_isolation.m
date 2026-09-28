@@ -76,106 +76,31 @@ function phxex_isolation
     xrB = zeros(nSteps, 1);   % roof, isolated tower
     zrA = zeros(nSteps, 1);
     zrB = zeros(nSteps, 1);
-    xpl = zeros(nSteps, 1);   % isolated base plate
-    xr1 = zeros(nSteps, 1);   % roller 1
-    
+
     pA0 = S.roofA.Position;  pB0 = S.roofB.Position;
-    pl0 = S.plate.Position;  r10 = S.roller1.Position;
-    
-    kColl = NaN;
-    
+
+    collTime = NaN;           % when the reference tower's roof has dropped
+
     for k = 1:nSteps
-        tk = k * P.dt;
-        ts  = k * P.dt;
-        amp = P.ampMax * min(1, ts / P.tRamp);
-        g   = amp * sin(2*pi*P.freq*ts);
+        tk  = k * P.dt;
+        amp = P.ampMax * min(1, tk / P.tRamp);
+        g   = amp * sin(2*pi*P.freq*tk);
         S.ground.Position = [g 0 -P.groundT/2];
-    
+
         sim.step(P.dt, 1, 1);
-    
+
         pA = S.roofA.Position;  pB = S.roofB.Position;
         t(k)   = tk;      xg(k)  = g;
         xrA(k) = pA(1);   zrA(k) = pA(3);
         xrB(k) = pB(1);   zrB(k) = pB(3);
-        xpl(k) = S.plate.Position(1);
-        xr1(k) = S.roller1.Position(1);
-    
-        if isnan(kColl) && k > nSteps && zrA(k) < pA0(3) - P.collapseDrop
-            kColl = k;
+
+        if isnan(collTime) && zrA(k) < pA0(3) - P.collapseDrop
+            collTime = tk;
         end
     end
-    
+
     delete(sim);
-    
-    % Analysis
-    if isnan(kColl)
-        kEnd = nSteps;
-        collTime = NaN;
-    else
-        kEnd = kColl;
-        collTime = t(kColl);
-    end
-    win = (nSteps+1):kEnd;
-    
-    dA = xrA(win) - pA0(1);
-    dB = xrB(win) - pB0(1);
-    dG = xg(win);
-    
-    peakA = max(abs(dA));  rmsA = sqrt(mean(dA.^2));
-    peakB = max(abs(dB));  rmsB = sqrt(mean(dB.^2));
-    peakG = max(abs(dG));  rmsG = sqrt(mean(dG.^2));
-    
-    driftPlate  = xpl(kEnd) - pl0(1);
-    driftPlateE = xpl(end)  - pl0(1);
-    rollerRel   = (xr1(end) - r10(1)) - driftPlateE;   % roller travel along the plate
-    zDropB      = pB0(3) - zrB(kEnd);
-    zDropBend   = pB0(3) - zrB(end);
-    
-    fprintf("\n=== PHX roller base isolation ===\n");
-    fprintf("shake: %.2f Hz, amplitude ramp 0 -> %.0f mm over %.1f s\n", P.freq, 1000*P.ampMax, P.tRamp);
-    fprintf("timestep %.0f ms, %d storeys, %d bodies\n\n", 1000*P.dt, P.storeys, numel(S.all));
-    
-    if isnan(collTime)
-        fprintf("Un-isolated tower did NOT collapse within %.1f s of shaking.\n", P.tShake);
-    else
-        fprintf("Un-isolated tower collapsed at t = %.2f s of shaking ", collTime);
-        fprintf("(ground amplitude then %.0f mm).\n", 1000*P.ampMax*min(1, collTime/P.tRamp));
-    end
-    
-    fprintf("  horizontal motion      peak [mm]   RMS [mm]\n");
-    fprintf("  ground                 %8.1f   %8.1f\n", 1000*peakG, 1000*rmsG);
-    fprintf("  roof, un-isolated      %8.1f   %8.1f\n", 1000*peakA, 1000*rmsA);
-    fprintf("  roof, roller-isolated  %8.1f   %8.1f\n", 1000*peakB, 1000*rmsB);
-    fprintf("\n  transmission ratio (isolated / un-isolated):  peak %.3f, RMS %.3f\n", ...
-        peakB/peakA, rmsB/rmsA);
-    fprintf("  amplification vs ground: un-isolated %.2f, isolated %.2f (peak)\n", ...
-        peakA/peakG, peakB/peakG);
-    
-    % The isolated roof's ABSOLUTE motion is dominated by the rigid drift of the
-    % whole isolated assembly (there is no restoring force). Racking = roof motion
-    % relative to whatever the tower stands on, i.e. the shaking actually felt.
-    rA = dA - dG;                             % reference tower: roof vs ground
-    rB = dB - (xpl(win) - pl0(1));            % isolated tower: roof vs base plate
-    pkrA = max(abs(rA)); rmrA = sqrt(mean(rA.^2));
-    pkrB = max(abs(rB)); rmrB = sqrt(mean(rB.^2));
-    fprintf("\n  drift-removed (roof relative to its own base = racking):\n");
-    fprintf("  racking, un-isolated   %8.1f   %8.1f\n", 1000*pkrA, 1000*rmrA);
-    fprintf("  racking, roller-isolat %8.1f   %8.1f\n", 1000*pkrB, 1000*rmrB);
-    fprintf("  racking transmission ratio: peak %.3f, RMS %.3f\n", pkrB/pkrA, rmrB/rmrA);
-    
-    fprintf("\n  isolated base plate drift: %+.0f mm at collapse, %+.0f mm at end of run\n", ...
-        1000*driftPlate, 1000*driftPlateE);
-    fprintf("  roller travel along the plate (end): %+.0f mm (plate half-length %.0f mm)\n", ...
-        1000*rollerRel, 1000*P.plateX/2);
-    fprintf("  isolated roof settling: %.0f mm at collapse, %.0f mm at end ", ...
-        1000*zDropB, 1000*zDropBend);
-    if zDropBend < P.collapseDrop
-        fprintf("-> STILL STANDING\n");
-    else
-        fprintf("-> COLLAPSED (after the reference tower)\n");
-    end
-    fprintf("\n");
-    
+
     % Plot results
     clf(figure(2));
     tl = tiledlayout(2, 1, "TileSpacing", "compact");

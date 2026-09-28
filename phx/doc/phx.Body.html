@@ -61,10 +61,13 @@ arguments, for example <code class="phx-inline">phx.Body("Type","static","Positi
 <tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
 <tr><td class="name">Type</td><td class="dflt">"dynamic"</td>
 <td>Body type: <code class="phx-inline">"static"</code>, <code class="phx-inline">"kinematic"</code> or <code class="phx-inline">"dynamic"</code>.</td></tr>
-<tr><td class="name">Mass</td><td class="dflt">1</td>
-<td>Body mass, <span class="phx-unit">kg</span>. Recomputed from the shape and density when a <code class="phx-inline">Shape</code> is assigned.</td></tr>
-<tr><td class="name">Inertia</td><td class="dflt">[1 1 1]</td>
-<td>Principal moments of the inertia tensor, <span class="phx-unit">kg&middot;m&sup2;</span>.</td></tr>
+<tr><td class="name">Mass</td><td class="dflt">1000</td>
+<td>Body mass, <span class="phx-unit">kg</span>. Recomputed from the shape and density when a <code class="phx-inline">Shape</code> is assigned;
+the default is that of the default shape, a 1&nbsp;m cube of density 1000.</td></tr>
+<tr><td class="name">Inertia</td><td class="dflt">[166.7 166.7 166.7]</td>
+<td>Principal moments of the inertia tensor, <span class="phx-unit">kg&middot;m&sup2;</span>. Recomputed with
+<code class="phx-inline">Mass</code> when a <code class="phx-inline">Shape</code> is assigned, but not when
+<code class="phx-inline">Mass</code> alone is set.</td></tr>
 <tr><td class="name">Friction</td><td class="dflt">[0.5 0 0]</td>
 <td>Friction coefficients (&ge;&nbsp;0) as <code class="phx-inline">[drag roll spin]</code>.</td></tr>
 <tr><td class="name">Restitution</td><td class="dflt">0</td>

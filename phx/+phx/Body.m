@@ -180,9 +180,22 @@ classdef Body < phx.base.Object
                 stateName (1, 1) string = ""
             end
 
+            if stateName == ""
+                % One past the highest auto-generated name on any of the
+                % bodies, so a name freed by clearStates is never reused
+                last = 0;
+                for obj = objs
+                    names = string(fieldnames(obj.States));
+                    auto = names(matches(names, "state" + digitsPattern));
+                    last = max([last; str2double(extractAfter(auto, "state"))]);
+                end
+                stateName = "state" + (last + 1);
+            end
+
             for obj = objs
-                if stateName == ""
-                    stateName = "state"+(numel(fieldnames(obj.States)) + 1);
+                if isfield(obj.States, stateName)
+                    % Re-storing a name makes it the last stored state
+                    obj.States = rmfield(obj.States, stateName);
                 end
                 obj.States.(stateName) = obj.stateTransfer;
             end
@@ -191,10 +204,13 @@ classdef Body < phx.base.Object
         function stateName = restoreState(objs, stateName)
         %restoreState Restores the kinematic state (position and velocity) of a body.
         %
-        %   stateName = restoreState(bodies) restores the last stored state for all
-        %   given bodies and returns the name of this restored state as output.
+        %   stateName = restoreState(bodies) restores, for each given body,
+        %   the state it stored last; bodies without a stored state are left
+        %   as they are. Returns the name of the state restored on the first
+        %   such body, or an empty string when no body has a stored state.
         %
-        %   restoreState(bodies, stateName) restores the given state.
+        %   restoreState(bodies, stateName) restores the given state. Every
+        %   body must have it, otherwise no body is restored.
         %
         % See also phx.Body.storeState, phx.Body.clearStates
 
@@ -203,40 +219,55 @@ classdef Body < phx.base.Object
                 stateName (1, 1) string = ""
             end
 
-            for obj = objs
-                if stateName == ""
+            if stateName == ""
+                stateName = string.empty;
+                for obj = objs
                     names = fieldnames(obj.States);
                     if ~isempty(names)
-                        stateName = string(names{end});
-                    else
-                        stateName = [];
-                        return
+                        obj.stateTransfer(obj.States.(names{end}));
+                        if isempty(stateName)
+                            stateName = string(names{end});
+                        end
                     end
                 end
+                return
+            end
+
+            for i = 1:numel(objs)
+                if ~isfield(objs(i).States, stateName)
+                    error("phx:Body:unknownState", ...
+                        "Body %d of %d has no stored state named ""%s"".", i, numel(objs), stateName);
+                end
+            end
+            for obj = objs
                 obj.stateTransfer(obj.States.(stateName));
             end
         end
 
         function clearStates(objs, stateNames)
-        %clearStates Removes one or more kinematic state of a body.
+        %clearStates Removes one or more kinematic states of a body.
         %
         %   clearStates(bodies) removes all stored states for all given
         %   bodies.
         %
         %   clearStates(bodies, stateNames) removes given states for all
         %   given bodies. Multiple states can be passed as a vector of
-        %   strings.
+        %   strings; names a body does not have are ignored.
         %
         % See also phx.Body.storeState, phx.Body.restoreState
 
             arguments
                 objs (1, :)
-                stateNames (1, :) string = ""
+                stateNames (1, :) string = string.empty
             end
 
             for obj = objs
                 fields = fieldnames(obj.States);
-                obj.States = rmfield(obj.States, fields(contains(fields, stateNames)));
+                if isempty(stateNames)
+                    obj.States = rmfield(obj.States, fields);
+                else
+                    obj.States = rmfield(obj.States, fields(ismember(fields, stateNames)));
+                end
             end
         end
 
@@ -718,7 +749,7 @@ classdef Body < phx.base.Object
                     ph = phx.internal.PrimitiveHelper(ch);
                     v = ph.Vertices;
                     if ~isempty(v)
-                        v = v*obj.Graphics.Matrix(1:3, 1:3) + obj.Graphics.Matrix(13:15);
+                        v = v*obj.Graphics.Matrix(1:3, 1:3)' + obj.Graphics.Matrix(13:15);
                         [bmin, bmax] = bounds(v);
                         bbmin = min(bbmin, bmin);
                         bbmax = max(bbmax, bmax);

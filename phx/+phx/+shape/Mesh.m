@@ -1,4 +1,4 @@
-classdef Mesh < phx.base.Shape & phx.base.ShapeMesh
+classdef Mesh < phx.base.Shape
 %phx.shape.Mesh Triangular mesh shape (imported or from data)
 %
 %   A general triangular-mesh shape whose geometry is either loaded from a
@@ -105,7 +105,7 @@ classdef Mesh < phx.base.Shape & phx.base.ShapeMesh
             % Process input arguments
             obj = phx.internal.applyArguments(Options, obj);
             if isnan(obj.Color(1))
-                obj.Color = phx.base.ShapeMesh.newColor;
+                obj.Color = phx.base.Shape.newColor;
             end
 
             % Assemble the mesh (from a file or from the supplied data) once
@@ -114,7 +114,6 @@ classdef Mesh < phx.base.Shape & phx.base.ShapeMesh
         end
 
         function drawTo(obj, target)
-            obj.drawSkelet(target, obj.Color);
             for g = 1:numel(obj.Data.groups)
                 subs = obj.Data.groups(g).submeshes;
                 for s = 1:numel(subs)
@@ -270,7 +269,7 @@ classdef Mesh < phx.base.Shape & phx.base.ShapeMesh
             % A material texture wins; a manually set Texture fills in
             % materials that have none and overrides untextured meshes
             if ~isempty(sm.uv) && strlength(sm.texture) > 0
-                texture = phx.base.ShapeMesh.loadTexture(sm.texture);
+                texture = phx.base.Shape.loadTexture(sm.texture);
             elseif ~isempty(sm.uv)
                 texture = obj.TextureData;
             else

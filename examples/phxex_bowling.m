@@ -66,11 +66,6 @@ function out = phxex_bowling(Options)
     % A grid of releases stepped without rendering. The bodies themselves are
     % never redrawn; the only thing that appears is one line per finished
     % throw, coloured by its result.
-    % Move the camera behind the foul line and zoom in: from here the lane
-    % runs away to the pins and the growing fan of paths fills the frame
-    % ax.CameraPosition = [-2.2 -0.8 2.9];
-    % ax.CameraTarget = [15 0 -0.9];
-    % ax.CameraViewAngle = 20;
 
     n = round(sqrt(Options.Throws));
     aims = linspace(Options.Aim(1), Options.Aim(2), n);

@@ -13,7 +13,7 @@ function phxex_shapes
     clf; view(3); axis("equal"); camlight("headlight"); grid("on");
 
     % Reset color order for shapes
-    phx.base.ShapeMesh.resetColorOrder;
+    phx.base.Shape.resetColorOrder;
 
     % Add a static box shape to the simulation
     phx.Body("Type", "static", "Position", [1 0 -0.1], "Shape", {"Box", "Size", [5 5 0.2], "Color", [1 1 1]});

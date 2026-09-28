@@ -67,9 +67,15 @@ classdef Logger < phx.base.Object
             obj.RedrawOrder = "none";
             obj.ParentAxes = [];
 
-            % Process input arguments
-            obj.Parents = addChild(Parents, obj, "phx.base.Object");
-            phx.internal.applyArguments(Options, obj);
+            % Process input arguments; a failure leaves no half-built object
+            % attached to the parents
+            try
+                obj.Parents = addChild(Parents, obj, "phx.base.Object");
+                phx.internal.applyArguments(Options, obj);
+            catch err
+                obj.abandon(Parents);
+                rethrow(err);
+            end
         end
 
         function set.Parameters(obj, parameters)

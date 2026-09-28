@@ -57,9 +57,15 @@ classdef Resistance < phx.base.Object
             obj.RedrawOrder = "after";
             obj.ParentAxes = Parents(1).ParentAxes;
 
-            % Process input arguments
-            obj.Parents = addChild(Parents, obj);
-            phx.internal.applyArguments(Options, obj);
+            % Process input arguments; a failure leaves no half-built object
+            % attached to the parents
+            try
+                obj.Parents = addChild(Parents, obj);
+                phx.internal.applyArguments(Options, obj);
+            catch err
+                obj.abandon(Parents);
+                rethrow(err);
+            end
 
             % Create graphics objects
             obj.hL = matlab.graphics.primitive.world.LineStrip('Parent', obj.Graphics, 'LineWidth', 0.5, 'ColorBinding', 'object', 'ColorData', uint8([obj.Color*255 255]'), 'Layer', phx.internal.choose({'middle', 'front'}, obj.Overlay + 1));

@@ -100,21 +100,27 @@ classdef Rope < phx.base.Object
             obj.ParentAxes = Parents(1).ParentAxes;
 
             % Process input arguments; a body may appear in the chain more
-            % than once, but it must be registered as a parent only once
-            for a = 1:numel(Parents)
-                if ~any(Parents(1:a-1) == Parents(a))
-                    addChild(Parents(a), obj);
-                end
-            end
-            obj.Parents = num2cell(Parents);
-            phx.internal.applyArguments(Options, obj);
-
-            % Default routing points and their validation
+            % than once, but it must be registered as a parent only once.
+            % A failure leaves no half-built object attached to the parents.
             n = numel(Parents);
-            if isempty(obj.Points)
-                obj.Points = zeros(n, 3);
-            elseif size(obj.Points, 1) ~= n
-                error("phx:Rope:pointsSize", "Points must have one row per body.");
+            try
+                for a = 1:n
+                    if ~any(Parents(1:a-1) == Parents(a))
+                        addChild(Parents(a), obj);
+                    end
+                end
+                obj.Parents = num2cell(Parents);
+                phx.internal.applyArguments(Options, obj);
+
+                % Default routing points and their validation
+                if isempty(obj.Points)
+                    obj.Points = zeros(n, 3);
+                elseif size(obj.Points, 1) ~= n
+                    error("phx:Rope:pointsSize", "Points must have one row per body.");
+                end
+            catch err
+                obj.abandon(Parents);
+                rethrow(err);
             end
 
             % Measure the unstretched length from the initial configuration

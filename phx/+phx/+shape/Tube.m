@@ -1,4 +1,4 @@
-classdef Tube < phx.base.Shape & phx.base.ShapeMesh
+classdef Tube < phx.base.Shape
 %phx.shape.Tube Tube, pipe or funnel shape
 %
 %   Visual appearance is a straight or tapered tube with an open bore. The
@@ -79,7 +79,7 @@ classdef Tube < phx.base.Shape & phx.base.ShapeMesh
             % Process input arguments
             obj = phx.internal.applyArguments(Options, obj);
             if isnan(obj.Color(1))
-                obj.Color = phx.base.ShapeMesh.newColor;
+                obj.Color = phx.base.Shape.newColor;
             end
         end
 
@@ -108,8 +108,6 @@ classdef Tube < phx.base.Shape & phx.base.ShapeMesh
         end
 
         function drawTo(obj, target)
-            obj.drawSkelet(target, obj.Color);
-
             [V, N, F, T] = phx.internal.Geometry.revolution(obj.wallProfile, obj.Segments, false, false);
             [V, N] = phx.internal.Geometry.switchZAxis(obj.Axis, V, N);
 

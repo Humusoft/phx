@@ -34,7 +34,6 @@ function phxex_gravity(simTime, particleCount, showGraphs)
         planets(i) = phx.Body(ax, "Position", [cos(theta)*r d sin(theta)*r], ...
                                "LinearVelocity", [-sin(theta) 0 cos(theta)]*sqrt(r)*1e-1, ...
                                "Shape", particleShape);
-        % phx.Trace(planets(i), "Color", particleShape.Color, "TracePoints", 10);
     end
 
     % Create a central body (star) for the simulation

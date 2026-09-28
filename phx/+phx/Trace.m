@@ -49,9 +49,15 @@ classdef Trace < phx.base.Object
             obj.RedrawOrder = "after";
             obj.ParentAxes = Parent.ParentAxes;
 
-            % Process input arguments
-            obj.Parents = addChild(Parent, obj);
-            phx.internal.applyArguments(Options, obj);
+            % Process input arguments; a failure leaves no half-built object
+            % attached to the parents
+            try
+                obj.Parents = addChild(Parent, obj);
+                phx.internal.applyArguments(Options, obj);
+            catch err
+                obj.abandon(Parent);
+                rethrow(err);
+            end
 
             % Create graphics objects
             obj.hL = matlab.graphics.primitive.world.LineStrip('Parent', obj.Graphics, 'LineWidth', 1.0, 'ColorBinding', 'object', 'ColorData', uint8([obj.Color 1]'*255), 'Layer', phx.internal.choose({'middle', 'front'}, obj.Overlay + 1));

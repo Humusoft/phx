@@ -107,6 +107,7 @@ so you can draw bodies into <code class="phx-inline">ax</code>.</p>
 <tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
 <tr><td class="name">SelectedBody</td><td class="type">phx.Body | [] (read-only)</td><td>Currently selected body, empty when nothing is selected. Set it through <code class="phx-inline">select</code>/<code class="phx-inline">deselect</code> or a double-click.</td></tr>
 <tr><td class="name">SelectionChangedFcn</td><td class="dflt">[]</td><td>Callback fired on every selection change, invoked as <code class="phx-inline">fcn(viewer)</code>; read <code class="phx-inline">SelectedBody</code> for the new selection. Intended for embedding the viewer in an app.</td></tr>
+<tr><td class="name">SceneMenu</td><td class="dflt">true</td><td>Show the Clear, Load model and Save model commands in the Scene context menu. An app that embeds the viewer and manages the scene itself turns them off.</td></tr>
 </table>
 
 <h2 class="phx-h2">Object Functions</h2>

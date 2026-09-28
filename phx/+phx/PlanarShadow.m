@@ -126,9 +126,15 @@ classdef PlanarShadow < phx.base.Object
             obj.Color = [0.1 0.1 0.14];
             obj.ParentAxes = Bodies(1).ParentAxes;
 
-            % Process input arguments
-            obj.Parents = addChild(Bodies, obj);
-            phx.internal.applyArguments(Options, obj);
+            % Process input arguments; a failure leaves no half-built object
+            % attached to the parents
+            try
+                obj.Parents = addChild(Bodies, obj);
+                phx.internal.applyArguments(Options, obj);
+            catch err
+                obj.abandon(Bodies);
+                rethrow(err);
+            end
         end
 
         function set.Alpha(obj, value)

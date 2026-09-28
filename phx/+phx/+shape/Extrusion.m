@@ -1,4 +1,4 @@
-classdef Extrusion < phx.base.Shape & phx.base.ShapeMesh
+classdef Extrusion < phx.base.Shape
 %phx.shape.Extrusion Extrusion shape
 %
 %   Visual appearance is based on a geometry of a profile extruded along a
@@ -59,7 +59,7 @@ classdef Extrusion < phx.base.Shape & phx.base.ShapeMesh
             % Process input arguments
             obj = phx.internal.applyArguments(Options, obj);
             if isnan(obj.Color(1))
-                obj.Color = phx.base.ShapeMesh.newColor;
+                obj.Color = phx.base.Shape.newColor;
             end
         end
 
@@ -93,7 +93,6 @@ classdef Extrusion < phx.base.Shape & phx.base.ShapeMesh
         end
 
         function drawTo(obj, target)
-            obj.drawSkelet(target, obj.Color);
             [V, N, F, T] = phx.internal.Geometry.extrusion(obj.Spine, obj.Scale, obj.Profile, true, true);
             [V, N] = phx.internal.Geometry.switchZAxis(obj.Axis, V, N);
             primitive = obj.drawMesh(target, V, N, F, T, obj.getTexture);

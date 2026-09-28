@@ -262,7 +262,7 @@ other plots, so put result plots in a separate figure. It runs fine under `-batc
 
 For minimal scenes and for visualizations that must live in a subplot or app layout,
 configure the axes directly and let `phx.Body`/`phx.Simulation` default to `gca` (or
-pass your own `ax`, as `phxex_multiview` does with two subplots):
+pass your own `ax`, as `phxex_multisim` does with two subplots):
 
 ```matlab
 clf; view(3); axis("equal"); grid("on"); camlight("headlight");

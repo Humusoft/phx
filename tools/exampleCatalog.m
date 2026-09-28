@@ -66,6 +66,9 @@ function catalog = exampleCatalog
         entry("phxex_antisway",    "Vehicles, robots and control",   12)
         entry("phxex_swingover",   "Vehicles, robots and control",   16, "", "Build walls,Simulate")
         entry("phxex_sim_swingover", "Vehicles, robots and control", 24, "Simulink version: a scheduled trolley path swings the load over the wall")
+        entry("phxex_sim_stand",     "Vehicles, robots and control",  8, "Simulink: a buggy on four shaker stands, each driven by its own sine wave")
+        entry("phxex_sim_ballplate2", "Vehicles, robots and control", 20, "Simulink: tilting a bowl steers the centroid of two balls along a reference path")
+        entry("phxex_sim_sorter",    "Vehicles, robots and control", 30, "Simulink: a camera tells the parts apart by colour and a trapdoor sorts them into two bins")
         entry("phxex_gyrostab",    "Vehicles, robots and control",   20)
         entry("phxex_stairfall",   "Vehicles, robots and control",    8)
         entry("phxex_walker",      "Vehicles, robots and control",    1)  % the chase camera is still close in at the start
@@ -77,7 +80,7 @@ function catalog = exampleCatalog
         entry("phxex_crystal",     "Fields, magnetism and fluids",   25)
         entry("phxex_rotmagdip",   "Fields, magnetism and fluids",   10)
         entry("phxex_maglev",      "Fields, magnetism and fluids",   10)
-        entry("phxex_magcrane",    "Fields, magnetism and fluids",   13)  % mid-travel, the shell hanging under the live magnet
+        entry("phxex_magcrane",    "Fields, magnetism and fluids",   10)  % mid-travel, the rotor hanging under the live magnet
         entry("phxex_sorter",      "Fields, magnetism and fluids",   12)
         entry("phxex_capacitor",   "Fields, magnetism and fluids",   25)
         entry("phxex_buoyancy",    "Fields, magnetism and fluids",   15)
@@ -89,7 +92,6 @@ function catalog = exampleCatalog
         entry("phxex_reversetime", "Analysis and workflows",          8)
         entry("phxex_noview",      "Analysis and workflows",         15)
         entry("phxex_multisim",    "Analysis and workflows",         10)
-        entry("phxex_multiview",   "Analysis and workflows",         10)
         ];
 
     catalog = struct2table(rows);

@@ -46,8 +46,9 @@ phx.Function({ball, plate}, @(obj, p, dt, t) balanceLaw(p, Kp, Kd));</pre>
 <div class="phx-note">
 <span class="lbl">Which one when.</span> Use <code class="phx-inline">phx.Script</code> when you
 know the profile in advance. Use <code class="phx-inline">phx.Function</code> when you need to react
-to the current state (read position/velocity and compute a control action). This exact feedback
-pattern is used by the self-balancing robot walked through below.
+to the current state (read position/velocity and compute a control action). The same feedback can
+also be written as a plain MATLAB loop around <code class="phx-inline">sim.step</code>, which is
+how the self-balancing robot walked through below does it.
 </div>
 
 <h2 class="phx-h2">A complete example: self-balancing robot</h2>
@@ -60,27 +61,36 @@ look like.</p>
 <li><b>Bodies</b> &mdash; a tall block (the body) and two wheels (cylinders), with the center of
     mass placed high above; the assembly is therefore an <i>unstable inverted pendulum</i> and
     would topple on its own.</li>
-<li><b>Joints</b> &mdash; each wheel is connected to the body by a hinge
-    (<a href="phx.RevoluteJoint.html">RevoluteJoint</a>).</li>
+<li><b>Joints and motors</b> &mdash; each wheel is connected to the body by a hinge
+    (<a href="phx.RevoluteJoint.html">RevoluteJoint</a>) whose motor drives it. The motor is run as
+    a pure torque source: an unreachable <code class="phx-inline">TargetVelocity</code> keeps it
+    saturated, so it delivers exactly <code class="phx-inline">MaxTorque</code>, and the body feels
+    the equal and opposite reaction.</li>
 <li><b>Contacts and friction</b> &mdash; the wheels propel the robot solely through frictional
     contact with the ground.</li>
-<li><b>Feedback control</b> &mdash; at every step the body tilt and angular rate are read and a PD
-    controller computes the wheel drive torque (the <code class="phx-inline">phx.Function</code>
-    pattern from the previous section).</li>
-<li><b>Logging</b> &mdash; <code class="phx-inline">phx.Logger</code> records the body tilt for a
-    later plot.</li>
+<li><b>Feedback control</b> &mdash; at every step the body tilt, tilt rate and forward speed are
+    read, and a PD controller with an added speed term computes the wheel drive torque; the loop
+    is ordinary MATLAB code around <code class="phx-inline">sim.step</code>.</li>
+<li><b>Sensing</b> &mdash; a fan of rays (<a href="phx.Raycast.html">phx.Raycast</a>) scans the way
+    ahead, and the difference between its left and right readings steers the robot around a
+    wall.</li>
+<li><b>Logging</b> &mdash; <code class="phx-inline">phx.Logger</code> records the body tilt and
+    the sensor readings for a later plot.</li>
 </ul>
 
-<pre class="phx-code"><span class="cmt">% --- core of the control loop (runs with a 5 ms step) ---</span>
-Kp = 4000; Kd = 380; dt = 0.005;
+<pre class="phx-code"><span class="cmt">% --- core of the control loop (runs with a 10 ms step), steering left out ---</span>
+Kp = 6000; Kd = 3000; Kv = 2000; vRef = 3; dt = 0.01;
 sim = phx.Simulation;
-<span class="kw">for</span> k = 1:500
-    pitch     = body.EulerAngles(2);        <span class="cmt">% sensor: body tilt</span>
-    pitchRate = body.AngularVelocity(2);    <span class="cmt">% sensor: tilt rate</span>
-    tau = Kp*pitch + Kd*pitchRate;          <span class="cmt">% PD controller</span>
-    wheelL.applyTorque(-[0 0 tau], <span class="kw">true</span>);   <span class="cmt">% control action on the wheels</span>
-    wheelR.applyTorque(-[0 0 tau], <span class="kw">true</span>);
-    sim.step(dt, 1, 1);                     <span class="cmt">% one simulation step</span>
+<span class="kw">for</span> k = 1:1000
+    pitch     = body.EulerAngles(2);          <span class="cmt">% sensor: body tilt</span>
+    pitchRate = body.AngularVelocity(2);      <span class="cmt">% sensor: tilt rate</span>
+    speed     = -body.LinearVelocity(1);      <span class="cmt">% sensor: forward speed (it drives along -x)</span>
+    tau = Kp*pitch + Kd*pitchRate + Kv*(vRef - speed);   <span class="cmt">% PD + speed term</span>
+    <span class="kw">for</span> hub = [hubL hubR]                     <span class="cmt">% hub motors as a pure torque source</span>
+        hub.TargetVelocity = sign(tau)*1e6;
+        hub.MaxTorque = abs(tau);
+    <span class="kw">end</span>
+    sim.step(dt, 1, 1);                       <span class="cmt">% one simulation step</span>
 <span class="kw">end</span></pre>
 
 <figure class="phx-fig">

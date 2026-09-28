@@ -20,9 +20,9 @@ positional argument(s) and then name-value pairs. Connection points (`PointA`,
 ## Joints (kinematic constraints)
 
 ```matlab
-A = phx.Body("Type", "static", "Position", [1 1 0], "Shape", {"Box", "SkeletPoints", [1.5 0 0]});
-B = phx.Body("Position", [4 1 0], "Shape", {"Box", "SkeletPoints", [-1.5 0 0; 0 -1.5 0]});
-C = phx.Body("Position", [4 -2 0], "Shape", {"Box", "SkeletPoints", [0 1.5 0]});
+A = phx.Body("Type", "static", "Position", [1 1 0], "Shape", {"Box"});
+B = phx.Body("Position", [4 1 0], "Shape", {"Box"});
+C = phx.Body("Position", [4 -2 0], "Shape", {"Box"});
 
 % Revolute: 1 DOF rotation about an axis
 r = phx.RevoluteJoint(A, B, "PointA", [1.5 0 0], "PointB", [-1.5 0 0]);

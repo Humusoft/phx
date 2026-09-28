@@ -43,9 +43,15 @@ classdef FixedJoint < phx.base.Joint
             obj.RedrawOrder = "after";
             obj.ParentAxes = ParentA.ParentAxes;
 
-            % Process input arguments
-            obj.Parents = addChild([ParentA ParentB], obj);
-            phx.internal.applyArguments(Options, obj);
+            % Process input arguments; a failure leaves no half-built object
+            % attached to the parents
+            try
+                obj.Parents = addChild([ParentA ParentB], obj);
+                phx.internal.applyArguments(Options, obj);
+            catch err
+                obj.abandon([ParentA ParentB]);
+                rethrow(err);
+            end
 
             % Create graphics objects
             clr = uint8([obj.Color*255 255]');

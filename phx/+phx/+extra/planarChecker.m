@@ -44,7 +44,7 @@ function rgb = planarChecker(res, count, opts)
 %                                     Color1 = [0.9 0.9 0.2], Color2 = 0.2);
 %       imwrite(rgb, "checker.png")
 %
-%   See also phx.extra.planarMarbleTiles, phx.base.ShapeMesh.Texture,
+%   See also phx.extra.planarMarbleTiles, phx.base.Shape.Texture,
 %   phx.shape.Box, imwrite.
 
 %   Copyright 2026 HUMUSOFT s.r.o.

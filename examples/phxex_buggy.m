@@ -37,9 +37,6 @@ function phxex_buggy(showGraphs)
     phx.Body("Position", [-50 -7 0], "Shape", shpCone, "Mass", 1, "Inertia", 0.1);
     phx.Body("Type", "static", "Position", [-50 6.5 0], "Shape", {"Cylinder", "Diameter", 3, "Height", 14, "Color", [1 1 0.8]});
 
-    % car = cell2mat(struct2cell(buggy));
-    % car.groupTransform("Translation", [-3 0 0], "EulerAngles", [0 0 pi/6]);
-
     % Simulation loop
     sim = phx.Simulation;
     for i = 1:280

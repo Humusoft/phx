@@ -77,7 +77,6 @@
             <tocitem target="phx.shape.Rock.html">phx.shape.Rock</tocitem>
             <tocitem target="phx.shape.Terrain.html">phx.shape.Terrain</tocitem>
             <tocitem target="phx.base.Shape.html">phx.base.Shape</tocitem>
-            <tocitem target="phx.base.ShapeMesh.html">phx.base.ShapeMesh</tocitem>
         </tocitem>
 
         <tocitem target="phx.assembly.arena.html">Assemblies

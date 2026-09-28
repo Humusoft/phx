@@ -1,4 +1,4 @@
-classdef Terrain < phx.base.Shape & phx.base.ShapeMesh
+classdef Terrain < phx.base.Shape
 %phx.shape.Terrain Terrain heightfield
 %
 %   Visual appearance is a surface generated from the Height matrix sampled
@@ -42,13 +42,11 @@ classdef Terrain < phx.base.Shape & phx.base.ShapeMesh
             % Process input arguments
             obj = phx.internal.applyArguments(Options, obj);
             if isnan(obj.Color(1))
-                obj.Color = phx.base.ShapeMesh.newColor;
+                obj.Color = phx.base.Shape.newColor;
             end
         end
 
         function drawTo(obj, target)
-            obj.drawSkelet(target, obj.Color);
-
             % x = linspace(-0.5, 0.5, size(obj.Height, 2))*obj.Size(1);
             % y = linspace(-0.5, 0.5, size(obj.Height, 1))*obj.Size(2);
             c = (max(obj.Height(:)) + min(obj.Height(:)))/2;
@@ -73,7 +71,10 @@ classdef Terrain < phx.base.Shape & phx.base.ShapeMesh
             h = obj.Height';
             nx = size(h, 1);
             ny = size(h, 2);
-            eh = phx.engine.io('add', body.WorldHandle, 'terrain', body.TypeID, h(:), nx, ny, min(h(:)), max(h(:)), 'z', [obj.Size(1)/nx obj.Size(2)/ny 1], body.Transform, body.Mass, body.Inertia);
+            % The scaling is the spacing between samples: n samples span
+            % n - 1 intervals across the full Size, as the drawn surface does
+            spacing = [obj.Size(1)/(nx - 1) obj.Size(2)/(ny - 1) 1];
+            eh = phx.engine.io('add', body.WorldHandle, 'terrain', body.TypeID, h(:), nx, ny, min(h(:)), max(h(:)), 'z', spacing, body.Transform, body.Mass, body.Inertia);
         end
 
         function createComponent(obj, body)

@@ -332,7 +332,7 @@ function sub = buildSubmesh(elements, fileName)
     end
 
     % Optional per-vertex color. The unified submesh (and the draw path in
-    % phx.base.ShapeMesh) carries a single color, not per-vertex color, so the
+    % phx.base.Shape) carries a single color, not per-vertex color, so the
     % values are averaged into one representative diffuse color; per-vertex
     % variation is not rendered. Leave empty when the file has no color.
     sub.color = averageColor(vE);

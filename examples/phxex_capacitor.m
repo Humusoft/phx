@@ -109,8 +109,6 @@ function phxex_capacitor(nBalls, rampTime, seed)
         "VectorFieldCenter", [0 0 d/2], "VectorFieldSize", [arena(1) - 0.7, arena(2) - 1.2, 0], ...
         "VectorFieldStep", 0.95, "VectorLength", 0.6, "VectorSegments", 4, "Color", [1 1 1]);
 
-    % Sleeping must stay disabled, otherwise slowly drifting balls would
-    % stop responding to the field
     sim = phx.Simulation(ax);
 
     % Phase 1 - let the balls land and clump with no field applied

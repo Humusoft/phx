@@ -33,6 +33,7 @@ classdef Monopole < phx.base.Object
 
     properties
         % Monopole charge
+        % One value per body; a scalar is applied to all bodies (default 1)
         Charge (:, 1) double
 
         % Attractivity
@@ -115,9 +116,24 @@ classdef Monopole < phx.base.Object
             obj.RedrawOrder = "after";
             obj.ParentAxes = Parents(1).ParentAxes;
 
-            % Process input arguments
-            obj.Parents = addChild(Parents, obj);
-            phx.internal.applyArguments(Options, obj);
+            % Process input arguments; a failure leaves no half-built object
+            % attached to the parents
+            try
+                obj.Parents = addChild(Parents, obj);
+                phx.internal.applyArguments(Options, obj);
+                n = numel(Parents);
+                if isempty(obj.Charge)
+                    obj.Charge = ones(n, 1);
+                elseif isscalar(obj.Charge)
+                    obj.Charge = repmat(obj.Charge, n, 1);
+                elseif numel(obj.Charge) ~= n
+                    error("phx:Monopole:chargeSize", ...
+                        "Charge must have one value per body (%d), or be a scalar; it has %d.", n, numel(obj.Charge));
+                end
+            catch err
+                obj.abandon(Parents);
+                rethrow(err);
+            end
 
             % Create graphics objects
             buildGrid(obj);

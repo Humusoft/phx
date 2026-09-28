@@ -1,4 +1,4 @@
-classdef Rock < phx.base.Shape & phx.base.ShapeMesh
+classdef Rock < phx.base.Shape
 %phx.shape.Rock Rock shape
 %
 %   Visual appearance is a procedurally generated irregular rock created by
@@ -50,7 +50,7 @@ classdef Rock < phx.base.Shape & phx.base.ShapeMesh
             % Process input arguments
             obj = phx.internal.applyArguments(Options, obj);
             if isnan(obj.Color(1))
-                obj.Color = phx.base.ShapeMesh.newColor;
+                obj.Color = phx.base.Shape.newColor;
             end
         end
 

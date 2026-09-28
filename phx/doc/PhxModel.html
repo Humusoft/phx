@@ -71,35 +71,42 @@ Drive bodies through writable properties instead.
 <h2 class="phx-h2">Parameters</h2>
 <table class="phx-tbl">
 <tr><th>Parameter</th><th>Type / Default</th><th>Description</th></tr>
-<tr><td class="name">Source</td><td class="type">char/string</td>
-<td>Scene source: the name of a model script (<code class="phx-inline">.m</code>) that builds and returns
-the bodies, or a <code class="phx-inline">.mat</code> file holding the scene. Loaded once when the
-simulation starts.</td></tr>
+<tr><td class="name">ModelSource</td><td class="type">char</td>
+<td><strong>Source</strong> in the dialog. The scene: the name of a model script (<code class="phx-inline">.m</code>)
+that builds and returns the bodies, or a <code class="phx-inline">.mat</code> file holding the scene. Loaded
+once when the simulation starts.</td></tr>
 <tr><td class="name">InputRefs</td><td class="type">text list</td>
-<td>One parameter reference per input port, e.g. <code class="phx-inline">Plate.Orientation(1:2)</code>.
-Separate with new lines or commas.</td></tr>
+<td><strong>Input ports</strong>. One parameter reference per input port, e.g.
+<code class="phx-inline">Plate.Orientation(1:2)</code>. Separate with new lines or commas.</td></tr>
 <tr><td class="name">OutputRefs</td><td class="type">text list</td>
-<td>One parameter reference per output port, e.g. <code class="phx-inline">Ball.Position</code>.</td></tr>
-<tr><td class="name">Substeps</td><td class="dflt">1</td>
-<td>Number of engine substeps per Simulink sample time; the engine step is <code class="phx-inline">SampleTime/Substeps</code>.
-More substeps stabilise stiff constraint networks.</td></tr>
-<tr><td class="name">SampleTime</td><td class="dflt">[]</td>
-<td>Block sample time, in seconds. Each sample time advances the scene by that interval.</td></tr>
-<tr><td class="name">ShowViewer</td><td class="dflt">false</td>
+<td><strong>Output ports</strong>. One parameter reference per output port, e.g.
+<code class="phx-inline">Ball.Position</code>.</td></tr>
+<tr><td class="name">ShowViewer</td><td class="dflt">on</td>
 <td>Open an interactive <a href="phx.extra.Viewer.html">phx.extra.Viewer</a> figure that renders the scene
 while the model runs.</td></tr>
-<tr><td class="name">RenderEachStep</td><td class="dflt">true</td>
-<td>When the viewer is on, redraw on every substep (<code class="phx-inline">true</code>) or only once per
-sample time (<code class="phx-inline">false</code>).</td></tr>
-<tr><td class="name">DefaultCameraPosition</td><td class="dflt">[-10 -10 10]</td>
+<tr><td class="name">RenderEach</td><td class="dflt">on</td>
+<td><strong>Render each step</strong>. When the viewer is on, redraw on every substep (on) or only once per
+simulation step (off).</td></tr>
+<tr><td class="name">CameraPosition</td><td class="dflt">[-10,-10,10]</td>
 <td>Initial viewer camera position, in world coordinates.</td></tr>
-<tr><td class="name">DefaultCameraTarget</td><td class="dflt">[0 0 0]</td>
+<tr><td class="name">CameraTarget</td><td class="dflt">[0,0,0]</td>
 <td>Initial viewer camera target, in world coordinates.</td></tr>
-<tr><td class="name">CameraResolution</td><td class="dflt">[]</td>
-<td>Optional rendered-image output. When set to <code class="phx-inline">[H&nbsp;W]</code> (and the viewer is on),
-an extra <code class="phx-inline">uint8</code> output port emits the rendered scene as an
-<code class="phx-inline">[H&nbsp;W&nbsp;3]</code> image signal.</td></tr>
+<tr><td class="name">SimulationStep</td><td class="dflt">0.01</td>
+<td>Block sample time, in seconds. Each sample time advances the scene by that interval.</td></tr>
+<tr><td class="name">SimpleIcon</td><td class="dflt">on</td>
+<td><strong>Simplified icon</strong>. Show only the scene source on the block icon (on), or label every
+port with its reference (off).</td></tr>
+<tr><td class="name">Substeps</td><td class="dflt">1</td>
+<td>Number of engine substeps per sample time; the engine step is <code class="phx-inline">SimulationStep/Substeps</code>.
+More substeps stabilise stiff constraint networks.</td></tr>
+<tr><td class="name">CameraResolution</td><td class="dflt">[0 0]</td>
+<td>Optional rendered-image output; <code class="phx-inline">[0&nbsp;0]</code> turns it off. When set to
+<code class="phx-inline">[H&nbsp;W]</code> (and the viewer is on), an extra <code class="phx-inline">uint8</code>
+output port emits the rendered scene as an <code class="phx-inline">[H&nbsp;W&nbsp;3]</code> image signal.</td></tr>
 </table>
+
+<p class="phx-eg">The first column gives the parameter names used with <code class="phx-inline">set_param</code>;
+where the dialog labels a parameter differently, the label is shown in bold.</p>
 
 <p>An <strong>Edit ports&hellip;</strong> button in the mask opens a picker
 (<code class="phx-inline">phx.simulink.portEditor</code>) that lists the objects and sizeable properties of
@@ -127,10 +134,10 @@ the scene so you can add input and output references without typing them by hand
 <div class="phx-desc">
 <p>2.&nbsp;Drop a <strong>PhxModel</strong> block from <code class="phx-inline">PhxLibrary.slx</code> into your model.</p>
 <p>3.&nbsp;Set <strong>Source</strong> to <code class="phx-inline">model_pendulum</code>, choose a
-<strong>SampleTime</strong>, and declare ports, for example output
+<strong>Simulation step</strong>, and declare ports, for example output
 <code class="phx-inline">Bob.EulerAngles(2)</code> and input <code class="phx-inline">Drive.Throttle</code>.</p>
-<p>4.&nbsp;Wire the ports to the rest of the model and run. Turn <strong>ShowViewer</strong> on to watch
-the scene.</p>
+<p>4.&nbsp;Wire the ports to the rest of the model and run. The viewer is on by default; turn
+<strong>Show viewer</strong> off to run without graphics.</p>
 </div>
 
 <h2 class="phx-h2">Examples</h2>
@@ -166,8 +173,8 @@ scene builder.</p>
 <div class="phx-note">
 <span class="lbl">Stability.</span> Tight constraint networks need a small engine step (about
 <code class="phx-inline">dt&nbsp;&le;&nbsp;5&nbsp;ms</code>). Reach this either with a small
-<strong>SampleTime</strong> or by raising <strong>Substeps</strong> so that
-<code class="phx-inline">SampleTime/Substeps</code> stays small.
+<strong>Simulation step</strong> or by raising <strong>Substeps</strong> so that
+<code class="phx-inline">SimulationStep/Substeps</code> stays small.
 </div>
 
 <div class="phx-seealso">

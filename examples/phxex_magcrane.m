@@ -1,12 +1,18 @@
 function out = phxex_magcrane(Options)
-% PHXEX_MAGCRANE Overhead crane moving a car body on a lifting magnet
+% PHXEX_MAGCRANE Overhead crane moving a rotor casting on a lifting magnet
 %
-% A bridge crane picks a car body shell off the floor with a lifting
+% A bridge crane picks a rotor casting off the floor with a lifting
 % magnet hanging on its hoist rope and sets it down on a pad across the
 % hall. The magnet is a phx.Monopole charge on the magnet body, so the
-% shell is held by nothing but the attraction and the contact under it:
+% rotor is held by nothing but the attraction and the contact under it:
 % the grip is a force, not a joint, and the load can slide on the pole
 % face, tilt on it, or be left behind if the pull is too weak.
+%
+% The rotor stands on one of its flanks, so the magnet meets its apex.
+% The pull aims at the centre of the rotor and a flank lies closer to
+% it than the apex, so on the way up the rotor rolls round on the pole
+% face until a flank faces the magnet - it arrives turned and topples
+% when it is set down.
 %
 % The charge is sized from the wanted holding force at contact, where
 % the collision keeps the pole distance fixed; HoldFactor says how many
@@ -14,21 +20,21 @@ function out = phxex_magcrane(Options)
 % travel, lower, release - is played from the rope payout (a winch,
 % through phx.Rope.Displacement) and the kinematic bridge and trolley.
 %
-% The report gives the moment the shell broke free of the floor, the sway
+% The report gives the moment the rotor broke free of the floor, the sway
 % it carried into the set-down and the resulting placement error.
 %
 % Options:
 %     HoldFactor - holding force at contact, in load weights; the magnet
 %                  is energized across an air gap, so a factor of 1 is
-%                  not enough to break the shell free of the floor
+%                  not enough to break the rotor free of the floor
 %     TravelTime - duration of the diagonal travel; short times swing the
 %                  load and slide it off the pole face
 %     Settle     - pause between the travel and the set-down, for the sway
 %                  to decay
 %
 % Example:
-%     phxex_magcrane(HoldFactor = 1)   % too weak, the shell stays down
-%     phxex_magcrane(TravelTime = 2)   % the shell slides off in mid-air
+%     phxex_magcrane(HoldFactor = 1)   % too weak, the rotor stays down
+%     phxex_magcrane(TravelTime = 2)   % the rotor slides off in mid-air
 %
 % See also phx.Monopole, phx.Rope, phxex_antisway, phxex_maglev
 
@@ -41,7 +47,7 @@ function out = phxex_magcrane(Options)
     end
 
     grav = 9.81;
-    pick = [-4 -2.5];            % where the shell lies
+    pick = [-4 -2.5];            % where the rotor lies
     drop = [4 2.5];              % where it is to be set down
     zBridge = 8;                 % runway and bridge beams
     zTrolley = 7.6;              % underside of the trolley
@@ -51,13 +57,14 @@ function out = phxex_magcrane(Options)
 
     dMag = 1.0;  hMag = 0.3;     % lifting magnet
 
-    % The shell: an STL model with a convex collision envelope, drawn
-    % decimated and scaled from millimetres, its origin at the centre of
-    % its bounding box
-    shellShape = phx.shape.Mesh("Source", "res/BuggyBody.stl", "Details", 0.2, ...
-        "Scale", 0.001, "Envelope", "convex", "Density", 80, ...
-        "Color", [0.45 0.5 0.6], "Material", "metal");
-    zRoof = 0.641;               % bounding-box half height of the shell
+    % The rotor: an STL model with a convex collision envelope, scaled up
+    % to about 2.5 m across and stood on one of its flanks, the opposite
+    % apex up towards the magnet
+    rotorShape = phx.shape.Mesh("Source", fullfile(fileparts(mfilename("fullpath")), "res", "rotor.stl"), ...
+        "Scale", 0.14, "Envelope", "convex", "Density", 260, ...
+        "Color", [0.45 0.5 0.6], "Material", "metal", "Style", "flat");
+    zStand = 1.26;               % height of the rotor centre when it stands on the floor
+    hTop = 1.26;                 % from the rotor centre up to its top flank
 
     % Figure setup
     figure(1);
@@ -76,7 +83,7 @@ function out = phxex_magcrane(Options)
             "Shape", {"Box", "Size", [14.4 0.35 0.6], "Color", [0.55 0.55 0.6], "Texture", "metal"}); %#ok<AGROW>
     end
     parts(end + 1) = phx.Body(ax, "Type", "static", "Position", [drop padHeight/2], ...
-        "Shape", {"Box", "Size", [3.4 2.2 padHeight], "Color", [0.85 0.7 0.2], "Texture", "wood", "TextureBlend", 0.3});
+        "Shape", {"Box", "Size", [3.4 3 padHeight], "Color", [0.85 0.7 0.2], "Texture", "wood", "TextureBlend", 0.3});
 
     % The crane: a bridge travelling along the runway, a trolley along the
     % bridge, both kinematic, and the magnet hanging on the hoist rope
@@ -87,39 +94,43 @@ function out = phxex_magcrane(Options)
     magnet = phx.Body(ax, "Position", [pick zHoist], ...
         "Shape", {"Cylinder", "Diameter", dMag, "Height", hMag, "Density", 800, ...
         "Color", 0.3, "Material", "metal"});
-    shell = phx.Body(ax, "Position", [pick zRoof], "Shape", shellShape);
+    rotor = phx.Body(ax, "Position", [pick zStand], "AxisAngle", [1 0 0 pi/2], "Shape", rotorShape);
+    R0 = rotor.Orientation;      % the standing pose, for the tilt at the end
 
     rope = phx.Rope([trolley magnet], "Points", [0 0 -0.2; 0 0 hMag/2], ...
         "Stiffness", 6e5, "Damping", 6e3, ...
         "Colormap", "heat", "ColorRange", [0 12000]);
 
     % Tracking camera
-    phx.Camera(parts(1), shell, "PointA", [-3 -22 11], "TrackingLag", 1);
+    phx.Camera(parts(1), rotor, "PointA", [-3 -22 11], "TrackingLag", 1);
 
     % The lifting magnet: a charge pair switched on and off by writing
     % Charge while the simulation runs, sized for the contact distance
-    mLoad = shell.Mass;
-    rHold = hMag/2 + zRoof;
+    mLoad = rotor.Mass;
+    rHold = hMag/2 + hTop;
     qMag = Options.HoldFactor*mLoad*grav*rHold^2;
     % Its field arrows fill a small window that travels with the magnet
-    coil = phx.Monopole([magnet shell], "Charge", [0 -1]', "Attractivity", -1, ...
+    coil = phx.Monopole([magnet rotor], "Charge", [0 -1]', "Attractivity", -1, ...
         "VectorFieldCenter", [pick zHoist], "VectorFieldSize", [3 0 2.5], ...
         "VectorFieldStep", 0.5, "VectorLength", 0.4, "VectorSegments", 3, "Color", 1);
-    fprintf("Shell %.0f kg, holding force %.1f kN at contact - %.1f times its weight.\n", ...
+    fprintf("Rotor %.0f kg, holding force %.1f kN at contact - %.1f times its weight.\n", ...
         mLoad, Options.HoldFactor*mLoad*grav/1000, Options.HoldFactor);
 
     % The cycle as timed segments, with the magnet height at their ends
     gap = 0.08;                                 % air gap the coil bridges
-    zPick = 2*zRoof + hMag/2 + gap;             % just over the resting shell
-    zDrop = padHeight + zRoof + rHold + gap;    % shell just over the pad
+    zPick = zStand + hTop + hMag/2 + gap;       % just over the resting rotor
+    zDrop = padHeight + zStand + rHold + gap;   % rotor just over the pad
     tSeg = [1 2.5 1.5 3 Options.TravelTime Options.Settle 2.5 2];
     zSeg = [zHoist zHoist zPick zPick zTravel zTravel zTravel zDrop zDrop];
-    label = ["settle", "lower to the shell", "magnet on", "hoist", ...
+    label = ["settle", "lower to the rotor", "magnet on", "hoist", ...
         "travel", "let the sway decay", "lower onto the pad", "magnet off"];
     tEnd = cumsum(tSeg);
     pay = zHoist - zSeg;                        % the same heights as payout
 
-    sim = phx.Simulation([parts bridge trolley magnet shell]);
+    % A thin collision margin, or the standing rotor would hover visibly
+    % above the floor on the default 4 cm one
+    sim = phx.Simulation([parts bridge trolley magnet rotor], ...
+        "EngineSettings", phx.engine.BulletSettings("Margin", 0.005));
 
     % Hidden only now: an object that is invisible when the pipelines are
     % built stays out of the redraw (ExcludeInvisible) for the whole run
@@ -159,26 +170,26 @@ function out = phxex_magcrane(Options)
             t = t + dt;
         end
 
-        % Where the shell rests, and when the magnet breaks it free
+        % Where the rotor rests, and when the magnet breaks it free
         if t >= tEnd(1) && isnan(zRest)
-            zRest = shell.Position(3);
-        elseif isnan(tLift) && shell.Position(3) > zRest + 0.1
+            zRest = rotor.Position(3);
+        elseif isnan(tLift) && rotor.Position(3) > zRest + 0.1
             tLift = t;
         end
 
         log.t(end + 1) = t;
-        log.z(end + 1) = shell.Position(3);
-        log.sway(end + 1) = norm(shell.Position(1:2) - trolley.Position(1:2));
+        log.z(end + 1) = rotor.Position(3);
+        log.sway(end + 1) = norm(rotor.Position(1:2) - trolley.Position(1:2));
         log.force(end + 1) = rope.Force;
         viewer.displayText(sprintf("%s   hoist %.2f m   sway %.2f m   rope %.1f kN", ...
-            label(k), shell.Position(3), log.sway(end), rope.Force/1000));
+            label(k), rotor.Position(3), log.sway(end), rope.Force/1000));
     end
 
     % The pick-up, the sway carried into the set-down and the result
-    p = shell.Position;
+    p = rotor.Position;
     idSway = log.t > tEnd(4) & log.t < tEnd(6);
     out = struct("Lifted", ~isnan(tLift), "Position", p, ...
-        "Error", norm(p(1:2) - drop), "Tilt", acosd(min(shell.Orientation(3, 3), 1)), ...
+        "Error", norm(p(1:2) - drop), "Tilt", acosd(min(rotor.Orientation(3, :)*R0(3, :)', 1)), ...
         "MaxSway", max(log.sway(idSway)));
     if out.Lifted
         fprintf("Broke free at t = %.1f s, peak rope tension %.1f kN.\n", ...
@@ -186,7 +197,7 @@ function out = phxex_magcrane(Options)
         fprintf("Sway up to %.2f m, set down %.2f m off the mark, tilted %.1f deg.\n", ...
             out.MaxSway, out.Error, out.Tilt);
     else
-        fprintf("The shell never left the floor - the grip is too weak.\n");
+        fprintf("The rotor never left the floor - the grip is too weak.\n");
     end
     delete(sim);
 
@@ -195,7 +206,7 @@ function out = phxex_magcrane(Options)
     subplot(2, 1, 1);
     plot(log.t, log.z, log.t, log.sway, "LineWidth", 1.5);
     grid on; ylabel("[m]");
-    legend("shell height", "sway behind the trolley");
+    legend("rotor height", "sway behind the trolley");
     title(sprintf("Lifting magnet at %.1f load weights", Options.HoldFactor));
     subplot(2, 1, 2);
     plot(log.t, log.force/1000, "LineWidth", 1.5); hold on

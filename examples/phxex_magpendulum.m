@@ -72,8 +72,6 @@ function phxex_magpendulum(nGrid, tMaxRun)
 
     viewer.displayText("Twin pendulums...");
 
-    % Sleeping must stay off: a slowly swinging or settled rod is near rest
-    % and would otherwise freeze and ignore gravity and the dipole field
     sim = phx.Simulation(ax);
     tLive = 12;
     nFrames = round(tLive/(5*dt));
@@ -91,11 +89,8 @@ function phxex_magpendulum(nGrid, tMaxRun)
         m1, d1, m2, d2);
 
     % Part 2 - basin of attraction map ---------------------------------------
-    % Remove the second pendulum: the engine constraint disappears with the
-    % simulation rebuild, then the orphaned objects can be deleted safely
-    delete(sim);
+    % Remove the second pendulum; the simulation rebuilds itself
     delete(dip2); delete(j2); delete(tr2); delete(rod2);
-    sim = phx.Simulation(ax);
 
     xs = linspace(-mapRange, mapRange, nGrid);
     basin = zeros(nGrid);          % 0 = not settled, 1..3 = magnet, 4 = center

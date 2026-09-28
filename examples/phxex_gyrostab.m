@@ -17,8 +17,7 @@ function phxex_gyrostab(duration, spinRate, maxAmplitude)
 % The sea builds up: the wave amplitude ramps from calm to maxAmplitude
 % over the run. Once the roll of the bare platform exceeds the friction
 % angle of its crates they slide overboard one after another, while the
-% stabilized platform keeps rolling gently and keeps its cargo. The demo
-% reports the roll of both platforms and the fate of all eight crates.
+% stabilized platform keeps rolling gently and keeps its cargo.
 %
 % Input Arguments:
 %     duration     - simulated time in seconds (default 30)
@@ -50,44 +49,34 @@ function phxex_gyrostab(duration, spinRate, maxAmplitude)
 
     % Figure setup
     figure(1);
-    [viewer, ax] = phx.extra.Viewer("clear", "DefaultCameraTarget", [0 0 0.3], ...
-        "DefaultCameraPosition", [1 -7 3]);
+    [viewer, ax] = phx.extra.Viewer("clear", "DefaultCameraTarget", [0 0 0.3], "DefaultCameraPosition", [1 -7 3]);
 
     % Two identical platforms; the waves travel along y, so both see the
     % same wave phase and roll about their x axis
-    platA = phx.Body(ax, "Position", [-offset 0 0], ...
-        "Shape", {"Box", "Size", platSize, "Density", 500, ...
-        "Color", [1 1 1]}, "Friction", [0.5 0 0]);
-    platB = phx.Body(ax, "Position", [offset 0 0], ...
-        "Shape", {"Box", "Size", platSize, "Density", 500, ...
-        "Color", [1 1 1], "SkeletPoints", [0 -0.6 gyroZ; 0 0.6 gyroZ]}, "Friction", [0.5 0 0]);
+    platA = phx.Body(ax, "Position", [-offset 0 0], "Shape", {"Box", "Size", platSize, "Density", 500, "Color", 1});
+    platB = phx.Body(ax, "Position", [offset 0 0], "Shape", {"Box", "Size", platSize, "Density", 500, "Color", 1});
     plats = [platA platB];
-    platName = ["bare", "gyro"];
+
+    % Struts carrying the gimbal bearings
+    line(platB.Graphics, [0 0 0 0], [-0.6 -0.6 0.6 0.6], [gyroZ 0 0 gyroZ], "LineWidth", 2, "Color", [1 1 1], "Marker", ".", "MarkerSize", 20);
 
     crates = phx.Body.empty;
+    crateShape = phx.shape.Box("Size", crateSize*[1 1 1], "Density", 400, ...
+        "Color", [0.85 0.7 0.5], "Texture", "wood", "TextureBlend", 0.5);
     for p = 1:2
         for i = 1:4
-            crates(p, i) = phx.Body(ax, ...
-                "Position", plats(p).Position + [cratePos(i, :), platSize(3)/2 + crateSize/2], ...
-                "Shape", {"Box", "Size", crateSize*[1 1 1], "Density", 400, ...
-                "Color", [0.85 0.7 0.5], "Texture", "wood", "TextureBlend", 0.5}, ...
-                "Friction", [crateMu 0 0]);
+            crates(p, i) = phx.Body(ax, "Position", plats(p).Position + [cratePos(i, :), platSize(3)/2 + crateSize/2], "Shape", crateShape, "Friction", [crateMu 0 0]);
         end
     end
 
     % Gyro stabilizer on platform B: shaft hinged to the platform about
     % the transverse y axis (gimbal), spinning disk hinged to the shaft
     % about its z axis; neither part collides with anything
-    shaft = phx.Body(ax, "Position", [offset 0 gyroZ], ...
-        "Shape", {"Cylinder", "Axis", "z", "Radius", 0.04, "Height", 0.55, ...
-        "Density", 2000, "Color", [0.4 0.4 0.4], "SkeletPoints", [0 -0.6 0; 0 0.6 0], "SkeletStyle", "line"}, ...
-        "Collisions", false);
-    disk = phx.Body(ax, "Position", [offset 0 gyroZ], ...
-        "Shape", {"Cylinder", "Radius", diskR, "Height", 0.06, ...
-        "Density", 7800, "Color", [0.95 0.55 0.5], "Texture", "checker", "TextureBlend", 0.5});
+    shaft = phx.Body(ax, "Position", [offset 0 gyroZ], "Shape", {"Cylinder", "Radius", 0.04, "Height", 0.55, "Density", 2000, "Color", 0.4});
+    disk = phx.Body(ax, "Position", [offset 0 gyroZ], "Shape", {"Cylinder", "Radius", diskR, "Height", 0.06, "Density", 7800, "Color", [0.95 0.55 0.5], "Texture", "checker", "TextureBlend", 0.5});
+    line(shaft.Graphics, [0 0], [-0.6 0.6], [0 0], "LineWidth", 2, "Color", [0.4 0.4 0.4]);
 
-    gimbal = phx.RevoluteJoint(platB, shaft, "PointA", [0 0 gyroZ], ...
-        "PointB", [0 0 0], "AxisA", [0 1 0], "AxisB", [0 1 0]);
+    gimbal = phx.RevoluteJoint(platB, shaft, "PointA", [0 0 gyroZ], "PointB", [0 0 0], "AxisA", [0 1 0], "AxisB", [0 1 0]);
     phx.RevoluteJoint(shaft, disk, "PointA", [0 0 0], "PointB", [0 0 0]);
 
     % The flywheel is only spun up initially, never driven again
@@ -104,8 +93,6 @@ function phxex_gyrostab(duration, spinRate, maxAmplitude)
         "LinearDamping", 400, "AngularDamping", 20, ...
         "SurfaceSize", [8 8], "SurfaceStep", 0.25);
 
-    % Sleeping must stay disabled: the stabilizer works purely through
-    % the spinning disk, which must never be deactivated
     sim = phx.Simulation(ax);
 
     % Fine time step: the fast-spinning disk inside a joint chain needs it
@@ -127,20 +114,6 @@ function phxex_gyrostab(duration, spinRate, maxAmplitude)
         hist.rollB(end + 1) = eb(1);
         hist.gimbal(end + 1) = gimbal.Angle;
 
-        % A crate has departed once it leaves the deck area in the frame
-        % of its own platform (slid over an edge or dropped below deck)
-        for p = 1:2
-            for i = find(~fallen(p, :))
-                rel = plats(p).Transform\[crates(p, i).Position 1]';
-                if max(abs(rel(1:2))) > platSize(2)/2 + crateSize || rel(3) < 0
-                    fallen(p, i) = true;
-                    fallTime(p, i) = t;
-                    fprintf("Crate lost from the %s platform at t = %.1f s (wave amplitude %.2f m).\n", ...
-                        platName(p), t, amp(t));
-                end
-            end
-        end
-
         viewer.displayText(sprintf(...
             "t = %4.1f s   amplitude %.2f m   roll: bare %+5.1f deg / gyro %+5.1f deg   cargo: %d/4 vs %d/4", ...
             t, amp(t), rad2deg(ea(1)), rad2deg(eb(1)), ...
@@ -157,8 +130,7 @@ function phxex_gyrostab(duration, spinRate, maxAmplitude)
         rad2deg(rmsA), rad2deg(rmsB), 100*(1 - rmsB/rmsA));
 
     % Roll history of both platforms and the gimbal precession
-    figure(2);
-    clf;
+    clf(figure(2));
     subplot(2, 1, 1);
     plot(hist.t, rad2deg(hist.rollA), hist.t, rad2deg(hist.rollB), "LineWidth", 1.2);
     hold on

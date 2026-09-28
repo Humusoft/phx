@@ -279,6 +279,19 @@ classdef Object < matlab.mixin.SetGetExactNames
             end
         end
 
+        function abandon(obj, parents)
+            % Undo a failed construction: detach the object from the parents
+            % it was being added to and delete it, so that no half-built
+            % object stays behind in their Children. Call it from the catch
+            % block of a constructor, then rethrow.
+            if ~iscell(parents)
+                parents = num2cell(parents);
+            end
+            live = cellfun(@(p) isa(p, "phx.base.Object") && isvalid(p), parents);
+            removeChild(parents(live), obj);
+            delete(obj);
+        end
+
         function removeChild(objs, child)
             for i = 1:numel(objs)
                 obj = objs{i};
@@ -316,15 +329,18 @@ classdef Object < matlab.mixin.SetGetExactNames
                 lev1 = lev2;
             end
 
-            uid = zeros(size(cellObjs));
-            for i = 1:numel(uid)
+            % An object reached along several paths is listed once per path.
+            % Keep its deepest (last) occurrence: that is below every one of
+            % its parents, so the list stays sorted parents before children.
+            n = numel(cellObjs);
+            for i = 1:n
                 cellObjs{i}.UID = i;
             end
-            for i = 1:numel(uid)
+            uid = zeros(1, n);
+            for i = 1:n
                 uid(i) = cellObjs{i}.UID;
             end
-            [~, id] = unique(uid, "stable");
-            cellObjs = cellObjs(id);
+            cellObjs = cellObjs(uid == 1:n);
         end
     end
 

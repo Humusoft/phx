@@ -16,7 +16,7 @@ and steps it once per sample time, and Simulink exchanges a few signals with it 
 the boundary. The control philosophy is **property-driven**: input/output ports are
 bound to *public properties* of named scene objects.
 
-- Block library: **`phx/PhxLibrary.slx`** → block **"physical simulation"** (a Level-2
+- Block library: **`phx/PhxLibrary.slx`** → block **"PHX Model"** (a Level-2
   MATLAB S-function, `phx/PhxModel.m`, backed by `phx.simulink.BlockBackend`).
 - Worked examples in `examples/`: **`phxex_sim_stand.slx`** (open-loop, sine-driven
   suspension stand), **`phxex_sim_ballplate2.slx`** (closed-loop centroid control of two
@@ -155,7 +155,7 @@ uses it to spawn coloured cubes onto the carousel at regular angular steps durin
 ```matlab
 M = 'my_phx_model';
 new_system(M); load_system('PhxLibrary');
-add_block('PhxLibrary/physical simulation', [M '/PHX']);
+add_block('PhxLibrary/PHX Model', [M '/PHX']);
 set_param([M '/PHX'], ...
     'ModelSource', 'saved_scene.mat', ...
     'InputRefs',   'Plate.EulerAngles(1:2)', ...

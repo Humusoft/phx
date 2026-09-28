@@ -15,7 +15,7 @@ function phxex_trainwheel
     title("Train wheel motion");
     
     % Reset color order for shapes
-    phx.base.ShapeMesh.resetColorOrder;
+    phx.base.Shape.resetColorOrder;
     
     % Create two static cylinders forming rails
     phx.Body(ax, "Type", "static", "Position", [0 +1 0], "EulerAngles", [0 pi/2.05 0], "Shape", {"Cylinder", "Diameter", 0.2, "Height", 30}, "Friction", [1 0 0]);
@@ -23,11 +23,13 @@ function phxex_trainwheel
     
     % Create wheel shape by revolving profile around y-axis
     halfProfile = [-1.25 0; -1.2 0.6; -0.8 0.8; -0.7 1; -0.6 1; -0.6 0.2];
-    wheelShape = phx.shape.Revolution("Axis", "y", "Profile", [halfProfile; flipud(abs(halfProfile))], "Envelope", "concave", "Style", "flat", "SkeletPoints", [0 0.6 0; 0 0.6 1], "SkeletColor", 1, "SkeletStyle", "line");
+    wheelShape = phx.shape.Revolution("Axis", "y", "Profile", [halfProfile; flipud(abs(halfProfile))], "Envelope", "concave", "Style", "flat");
     
     % Create dynamic wheel body with mass and inertia
     wheel = phx.Body(ax, "Position", [14 0.05 1.5], "Shape", wheelShape, "Friction", [1 0 0]);
-    % phx.Trace(wheel, "Point", [0 -1.25 0], "Color", wheel.Color, "TracePoints", 1000);
+
+    % White spoke mark makes the rotation visible
+    line(wheel.Graphics, [0 0], [0.6 0.6], [0 1], "LineWidth", 2, "Color", [1 1 1]);
     
     % Prepare second axes for the lateral movement curve
     xlim([-15 15]); ylim([-3 3]); zlim([-1 3]);
@@ -42,18 +44,13 @@ function phxex_trainwheel
     opt = phx.engine.BulletSettings("Margin", 0);
     sim = phx.Simulation(ax, "EngineSettings", opt);
 
-    % video = VideoWriter("phxex_trainwheel.mp4", "MPEG-4");
-    % video.open;
-    
     % Run the simulation, record lateral wheel position each step
     for i = 1:200
         sim.step(0.1, 10, 10);
         ln.XData(end + 1) = sim.Time;
         ln.YData(end + 1) = wheel.Position(2);
-        % video.writeVideo(getframe(gcf));
     end
     
     delete(sim);
-    % video.close;
 
 end
