@@ -1,9 +1,9 @@
 function phxex_slide
-% PHXEX_SLIDE Demonstrate profile extrusion
+% PHXEX_SLIDE Balls on a slide swept along a curve
 %
-% This function creates a slide by extruding a profile along a curve.
-% Balls are then dropped onto the slide, and their movement is
-% simulated.
+% The slide is a trough profile swept along a curved spine
+% (phx.shape.Extrusion with a concave envelope); two balls run down it and
+% leave traces.
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 

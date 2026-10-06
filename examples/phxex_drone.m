@@ -50,7 +50,7 @@ function phxex_drone(wpScale)
     KyawP = 2; KyawD = 1.5;        % heading hold
 
     % Resources directory
-    resdir = fullfile(fileparts(mfilename("fullpath")), "res", " ");
+    resdir = fullfile(fileparts(mfilename("fullpath")), "res") + filesep;
 
     % Figure setup
     figure(1);

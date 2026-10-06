@@ -1,5 +1,5 @@
 function [rgb, density] = equirectNebulaFFT(varargin)
-%EQUIRECTNEBULAFFT  Fast deep-space nebula via FFT spectral synthesis.
+%phx.extra.equirectNebulaFFT Fast deep-space nebula via FFT spectral synthesis
 %   The smooth gas/warp/dust/hue fields are generated with FFT power-law
 %   spectra (1/f^beta) - all frequencies in a single O(N log N) transform
 %   instead of a per-pixel octave loop - and domain warping is done by

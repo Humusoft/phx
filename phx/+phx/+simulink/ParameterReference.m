@@ -1,5 +1,5 @@
 classdef ParameterReference
-%ParameterReference Port definition structure
+%phx.simulink.ParameterReference Port definition structure
 %
 %   A reference describes one input or output port of the PhxModel block as
 %   a piece of text:

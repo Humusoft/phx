@@ -25,7 +25,7 @@ It implements a directed acyclic graph: each object holds cell arrays of
 
 <p>Subclass this object (or one of <a href="phx.Body.html">phx.Body</a>,
 <a href="phx.base.Joint.html">phx.base.Joint</a>, <a href="phx.base.Shape.html">phx.base.Shape</a>)
-to create your own simulable element, and implement the four abstract methods below. An empty body
+to create your own simulable element, and implement the four abstract methods below; <a href="phx.template.Interaction.html">phx.template.Interaction</a> is a commented starting point. An empty body
 is acceptable when a hook is not needed.</p>
 
 <h2 class="phx-h2">Properties</h2>
@@ -37,6 +37,7 @@ is acceptable when a hook is not needed.</p>
 <tr><td class="name">ParentAxes</td><td class="type">axes (dependent)</td><td>Shortcut to the graphics transform's parent axes.</td></tr>
 <tr><td class="name">Visible</td><td class="type">logical (dependent)</td><td>Shortcut to the graphics transform's visibility.</td></tr>
 <tr><td class="name">Color</td><td class="type">1&times;3 double</td><td>Global object color applied to its graphics primitives.</td></tr>
+<tr><td class="name">Overlay</td><td class="dflt">false</td><td>Draw the object's graphics primitives as an overlay, in front of the rest of the scene. Can be changed at any time.</td></tr>
 <tr><td class="name">Name</td><td class="type">string</td><td>Optional name, e.g. to identify objects in Simulink.</td></tr>
 <tr><td class="name">UserData</td><td class="dflt">[]</td><td>Arbitrary user data.</td></tr>
 <tr><td class="name">SimulationOrder</td><td class="dflt">"before"</td>

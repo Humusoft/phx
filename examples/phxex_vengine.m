@@ -1,5 +1,5 @@
 function phxex_vengine(opts)
-%PHXEX_VENGINE V-configuration multi-cylinder piston engine (slider-crank)
+% PHXEX_VENGINE V-configuration multi-cylinder piston engine (slider-crank)
 %
 % A motor-driven crankshaft (phx.shape.Extrusion) on two main bearings spins a
 % bank of slider-crank cylinders: crank pin -> rod (phx.RevoluteJoint) -> wrist
@@ -157,7 +157,7 @@ function [crank, block, mount, cat, cyl, drive] = buildScene(ax, nPair, halfV, r
     rodTZ  = bore*0.28;                   % rod thickness in the swing plane
 
     % Resources directory
-    resdir = fullfile(fileparts(mfilename("fullpath")), "res", " ");
+    resdir = fullfile(fileparts(mfilename("fullpath")), "res") + filesep;
 
     % Crankshaft: one multiply-cranked shaft (phx.shape.Extrusion) whose spine
     % jogs from the bearing axis out to each rod journal and back, passing through

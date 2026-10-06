@@ -7,7 +7,7 @@ function T = basePose(Options, component)
 %   EulerAngles (z->y->x order) are alternatives; when both request a
 %   rotation the error phx:<component>:conflictingOptions is raised.
 %
-%   See also phx.assembly.import, phx.assembly.arena
+%   See also phx.assembly.import, phx.assembly.arena, phx.assembly.wall
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 %   SPDX-License-Identifier: LicenseRef-PHX-Preview-1.0

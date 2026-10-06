@@ -34,7 +34,7 @@ function phxex_buoyancy(duration, waves)
     rhoWater = 1000;
 
     % Resources directory
-    resdir = fullfile(fileparts(mfilename("fullpath")), "res", " ");
+    resdir = fullfile(fileparts(mfilename("fullpath")), "res") + filesep;
 
     % Figure setup
     figure(1);

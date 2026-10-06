@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.engine.BulletSettings</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.engine.BulletSettings</div>
+
+<h1 class="phx-title">phx.engine.BulletSettings</h1>
+<p class="phx-purpose">Initial settings of the Bullet physics engine</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.engine.BulletSettings</p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.engine.BulletSettings</code> holds the settings that a
+<a href="phx.Simulation.html">phx.Simulation</a> applies to its physics world when it creates it:
+the constraint solver and its iterations, body sleeping and the collision margin. Pass the object with the
+<code class="phx-inline">EngineSettings</code> option of the simulation.</p>
+<p>The settings take effect once, as the world is created. Changing the object, or the
+simulation's <code class="phx-inline">EngineSettings</code> property, afterwards does not reach a
+running simulation.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">s = phx.engine.BulletSettings</span>
+<span class="phx-syntax">s = phx.engine.BulletSettings(Name,Value,...)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">s = phx.engine.BulletSettings</code> creates the default settings.</p>
+<p><code class="phx-inline">s = phx.engine.BulletSettings(Name,Value,...)</code> sets the
+properties given as name-value pairs.</p>
+</div>
+
+<h2 class="phx-h2">Properties</h2>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Default</th><th>Description</th></tr>
+<tr><td class="name">Solver</td><td class="dflt">"sequentialimpulse"</td>
+<td>Constraint solver: <code class="phx-inline">"sequentialimpulse"</code>,
+<code class="phx-inline">"nncg"</code>, or the MLCP solvers <code class="phx-inline">"dantzig"</code>,
+<code class="phx-inline">"lemke"</code> and <code class="phx-inline">"gaussseidelprojected"</code>.
+The choice matters in coupled systems such as joint chains and stacks of bodies; see
+<a href="#solvers">Solvers</a>.</td></tr>
+<tr><td class="name">Iterations</td><td class="dflt">10</td>
+<td>Iterations of the constraint solver per step, a positive integer. More iterations make joint
+chains and stacks stiffer, at a cost that grows in proportion. The direct solvers
+<code class="phx-inline">"dantzig"</code> and <code class="phx-inline">"lemke"</code> do not use
+them. Iterations do not help when the time step itself is too long; then lower the step.</td></tr>
+<tr><td class="name">AutoActivated</td><td class="dflt">false</td>
+<td>Let resting bodies fall asleep (<code class="phx-inline">true</code>) or keep every body active
+(<code class="phx-inline">false</code>). A sleeping body is woken by a direct interaction (a force, a
+velocity or pose write, a new contact), but not by a change of its surroundings, such as gravity or
+a support removed from under it. Sleeping saves little time in most scenes, so the default is
+usually the right choice.</td></tr>
+<tr><td class="name">Margin</td><td class="dflt">0.04</td>
+<td>Collision margin, in metres, added around convex hull, concave mesh and cone collision shapes.
+Boxes, spheres, cylinders and capsules keep their exact size. Lower it for small objects, for which
+the default margin is a visible gap.</td></tr>
+</table>
+
+<h2 class="phx-h2" id="solvers">Solvers</h2>
+<p>In every step the constraint solver finds the impulses that keep joints together, stop bodies
+from sinking into each other and apply friction and motor limits. The solvers differ in how
+they find them. None of them chooses the time step: PHX advances the engine by exactly the step
+given to <a href="phx.Simulation.html">phx.Simulation</a>, so a step that is too long cannot be
+made up for by the solver.</p>
+<table class="phx-tbl">
+<tr><th>Solver</th><th>Description</th></tr>
+<tr><td class="name">"sequentialimpulse"</td>
+<td>The default. An iterative solver that corrects one constraint at a time and repeats the
+sweep <code class="phx-inline">Iterations</code> times. It is fast and scales to many bodies and
+contacts, but long joint chains, tall stacks and heavy bodies on light links converge slowly
+and stay slightly soft. More iterations make them stiffer.</td></tr>
+<tr><td class="name">"nncg"</td>
+<td>An iterative solver of the same kind, using nonlinear conjugate gradients to converge in
+fewer iterations. It can diverge in scenes with large mass ratios, so check the motion when
+you use it.</td></tr>
+<tr><td class="name">"dantzig"</td>
+<td>A direct solver: it assembles all constraints of a group of touching or jointed bodies into
+one system and solves it exactly by pivoting, so joints do not pull apart even in long chains
+with heavy parts. It ignores <code class="phx-inline">Iterations</code>. Its cost grows steeply
+with the number of constraints, so it suits small mechanisms such as arms and linkages, not
+piles of contacting bodies. A step it cannot solve falls back to
+<code class="phx-inline">"sequentialimpulse"</code>.</td></tr>
+<tr><td class="name">"lemke"</td>
+<td>A direct solver like <code class="phx-inline">"dantzig"</code>, based on a different pivoting
+algorithm. It is slower and treats friction less faithfully, as its friction limits do not
+follow the normal force; prefer <code class="phx-inline">"dantzig"</code>.</td></tr>
+<tr><td class="name">"gaussseidelprojected"</td>
+<td>The iterative method of <code class="phx-inline">"sequentialimpulse"</code> run on the
+assembled system of the direct solvers. It gives the same results, only more slowly, and is
+there for comparison.</td></tr>
+</table>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">Small parts with a thin collision margin</h4>
+<pre class="phx-code">sim = phx.Simulation(gca, <span class="str">"EngineSettings"</span>, ...
+    phx.engine.BulletSettings(<span class="str">"Margin"</span>, 0.002));</pre>
+
+<h4 class="phx-h4">Another solver for a tall stack</h4>
+<pre class="phx-code">opt = phx.engine.BulletSettings(<span class="str">"Solver"</span>, <span class="str">"dantzig"</span>);
+sim = phx.Simulation(gca, <span class="str">"EngineSettings"</span>, opt);</pre>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.Simulation.html">phx.Simulation</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_concepts.html">Core concepts</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

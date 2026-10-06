@@ -41,10 +41,6 @@ classdef Raycast < phx.base.Object
 %#ok<*INUSD> OK to see the full list of arguments for callbacks
 
     properties (Access = private, Transient)
-        % Handle of the engine world, captured at initObject. The rays are
-        % cast against the world, not against a single engine object.
-        WorldHandle = []
-
         % Engine handle of the body hit by each ray, 0 where nothing was hit.
         % Kept raw (1-by-N uint64) so the hot path never builds object
         % arrays; get.Bodies resolves it only when the user asks.
@@ -109,9 +105,6 @@ classdef Raycast < phx.base.Object
         % Ray end points in the local frame of the anchor body (3-by-N).
         % The number of columns defines the number of rays.
         Ends (3, :) double = [0; 0; -1]
-
-        % Draw the rays as overlay
-        Overlay (1, 1) logical = false
     end
 
     methods
@@ -319,7 +312,7 @@ classdef Raycast < phx.base.Object
         end
 
         function valid = initObject(obj, world)
-            obj.WorldHandle = world;
+            obj.WorldHandle = world;    % the rays are cast against the whole world
             obj.Dirty = true;   % O(1) per rebuild; get.Bodies does the work
 
             % Clear stale results so a rebuild never leaves hits pointing at

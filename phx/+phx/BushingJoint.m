@@ -35,7 +35,7 @@ classdef BushingJoint < phx.base.Joint
 %   phx.BushingJoint(___, name, value, ...) creates a bushing joint and sets
 %   properties values according to given name-value pairs.
 %
-%   See also phx.FixedJoint
+%   See also phx.FixedJoint, phx.GenericJoint, phx.Spring
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 %   SPDX-License-Identifier: LicenseRef-PHX-Preview-1.0
@@ -78,9 +78,6 @@ classdef BushingJoint < phx.base.Joint
         % Upper angular limits (hard stop)
         % Set lower > upper to completely disable limits (default)
         UpperAngularLimits(1, 3) double = [-1 -1 -1]
-
-        % Draw joint as overlay
-        Overlay (1, 1) logical = false
     end
 
     methods
@@ -118,10 +115,10 @@ classdef BushingJoint < phx.base.Joint
         function valid = initObject(obj, world)
             valid = obj.checkObject;
             if valid && isempty(obj.ObjectHandle)
-                % The engine takes most of the constraint parameters only as
-                % it creates the constraint, so the constraint is built once
-                % and then kept across pipeline rebuilds. Parameters that can
-                % be changed later write through from their own setters.
+                % The engine takes the constraint parameters only as it creates
+                % the constraint, so the constraint is built once and then kept
+                % across pipeline rebuilds. Properties changed after that do not
+                % reach it.
                 obj.WorldHandle = world;
                 obj.ObjectHandle = phx.engine.io('add', world, 'generic6dofspringconstraint', obj.Parents{1}.ObjectHandle, obj.Parents{2}.ObjectHandle, obj.TransformA(:), obj.TransformB(:), 'xyz', ~obj.MutualCollisions);
                 isOnLinear = double(obj.LinearStiffness | obj.LinearDamping);

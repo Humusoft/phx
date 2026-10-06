@@ -48,9 +48,6 @@ classdef RevoluteJoint < phx.base.Joint
         % The motor regulates to TargetVelocity while it needs less than this;
         % when the target is out of reach it simply delivers MaxTorque.
         MaxTorque (1, 1) double {mustBeNonnegative} = 0
-
-        % Draw joint as overlay
-        Overlay (1, 1) logical = false
     end
 
     methods
@@ -111,10 +108,11 @@ classdef RevoluteJoint < phx.base.Joint
         function valid = initObject(obj, world)
             valid = obj.checkObject;
             if valid && isempty(obj.ObjectHandle)
-                % The engine takes most of the constraint parameters only as
-                % it creates the constraint, so the constraint is built once
-                % and then kept across pipeline rebuilds. Parameters that can
-                % be changed later write through from their own setters.
+                % The engine takes the constraint parameters only as it creates
+                % the constraint, so the constraint is built once and then kept
+                % across pipeline rebuilds. Only the motor (TargetVelocity,
+                % MaxTorque) writes through from its setters; other properties
+                % changed after that do not reach the constraint.
                 obj.WorldHandle = world;
                 obj.ObjectHandle = phx.engine.io('add', world, 'hingeconstraint', obj.Parents{1}.ObjectHandle, obj.Parents{2}.ObjectHandle, ...
                     obj.PointA, obj.PointB, obj.AxisA, obj.AxisB, true, ~obj.MutualCollisions);

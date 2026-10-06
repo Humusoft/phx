@@ -2,12 +2,19 @@ classdef Dipole < phx.base.Object
 %phx.Dipole Dipole interaction
 %
 %   Dipole object allows you to assign a dipole charge to selected bodies.
-%   All bodies in the group formed by this object then interact with each
-%   other via a reaction force given by the following equation:
-%   
-%               c1 * c2
-%      F = A * ---------
-%                 r^2
+%   Each body carries two opposite poles, +Charge and -Charge, placed at
+%   +Axis and -Axis from its origin. The poles of different bodies in the
+%   group interact in pairs, along the line joining them, via a force of the
+%   magnitude
+%
+%                       c1 * c2
+%      F = Attractivity ---------
+%                         r^2
+%
+%   where c1, c2 are the pole charges and r is their distance; the two poles
+%   of one body do not interact. A positive F pulls the poles together, a
+%   negative one pushes them apart: with the default Attractivity of -1
+%   opposite poles attract.
 %
 %   phx.Dipole(bodies) creates a Dipole object and assigns it to all given
 %   bodies, thus creating a mutually interacting group.
@@ -43,9 +50,9 @@ classdef Dipole < phx.base.Object
         Axis (:, 3) double = [1 0 0]
 
         % Attractivity
-        % Specifies the polarity of attraction
-        % -1: opposite poles attract each other
-        % +1: opposite poles repel each other
+        % Signed coupling constant of the force law (see the class help):
+        % negative values make opposite poles attract (-1 is the default),
+        % positive values make like poles attract
         Attractivity (1, 1) double = -1
 
         % Position of vector field origin
@@ -63,9 +70,6 @@ classdef Dipole < phx.base.Object
 
         % Length of vectors
         VectorLength (1, 1) double = 1
-
-        % Draw vector field as overlay
-        Overlay (1, 1) logical = false
     end
 
     properties (Dependent)
@@ -75,13 +79,8 @@ classdef Dipole < phx.base.Object
 
     methods
         function value = get.Energy(obj)
-            P = obj.Parents;
-            n = numel(P);
-            pos = zeros(2*n, 3);
-            for a = 1:n
-                pos(a, :) = phx.internal.transformPoint(P{a}.Matrix, obj.Axis(a, :));
-                pos(n + a, :) = phx.internal.transformPoint(P{a}.Matrix, -obj.Axis(a, :));
-            end
+            n = numel(obj.Parents);
+            pos = polePositions(obj)';
             charge = [obj.Charge; -obj.Charge];
             body = [1:n 1:n];
             value = 0;
@@ -184,6 +183,23 @@ classdef Dipole < phx.base.Object
                 obj.hL.StripData = uint32(1:seg:(count*seg + 1));
             end
         end
+
+        function pos = polePositions(obj)
+            % Both poles of every dipole as a 3x2n array: columns 1..n are
+            % the +Axis poles, n+1..2n the -Axis poles of the same bodies.
+            % One property read per body, the transform is vectorised; the
+            % sums run in the order of phx.internal.transformPoint
+            P = obj.Parents;
+            n = numel(P);
+            M = zeros(16, n);
+            for a = 1:n
+                M(:, a) = P{a}.Matrix(:);
+            end
+            ax = obj.Axis';
+            d = M(1:3, :).*ax(1, :) + M(5:7, :).*ax(2, :) + M(9:11, :).*ax(3, :);
+            T = M(13:15, :);
+            pos = [d + T, -d + T];
+        end
     end
 
     methods (Access = protected)
@@ -208,35 +224,9 @@ classdef Dipole < phx.base.Object
             for i = 1:numel(cellObjs)
                 obj = cellObjs{i};
 
-                P = obj.Parents;
-                n = numel(P);
-
-                % Collect both poles of every dipole: rows 1..n are the +Axis
-                % poles, rows n+1..2n the -Axis poles of the same bodies
-                pos = zeros(2*n, 3);
-                for a = 1:n
-                    pos(a, :) = phx.internal.transformPoint(P{a}.Matrix, obj.Axis(a, :));
-                    pos(n + a, :) = phx.internal.transformPoint(P{a}.Matrix, -obj.Axis(a, :));
-                end
-                charge = [obj.Charge; -obj.Charge];
-                body = [1:n 1:n]; % pole -> body index
-
-                Fp = zeros(2*n, 3);
-                for a = 1:(2*n - 1)
-                    b = a + 1;
-                    dp = pos(b:end, :) - pos(a, :);
-                    l = sqrt(sum(dp.^2, 2));
-                    l = l.*l.*l;
-                    F = dp*charge(a).*charge(b:end)./l;
-                    F(body(b:end) == body(a), :) = 0; % the two poles of the same body do not interact
-                    Fp(a, :) = Fp(a, :) + sum(F, 1);
-                    Fp(b:end, :) = Fp(b:end, :) - F;
-                end
-
-                Fp = obj.Attractivity*Fp;
-                % Global forces applied at the pole offsets, given as local
-                % points so the engine takes each moment about the body center
-                [~] = phx.engine.io('apply', world, [obj.ehs obj.ehs], 'forces', Fp', [obj.Axis; -obj.Axis]', false, true);
+                pos = polePositions(obj);
+                Fp = phx.internal.computeDipoleForces(pos, obj.Charge, obj.Attractivity);
+                [~] = phx.engine.io('apply', world, [obj.ehs obj.ehs], 'forces', Fp, [obj.Axis; -obj.Axis]', false, true);
             end
         end
         
@@ -249,40 +239,10 @@ classdef Dipole < phx.base.Object
                 count = size(grid, 2);
                 seg = obj.VectorSegments + 2;
 
-                P = obj.Parents;
-                n = numel(P);
-                pos = zeros(3, n*2);
-
-                for a = 1:n
-                    pos(:, a) = phx.internal.transformPoint(obj.Parents{a}.Matrix, obj.Axis(a, :))';
-                    pos(:, n + a) = phx.internal.transformPoint(obj.Parents{a}.Matrix, -obj.Axis(a, :))';
-                end
-
+                pos = polePositions(obj);
                 charge = [obj.Charge; -obj.Charge]';
                 segLen = obj.VectorLength/obj.VectorSegments;
-
-                % XYZ = zeros(3, count*seg);
-                % si = 1;
-                % for h = 1:count
-                %     point = grid(:, h);
-                %     XYZ(:, si) = point;
-                %     for m = 1:(seg - 2)
-                %         dp = pos - point;
-                %         l = sqrt(sum(dp.^2));
-                %         l = l.*l.*l;
-                %         F = sum(dp.*charge./l, 2);
-                %         Flen = sqrt(F(1)*F(1) + F(2)*F(2) + F(3)*F(3));
-                %         F = segLen*F./Flen;
-                %         point = point + F;
-                %         si = si + 1;
-                %         XYZ(:, si) = point;
-                %     end
-                %     arr = [-F(2); F(1); F(3)];
-                %     XYZ(:, si + 1) = XYZ(:, si - 1) + 0.25*arr;
-                %     si = si + 2;
-                % end
                 XYZ = phx.internal.computeFieldArrows(grid, pos, charge, count, seg, segLen);
-                
                 XYZ(isnan(XYZ)) = 0;
                 hL.VertexData = single(XYZ);
             end

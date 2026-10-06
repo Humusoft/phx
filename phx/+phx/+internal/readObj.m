@@ -1,5 +1,5 @@
 function OBJ = readObj(objFileName)
-%readObj Read geometry, groups and materials from a Wavefront OBJ file.
+%phx.internal.readObj Read geometry, groups and materials from a Wavefront OBJ file
 %
 %   OBJ = phx.internal.readObj(filename) parses the OBJ file and returns a
 %   struct with the raw geometry (in the file's own coordinates), the object

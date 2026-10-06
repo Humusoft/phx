@@ -9,7 +9,7 @@ function [ax, args] = axesTarget(args)
 %   missing and the builders fall back to gca at drawing time.
 %
 %   See also phx.assembly.arena, phx.assembly.chain, phx.assembly.scatter,
-%   phx.assembly.import, phx.Body
+%   phx.assembly.wall, phx.assembly.import, phx.Body
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 %   SPDX-License-Identifier: LicenseRef-PHX-Preview-1.0

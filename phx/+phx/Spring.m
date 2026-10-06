@@ -1,5 +1,5 @@
 classdef Spring < phx.base.Object
-%phx.Spring Spring
+%phx.Spring Linear spring-damper between two bodies
 %
 %   Spring is a combined element that consists of an ideal spring and an ideal
 %   damper in parallel.
@@ -11,7 +11,7 @@ classdef Spring < phx.base.Object
 %   phx.Spring(___, name, value, ...) creates a spring and sets properties values
 %   according to given name-value pairs.
 %
-%   See also phx.SphericalJoint
+%   See also phx.Rope, phx.BushingJoint, phx.SphericalJoint
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 %   SPDX-License-Identifier: LicenseRef-PHX-Preview-1.0
@@ -61,9 +61,6 @@ classdef Spring < phx.base.Object
 
         % Force range mapped on the whole color map
         ColorRange (1, 2) double = [0 100]
-
-        % Draw spring as overlay
-        Overlay (1, 1) logical = false
     end
 
     methods
@@ -165,8 +162,10 @@ classdef Spring < phx.base.Object
                 A = obj.Parents{1};
                 B = obj.Parents{2};
     
-                pa = phx.internal.transformPoint(A.Matrix, obj.PointA);
-                pb = phx.internal.transformPoint(B.Matrix, obj.PointB);
+                ptA = obj.PointA;
+                ptB = obj.PointB;
+                pa = phx.internal.transformPoint(A.Matrix, ptA);
+                pb = phx.internal.transformPoint(B.Matrix, ptB);
                 dp = (pb - pa)';
                 nrm = sqrt(dp(1)*dp(1) + dp(2)*dp(2) + dp(3)*dp(3));
                 dp = dp/nrm;
@@ -183,13 +182,24 @@ classdef Spring < phx.base.Object
                     Force = [0 0 0];
                 end
 
-                %[~] = phx.engine.io('apply', world, [A.ObjectHandle B.ObjectHandle], 'forces', [Force, -Force], [obj.PointA, obj.PointB], false, true);
                 i2 = i*2;
                 i6 = i*6;
                 allHandles(i2 - 1) = A.ObjectHandle;
                 allHandles(i2) = B.ObjectHandle;
-                allForces(i6-5:i6) = [Force -Force];
-                allPoints(i6-5:i6) = [obj.PointA obj.PointB];
+                % Scalar writes: a range target with a concatenated source
+                % costs about 1 us per spring, the scalars a tenth of it
+                allForces(i6 - 5) = Force(1);
+                allForces(i6 - 4) = Force(2);
+                allForces(i6 - 3) = Force(3);
+                allForces(i6 - 2) = -Force(1);
+                allForces(i6 - 1) = -Force(2);
+                allForces(i6) = -Force(3);
+                allPoints(i6 - 5) = ptA(1);
+                allPoints(i6 - 4) = ptA(2);
+                allPoints(i6 - 3) = ptA(3);
+                allPoints(i6 - 2) = ptB(1);
+                allPoints(i6 - 1) = ptB(2);
+                allPoints(i6) = ptB(3);
 
                 obj.Length = len;
                 obj.Force = Force;

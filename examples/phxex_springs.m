@@ -1,11 +1,12 @@
 function phxex_springs(showGraphs)
-% PHXEX_SPRINGS Demonstration of a spring system simulation
+% PHXEX_SPRINGS Chain of boxes on springs, changed while it runs
 %
-% This function sets up a physical model of springs and boxes, simulates
-% their interactions, and logs the data for analysis.
+% Boxes linked by spring-dampers hang between two static ends. After 5 s a
+% large box drops onto the chain, after 15 s one of the boxes is deleted,
+% and the simulation runs on through both changes. The position of one box
+% and the forces of its two springs are logged.
 %
-% The simulation is divided into individual phases in which some simulation 
-% objects are added and deleted.
+% phxex_springs(false) skips the plots.
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 

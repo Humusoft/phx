@@ -88,9 +88,6 @@ classdef Cylinder < phx.base.Shape
             bsize = phx.internal.Geometry.switchZAxis(obj.Axis, [obj.Diameter obj.Diameter obj.Height]/2);
             eh = phx.engine.io('add', body.WorldHandle, 'cylinder', body.TypeID, bsize, char(obj.Axis), body.Transform, body.Mass, body.Inertia);
         end
-
-        function createComponent(obj, body)
-        end
     end
 
 end

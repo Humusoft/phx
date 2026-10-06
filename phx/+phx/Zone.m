@@ -40,8 +40,9 @@ classdef Zone < phx.base.Object
         % consumed (triggering a watch-set rebuild) by the next update().
         Dirty = true
 
-        % Graphics handle of the translucent region box.
-        hBox
+        % Graphics primitives of the region box: translucent faces and edges
+        hFaces
+        hEdges
     end
 
     properties (Dependent)
@@ -81,9 +82,6 @@ classdef Zone < phx.base.Object
 
         % Callback fired as ExitedFcn(zone, body) when a body leaves
         ExitedFcn = []
-
-        % Draw the region box as overlay
-        Overlay (1, 1) logical = false
     end
 
     methods
@@ -179,14 +177,14 @@ classdef Zone < phx.base.Object
             inside = obj.computeInside;
             prev = obj.Mask;
 
-            % Set diff as XOR of logical masks -- no set ops / maps (#4).
+            % Entries and exits from the two logical masks - no set operations or maps
             entered = inside & ~prev;
             exited  = ~inside & prev;
 
             ne = nnz(entered);
             if ne > 0
                 obj.EnteredCount = obj.EnteredCount + ne;
-                if ~isempty(obj.EnteredFcn)        % fire only if consumed (#5)
+                if ~isempty(obj.EnteredFcn)        % fire only when someone listens
                     for b = W(entered)
                         obj.EnteredFcn(obj, b);
                     end
@@ -207,20 +205,29 @@ classdef Zone < phx.base.Object
         end
 
         function buildBox(obj)
-            % Unit cube centered at the origin; scaled to Size by updateView.
-            V = [-.5 -.5 -.5; .5 -.5 -.5; .5 .5 -.5; -.5 .5 -.5; ...
-                 -.5 -.5  .5; .5 -.5  .5; .5 .5  .5; -.5 .5  .5];
-            F = [1 2 3 4; 5 6 7 8; 1 2 6 5; 2 3 7 6; 3 4 8 7; 4 1 5 8];
-            obj.hBox = patch('Parent', obj.Graphics, 'Vertices', V, 'Faces', F, ...
-                'FaceColor', obj.Color, 'FaceAlpha', 0.15, 'EdgeColor', obj.Color, ...
-                'LineWidth', 1, 'PickableParts', 'none');
-            % NOTE: swap for matlab.graphics.primitive.world.* (as in Measure)
-            % if the Overlay/front-layer behavior needs to match exactly.
+            % Unit cube centered at the origin, scaled to Size by updateView:
+            % the faces as a translucent triangle list, the 12 edges as
+            % separate line segments
+            V = single([-.5 -.5 -.5; .5 -.5 -.5; .5 .5 -.5; -.5 .5 -.5; ...
+                        -.5 -.5  .5; .5 -.5  .5; .5 .5  .5; -.5 .5  .5]');
+            F = [1 2 3 1 3 4, 5 6 7 5 7 8, 1 2 6 1 6 5, ...
+                 2 3 7 2 7 6, 3 4 8 3 8 7, 4 1 5 4 5 8];
+            E = [1 2 2 3 3 4 4 1, 5 6 6 7 7 8 8 5, 1 5 2 6 3 7 4 8];
+            layer = phx.internal.choose({'middle', 'front'}, obj.Overlay + 1);
+            clr = uint8(obj.Color'*255);
+            obj.hFaces = matlab.graphics.primitive.world.TriangleStrip('Parent', obj.Graphics, ...
+                'VertexData', V, 'VertexIndices', uint32(F), ...
+                'ColorData', [clr; uint8(0.15*255)], 'ColorType', 'truecoloralpha', 'ColorBinding', 'object', ...
+                'Layer', layer, 'PickableParts', 'none', 'HitTest', 'off');
+            obj.hEdges = matlab.graphics.primitive.world.LineStrip('Parent', obj.Graphics, ...
+                'VertexData', V(:, E), 'StripData', uint32(1:2:numel(E) + 1), ...
+                'ColorData', [clr; 255], 'ColorBinding', 'object', 'LineWidth', 1, ...
+                'Layer', layer, 'PickableParts', 'none', 'HitTest', 'off');
         end
 
         function mask = computeInside(obj)
             % Returns the 1-by-N containment mask over obj.Watched.
-            % Reads only cached Body.Matrix -> no engine round-trips (#1).
+            % Reads only the cached Body.Matrix, so there are no engine round-trips.
             W = obj.Watched;
             n = numel(W);
             if n == 0
@@ -228,7 +235,7 @@ classdef Zone < phx.base.Object
                 return
             end
 
-            % Per-zone constants, computed ONCE (not per body) (#3):
+            % Per-zone constants, computed once (not per body):
             % zone world center cz and world rotation Rz = parentR * localR.
             Tp = obj.Parents{1}.Matrix;
             Rp = Tp(1:3, 1:3);
@@ -237,11 +244,16 @@ classdef Zone < phx.base.Object
             Rz = Rp*Rl;                             % 3x3 world orientation
             half = obj.Size(:)/2;                   % 3x1
 
-            % Gather watched positions once into a 3-by-N matrix (#2, within
-            % this zone) then test vectorized in the zone-local frame (#3).
+            % Gather the watched positions once into a 3-by-N matrix, then test
+            % them vectorized in the zone-local frame.
+            % (scalar indexing into a local copy of Matrix avoids the
+            % temporary of Matrix(13:15), see phx.Monopole.bodyPositions)
             P = zeros(3, n);
             for k = 1:n
-                P(:, k) = W(k).Matrix(13:15);
+                m = W(k).Matrix;
+                P(1, k) = m(13);
+                P(2, k) = m(14);
+                P(3, k) = m(15);
             end
             Dl = Rz'*(P - cz);                      % into zone-local frame
             mask = all(abs(Dl) <= half, 1);        % 1-by-N logical

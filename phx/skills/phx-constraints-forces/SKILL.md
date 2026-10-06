@@ -2,7 +2,7 @@
 name: phx-constraints-forces
 description: >
   Connect and actuate PHX bodies — joints (Fixed/Bushing/Revolute/Prismatic/
-  Spherical/Gear/Generic), springs and ropes (Spring/Rope), force/field elements
+  Cylindrical/Spherical/Gear/Generic), springs and ropes (Spring/Rope), force/field elements
   (Thruster, Buoyancy, Resistance, Dipole, Monopole) and ad-hoc
   applyForce/applyTorque. Also covers driving parameters over time with phx.Script,
   per-step control laws with phx.Function, and the read-state / set-actuator / step
@@ -185,7 +185,7 @@ Gotchas: the sampling sees only the **outer visual mesh**, so hollow/thin-walled
 behave as solid — model a boat hull as its convex hull. Open meshes
 (e.g. `phx.shape.Terrain`) are unsupported. Bodies small against the grid bob between
 discrete equilibria — raise `Resolution` for them. Demos: `phxex_buoyancy`,
-`phxex_capsize`, `phxex_gyrostab`.
+`phxex_gyrostab`.
 
 ### Other elements
 

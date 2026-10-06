@@ -110,6 +110,16 @@ new code, follow the same namespace.
 - **Tight constraint networks need a small timestep.** Joint chains, ropes, and
   stacked/contact-heavy scenes want `dt = interval/substeps ≤ 5 ms` for stability —
   raise `substeps` (or lower `interval`) rather than taking big steps.
+- **Remedy for a scene that stays soft at a sane `dt`: solver iterations.** Leave
+  `BulletSettings` alone in ordinary scenes. Reach for it only when, already at
+  `dt ≤ 5 ms`, joints visibly pull apart, a chain sags like rubber or a stack sinks
+  and drifts (typical with a heavy body hanging on light links). Then either raise
+  `phx.engine.BulletSettings("Iterations", 20…50)` (default 10; error falls roughly
+  as 1/iterations, cost grows with them) or, for a small jointed mechanism, try
+  `"Solver", "dantzig"`, which solves the joints exactly and ignores `Iterations`
+  (too slow for big piles of contacts). Neither helps when the step itself is too
+  long; at `dt = 10 ms` a heavy-tipped chain fell apart with both, so lower `dt`
+  first.
 - **Static vs kinematic vs dynamic**: `static` bodies have infinite mass and never
   move; `kinematic` bodies are driven by you and push dynamics but ignore forces;
   only `dynamic` bodies integrate forces. Set mass/inertia explicitly for controlled

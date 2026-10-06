@@ -72,8 +72,8 @@ ObjectName.Property(indices)   % selected linear indices, e.g. Chassis.Position(
 Set **`CameraResolution` = `[H W]`** (non-zero, and `Show viewer` on) to add a final
 **`uint8 [H W 3]` output port** carrying the rendered view each step — a lightweight
 synthetic camera for vision-in-the-loop (feed it to Image Processing / Computer Vision
-blocks). The frame is `getframe` of the viewer axes, resized to `[H W]` (needs Image
-Processing Toolbox for `imresize`). Aim the camera with `CameraPosition`/`CameraTarget`
+blocks). The frame is `getframe` of the viewer axes, resized to `[H W]` with `imresize`
+(base MATLAB, no toolbox needed). Aim the camera with `CameraPosition`/`CameraTarget`
 (e.g. top-down `[0 -1 25]` → `[0 0 0]`). Notes: it requires the viewer (`ShowViewer`
 on), forces a redraw each step (slower — sample the vision loop coarsely), and works
 headless under `-batch`. The block enables N-D signals (`AllowSignalsWithMoreThan2D`)

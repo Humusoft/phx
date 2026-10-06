@@ -19,12 +19,17 @@
 <h2 class="phx-h2">Description</h2>
 <p><code class="phx-inline">phx.Dipole</code> assigns a dipole charge to selected bodies. Each body
 carries two opposite poles offset from its centre along the dipole <code class="phx-inline">Axis</code>;
-all poles in the group interact pairwise through an inverse-square reaction force:</p>
-<pre class="phx-code">          c1 * c2
-F = A * -----------
-            r^2</pre>
-<p>This produces the orientation-dependent attraction and repulsion of magnetic dipoles. The field
-can be visualized as a vector field on a configurable grid.</p>
+the poles of different bodies interact pairwise, along the line joining them, through an
+inverse-square force of the magnitude</p>
+<pre class="phx-code">                    c1 * c2
+F = Attractivity * ---------
+                      r^2</pre>
+<p>where <code class="phx-inline">c1</code>, <code class="phx-inline">c2</code> are the pole charges
+and <code class="phx-inline">r</code> their distance; the two poles of one body do not interact. A
+positive <code class="phx-inline">F</code> pulls the poles together, a negative one pushes them apart:
+with the default <code class="phx-inline">Attractivity</code> of -1 opposite poles attract. This
+produces the orientation-dependent attraction and repulsion of magnetic dipoles. The field can be
+visualized as a vector field on a configurable grid.</p>
 
 <h2 class="phx-h2">Creation</h2>
 <h3 class="phx-h3">Syntax</h3>
@@ -50,7 +55,7 @@ all given bodies, forming a mutually interacting group. Provide one charge per b
 <tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
 <tr><td class="name">Charge</td><td class="type">n&times;1 double</td><td>Dipole charge of each body (one per body).</td></tr>
 <tr><td class="name">Axis</td><td class="dflt">[1 0 0]</td><td>Dipole orientation (direction) and pole offset from the centre (magnitude). One row per body.</td></tr>
-<tr><td class="name">Attractivity</td><td class="dflt">-1</td><td>Polarity: <code class="phx-inline">-1</code> = opposite poles attract, <code class="phx-inline">+1</code> = they repel.</td></tr>
+<tr><td class="name">Attractivity</td><td class="dflt">-1</td><td>Signed coupling constant of the force law: negative values make opposite poles attract, positive values make like poles attract.</td></tr>
 <tr><td class="name">VectorFieldCenter</td><td class="dflt">[0 0 0]</td><td>Position of the vector-field origin.</td></tr>
 <tr><td class="name">VectorFieldSize</td><td class="dflt">[10 10 0]</td><td>Extent of the vector field, <code class="phx-inline">[x y z]</code>.</td></tr>
 <tr><td class="name">VectorFieldStep</td><td class="dflt">1</td><td>Spacing of the vector-field grid.</td></tr>

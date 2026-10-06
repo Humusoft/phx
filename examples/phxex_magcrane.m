@@ -57,10 +57,12 @@ function out = phxex_magcrane(Options)
 
     dMag = 1.0;  hMag = 0.3;     % lifting magnet
 
+    resdir = fullfile(fileparts(mfilename("fullpath")), "res") + filesep;
+
     % The rotor: an STL model with a convex collision envelope, scaled up
     % to about 2.5 m across and stood on one of its flanks, the opposite
     % apex up towards the magnet
-    rotorShape = phx.shape.Mesh("Source", fullfile(fileparts(mfilename("fullpath")), "res", "rotor.stl"), ...
+    rotorShape = phx.shape.Mesh("Source", resdir+"rotor.stl", ...
         "Scale", 0.14, "Envelope", "convex", "Density", 260, ...
         "Color", [0.45 0.5 0.6], "Material", "metal", "Style", "flat");
     zStand = 1.26;               % height of the rotor centre when it stands on the floor

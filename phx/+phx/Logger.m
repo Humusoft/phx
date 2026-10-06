@@ -19,7 +19,7 @@ classdef Logger < phx.base.Object
 %   phx.Logger(___, name, value, ...) creates a logger and sets properties
 %   values according to given name-value pairs.
 %
-%   See also phx.Trace
+%   See also phx.Measure, phx.Trace, phx.Script
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 %   SPDX-License-Identifier: LicenseRef-PHX-Preview-1.0
@@ -30,7 +30,10 @@ classdef Logger < phx.base.Object
 %#ok<*INUSD> OK to see the full list of arguments for callbacks
 
     properties (Access = private, Transient)
+        % Recorded rows [time values], preallocated ahead; only the first
+        % Count rows are valid
         AllData = []
+        Count = 0
         ChannSizes = []
         NextTime = 0
         Getters
@@ -91,11 +94,11 @@ classdef Logger < phx.base.Object
         end
 
         function time = get.Time(obj)
-            time = obj.AllData(:, 1);
+            time = obj.AllData(1:obj.Count, 1);
         end
 
         function data = get.Data(obj)
-            data = obj.AllData(:, 2:end);
+            data = obj.AllData(1:obj.Count, 2:end);
         end
 
         function data = getChannel(obj, chann)
@@ -113,7 +116,7 @@ classdef Logger < phx.base.Object
             end
 
             c = (sum(obj.ChannSizes(1:chann-1))+1:sum(obj.ChannSizes(1:chann))) + 1;
-            data = obj.AllData(:, c);
+            data = obj.AllData(1:obj.Count, c);
         end
 
         function dispChannels(obj)
@@ -145,14 +148,12 @@ classdef Logger < phx.base.Object
         end
 
         function valid = initObject(obj, world)
-            parents = obj.Parents;
+            % One getter per parameter, called with each parent; cheaper to
+            % call than a getter with a captured parent
             parameters = obj.Parameters;
-            obj.Getters = {};
-            for j = 1:numel(parents)
-                for k = 1:numel(parameters)
-                    parent = parents{j}; %#ok<NASGU> used in eval
-                    obj.Getters{end + 1} = eval("@parent."+parameters(k));
-                end
+            obj.Getters = cell(1, numel(parameters));
+            for k = 1:numel(parameters)
+                obj.Getters{k} = str2func("@(p) p." + parameters(k));
             end
 
             valid = obj.checkObject;
@@ -167,13 +168,30 @@ classdef Logger < phx.base.Object
             for i = 1:numel(cellObjs)
                 obj = cellObjs{i};
                 if time >= obj.NextTime
+                    % Collect the pieces of the row and join them once
                     getters = obj.Getters;
-                    newData = time;
-                    for j = 1:numel(getters)
-                        data = getters{j}();
-                        newData = vertcat(newData, data(:));
+                    parents = obj.Parents;
+                    nG = numel(getters);
+                    row = cell(numel(parents)*nG + 1, 1);
+                    row{1} = time;
+                    m = 1;
+                    for j = 1:numel(parents)
+                        p = parents{j};
+                        for k = 1:nG
+                            data = getters{k}(p);
+                            m = m + 1;
+                            row{m} = data(:);
+                        end
                     end
-                    obj.AllData = vertcat(obj.AllData, newData');
+                    newData = vertcat(row{:});
+                    % Grow the buffer by doubling, so a long run copies the
+                    % data a few times instead of once per sample
+                    k = obj.Count + 1;
+                    if k > size(obj.AllData, 1)
+                        obj.AllData(max(2*k, 64), numel(newData)) = 0;
+                    end
+                    obj.AllData(k, :) = newData';
+                    obj.Count = k;
                     obj.NextTime = obj.NextTime + 1/obj.Frequency;
                 end
             end

@@ -1,5 +1,5 @@
 function P = transformPoint(m, p)
-%TRANSFORMPOINT  Apply a 4-by-4 transform (column-major M) to 3-D point P.
+%phx.internal.transformPoint Apply a 4-by-4 transform (column-major M) to 3-D point P
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 %   SPDX-License-Identifier: LicenseRef-PHX-Preview-1.0

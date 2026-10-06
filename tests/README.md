@@ -40,7 +40,8 @@ Prefer headless bodies (`[]` axes) unless the test is about the drawing.
 | `tStoredState` | graphics (transfer tests also engine) | `Graphics` / `Engine` | the named kinematic-state store (`storeState`/`restoreState`/`clearStates`) and the pose & velocity transfer across engine initialization and teardown |
 | `tForceApplication` | engine | `Engine` | local/world force & torque frames, absolute vs COM-relative point of application, as one table of cases (guards the 2026-07-17 wrapper fixes) |
 | `tSurfaceVelocity` | graphics (drive tests also engine) | `Graphics` / `Engine` | the conveyor-belt surface drive: the commanded speed reached, the vector read in the body frame, friction as its only path, the reaction on a belt free to move, and the property refusing a non-finite value |
-| `tBuoyancy` | engine (floating tests only) | — / `Engine` | voxel volume vs analytic, sampling determinism, floating equilibrium, sinking |
+| `tFieldForces` | nothing | — | the monopole and dipole force kernels (`phx.internal.computeMonopoleForces`/`computeDipoleForces`): Coulomb law, sign of `Attractivity`, 1/r², Newton's third law, own dipole poles not interacting, against an independent all-pairs sum |
+| `tBuoyancy` | engine (floating tests only) | — / `Engine` | voxel volume vs analytic, sampling determinism, the per-step kernels (`phx.internal.computeBuoyancy`/`computeBuoyancyXY`: submerged volume, local center of buoyancy, flat and per-point level, bodies independent in one call, against a per-body reference), floating equilibrium, sinking |
 | `tJointContract` | engine (property tests need nothing) | — / `Engine` | what every joint class shares: frame-property round-trips, the Z default axis, NaN feedback before initialization, holding two bodies together |
 | `tGenericJoint` | engine | `Engine` | the meaning of the 6-DOF limits (free / locked / bounded), the right-handed sense of the angular ones, rotated joint frames |
 | `tCylindricalJoint` | engine | `Engine` | the 2 free DOF of the cylindrical joint (slide along and spin about the axis) against the 4 locked ones, the axis following a turned joint frame, and the roll/offset mismatches along the free DOF staying inert |
@@ -55,7 +56,7 @@ Prefer headless bodies (`[]` axes) unless the test is about the drawing.
 | `tAssembly` | graphics (three `Engine` cases) | `Graphics` / `Engine` | what each builder lays out: arena dimensions, chain link poses and joint types, scatter placement, the running bond of a wall; plus a ball kept inside the arena, a swinging chain and a collapsing wall |
 | `tImport` | graphics (two `Engine` cases) | — / `Graphics` / `Engine` | the URDF importer: file/XML errors, object structure, name sanitization, link world poses against an independent rpy implementation, mesh path resolution, joint substitution |
 | `tPhxSimulinkRefs` | nothing | — | `ParameterReference` parsing and the `BlockBackend` port-reference helpers |
-| `tSkillsPackaged` | nothing (source checkout only) | — | the AI agent skills in `phx/skills` (shipped in the `.mltbx`) stay identical to the working ones in `.claude/skills`, front-matter names match their folders, and `toolbox.ignore` does not exclude them |
+| `tSkillsPackaged` | nothing (source checkout only) | — | the AI agent skills in `phx/skills` (shipped in the `.mltbx`) stay identical to the working ones in `.claude/skills`, front-matter names match their folders, and `package.ignore` does not exclude them |
 | `tExampleGallery` | nothing (source checkout only) | — | the generated Examples gallery, its thumbnails and the toc stay in sync with `examples/` |
 | `tDocLinks` | nothing (source checkout only) | — | no HTML help page links to or shows a file that is not there |
 

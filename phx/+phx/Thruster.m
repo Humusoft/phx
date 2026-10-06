@@ -61,9 +61,6 @@ classdef Thruster < phx.base.Object
 
         % Exhaust vector multiplication factor for drawing
         ForceVectorSize (1, 1) double = 0.001
-
-        % Draw the exhaust vector as overlay
-        Overlay (1, 1) logical = false
     end
 
     methods

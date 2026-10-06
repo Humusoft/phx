@@ -1,15 +1,26 @@
 classdef Interaction < phx.base.Object
-%phx.template.Interaction Interaction template
+%phx.template.Interaction Template for a custom interaction between two bodies
 %
-%   This template demonstrates how to write a class for custom physical
-%   interactions.
+%   This class is a starting point for writing your own simulable object.
+%   Copy the file into a folder of your own, rename the class, replace the
+%   two remaining references to phx.template.Interaction inside it and
+%   change the computation and the drawing to suit.
 %
-%   See also phx.Spring
+%   obj = phx.template.Interaction(bodyA, bodyB) works as it is: it pulls
+%   the two bodies towards each other by a constant force and draws a line
+%   between them.
+%
+%   obj = phx.template.Interaction(___, Name, Value, ...) sets properties
+%   as name-value pairs, e.g. "Force" (N, default 10; negative repels).
+%
+%   See also phx.base.Object, phx.Function, phx.Spring
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 %   SPDX-License-Identifier: LicenseRef-PHX-Preview-1.0
 %   Licensed under the PHX Preview License v1.0; see LICENSE and NOTICE.
 %   ^..^
+
+%#ok<*INUSD,*INUSL,*MANU> OK to see the full list of arguments of every method
 
     properties (Access = private)
         % Private properties - for internal use only

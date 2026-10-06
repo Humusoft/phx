@@ -38,7 +38,7 @@ phx.RevoluteJoint(ground, arm, <span class="str">"PointA"</span>, [0 0 2]);
 save(<span class="str">"scene.mat"</span>, <span class="str">"ground"</span>, <span class="str">"arm"</span>);   <span class="cmt">% the joint is a child of both, it travels along</span></pre>
 
 <p>To store whatever is currently drawn in an axes &mdash; the form the viewer uses &mdash; collect
-the bodies first:</p>
+the bodies first with <a href="phx.Simulation.html">phx.Simulation.findBodies</a>:</p>
 
 <pre class="phx-code">bodies = phx.Simulation.findBodies(ax);
 save(<span class="str">"scene.mat"</span>, <span class="str">"bodies"</span>);</pre>

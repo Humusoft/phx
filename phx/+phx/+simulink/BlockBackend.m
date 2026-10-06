@@ -1,14 +1,10 @@
 classdef BlockBackend < handle
-%BlockBackend Support object for the PhxModel block
+%phx.simulink.BlockBackend Support object for the PhxModel block
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 %   SPDX-License-Identifier: LicenseRef-PHX-Preview-1.0
 %   Licensed under the PHX Preview License v1.0; see LICENSE and NOTICE.
 %   ^..^
-
-    % properties (WeakHandle)
-    %     Sim (1, :) phx.Simulation = phx.Simulation.empty
-    % end
 
     properties
         Sim = phx.Simulation.empty

@@ -109,18 +109,6 @@ function setup(block)
 end
 
 function Start(block, BB)
-    % % Load model
-    % [~, file, ext] = fileparts(BB.Source);
-    % switch lower(ext)
-    %     case ".m"
-    %         bodies = feval(file);
-    %     case ".mat"
-    %         srcData = load(BB.Source);
-    %         bodies = srcData.bodies;
-    %     otherwise
-    %         error("No model available.");
-    % end
-
     % Setup viewer
     if BB.Viewer
         if isempty(BB.hF) || ~isvalid(BB.hF)
@@ -137,7 +125,6 @@ function Start(block, BB)
     end
 
     % Create simulation object
-    %BB.Sim = phx.Simulation([]);
     BB.Sim = phx.Simulation([]);
     BB.Sim.addObjects(BB.Source);
     BB.Sim.propagate("ParentAxes", BB.hA);

@@ -65,6 +65,7 @@ classdef Math
         end
 
         % Decomposition of transformation matrix for rotations in order Z -> Y -> X
+        % (R is a 3x3 rotation or a whole 4x4 transform; only R(1:3, 1:3) is read)
         function xyz = decomp321(R)
             sy = min(max(-R(3, 1), -1), 1);
 
@@ -87,10 +88,25 @@ classdef Math
         end
 
         % Decomposition of transformation matrix for quaternion rotation [w x y z]
+        % (R is a 3x3 rotation or a whole 4x4 transform; only R(1:3, 1:3) is read)
         function q = decompQ(R)
             % Shepperd's method: pivot on the largest of trace and diagonal
-            % elements so the square root argument stays well away from zero
-            [~, i] = max([trace(R), R(1, 1), R(2, 2), R(3, 3)]);
+            % elements so the square root argument stays well away from zero.
+            % Scalar comparisons pick the same pivot as max() (first of equal
+            % values) at a tenth of its cost.
+            r11 = R(1, 1);
+            r22 = R(2, 2);
+            r33 = R(3, 3);
+            tr = r11 + r22 + r33;
+            if tr >= r11 && tr >= r22 && tr >= r33
+                i = 1;
+            elseif r11 >= r22 && r11 >= r33
+                i = 2;
+            elseif r22 >= r33
+                i = 3;
+            else
+                i = 4;
+            end
             switch i
                 case 1
                     r = sqrt(1 + R(1, 1) + R(2, 2) + R(3, 3));
@@ -116,12 +132,15 @@ classdef Math
         end
 
         % Decomposition of transformation matrix for axis-angle rotation
+        % (R is a 3x3 rotation or a whole 4x4 transform; only R(1:3, 1:3) is read)
         function aa = decompAA(R)
+            % Scalar arithmetic; norm(q(2:4)) and q(2:4)/sinHalf on three
+            % elements cost several times more
             q = phx.internal.Math.decompQ(R);
-            sinHalf = norm(q(2:4));
+            sinHalf = sqrt(q(2)*q(2) + q(3)*q(3) + q(4)*q(4));
 
             if sinHalf > 1e-12
-                aa = [q(2:4)/sinHalf, 2*atan2(sinHalf, q(1))];
+                aa = [q(2)/sinHalf, q(3)/sinHalf, q(4)/sinHalf, 2*atan2(sinHalf, q(1))];
             else
                 aa = [0 0 1 0];
             end

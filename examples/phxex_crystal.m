@@ -134,21 +134,7 @@ function phxex_crystal(nBalls, annealTime, seed)
 
     % Final structure analysis: bonds, ionic order and cluster sizes
     [order, nBonds, adj] = bondOrder(balls, chg, d);
-    clusterId = zeros(1, nBalls);
-    nClusters = 0;
-    for i = 1:nBalls
-        if clusterId(i) == 0
-            nClusters = nClusters + 1;
-            stack = i;
-            while ~isempty(stack)
-                j = stack(end); stack(end) = [];
-                if clusterId(j) == 0
-                    clusterId(j) = nClusters;
-                    stack = [stack find(adj(j, :) & clusterId == 0)]; %#ok<AGROW> DFS
-                end
-            end
-        end
-    end
+    clusterId = conncomp(graph(adj));       % touching balls form one cluster
     sizes = accumarray(clusterId', 1);
 
     viewer.displayText(sprintf("Done:  %d clusters, ionic order %.0f %%", ...

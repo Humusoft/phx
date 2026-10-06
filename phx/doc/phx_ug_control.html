@@ -48,7 +48,8 @@ phx.Function({ball, plate}, @(obj, p, dt, t) balanceLaw(p, Kp, Kd));</pre>
 know the profile in advance. Use <code class="phx-inline">phx.Function</code> when you need to react
 to the current state (read position/velocity and compute a control action). The same feedback can
 also be written as a plain MATLAB loop around <code class="phx-inline">sim.step</code>, which is
-how the self-balancing robot walked through below does it.
+how the self-balancing robot walked through below does it. When an element needs properties and graphics of its own, write a class starting from
+<a href="phx.template.Interaction.html">phx.template.Interaction</a>.
 </div>
 
 <h2 class="phx-h2">A complete example: self-balancing robot</h2>

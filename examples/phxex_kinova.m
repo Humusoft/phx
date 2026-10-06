@@ -29,6 +29,8 @@ function phxex_kinova(sweepTime, Tmax, smooth)
 %     phxex_kinova(1, 4)      % weak motors, the tower stops the arm
 %     phxex_kinova(1.2, 60, false)  % the arm jolts at every waypoint and rings
 %
+% Requires Robotics System Toolbox.
+%
 % See also phx.assembly.import, phx.Body/SurfaceVelocity, phx.RevoluteJoint
 
 %   Copyright 2026 HUMUSOFT s.r.o.
@@ -100,13 +102,14 @@ function phxex_kinova(sweepTime, Tmax, smooth)
     phx.Body(ax, "Type", "static", "Position", [tableAt tableTop/2], ...
         "Shape", {"Box", "Size", [0.34 0.45 tableTop], "Color", [0.75 0.53 0.3], "Texture", "wood", "TextureBlend", 0.5});
 
+    resdir = fullfile(fileparts(mfilename("fullpath")), "res") + filesep;
+
     % Nothing about the belt moves, its SurfaceVelocity only makes contacts
     % solve as if the surface were sliding, along the local x the arrows show
-    arrows = fullfile(fileparts(mfilename("fullpath")), "res", "arrows.png");
     phx.Body(ax, "Type", "static", "Position", belt, "EulerAngles", [0 0 pi/2], ...
         "Friction", [0.8 0 0], "SurfaceVelocity", [beltSpeed 0 0], ...
         "Shape", {"Box", "Size", beltSize, "Color", [0.8 0.2 0.6], ...
-        "Texture", arrows, "TextureBlend", 0.5});
+        "Texture", resdir+"arrows.png", "TextureBlend", 0.5});
 
     % The rack: a stand and two guides that hold the blade upright, with a few
     % millimetres of clearance so it lifts out freely

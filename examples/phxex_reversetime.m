@@ -1,8 +1,8 @@
 function phxex_reversetime
-% PHXEX_REVERSETIME Demonstration of a negative time step
+% PHXEX_REVERSETIME Spring chain run forward and then backward in time
 %
-% This function sets up a physical model of springs and boxes, simulates
-% their interactions.
+% A row of boxes linked by stiff undamped springs swings from a static box
+% for 5 s, then runs the same 5 s with a negative time step.
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 

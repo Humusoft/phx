@@ -102,7 +102,6 @@ function out = phxex_bowling(Options)
     % Stand the pins up again and refresh the view under the fan of paths
     resetScene(scene, L, mean(aims), 0, Options.Speed);
     sim.step(0.05, 5, 1);
-    pause(1);
 
     % --- Part 3: the release the map found, thrown for real --------------
     best = renderedThrow(sim, scene, L, ax, cmap, 0.435, 10.2, Options.Speed, ...

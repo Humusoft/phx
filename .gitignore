@@ -1,8 +1,17 @@
 # Marketing material (large binaries: slide decks, videos) -- kept locally, not in the public repo
 publications/
 
+# Customer-specific work -- kept locally, not in the public repo
+customer/
+
+# Logo drafts and banners -- kept locally, not in the public repo
+doc/logo/
+
 # Packaged toolbox build output (distributed via GitHub Releases, not tracked in git)
-PHX Toolbox/release/
+/release/
+
+# Doc search config written by builddocsearchdb (absolute local paths); ships in the .mltbx
+phx/doc/custom_toolbox.json
 
 # MATLAB Project build cache
 resources/**/.buildtool/

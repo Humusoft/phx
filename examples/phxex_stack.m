@@ -1,16 +1,11 @@
 function phxex_stack(n, mu, tiltRate)
 % PHXEX_STACK Stability of a box stack on a tilting pallet
 %
-% This demo stacks several boxes on a pallet and then slowly tilts the
-% pallet (a kinematic body) until the stack slides or topples. The whole
-% behaviour - whether the boxes hold together, slip layer by layer, or
-% collapse - emerges purely from the contact and friction between the
-% individual bodies, which is exactly what a rigid-body collision solver
-% is needed for.
-%
-% The horizontal drift of the top box relative to the pallet is measured
-% with phx.Measure and logged, giving an engineering criterion for the
-% maximum safe tilt angle (e.g. during transport or palletizing).
+% A stack of boxes stands on a pallet (a kinematic body) that tilts slowly
+% until the stack slides or topples. Whether the boxes hold, slip layer by
+% layer or collapse follows from the contact and friction between them.
+% The drift of the top box relative to the pallet is measured with
+% phx.Measure and logged, which gives the largest safe tilt angle.
 %
 % Input Arguments:
 %     n        - number of stacked boxes (default 6)

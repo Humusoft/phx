@@ -43,7 +43,7 @@ classdef Mesh < phx.base.Shape
     properties (Access = private, Transient)
         % Loaded mesh: struct with a groups(name, submeshes) field. Held only
         % as scratch for drawing and mass - the geometry itself is carried by
-        % the graphics primitives, so it is not persisted (see the class help).
+        % the graphics primitives, so it is not persisted.
         Data
     end
 
@@ -53,8 +53,9 @@ classdef Mesh < phx.base.Shape
     end
 
     properties
-        % Scale factors [x y z], or a scalar for uniform scaling
-        Scale (1, 3) double = [1 1 1]
+        % Scale factors [x y z], or a scalar for uniform scaling; a negative
+        % factor mirrors the mesh along that axis
+        Scale (1, 3) double {mustBeFinite, mustBeNonzero} = [1 1 1]
 
         % Move the origin to the centre of the shape's bounding box
         Centered (1, 1) logical = true
@@ -135,11 +136,14 @@ classdef Mesh < phx.base.Shape
                 V = V - obj.Center;
             end
             V = V.*obj.Scale;
+            if prod(obj.Scale) < 0
+                F = fliplr(F); % mirrored, see drawSubmesh
+            end
             [mass, I0] = phx.internal.Geometry.meshMass(V, F, obj.Density);
             inertia = I0([1 5 9]);
             if ~(mass > 0) || any(~isfinite(inertia)) || any(inertia <= 0)
                 % Non-solid or open mesh: fall back to the bounding box
-                s = obj.BBox.*obj.Scale;
+                s = obj.BBox.*abs(obj.Scale);
                 mass = obj.Density*s(1)*s(2)*s(3);
                 q = s.^2;
                 inertia = [q(2) + q(3), q(1) + q(3), q(1) + q(2)]*mass/12;
@@ -149,7 +153,7 @@ classdef Mesh < phx.base.Shape
 
     methods (Access = {?phx.base.Shape, ?phx.base.Object})
         function eh = createBody(obj, body, primitive)
-            bsize = (obj.BBox.*obj.Scale)/2; % half-extents
+            bsize = (obj.BBox.*abs(obj.Scale))/2; % half-extents
             switch obj.Envelope
                 case "box"
                     eh = phx.engine.io('add', body.WorldHandle, 'box', body.TypeID, bsize, body.Transform, body.Mass, body.Inertia);
@@ -159,7 +163,7 @@ classdef Mesh < phx.base.Shape
                     eh = phx.engine.io('add', body.WorldHandle, 'sphere', body.TypeID, max(bsize), body.Transform, body.Mass, body.Inertia);
                 case "convex"
                     vertices = obj.gatherVertices(body)';
-                    eh = phx.engine.io('add', body.WorldHandle, 'convexhull', body.TypeID, vertices(:), size(vertices, 2), false, body.Transform, body.Mass, body.Inertia);
+                    eh = obj.createHullBody(body, vertices);
                 case "concave"
                     [V, F] = obj.gatherMesh(body);
                     if obj.FlipFaces
@@ -167,14 +171,8 @@ classdef Mesh < phx.base.Shape
                     end
                     vertices = V';
                     faces = int32(F') - 1;
-                    sh_id = phx.engine.io('prepare', body.WorldHandle, uint64(0), 'concaveshape', vertices(:), size(vertices, 2), faces(:), size(faces, 2));
-                    phx.engine.io('prepare', body.WorldHandle, sh_id, 'dynamictrimesh');
-                    phx.engine.io('prepare', body.WorldHandle, sh_id, 'validation');
-                    eh = phx.engine.io('add', body.WorldHandle, 'rigidbody', body.TypeID, sh_id, body.Transform, body.Mass, body.Inertia);
+                    eh = obj.createTrimeshBody(body, vertices(:), size(vertices, 2), faces(:), size(faces, 2));
             end
-        end
-
-        function createComponent(obj, body)
         end
     end
 
@@ -231,9 +229,13 @@ classdef Mesh < phx.base.Shape
                 vertices = sm.vertices.*obj.Scale;
             end
 
+            % A negative scale factor mirrors the mesh, which turns it inside out
             faces = sm.faces;
+            if prod(obj.Scale) < 0
+                faces = fliplr(faces);
+            end
             if isempty(sm.normals)
-                tri = triangulation(faces, sm.vertices);
+                tri = triangulation(faces, vertices);
                 if obj.Style == "flat"
                     normals = tri.faceNormal;
                 else
@@ -243,7 +245,9 @@ classdef Mesh < phx.base.Shape
                     faces = fliplr(faces); % display winding, after deriving normals
                 end
             else
-                normals = sm.normals;
+                % Normals transform with the inverse transpose of the scaling
+                normals = sm.normals./obj.Scale;
+                normals = normals./vecnorm(normals, 2, 2);
             end
 
             % Per-submesh appearance: OBJ material color/texture, with the
@@ -271,7 +275,7 @@ classdef Mesh < phx.base.Shape
             if ~isempty(sm.uv) && strlength(sm.texture) > 0
                 texture = phx.base.Shape.loadTexture(sm.texture);
             elseif ~isempty(sm.uv)
-                texture = obj.TextureData;
+                texture = obj.getTexture;
             else
                 texture = [];
             end

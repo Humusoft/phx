@@ -7,7 +7,7 @@ function phxex_soil
 %   Copyright 2026 HUMUSOFT s.r.o.
 
     % Resources directory
-    resdir = fullfile(fileparts(mfilename("fullpath")), "res", " ");
+    resdir = fullfile(fileparts(mfilename("fullpath")), "res") + filesep;
 
     % Figure setup
     rng(0); % Set random seed for reproducibility

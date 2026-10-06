@@ -1,5 +1,5 @@
 function mesh = readPly(fileName)
-%readPly Read a Stanford PLY mesh into the unified readMesh structure.
+%phx.internal.readPly Read a Stanford PLY mesh into the unified readMesh structure
 %
 %   mesh = phx.internal.readPly(filename) parses a PLY (Stanford Polygon)
 %   file and returns the same draw-ready structure that phx.internal.readMesh

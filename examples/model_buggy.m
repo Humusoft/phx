@@ -1,5 +1,5 @@
 function model_buggy
-% MODEL_BUGGY
+% MODEL_BUGGY Build the buggy scene and save it to saved_buggy.mat
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 
@@ -8,7 +8,7 @@ function model_buggy
     phx.extra.Viewer(ax, "ViewMode", "plain");
 
     % Resources directory
-    resdir = fullfile(fileparts(mfilename("fullpath")), "res", " ");
+    resdir = fullfile(fileparts(mfilename("fullpath")), "res") + filesep;
 
     % Create a buggy chassis from an STL model
     chassis = phx.Body("Position", [0 0 10], "Shape", {"Mesh", "Source", resdir+"BuggyBody.stl", "Details", 0.2, "Scale", 0.01, "Color", [0.9 0.9 0.9], "Envelope", "convex"}, "Mass", 300, "Inertia", [100 100 100], "Name", "Chassis");

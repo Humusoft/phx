@@ -1,5 +1,5 @@
 function model_stand
-% MODEL_STAND
+% MODEL_STAND Put the buggy on four shaker stands and save it to saved_stand.mat
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 

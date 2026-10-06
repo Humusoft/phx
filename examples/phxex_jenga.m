@@ -17,7 +17,7 @@ function phxex_jenga(n, s)
     end
 
     % Resources directory
-    resdir = fullfile(fileparts(mfilename("fullpath")), "res", " ");
+    resdir = fullfile(fileparts(mfilename("fullpath")), "res") + filesep;
 
     % Figure setup
     [viewer, ax] = phx.extra.Viewer("clear", "DefaultCameraTarget", [0 0 8], "DefaultCameraPosition", [22 -30 17], ...

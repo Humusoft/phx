@@ -1,9 +1,10 @@
 classdef GearJoint < phx.base.Joint
 %phx.GearJoint Gear joint
 %
-%   Gear joint realizes a kinematic constraint with 5 degrees of freedom
-%   specified as coupled rotations between two bodies and with a defined
-%   target ratio of their angular velocities. The rotation axis is the Z axis
+%   Gear joint couples the rotations of two bodies about their joint axes
+%   with a defined ratio of their angular velocities. It constrains this one
+%   relation only, so each body is normally held by a joint of its own as
+%   well (for example a phx.RevoluteJoint). The rotation axis is the Z axis
 %   of the joint coordinate systems of both connected bodies.
 %
 %   phx.GearJoint(bodyA, bodyB) creates a joint between two bodies A and B
@@ -33,9 +34,6 @@ classdef GearJoint < phx.base.Joint
     properties
         % Gear ratio
         Ratio (1, 1) double = 1
-
-        % Draw joint as overlay
-        Overlay (1, 1) logical = false
     end
 
     methods
@@ -73,10 +71,10 @@ classdef GearJoint < phx.base.Joint
         function valid = initObject(obj, world)
             valid = obj.checkObject;
             if valid && isempty(obj.ObjectHandle)
-                % The engine takes most of the constraint parameters only as
-                % it creates the constraint, so the constraint is built once
-                % and then kept across pipeline rebuilds. Parameters that can
-                % be changed later write through from their own setters.
+                % The engine takes the constraint parameters only as it creates
+                % the constraint, so the constraint is built once and then kept
+                % across pipeline rebuilds. Properties changed after that do not
+                % reach it.
                 obj.WorldHandle = world;
                 obj.ObjectHandle = phx.engine.io('add', world, 'gearconstraint', obj.Parents{1}.ObjectHandle, obj.Parents{2}.ObjectHandle, ...
                     obj.AxisA, obj.AxisB, obj.Ratio, ~obj.MutualCollisions);

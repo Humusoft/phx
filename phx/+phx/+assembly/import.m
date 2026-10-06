@@ -379,7 +379,7 @@ function [bodies, joints] = importURDF(ax, file, Options)
                 j = phx.RevoluteJoint(parentBody, childBody, ...
                     "PointA", TA(1:3, 4)', "PointB", TB(1:3, 4)', ...
                     "AxisA", (TA(1:3, 1:3)*axis')', "AxisB", (TB(1:3, 1:3)*axis')', ...
-                    "Name", def.name);
+                    "Name", def.name, "Visible", false);
             case "prismatic"
                 if ~any(def.axis)
                     error("phx:import:invalidAttribute", "Joint '%s' has a zero-length sliding axis.", def.name);
@@ -391,10 +391,10 @@ function [bodies, joints] = importURDF(ax, file, Options)
                 j = phx.PrismaticJoint(parentBody, childBody, ...
                     "TransformA", cleanTransform(TBody{parentID(k)}\TS), ...
                     "TransformB", cleanTransform(TBody{childID(k)}\TS), ...
-                    "Name", def.name);
+                    "Name", def.name, "Visible", false);
             case "fixed"
                 j = phx.FixedJoint(parentBody, childBody, ...
-                    "TransformA", TA, "TransformB", TB, "Name", def.name);
+                    "TransformA", TA, "TransformB", TB, "Name", def.name, "Visible", false);
             case "planar"
                 if ~any(def.axis)
                     error("phx:import:invalidAttribute", "Joint '%s' has a zero-length plane normal.", def.name);
@@ -410,7 +410,7 @@ function [bodies, joints] = importURDF(ax, file, Options)
                     "TransformB", cleanTransform(TBody{childID(k)}\TP), ...
                     "LowerLinearLimits", [1 1 0], "UpperLinearLimits", [-1 -1 0], ...
                     "LowerAngularLimits", [0 0 1], "UpperAngularLimits", [0 0 -1], ...
-                    "Name", def.name);
+                    "Name", def.name, "Visible", false);
             case "floating"
                 % All six degrees of freedom are free, so the child link stays
                 % a free body at its zero-configuration pose and gets no entry
@@ -547,13 +547,13 @@ function [bodies, joints] = importTree(ax, tree, Options)
         switch string(joint.Type)
             case "revolute"
                 j = phx.RevoluteJoint(parentBody, childBody, ...
-                    "TransformA", TA, "TransformB", TB, "Name", joint.Name);
+                    "TransformA", TA, "TransformB", TB, "Name", joint.Name, "Visible", false);
             case "prismatic"
                 j = phx.PrismaticJoint(parentBody, childBody, ...
-                    "TransformA", TA, "TransformB", TB, "Name", joint.Name);
+                    "TransformA", TA, "TransformB", TB, "Name", joint.Name, "Visible", false);
             case "fixed"
                 j = phx.FixedJoint(parentBody, childBody, ...
-                    "TransformA", TA, "TransformB", TB, "Name", joint.Name);
+                    "TransformA", TA, "TransformB", TB, "Name", joint.Name, "Visible", false);
             otherwise
                 error("phx:import:unsupportedJoint", "Joint '%s' has unhandled type '%s'.", joint.Name, joint.Type);
         end

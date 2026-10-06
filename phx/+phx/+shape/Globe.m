@@ -84,9 +84,6 @@ classdef Globe < phx.base.Shape
         function eh = createBody(obj, body, primitive)
             eh = phx.engine.io('add', body.WorldHandle, 'sphere', body.TypeID, obj.Radius, body.Transform, body.Mass, body.Inertia);
         end
-
-        function createComponent(obj, body)
-        end
     end
 
 end

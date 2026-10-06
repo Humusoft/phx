@@ -52,7 +52,7 @@ function phxex_rocket(hopHeight)
     KattP = 350; KattD = 170;      % tilt -> body torque
 
     % Resources directory
-    resdir = fullfile(fileparts(mfilename("fullpath")), "res", " ");
+    resdir = fullfile(fileparts(mfilename("fullpath")), "res") + filesep;
 
     % Figure setup
     figure(1);

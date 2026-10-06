@@ -1,10 +1,11 @@
 function phxex_buggy(showGraphs)
 % PHXEX_BUGGY Buggy driving downhill and colliding with cones
 %
-% This function initializes a figure, loads a buggy model from file and adds
-% some bodies to represent a ground with cones. The buggy goes downhill and
-% collides with some objects. Suspension spring deformation is recorded
-% using a logger.
+% A buggy loaded from a saved scene rolls down a slope into a row of cones.
+% A gauge shows the wheel speed and a logger records the lengths of the
+% suspension springs.
+%
+% phxex_buggy(false) skips the plot.
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 

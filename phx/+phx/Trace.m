@@ -1,5 +1,5 @@
 classdef Trace < phx.base.Object
-%phx.Trace Trace
+%phx.Trace Trail of a moving point of a body
 %
 %   Trace allows you to draw the trace of a moving object into the scene. It is
 %   possible to set any color of the trace, the number of points and the 
@@ -11,7 +11,7 @@ classdef Trace < phx.base.Object
 %   phx.Trace(___, name, value, ...) creates a tracer and sets properties values
 %   according to given name-value pairs.
 %
-%   See also phx.Logger
+%   See also phx.Logger, phx.Measure
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 %   SPDX-License-Identifier: LicenseRef-PHX-Preview-1.0
@@ -32,9 +32,6 @@ classdef Trace < phx.base.Object
 
         % Number of points of the tracing curve
         TracePoints (1, 1) double = 100
-
-        % Draw tracing as overlay
-        Overlay (1, 1) logical = false
     end
 
     methods

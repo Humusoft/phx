@@ -3,11 +3,17 @@ classdef Monopole < phx.base.Object
 %
 %   Monopole object allows you to assign a monopole charge to selected bodies.
 %   All bodies in the group formed by this object then interact with each
-%   other via a reaction force given by the following equation:
-%   
-%               c1 * c2
-%      F = A * ---------
-%                 r^2
+%   other in pairs, along the line joining their origins, via a force of the
+%   magnitude
+%
+%                       c1 * c2
+%      F = Attractivity ---------
+%                         r^2
+%
+%   where c1, c2 are the charges (Charge) and r is the distance of the two
+%   bodies. A positive F pulls the bodies together, a negative one pushes
+%   them apart: with the default Attractivity of -1 opposite charges attract,
+%   with the gravitational constant and the masses as charges it is gravity.
 %
 %   phx.Monopole(bodies) creates a Monopole object and assigns it to all given
 %   bodies, thus creating a mutually interacting group.
@@ -37,9 +43,10 @@ classdef Monopole < phx.base.Object
         Charge (:, 1) double
 
         % Attractivity
-        % Specifies the polarity of attraction
-        % -1: opposite poles attract each other
-        % +1: opposite poles repel each other
+        % Signed coupling constant of the force law (see the class help):
+        % negative values make opposite charges attract (-1 is the default),
+        % positive values make like charges attract (e.g. the gravitational
+        % constant, with the masses as charges)
         Attractivity (1, 1) double = -1
 
         % Position of vector field origin
@@ -57,9 +64,6 @@ classdef Monopole < phx.base.Object
 
         % Length of vectors
         VectorLength (1, 1) double = 1
-
-        % Draw vector field as overlay
-        Overlay (1, 1) logical = false
     end
 
     properties (Dependent)
@@ -69,12 +73,8 @@ classdef Monopole < phx.base.Object
 
     methods
         function value = get.Energy(obj)
-            P = obj.Parents;
-            n = numel(P);
-            pos = zeros(n, 3);
-            for a = 1:n
-                pos(a, :) = P{a}.Matrix(13:15);
-            end
+            n = numel(obj.Parents);
+            pos = bodyPositions(obj)';
             charge = obj.Charge;
             value = 0;
             for a = 1:(n - 1)
@@ -167,6 +167,20 @@ classdef Monopole < phx.base.Object
                 obj.hL.StripData = uint32(1:seg:(count*seg + 1));
             end
         end
+
+        function pos = bodyPositions(obj)
+            % Positions of the bodies as a 3xn array; scalar indexing into a
+            % local copy of Matrix avoids the temporary of Matrix(13:15)
+            P = obj.Parents;
+            n = numel(P);
+            pos = zeros(3, n);
+            for a = 1:n
+                m = P{a}.Matrix;
+                pos(1, a) = m(13);
+                pos(2, a) = m(14);
+                pos(3, a) = m(15);
+            end
+        end
     end
 
     methods (Access = protected)
@@ -191,27 +205,9 @@ classdef Monopole < phx.base.Object
             for i = 1:numel(cellObjs)
                 obj = cellObjs{i};
 
-                P = obj.Parents;
-                n = numel(P);
-                Fp = zeros(n, 3);
-                pos = zeros(n, 3);
-                charge = obj.Charge;
-                for a = 1:n
-                    pos(a, :) = P{a}.Matrix(13:15);
-                end
-
-                for a = 1:(n - 1)
-                    b = a + 1;
-                    dp = pos(b:end, :) - pos(a, :);
-                    l = sqrt(sum(dp.^2, 2));
-                    l = l.*l.*l;
-                    F = dp.*charge(a).*charge(b:end)./l;
-                    Fp(a, :) = Fp(a, :) + sum(F, 1);
-                    Fp(b:end, :) = Fp(b:end, :) - F;
-                end
-
-                Fp = obj.Attractivity*Fp;
-                [~] = phx.engine.io('apply', world, obj.ehs, 'centralforces', Fp', false);
+                pos = bodyPositions(obj);
+                Fp = phx.internal.computeMonopoleForces(pos, obj.Charge, obj.Attractivity);
+                [~] = phx.engine.io('apply', world, obj.ehs, 'centralforces', Fp, false);
             end
         end
         
@@ -224,39 +220,10 @@ classdef Monopole < phx.base.Object
                 count = size(grid, 2);
                 seg = obj.VectorSegments + 2;
 
-                P = obj.Parents;
-                n = numel(P);
-                pos = zeros(3, n);
-
-                for a = 1:n
-                    pos(:, a) = P{a}.Matrix(13:15);
-                end
-
+                pos = bodyPositions(obj);
                 charge = obj.Charge';
                 segLen = obj.VectorLength/obj.VectorSegments;
-
-                % XYZ = zeros(3, count*seg);
-                % si = 1;
-                % for h = 1:count
-                %     point = grid(:, h);
-                %     XYZ(:, si) = point;
-                %     for m = 1:(seg - 2)
-                %         dp = pos - point;
-                %         l = sqrt(sum(dp.^2));
-                %         l = l.*l.*l;
-                %         F = sum(dp.*charge./l, 2);
-                %         Flen = sqrt(F(1)*F(1) + F(2)*F(2) + F(3)*F(3));
-                %         F = segLen*F./Flen;
-                %         point = point + F;
-                %         si = si + 1;
-                %         XYZ(:, si) = point;
-                %     end
-                %     arr = [-F(2); F(1); F(3)];
-                %     XYZ(:, si + 1) = XYZ(:, si - 1) + 0.25*arr;
-                %     si = si + 2;
-                % end
                 XYZ = phx.internal.computeFieldArrows(grid, pos, charge, count, seg, segLen);
-
                 XYZ(isnan(XYZ)) = 0;
                 hL.VertexData = single(XYZ);
             end

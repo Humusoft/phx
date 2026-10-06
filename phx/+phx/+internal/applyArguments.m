@@ -1,5 +1,5 @@
 function target = applyArguments(pairs, target)
-%APPLYARGUMENTS  Copy name-value fields from struct PAIRS onto TARGET.
+%phx.internal.applyArguments Copy name-value fields from struct PAIRS onto TARGET
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 %   SPDX-License-Identifier: LicenseRef-PHX-Preview-1.0

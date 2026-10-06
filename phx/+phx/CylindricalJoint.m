@@ -39,11 +39,6 @@ classdef CylindricalJoint < phx.base.Joint
         hM
     end
 
-    properties
-        % Draw joint as overlay
-        Overlay (1, 1) logical = false
-    end
-
     methods
         function obj = CylindricalJoint(ParentA, ParentB, Options)
             arguments
@@ -79,10 +74,10 @@ classdef CylindricalJoint < phx.base.Joint
         function valid = initObject(obj, world)
             valid = obj.checkObject;
             if valid && isempty(obj.ObjectHandle)
-                % The engine takes most of the constraint parameters only as
-                % it creates the constraint, so the constraint is built once
-                % and then kept across pipeline rebuilds. Parameters that can
-                % be changed later write through from their own setters.
+                % The engine takes the constraint parameters only as it creates
+                % the constraint, so the constraint is built once and then kept
+                % across pipeline rebuilds. Properties changed after that do not
+                % reach it.
                 obj.WorldHandle = world;
                 obj.ObjectHandle = phx.engine.io('add', world, 'generic6dofconstraint', obj.Parents{1}.ObjectHandle, obj.Parents{2}.ObjectHandle, ...
                     obj.TransformA(:), obj.TransformB(:), 'xyz', ~obj.MutualCollisions);

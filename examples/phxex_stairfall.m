@@ -39,7 +39,7 @@ function phxex_stairfall(pushSpeed, duration)
     H = nSteps*rise;                   % height of the top landing
 
     % Resources directory
-    resdir = fullfile(fileparts(mfilename("fullpath")), "res", " ");
+    resdir = fullfile(fileparts(mfilename("fullpath")), "res") + filesep;
 
     % Figure setup
     figure(1);

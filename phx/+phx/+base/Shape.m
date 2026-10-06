@@ -38,7 +38,7 @@ classdef Shape
         Texture (1, 1) string
 
         % Texture blending ratio (0-1)
-        TextureBlend (1, 1) double = 1
+        TextureBlend (1, 1) double {mustBeInRange(TextureBlend, 0, 1)} = 1
     end
 
     methods (Abstract)
@@ -50,15 +50,20 @@ classdef Shape
     end
 
     methods (Abstract, Access = {?phx.base.Shape, ?phx.base.Object})
-        % Create a new body of the given shape
-        eh = createBody(obj, body)
-
-        % Create a component of a compound body
-        createComponent(obj, body)
+        % Create the engine body of the given body, wearing this shape; the
+        % primitive is the graphics object the shape drew for it
+        eh = createBody(obj, body, primitive)
     end
 
     methods
         function obj = set.Texture(obj, fileName)
+            % An empty name removes the texture
+            obj.Texture = fileName;
+            if fileName == ""
+                obj.TextureData = [];
+                return
+            end
+
             % Resolve texture file
             if ~isfile(fileName)
                 % Redirect to default textures
@@ -103,7 +108,9 @@ classdef Shape
             rgb_double(:, :, 2) = reshape(cmap(indices, 2), M, N);
             rgb_double(:, :, 3) = reshape(cmap(indices, 3), M, N);
             img = uint8(round(rgb_double*255));
+            img(:, :, 4) = 255; % opaque RGBA, see loadTexture
 
+            obj.Texture = ""; % the generated texture has no file
             obj.TextureData = permute(img, [3 1 2]);
         end
 
@@ -121,6 +128,23 @@ classdef Shape
     end
 
     methods (Access = protected)
+        function eh = createHullBody(~, body, vertices)
+            % Engine body with the convex hull of the given vertices as its
+            % collision shape, for the "convex" envelopes. The vertices come
+            % as a 3-by-N matrix, one column per point.
+            eh = phx.engine.io('add', body.WorldHandle, 'convexhull', body.TypeID, vertices(:), size(vertices, 2), false, body.Transform, body.Mass, body.Inertia);
+        end
+
+        function eh = createTrimeshBody(~, body, vertices, numVertices, faces, numFaces)
+            % Engine body with a concave triangle-mesh collision shape, for
+            % the "concave" envelopes. The vertices come as a column
+            % [x1;y1;z1;x2;...], the faces as zero-based int32 indices.
+            sh = phx.engine.io('prepare', body.WorldHandle, uint64(0), 'concaveshape', vertices, numVertices, faces, numFaces);
+            phx.engine.io('prepare', body.WorldHandle, sh, 'dynamictrimesh');
+            phx.engine.io('prepare', body.WorldHandle, sh, 'validation');
+            eh = phx.engine.io('add', body.WorldHandle, 'rigidbody', body.TypeID, sh, body.Transform, body.Mass, body.Inertia);
+        end
+
         function applyStyle(obj, patchObj, style)
             switch style
                 case "smooth"
@@ -195,10 +219,11 @@ classdef Shape
                     go = matlab.graphics.primitive.world.TriangleStrip('Parent', target, 'VertexIndices', faces, 'VertexData', vertices, 'NormalData', normals, 'NormalBinding', normBinding, 'ColorData', clr, 'ColorBinding', 'object', 'HitTest', 'on', 'FaceOffsetFactor', 0, 'FaceOffsetBias', 0);
                 else
                     uvs = single(uvs)';
-                    if size(texture, 1) == 4
+                    % Texture data is RGBA; use truecoloralpha only for real
+                    % transparency, because it turns antialiasing off
+                    if min(texture(4, :)) < 255
                         tx = matlab.graphics.primitive.world.Texture('CData', texture, 'ColorType', 'truecoloralpha', 'SamplingFilter', 'bilinear');
                     else
-                        texture(4, :, :) = uint8(255);
                         tx = matlab.graphics.primitive.world.Texture('CData', texture, 'SamplingFilter', 'bilinear');
                     end
                     go = matlab.graphics.primitive.world.TriangleStrip('Parent', target, 'VertexIndices', faces, 'VertexData', vertices, 'NormalData', normals, 'NormalBinding', normBinding, 'ColorData', uvs, 'ColorType', 'texturemapped', 'ColorBinding', 'interpolated', 'Texture', tx, 'HitTest', 'on', 'FaceOffsetFactor', 0, 'FaceOffsetBias', 0);
@@ -210,12 +235,16 @@ classdef Shape
         end
 
         function textureData = getTexture(obj)
+            % Tint the color channels towards the surface color, keeping alpha
+            textureData = obj.TextureData;
             b = obj.TextureBlend;
-            if b < 1
-                clr = uint8(obj.Color'*255*(1 - b));
-                textureData = obj.TextureData(1:3, :, :)*b + clr;
-            else
-                textureData = obj.TextureData;
+            if b < 1 && ~isempty(textureData)
+                clr = uint8(obj.Color*255*(1 - b));
+                % One channel at a time: a scalar first index is a strided
+                % loop, while (1:3, :, :) copies 3-byte blocks (4x slower)
+                for c = 1:3
+                    textureData(c, :, :) = textureData(c, :, :)*b + clr(c);
+                end
             end
         end
     end
@@ -237,8 +266,12 @@ classdef Shape
     methods (Static, Hidden)
         function data = loadTexture(fileName)
         %loadTexture Read an image file into TriangleStrip texture data.
+            % Always RGBA: the alpha plane is appended before permute, where
+            % it is one contiguous block, so drawMesh never has to grow it
             [img, ~, alpha] = imread(fileName);
-            if ~isempty(alpha) && min(alpha(:)) < 255
+            if isempty(alpha)
+                img(:, :, 4) = 255;
+            else
                 img(:, :, 4) = alpha;
             end
             data = permute(img, [3 1 2]);

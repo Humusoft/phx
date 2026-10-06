@@ -15,7 +15,7 @@
 
 % Notes:
 % - If a path starts with '%', include '\' before '%', for example, "\%examplefile.svn".
-% - This file, 'toolbox.ignore', is always excluded from the toolbox and including it is not supported.
+% - This file, 'package.ignore', is always excluded from the toolbox and including it is not supported.
 
 %% Recommended Exclusions (remove lines to re-include files):
 
@@ -28,6 +28,7 @@ CLAUDE.md
 **/*.gif
 phx/+phx/+engine/*.pdb
 phx/+phx/+engine/bullet_*.*
+phx/+phx/+engine/switchEngine.*
 % phx/**/*.m
 phx/phx2p.*
 phx/listNotes.*
@@ -36,12 +37,14 @@ examples/res/Buggy*.*
 .claude/
 .git/
 tools/
-PHX Toolbox/
+release/
 publications/
+customer/
+doc/logo/
 tests/
-work/
 .gitignore
 deploymentLog.html
+phx/doc/custom_toolbox.json
 
 % Toolbox files and project files
 **/*.mltbx

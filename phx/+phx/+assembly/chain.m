@@ -36,7 +36,7 @@ function parts = chain(varargin)
 %     axis row of the anchored point.
 %   - Density: density of the link material (kg/m^3), default 1000; the
 %     link masses and inertias follow from the geometry.
-%   - Color: common color of all parts, default [0.75 0.73 0.7].
+%   - Color: common color of all parts, default [1 1 1].
 %   - Friction: friction coefficients of all links, default [0.5 0 0].
 %   - Position, Orientation, EulerAngles: pose of the chain frame (in
 %     which the points and axes are expressed) in the world, default at

@@ -1,5 +1,5 @@
 function XYZ  = computeFieldArrows(grid, pos, charge, count, seg, segLen)
-%COMPUTEFIELDARROWS  Trace field-line arrow polylines from a charge configuration.
+%phx.internal.computeFieldArrows Trace field-line arrow polylines from a charge configuration
 % grid: 3xN array
 % pos: 3xM array
 % charge: row vector

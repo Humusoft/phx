@@ -1,5 +1,5 @@
 function portEditor(block)
-%portEditor Interactive editor for PhxModel input/output port references.
+%phx.simulink.portEditor Interactive editor for PhxModel input/output port references
 %
 %   portEditor(block) opens a dialog that lists the objects and properties of
 %   the block's model source and lets the user assemble the InputRefs and

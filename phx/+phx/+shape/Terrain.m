@@ -19,18 +19,14 @@ classdef Terrain < phx.base.Shape
 %   Licensed under the PHX Preview License v1.0; see LICENSE and NOTICE.
 %   ^..^
 
-%#ok<*MCSUP> OK to access other properties in setters
 %#ok<*INUSD> OK to see the full list of arguments for callbacks
-
-    properties (Access = private, Transient)
-    end
 
     properties
         % Length and width of the terrain rectangle
         Size (1, 2) double = [10 10]
 
-        % Height matrix of the terrain rectangle 
-        Height (:, :) double = zeros(10)
+        % Height matrix of the terrain rectangle, at least 2-by-2 samples
+        Height (:, :) double {mustBeFinite, mustBeHeightGrid} = zeros(10)
     end
 
     methods
@@ -47,22 +43,20 @@ classdef Terrain < phx.base.Shape
         end
 
         function drawTo(obj, target)
-            % x = linspace(-0.5, 0.5, size(obj.Height, 2))*obj.Size(1);
-            % y = linspace(-0.5, 0.5, size(obj.Height, 1))*obj.Size(2);
+            % The surface is centred between its lowest and highest point, as
+            % the engine centres the heightfield
             c = (max(obj.Height(:)) + min(obj.Height(:)))/2;
-            % primitive = surf(x, y, obj.Height - c, "Parent", target);
-            % obj.applyStyle(primitive, obj.Style);
             [V, N, F, T] = phx.internal.Geometry.terrain([obj.Size 1], obj.Height - c, false);
-            
+
             primitive = obj.drawMesh(target, V, N, F, T, obj.getTexture);
             setappdata(primitive, "phxShape", obj);
         end
 
-        function [mass, inertia] = computeMass(obj)
-            s = obj.Size;
-            mass = 1000; %obj.Density*s(1)*s(2)*s(3);
-            q = s.^2;
-            inertia = 100; %[q(2) + q(3), q(1) + q(3), q(1) + q(2)]*mass/12;
+        function [mass, inertia] = computeMass(~)
+            % A terrain is meant to be static, where mass and inertia play no
+            % part; these are fixed placeholders for the unusual dynamic case
+            mass = 1000;
+            inertia = [100 100 100];
         end
     end
 
@@ -76,9 +70,15 @@ classdef Terrain < phx.base.Shape
             spacing = [obj.Size(1)/(nx - 1) obj.Size(2)/(ny - 1) 1];
             eh = phx.engine.io('add', body.WorldHandle, 'terrain', body.TypeID, h(:), nx, ny, min(h(:)), max(h(:)), 'z', spacing, body.Transform, body.Mass, body.Inertia);
         end
-
-        function createComponent(obj, body)
-        end
     end
 
+end
+
+function mustBeHeightGrid(h)
+% The engine spaces the samples Size/(n - 1) apart, so it needs at least
+% two of them along each side
+    if size(h, 1) < 2 || size(h, 2) < 2
+        error("phx:Terrain:heightSize", ...
+            "Height must have at least 2-by-2 samples; it is %d-by-%d.", size(h, 1), size(h, 2));
+    end
 end

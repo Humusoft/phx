@@ -12,7 +12,7 @@ description: >
 
 # PHX scene basics
 
-PHX is a MATLAB toolbox (package root `phx/+phx`, targets R2026b) — a thin
+PHX is a MATLAB toolbox (package root `phx/+phx`, requires MATLAB R2025a or newer) — a thin
 object-oriented layer over the Bullet physics engine reached through one MEX
 gateway (`phx.engine.io`). You build a scene from `phx.*` handle objects that
 draw into MATLAB axes via `hgtransform`, then step it with a `phx.Simulation`.
@@ -23,9 +23,9 @@ PHX is used as an **installed toolbox** — `phx.*` is simply available, no `add
 is needed and scene code must never contain one. The demos in `examples/` follow
 this: a `phxex_*` script is a plain function that assumes PHX is installed.
 
-```powershell
+```shell
 # Headless: -batch exits MATLAB when done and returns non-zero on error
-& "C:\Program Files\MATLAB\R2026a\bin\matlab" -sd "examples" -batch "phxex_minimal"
+matlab -sd "examples" -batch "phxex_minimal"
 ```
 
 Wrap long runs with a timeout — engine demos can take minutes. Graphics-dependent

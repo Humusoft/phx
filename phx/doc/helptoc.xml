@@ -36,6 +36,7 @@
             <tocitem target="phx.Simulation.html">phx.Simulation</tocitem>
             <tocitem target="phx.Body.html">phx.Body</tocitem>
             <tocitem target="phx.base.Object.html">phx.base.Object</tocitem>
+            <tocitem target="phx.engine.BulletSettings.html">phx.engine.BulletSettings</tocitem>
         </tocitem>
 
         <tocitem target="phx.base.Joint.html">Joints
@@ -95,6 +96,7 @@
             <tocitem target="phx.Raycast.html">phx.Raycast</tocitem>
             <tocitem target="phx.Script.html">phx.Script</tocitem>
             <tocitem target="phx.Function.html">phx.Function</tocitem>
+            <tocitem target="phx.template.Interaction.html">phx.template.Interaction</tocitem>
             <tocitem target="phx.Camera.html">phx.Camera</tocitem>
         </tocitem>
 

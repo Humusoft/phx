@@ -18,13 +18,17 @@
 
 <h2 class="phx-h2">Description</h2>
 <p><code class="phx-inline">phx.Monopole</code> assigns a monopole charge to selected bodies. All
-bodies in the group then interact pairwise through an inverse-square reaction force:</p>
-<pre class="phx-code">          c1 * c2
-F = A * -----------
-            r^2</pre>
-<p>where <code class="phx-inline">c1</code>, <code class="phx-inline">c2</code> are the charges,
-<code class="phx-inline">r</code> the distance, and <code class="phx-inline">A</code> the attractivity
-sign. The interaction can be visualized as a vector field on a configurable grid.</p>
+bodies in the group then interact pairwise, along the line joining their origins, through an
+inverse-square force of the magnitude</p>
+<pre class="phx-code">                    c1 * c2
+F = Attractivity * ---------
+                      r^2</pre>
+<p>where <code class="phx-inline">c1</code>, <code class="phx-inline">c2</code> are the charges and
+<code class="phx-inline">r</code> the distance. A positive <code class="phx-inline">F</code> pulls the
+bodies together, a negative one pushes them apart: with the default
+<code class="phx-inline">Attractivity</code> of -1 opposite charges attract, and with the
+gravitational constant and the masses as charges the element is gravity. The interaction can be
+visualized as a vector field on a configurable grid.</p>
 
 <h2 class="phx-h2">Creation</h2>
 <h3 class="phx-h3">Syntax</h3>
@@ -48,7 +52,7 @@ to all given bodies, forming a mutually interacting group. Provide one charge pe
 <table class="phx-tbl">
 <tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
 <tr><td class="name">Charge</td><td class="type">n&times;1 double</td><td>Monopole charge of each body (one per body).</td></tr>
-<tr><td class="name">Attractivity</td><td class="dflt">-1</td><td>Polarity: <code class="phx-inline">-1</code> = opposite charges attract, <code class="phx-inline">+1</code> = they repel.</td></tr>
+<tr><td class="name">Attractivity</td><td class="dflt">-1</td><td>Signed coupling constant of the force law: negative values make opposite charges attract, positive values make like charges attract (e.g. the gravitational constant, with the masses as charges).</td></tr>
 <tr><td class="name">VectorFieldCenter</td><td class="dflt">[0 0 0]</td><td>Position of the vector-field origin.</td></tr>
 <tr><td class="name">VectorFieldSize</td><td class="dflt">[10 10 0]</td><td>Extent of the vector field, <code class="phx-inline">[x y z]</code>.</td></tr>
 <tr><td class="name">VectorFieldStep</td><td class="dflt">1</td><td>Spacing of the vector-field grid.</td></tr>

@@ -1,5 +1,5 @@
 function mesh = readMesh(fileName, Details)
-%readMesh Load a triangular mesh file into a uniform, draw-ready structure.
+%phx.internal.readMesh Load a triangular mesh file into a uniform, draw-ready structure
 %
 %   mesh = phx.internal.readMesh(fileName) reads a mesh file and returns a
 %   structure that phx.shape.Mesh can draw and collide directly. The file
@@ -67,7 +67,7 @@ function mesh = readStl(fileName, Details)
     sub.uv = [];
     sub.color = [];
     sub.texture = "";
-    sub.flip = true; % STL winding is flipped for display/collision, matching legacy behaviour
+    sub.flip = true; % STL winding is flipped for display and collision
     mesh.groups = struct('name', "", 'submeshes', sub);
 end
 
@@ -107,7 +107,7 @@ function mesh = readObjMesh(fileName)
             if all(sm.vt(:) > 0) && ~isempty(UV)
                 tidx = reshape(sm.vt', [], 1);
                 raw = UV(tidx, :);
-                % Match the historical texture-space mapping (V flipped, axes swapped)
+                % Map into the PHX texture space (V flipped, axes swapped)
                 subsOut(s).uv = [1 - raw(:, 2), raw(:, 1)];
             else
                 subsOut(s).uv = [];

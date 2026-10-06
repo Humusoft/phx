@@ -70,9 +70,6 @@ classdef Rope < phx.base.Object
 
         % Tension range mapped on the whole color map
         ColorRange (1, 2) double = [0 100]
-
-        % Draw rope as overlay
-        Overlay (1, 1) logical = false
     end
 
     properties (Dependent)

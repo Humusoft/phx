@@ -1,5 +1,5 @@
 classdef PrimitiveHelper < handle
-%phx.internal.PrimitiveHelper  Uniform appearance/geometry facade over a graphics primitive.
+%phx.internal.PrimitiveHelper Uniform appearance/geometry facade over a graphics primitive
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 %   SPDX-License-Identifier: LicenseRef-PHX-Preview-1.0
@@ -47,10 +47,15 @@ classdef PrimitiveHelper < handle
                 case {'patch', 'surface'}
                     obj.Primitive.FaceColor = value;
                 case {'trianglestrip', 'linestrip'}
-                    if ~strcmp(obj.Primitive.ColorType, 'texturemapped')
-                        obj.Primitive.ColorData = uint8([value*255 255])';
-                    else
-                        % skip
+                    switch obj.Primitive.ColorType
+                        case 'texturemapped'
+                            % skip
+                        case 'truecoloralpha'
+                            % keep the transparency, change the color only
+                            alpha = obj.Primitive.ColorData(4, 1);
+                            obj.Primitive.ColorData = [uint8(value'*255); alpha];
+                        otherwise
+                            obj.Primitive.ColorData = uint8([value*255 255])';
                     end
             end
         end

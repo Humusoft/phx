@@ -13,7 +13,7 @@
 <div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.assembly.import</div>
 
 <h1 class="phx-title">phx.assembly.import</h1>
-<p class="phx-purpose">Multi-body model imported from a file (URDF, OBJ, STL or PLY)</p>
+<p class="phx-purpose">Multi-body model imported from a file (URDF, OBJ, STL or PLY) or a rigidBodyTree</p>
 <p class="phx-classref">Function&nbsp;&nbsp;phx.assembly.import &nbsp;|&nbsp; Package: phx.assembly</p>
 
 <h2 class="phx-h2">Description</h2>
@@ -24,6 +24,12 @@ becomes one body per link connected by joints; a Wavefront <b>OBJ</b>
 (<code class="phx-inline">.obj</code>) file becomes one body per object (o/g group) with no joints;
 an <b>STL</b> or <b>PLY</b> file becomes a single body. To load an OBJ as one merged body instead
 of separate parts, use <a href="phx.shape.Mesh.html">phx.shape.Mesh</a>.</p>
+
+<p>Instead of a file, the function also takes a <b>rigidBodyTree</b> object of Robotics System
+Toolbox, creating one body per rigid body of the tree and one joint per tree joint. This reaches
+everything <code class="phx-inline">importrobot</code> reads &mdash; Xacro and SDF files, robot
+description text and Simscape Multibody models &mdash; and the robot library of
+<code class="phx-inline">loadrobot</code>. See <a href="#rbt">rigidBodyTree to PHX mapping</a>.</p>
 
 <p>OBJ objects import as dynamic bodies with a convex collision envelope (set
 <code class="phx-inline">Envelope</code> to override), each body frame at its object's centroid.
@@ -40,7 +46,8 @@ options.</p>
 <h2 class="phx-h2">Creation</h2>
 <h3 class="phx-h3">Syntax</h3>
 <span class="phx-syntax">bodies = phx.assembly.import(file)</span>
-<span class="phx-syntax">[bodies,joints] = phx.assembly.import(file)</span>
+<span class="phx-syntax">bodies = phx.assembly.import(tree)</span>
+<span class="phx-syntax">[bodies,joints] = phx.assembly.import(___)</span>
 <span class="phx-syntax">[___] = phx.assembly.import(___,Name,Value)</span>
 <span class="phx-syntax">[___] = phx.assembly.import(ax,___)</span>
 
@@ -49,8 +56,12 @@ options.</p>
 <p><code class="phx-inline">bodies = phx.assembly.import(file)</code> creates the bodies in the
 current axes and returns them in a struct whose field names are the link names (made valid MATLAB
 identifiers; the original URDF name is preserved in the <code class="phx-inline">Name</code>
-property). <code class="phx-inline">[bodies,joints] = phx.assembly.import(file)</code> also
-returns all created joints in a struct keyed by the joint names.</p>
+property).</p>
+<p><code class="phx-inline">bodies = phx.assembly.import(tree)</code> imports the rigidBodyTree
+<code class="phx-inline">tree</code> instead of a file, one body per rigid body that carries mass or
+geometry, its base included.</p>
+<p><code class="phx-inline">[bodies,joints] = phx.assembly.import(___)</code> also returns all
+created joints in a struct keyed by the joint names.</p>
 <p><code class="phx-inline">[___] = phx.assembly.import(ax,___)</code> draws into the given axes
 instead of the current axes; an empty target (<code class="phx-inline">[]</code>) creates the
 bodies without graphics for headless simulations.</p>
@@ -66,6 +77,7 @@ mesh file, raises <code class="phx-inline">phx:import:unsupportedOption</code>.<
 <tr><td class="name">Orientation</td><td class="dflt">eye(3)</td><td>World rotation of the base as a 3&times;3 rotation matrix. Same convention as <code class="phx-inline">phx.Body.Orientation</code>.</td></tr>
 <tr><td class="name">EulerAngles</td><td class="dflt">[0 0 0]</td><td>World rotation of the base as Euler angles (z&rarr;y&rarr;x order), an alternative to <code class="phx-inline">Orientation</code>.</td></tr>
 <tr><td class="name">MeshPath</td><td class="dflt">""</td><td><b>URDF only.</b> Root folder used to resolve <code class="phx-inline">package://</code> URIs and relative file names of mesh geometries. Meshes are always searched relative to the folder of the URDF file as well.</td></tr>
+<tr><td class="name">Configuration</td><td class="dflt">homeConfiguration(tree)</td><td><b>rigidBodyTree only.</b> Joint configuration the tree is imported at, in the data format of the tree (see <code class="phx-inline">DataFormat</code>); a plain vector of joint positions is accepted for the <code class="phx-inline">"struct"</code> format as well.</td></tr>
 <tr><td class="name">Scale</td><td class="dflt">[1 1 1]</td><td><b>Mesh files only.</b> Scale factor applied to the imported mesh.</td></tr>
 <tr><td class="name">Envelope</td><td class="dflt">"convex"</td><td><b>Mesh files only.</b> Collision envelope of every imported body: <code class="phx-inline">"box"</code>, <code class="phx-inline">"cylinder"</code>, <code class="phx-inline">"sphere"</code>, <code class="phx-inline">"convex"</code> or <code class="phx-inline">"concave"</code>. See <a href="phx.shape.Mesh.html">phx.shape.Mesh</a>.</td></tr>
 <tr><td class="name">FlipFaces</td><td class="dflt">false</td><td><b>Mesh files only.</b> Reverse the triangle winding of the <code class="phx-inline">"concave"</code> collision mesh when its solid side comes out wrong.</td></tr>
@@ -88,6 +100,35 @@ constraint, so no joint is created and the child link is left free. Joint limits
 all joints are passive &mdash; no motors are created. Masses come from the inertial elements; only the
 diagonal of the inertia tensor expressed in body axes is used.</p>
 
+<h2 class="phx-h2" id="rbt">rigidBodyTree to PHX mapping</h2>
+<p>A rigidBodyTree follows the URDF rules with these differences:</p>
+<ul>
+<li><b>Geometry</b> comes from the visuals of each rigid body, which the tree reports already
+tessellated, so every shape becomes a <a href="phx.shape.Mesh.html">phx.shape.Mesh</a> and no mesh
+files are searched for. A visual that the tree describes as a box, cylinder or sphere gets the
+matching bounding collision envelope, anything else the convex one. Collision geometry added to a
+rigid body separately (<code class="phx-inline">addCollision</code>) is not used.</li>
+<li><b>Joints</b> are fixed, revolute or prismatic, the three types a tree knows. Both joint frames
+come from the fixed transforms of each <code class="phx-inline">rigidBodyJoint</code>, so a tree
+built from Denavit-Hartenberg parameters assembles just as one imported from a file, and the
+<code class="phx-inline">Angle</code> of a revolute joint (the <code class="phx-inline">Distance</code>
+of a prismatic one) reads the joint position of the tree. A configuration solved by
+<code class="phx-inline">inverseKinematics</code> can therefore be commanded to the joint motors as
+it stands; mind that <code class="phx-inline">Angle</code> is wrapped to [&minus;&pi;, &pi;].</li>
+<li><b>Frames</b> &mdash; rigid bodies with no mass and no geometry attached by a fixed joint, such
+as a tool or sensor origin &mdash; are merged into the nearest ancestor that is a part. Neither the
+frame nor its joint appears in the returned structs; the frame itself is still available from the
+tree through <code class="phx-inline">getTransform</code>.</li>
+<li><b>Masses</b> come from the <code class="phx-inline">Mass</code> and
+<code class="phx-inline">Inertia</code> properties of each rigid body. The base of a tree carries no
+mass properties and borrows those of the lightest body of the tree, so that the solver does not
+face an extreme mass ratio. A robot standing on its own base wants a mass of its own, or a static
+base.</li>
+<li>The tree is imported at the <code class="phx-inline">Configuration</code> option, the home
+configuration by default. Joint limits (<code class="phx-inline">PositionLimits</code>) are
+ignored.</li>
+</ul>
+
 <h2 class="phx-h2">Examples</h2>
 <h4 class="phx-h4">Import a robot and anchor its base</h4>
 <pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
@@ -98,6 +139,11 @@ bodies.base.Type = <span class="str">"static"</span>;
 sim = phx.Simulation(bodies);
 sim.step(1, 500, 5);
 delete(sim);</pre>
+
+<h4 class="phx-h4">Import a robot from the Robotics System Toolbox library</h4>
+<pre class="phx-code">tree = loadrobot(<span class="str">"kinovaGen3"</span>, <span class="str">"DataFormat"</span>, <span class="str">"row"</span>);
+[bodies, joints] = phx.assembly.import(tree);
+bodies.base_link.Type = <span class="str">"static"</span>;</pre>
 
 <h4 class="phx-h4">Place a ragdoll leaning over an edge</h4>
 <pre class="phx-code">[bodies, joints] = phx.assembly.import(<span class="str">"human.urdf"</span>, ...

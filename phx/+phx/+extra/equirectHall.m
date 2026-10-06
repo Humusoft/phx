@@ -1,5 +1,5 @@
 function [rgb, surface] = equirectHall(varargin)
-%EQUIRECTHALL  Soft white cylindrical room with corner AO and wall text.
+%phx.extra.equirectHall Soft white cylindrical room with corner AO and wall text
 %   [RGB, SURFACE] = EQUIRECTHALL(Name,Value,...) renders the inside
 %   of a white cylindrical room (wall + floor + ceiling) into an
 %   equirectangular (sphere-mappable) image. The wall height is adjustable,

@@ -79,10 +79,7 @@ classdef Rock < phx.base.Shape
         function eh = createBody(obj, body, primitive)
             ph = phx.internal.PrimitiveHelper(primitive);
             vertices = ph.Vertices';
-            eh = phx.engine.io('add', body.WorldHandle, 'convexhull', body.TypeID, vertices(:), size(vertices, 2), false, body.Transform, body.Mass, body.Inertia);
-        end
-
-        function createComponent(obj, body)
+            eh = obj.createHullBody(body, vertices);
         end
     end
 

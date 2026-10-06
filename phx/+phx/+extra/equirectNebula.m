@@ -1,5 +1,5 @@
 function [rgb, density] = equirectNebula(varargin)
-%EQUIRECTNEBULA  Procedural deep-space nebula with a dense star field.
+%phx.extra.equirectNebula Procedural deep-space nebula with a dense star field
 %   [RGB, DENSITY] = EQUIRECTNEBULA(Name,Value,...) renders a full-sphere
 %   (equirectangular) cosmic background: colourful nebula gas built from
 %   domain-warped 3-D fractal noise, dark dust lanes, and a star field

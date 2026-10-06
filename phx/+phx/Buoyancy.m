@@ -40,9 +40,9 @@ classdef Buoyancy < phx.base.Object
 
     properties (Access = private)
         ehs         % engine handles of the parent bodies
-        SamplePoints % cell array of 3xN local interior points per body
-        SamplePointsH % cell array of 4xN homogeneous local points per body
-        SampleVolumes % cell array of 1xN volumes of the sampling points
+        SamplePoints % 3xT local interior points of all bodies, body after body
+        SampleVolumes % 1xT volumes of the sampling points
+        SampleCounts % 1xN number of sampling points per body
         CachedGravity = [0 0 -9.81]
         hS          % liquid surface graphics
         XGrid
@@ -136,16 +136,17 @@ classdef Buoyancy < phx.base.Object
             P = obj.Parents;
             n = numel(P);
             obj.ehs = zeros(1, n, 'uint64');
-            obj.SamplePoints = cell(1, n);
-            obj.SamplePointsH = cell(1, n);
-            obj.SampleVolumes = cell(1, n);
+            pts = cell(1, n);
+            dV = cell(1, n);
             for a = 1:n
                 obj.ehs(a) = P{a}.ObjectHandle;
-                [obj.SamplePoints{a}, obj.SampleVolumes{a}] = obj.sampleBody(P{a});
-                % Homogeneous copy lets the world transform be a single
-                % matrix product (no separate translation add) each step
-                obj.SamplePointsH{a} = [obj.SamplePoints{a}; ones(1, size(obj.SamplePoints{a}, 2))];
+                [pts{a}, dV{a}] = obj.sampleBody(P{a});
             end
+            % One contiguous array for all bodies, as the per-step
+            % computation in phx.internal.computeBuoyancy takes it
+            obj.SamplePoints = [pts{:}];
+            obj.SampleVolumes = [dV{:}];
+            obj.SampleCounts = cellfun(@numel, dV);
 
             % Cache gravity of the owning simulation
             sim = obj.getParentSim;
@@ -210,70 +211,56 @@ classdef Buoyancy < phx.base.Object
 
                 P = obj.Parents;
                 n = numel(P);
-                frac = zeros(1, n);
-                hs = zeros(1, 0, 'uint64');
-                Fb = zeros(3, 0);
-                cb = zeros(3, 0);
+                M = zeros(16, n);
+                for a = 1:n
+                    m = P{a}.Matrix;
+                    M(:, a) = m(:);
+                end
+                pts = obj.SamplePoints;
+                counts = obj.SampleCounts;
 
                 if useFcn
-                    % Transform every body's sample points to world space
-                    % (single homogeneous matrix product each), then evaluate
-                    % the surface for all points at once so the LevelFunction
-                    % overhead is paid once per step, not once per body.
-                    W = cell(1, n);
-                    for a = 1:n
-                        W{a} = P{a}.Matrix*obj.SamplePointsH{a};
-                    end
-                    Wcat = [W{:}];
-                    levels = lf(Wcat(1, :), Wcat(2, :), time);
-                    if isscalar(levels)
-                        levels = repmat(levels, 1, size(Wcat, 2));
-                    end
+                    % Evaluate the surface for all points at once, so the
+                    % LevelFunction overhead is paid once per step, not once
+                    % per body
+                    XY = phx.internal.computeBuoyancyXY(M, pts, counts);
+                    level = double(lf(XY(1, :), XY(2, :), time));
+                else
+                    level = obj.Level;
                 end
 
-                k = 0; % running column offset into the concatenated levels
-                for a = 1:n
-                    dV = obj.SampleVolumes{a};
-                    if useFcn
-                        wz = W{a}(3, :);
-                        level = levels(k + (1:numel(dV)));
-                        k = k + numel(dV);
-                    else
-                        % Flat surface: only the world height of each point
-                        % is needed, so transform just the third row
-                        M = P{a}.Matrix;
-                        wz = M(3, 1:3)*obj.SamplePoints{a} + M(15);
-                        level = obj.Level;
-                    end
-                    sub = wz < level;
-                    Vsub = sum(dV(sub));
-                    if Vsub <= 0
-                        continue
-                    end
-                    frac(a) = Vsub/sum(dV);
-                    hs(end + 1) = obj.ehs(a); %#ok<AGROW> submerged subset only
-                    Fb(:, end + 1) = obj.Density*gmag*Vsub*up; %#ok<AGROW>
-                    pts = obj.SamplePoints{a};
-                    cb(:, end + 1) = pts(:, sub)*dV(sub)'/Vsub; %#ok<AGROW>
-                end
-
-                if ~isempty(hs)
+                [Vsub, Vtot, cb] = phx.internal.computeBuoyancy(M, pts, obj.SampleVolumes, counts, level);
+                wet = Vsub > 0;
+                frac = zeros(1, n);
+                if any(wet)
+                    frac(wet) = Vsub(wet)./Vtot(wet);
                     % Global buoyant forces applied at the local centers of
                     % buoyancy (centroids of the submerged sampling points)
-                    [~] = phx.engine.io('apply', world, hs, 'forces', Fb, cb, false, true);
+                    Fb = obj.Density*gmag*Vsub(wet).*up;
+                    [~] = phx.engine.io('apply', world, obj.ehs(wet), 'forces', Fb, cb(:, wet), false, true);
                 end
 
-                % Hydrodynamic damping scaled by the submerged fraction
+                % Hydrodynamic damping scaled by the submerged fraction; one
+                % batched apply per kind for all submerged bodies (the
+                % velocities can only be read body by body)
                 if obj.LinearDamping > 0 || obj.AngularDamping > 0
-                    for a = find(frac > 0)
-                        if obj.LinearDamping > 0
-                            [~] = phx.engine.io('apply', world, obj.ehs(a), 'centralforce', ...
-                                -obj.LinearDamping*frac(a)*P{a}.LinearVelocity, false);
+                    idx = find(frac > 0);
+                    m = numel(idx);
+                    if m > 0 && obj.LinearDamping > 0
+                        v = zeros(3, m);
+                        for j = 1:m
+                            v(:, j) = P{idx(j)}.LinearVelocity;
                         end
-                        if obj.AngularDamping > 0
-                            [~] = phx.engine.io('apply', world, obj.ehs(a), 'torque', ...
-                                -obj.AngularDamping*frac(a)*P{a}.AngularVelocity, false);
+                        [~] = phx.engine.io('apply', world, obj.ehs(idx), 'centralforces', ...
+                            -obj.LinearDamping*frac(idx).*v, false);
+                    end
+                    if m > 0 && obj.AngularDamping > 0
+                        omega = zeros(3, m);
+                        for j = 1:m
+                            omega(:, j) = P{idx(j)}.AngularVelocity;
                         end
+                        [~] = phx.engine.io('apply', world, obj.ehs(idx), 'torques', ...
+                            -obj.AngularDamping*frac(idx).*omega, false);
                     end
                 end
             end

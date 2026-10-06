@@ -18,7 +18,7 @@ function phxex_beltmaze
     beltFriction = [1.0 0 0];
 
     % Resources directory
-    resdir = fullfile(fileparts(mfilename("fullpath")), "res", " ");
+    resdir = fullfile(fileparts(mfilename("fullpath")), "res") + filesep;
 
     % Belt segments, each built along its own +x axis so that the drive, the
     % arrows and the length all follow the same direction.

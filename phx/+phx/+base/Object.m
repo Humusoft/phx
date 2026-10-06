@@ -26,12 +26,8 @@ classdef Object < matlab.mixin.SetGetExactNames
 
 %#ok<*MCSUP> OK to access other properties in setters
 
-    % properties (SetAccess = protected, WeakHandle)
-    %     % Instance of a hgtransform object
-    %     Graphics matlab.graphics.primitive.Transform
-    % end
-    % this seems to be more problematic and not faster
-    
+    % Graphics was tried as a typed WeakHandle property: more problematic and not faster
+
     properties (SetAccess = protected)
         % Instance of a hgtransform object
         Graphics
@@ -46,6 +42,9 @@ classdef Object < matlab.mixin.SetGetExactNames
     properties (SetAccess = protected, Transient)
         % Internal handle to the related object in the engine
         ObjectHandle = []
+
+        % Internal handle of the engine world the object was initialized in
+        WorldHandle = []
 
         % Internal UID for sorting purposes
         UID = 0
@@ -62,6 +61,9 @@ classdef Object < matlab.mixin.SetGetExactNames
     properties
         % Global object color
         Color (1, 3) double
+
+        % Draw the object's graphics as overlay, in front of the scene
+        Overlay (1, 1) logical = false
 
         % Defines when the resolveState method is called relative to the main simulation step
         SimulationOrder {mustBeMember(SimulationOrder, ["before", "after", "none"])} = "before"
@@ -211,6 +213,18 @@ classdef Object < matlab.mixin.SetGetExactNames
             for i = 1:numel(obj.Graphics.Children)
                 ph = phx.internal.PrimitiveHelper(obj.Graphics.Children(i));
                 ph.Color = color;
+            end
+        end
+
+        function set.Overlay(obj, value)
+            % Move the primitives already drawn to the front layer or back;
+            % primitives created later take the layer from this property
+            obj.Overlay = value;
+            layer = phx.internal.choose({'middle', 'front'}, value + 1);
+            for ch = obj.Graphics.Children'
+                if isprop(ch, 'Layer')
+                    ch.Layer = layer;
+                end
             end
         end
 

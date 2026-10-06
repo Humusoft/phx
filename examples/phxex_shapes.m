@@ -7,7 +7,7 @@ function phxex_shapes
 %   Copyright 2026 HUMUSOFT s.r.o.
 
     % Resources directory
-    resdir = fullfile(fileparts(mfilename("fullpath")), "res", " ");
+    resdir = fullfile(fileparts(mfilename("fullpath")), "res") + filesep;
 
     % Figure setup
     clf; view(3); axis("equal"); camlight("headlight"); grid("on");

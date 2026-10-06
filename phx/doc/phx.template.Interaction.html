@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.template.Interaction</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.template.Interaction</div>
+
+<h1 class="phx-title">phx.template.Interaction</h1>
+<p class="phx-purpose">Template for a custom interaction between two bodies</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.template.Interaction &nbsp;|&nbsp; Superclass: <a href="phx.base.Object.html">phx.base.Object</a></p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.template.Interaction</code> is a starting point for writing your
+own simulable object: a class that takes part in the simulation pipeline like the built-in springs
+and force elements. Write one when <a href="phx.Function.html">phx.Function</a> is no longer
+enough &mdash; when the element needs its own properties and graphics, or when many instances
+should be computed together in one call.</p>
+<p>The template works as it is: it pulls two bodies towards each other by a constant force and
+draws a line between them. Every part of the class carries a comment explaining its role.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">obj = phx.template.Interaction(bodyA,bodyB)</span>
+<span class="phx-syntax">obj = phx.template.Interaction(___,Name,Value,...)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">obj = phx.template.Interaction(bodyA,bodyB)</code> creates the
+interaction between the two <a href="phx.Body.html">phx.Body</a> objects and draws it into the
+axes of <code class="phx-inline">bodyA</code>.</p>
+<p><code class="phx-inline">obj = phx.template.Interaction(___,Name,Value,...)</code> sets the
+properties given as name-value pairs.</p>
+</div>
+
+<h2 class="phx-h2">Properties</h2>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Default</th><th>Description</th></tr>
+<tr><td class="name">Force</td><td class="dflt">10</td>
+<td>Magnitude of the force pulling the bodies together, <span class="phx-unit">N</span>. A negative
+value pushes them apart.</td></tr>
+</table>
+
+<h2 class="phx-h2">Writing Your Own Class</h2>
+<p>Copy the file into a folder of your own, rename the class and replace the two remaining
+references to <code class="phx-inline">phx.template.Interaction</code> inside it (the
+<code class="phx-inline">Options</code> argument of the constructor and the initial call of
+<code class="phx-inline">updateView</code>). Then adapt the parts below.</p>
+<table class="phx-tbl">
+<tr><th>Part</th><th>Role</th></tr>
+<tr><td class="name">Constructor</td>
+<td>Sets <code class="phx-inline">SimulationOrder</code> and <code class="phx-inline">RedrawOrder</code>,
+binds the object to its parents with <code class="phx-inline">addChild</code> and processes the
+name-value arguments. Both are wrapped in <code class="phx-inline">try</code>/<code class="phx-inline">catch</code>
+with <code class="phx-inline">abandon</code>, so that a failed construction leaves nothing behind in
+the parents. The graphics objects are created here once.</td></tr>
+<tr><td class="name">checkObject</td>
+<td>Reports whether the object has what it needs, usually two valid parents. When a parent is
+deleted, an object that no longer passes the check is deleted too. Keep it free of side
+effects.</td></tr>
+<tr><td class="name">initObject</td>
+<td>Prepares the object whenever the simulation rebuilds its pipelines, for example creates an
+engine counterpart. Returns <code class="phx-inline">false</code> to leave the object out.</td></tr>
+<tr><td class="name">destroyObject</td>
+<td>Releases what <code class="phx-inline">initObject</code> created. Called from
+<code class="phx-inline">delete</code>.</td></tr>
+<tr><td class="name">resolveState</td>
+<td><b>Static.</b> The computation of each (sub)step, here the force applied to both bodies.</td></tr>
+<tr><td class="name">updateView</td>
+<td><b>Static.</b> The drawing of each redraw, here the line between the bodies.</td></tr>
+</table>
+
+<div class="phx-note">
+<span class="lbl">Performance.</span> <code class="phx-inline">resolveState</code> and
+<code class="phx-inline">updateView</code> receive all objects of the class in the scene in one cell
+array. Loop over them inside the method, and route all engine access through
+<code class="phx-inline">phx.engine.io</code> or the methods of <a href="phx.Body.html">phx.Body</a>.
+</div>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">Two bodies pulled together in zero gravity</h4>
+<pre class="phx-code">clf; view(3); axis equal; grid on;
+
+A = phx.Body(<span class="str">"Position"</span>, [-2 0 0]);
+B = phx.Body(<span class="str">"Position"</span>, [2 0 0]);
+phx.template.Interaction(A, B, <span class="str">"Force"</span>, 2000);
+
+sim = phx.Simulation(gca, <span class="str">"Gravity"</span>, [0 0 0]);
+sim.step(3, 300, 3);</pre>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.base.Object.html">phx.base.Object</a>,
+<a href="phx.Function.html">phx.Function</a>,
+<a href="phx.Spring.html">phx.Spring</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_control.html">Automation and control</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

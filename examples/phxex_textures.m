@@ -9,7 +9,7 @@ function phxex_textures
     rng(0); % Set random seed for reproducibility
 
     % Resources directory
-    resdir = fullfile(fileparts(mfilename("fullpath")), "res", " ");
+    resdir = fullfile(fileparts(mfilename("fullpath")), "res") + filesep;
 
     % Set up the viewer with a default camera position and view mode
     [~, ax] = phx.extra.Viewer("clear", "DefaultCameraPosition", [60.0, 90.7, 35.0], "DefaultCameraTarget", [-13.4 -7.7 7.7]);

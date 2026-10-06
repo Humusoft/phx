@@ -1,5 +1,5 @@
 function [rgb, ground] = equirectTiles(varargin)
-%EQUIRECTTILES  Infinite patterned ground plane fading into fog.
+%phx.extra.equirectTiles Infinite patterned ground plane fading into fog
 %   [RGB, GROUND] = EQUIRECTPLANE(Name,Value,...) renders, into an
 %   equirectangular (sphere-mappable) image, the view from an observer
 %   standing above an infinite horizontal tiles. Rays below the horizon hit

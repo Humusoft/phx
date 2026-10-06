@@ -208,7 +208,7 @@ classdef Viewer < handle
                 uimenu(sub, 'Text', 'Take snapshot', 'MenuSelectedFcn', @obj.menuSnapshot);
                 uimenu(sub, 'Text', 'Show camera coordinates...', 'MenuSelectedFcn', @obj.menuCamera);
             uimenu(obj.ContextMenu, 'Text', 'Material...', 'Separator', 'on', 'MenuSelectedFcn', @obj.menuChangeColor);
-            uimenu(obj.ContextMenu, 'Text', 'Properites...', 'MenuSelectedFcn', @obj.menuProps);
+            uimenu(obj.ContextMenu, 'Text', 'Properties...', 'MenuSelectedFcn', @obj.menuProps);
             uimenu(obj.ContextMenu, 'Text', 'Info...', 'MenuSelectedFcn', @obj.menuInfo);
             uimenu(obj.ContextMenu, 'Text', 'Expose in workspace', 'Separator', 'on', 'MenuSelectedFcn', @obj.menuExpose);
             sub = uimenu(obj.ContextMenu, 'Text', 'Additional graphics');
@@ -297,7 +297,7 @@ classdef Viewer < handle
             obj.SelectedBody = body;
             obj.PreviousBodyState = body.Type;
             body.Type = "kinematic";
-            body.overlay("edit", "on");
+            body.guide("edit", "on");
             obj.notifySelection;
         end
 
@@ -372,7 +372,7 @@ classdef Viewer < handle
                 return
             end
             if isvalid(obj.SelectedBody)
-                obj.SelectedBody.overlay("edit", "off");
+                obj.SelectedBody.guide("edit", "off");
                 obj.SelectedBody.Type = obj.PreviousBodyState;
             end
             obj.SelectedBody = [];
@@ -431,17 +431,6 @@ classdef Viewer < handle
 
             % Read image
             texture = imread(fileName);
-
-            % Add dither to prevent banding (except of small images used as
-            % a solid color sample)
-            % imres = size(texture);
-            % if imres(1) > 128
-            %     tr = rng;
-            %     noise = randi(4, [128 128 imres(3)], 'uint8') - 1;
-            %     noise = repmat(noise, ceil(imres./size(noise)));
-            %     texture = texture + noise(1:imres(1), 1:imres(2), :);
-            %     rng(tr);
-            % end
 
             % Apply texture
             texture(:, :, 4) = uint8(255);
@@ -595,7 +584,7 @@ classdef Viewer < handle
             
             % Create uilabel object if not exist
             if isempty(obj.HUD)
-                drawnow;
+                %drawnow;
                 if obj.Axes.Parent == obj.Figure
                     posInFig = [20 20 1 1];
                 else
@@ -1003,21 +992,21 @@ classdef Viewer < handle
         function menuAdditionalCenter(obj, source, event)
             phxObj = getappdata(obj.LastHitObject.Parent, "phxObject");
             if ~isempty(phxObj)
-                phxObj.overlay("center", "switch");
+                phxObj.guide("center", "switch");
             end
         end
 
         function menuAdditionalCoordSys(obj, source, event)
             phxObj = getappdata(obj.LastHitObject.Parent, "phxObject");
             if ~isempty(phxObj)
-                phxObj.overlay("system", "switch");
+                phxObj.guide("system", "switch");
             end
         end
 
         function menuAdditionalConvHull(obj, source, event)
             phxObj = getappdata(obj.LastHitObject.Parent, "phxObject");
             if ~isempty(phxObj)
-                phxObj.overlay("hull", "switch");
+                phxObj.guide("hull", "switch");
             end
         end
 

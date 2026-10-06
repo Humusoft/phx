@@ -1,5 +1,5 @@
 classdef Resistance < phx.base.Object
-%phx.Resistance Resistance
+%phx.Resistance Environmental drag on bodies
 %
 %   Resistance object allows you to apply a resistance force to one or more
 %   bodies, depending on the movement of each body relative to the environment.
@@ -10,7 +10,7 @@ classdef Resistance < phx.base.Object
 %   phx.Resistance(___, name, value, ...) creates a Resistance object and sets
 %   properties values according to given name-value pairs.
 %
-%   See also phx.Spring
+%   See also phx.Buoyancy, phx.Thruster, phx.Spring
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 %   SPDX-License-Identifier: LicenseRef-PHX-Preview-1.0
@@ -40,9 +40,6 @@ classdef Resistance < phx.base.Object
 
         % Force vector multiplication factor for drawing
         ForceVectorSize (1, 1) double = 0.001
-
-        % Draw resistance vectors as overlay
-        Overlay (1, 1) logical = false
     end
 
     methods
@@ -96,9 +93,14 @@ classdef Resistance < phx.base.Object
 
                 P = obj.Parents;
                 n = numel(P);
+                % Scalar indexing into a local copy of Matrix avoids the
+                % temporary of Matrix(13:15), see phx.Monopole.bodyPositions
                 pos = zeros(3, n);
                 for a = 1:n
-                    pos(:, a) = P{a}.Matrix(13:15);
+                    m = P{a}.Matrix;
+                    pos(1, a) = m(13);
+                    pos(2, a) = m(14);
+                    pos(3, a) = m(15);
                 end
 
                 if any(obj.VelocityFactors)

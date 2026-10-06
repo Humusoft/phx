@@ -1,5 +1,5 @@
 function rgb = equirectChecker(res, count, trsh, filt)
-%EQUIRECTCHECKER  Infinite top and bottom planes with checker pattern
+%phx.extra.equirectChecker Infinite top and bottom planes with checker pattern
 %
 % default phx.extra.equirectChecker(2048, 10, 0, [2 4]);
 

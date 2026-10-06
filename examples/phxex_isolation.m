@@ -1,12 +1,11 @@
 function phxex_isolation
-%PHXEX_ISOLATION  Roller base isolation against an earthquake.
-%   Two identical dry-stacked towers (wall blocks + floor slabs, friction only)
-%   stand side by side on a kinematic ground plate that is shaken horizontally
-%   with a ramping amplitude. The left tower sits directly on the ground, the
-%   right one on a base plate carried by two free rollers. The roof motion of
-%   both towers is compared.
+% PHXEX_ISOLATION Roller base isolation against an earthquake
 %
-%   See also phx.Simulation, phx.Body, phx.extra.Viewer.
+% Two identical dry-stacked towers (wall blocks and floor slabs held by
+% friction only) stand on a ground plate shaken with a ramping amplitude.
+% The left tower sits directly on the ground, the right one on a base plate
+% carried by two free rollers. The roof motion of both towers is plotted,
+% with the moment the left one collapses marked.
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 

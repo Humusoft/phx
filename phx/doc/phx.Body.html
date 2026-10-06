@@ -114,7 +114,7 @@ because the value describes the <em>relative</em> motion of the contacting surfa
 <tr><td class="name">offset</td><td>Transformation matrix relative to the body's own pose.</td></tr>
 <tr><td class="name">groupTransform</td><td>Rigidly transform a group of bodies about the first body.</td></tr>
 <tr><td class="name">boundingBox</td><td>Axis-aligned world bounding box of one or more bodies.</td></tr>
-<tr><td class="name">overlay</td><td>Show/hide an auxiliary overlay (center, system, bbox, edit, hull).</td></tr>
+<tr><td class="name">guide</td><td>Show/hide an auxiliary guide graphic (center, system, bbox, edit, hull).</td></tr>
 <tr><td class="name">storeState / restoreState / clearStates</td><td>Save, restore and remove kinematic states by name.</td></tr>
 <tr><td class="name">gca</td><td>Return the body's <code class="phx-inline">hgtransform</code> for attaching custom graphics.</td></tr>
 </table>
@@ -148,14 +148,16 @@ next step. <code class="phx-inline">isLocalTorque</code> selects local (default)
 1&times;3 &rarr; Euler angles, 1&times;4 &rarr; axis-angle.</p>
 </div>
 
-<h3 class="phx-h3">overlay</h3>
-<span class="phx-syntax">overlay(body,type)</span>
-<span class="phx-syntax">overlay(body,type,state)</span>
+<h3 class="phx-h3">guide</h3>
+<span class="phx-syntax">guide(body,type)</span>
+<span class="phx-syntax">guide(body,type,state)</span>
 <div class="phx-desc">
 <p>Toggles (or sets <code class="phx-inline">"on"</code>/<code class="phx-inline">"off"</code>) an auxiliary
-overlay. <code class="phx-inline">type</code> is one of <code class="phx-inline">"center"</code>,
-<code class="phx-inline">"system"</code>, <code class="phx-inline">"bbox"</code>,
-<code class="phx-inline">"edit"</code> or <code class="phx-inline">"hull"</code>.</p>
+guide graphic, which is not part of the body's shape.
+<code class="phx-inline">type</code> is one of <code class="phx-inline">"center"</code> (a marker at the
+body origin), <code class="phx-inline">"system"</code> (the body axes),
+<code class="phx-inline">"bbox"</code> (the bounding box), <code class="phx-inline">"edit"</code> (the
+editing gizmo) or <code class="phx-inline">"hull"</code> (the convex hull).</p>
 </div>
 
 <h2 class="phx-h2">Examples</h2>

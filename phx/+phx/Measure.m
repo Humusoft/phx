@@ -1,16 +1,18 @@
 classdef Measure < phx.base.Object
-%phx.Measure Measure
+%phx.Measure Relative kinematics between two bodies
 %
 %   Measure allows to measure mutual kinematic quantities between two moving
 %   bodies. These quantities are intended to be read immediately during the
 %   simulation.
 %
-%   m = phx.Measure(bodyA, bodyB) creates the measuring object.
+%   m = phx.Measure(bodyA, bodyB) creates the measuring object between the
+%   points of origin of both bodies.
 %
-%   m = phx.Measure(bodyA, bodyB, pointA, pointB) creates the mesuring object
-%   and specifies measuring points of both bodies in their local spaces.
+%   m = phx.Measure(___, name, value, ...) creates the measuring object and
+%   sets properties values according to given name-value pairs; PointA and
+%   PointB set the measuring points in the local spaces of the bodies.
 %
-%   See also phx.Logger
+%   See also phx.Logger, phx.Trace
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 %   SPDX-License-Identifier: LicenseRef-PHX-Preview-1.0
@@ -58,9 +60,6 @@ classdef Measure < phx.base.Object
 
         % Measuring point in the local frame of the second body
         PointB (1, 3) double = [0 0 0]
-
-        % Draw measure as overlay
-        Overlay (1, 1) logical = false
     end
 
     methods

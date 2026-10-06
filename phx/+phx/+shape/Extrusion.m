@@ -109,23 +109,15 @@ classdef Extrusion < phx.base.Shape
 
     methods (Access = {?phx.base.Shape, ?phx.base.Object})
         function eh = createBody(obj, body, primitive)
+            ph = phx.internal.PrimitiveHelper(primitive);
+            vertices = ph.Vertices';
             switch obj.Envelope
                 case "convex"
-                    ph = phx.internal.PrimitiveHelper(primitive);
-                    vertices = ph.Vertices';
-                    eh = phx.engine.io('add', body.WorldHandle, 'convexhull', body.TypeID, vertices(:), size(vertices, 2), false, body.Transform, body.Mass, body.Inertia);
-                case {"concave"}
-                    ph = phx.internal.PrimitiveHelper(primitive);
-                    vertices = ph.Vertices';
+                    eh = obj.createHullBody(body, vertices);
+                case "concave"
                     faces = int32(ph.LinearizedFaces - 1);
-                    sh_id = phx.engine.io('prepare', body.WorldHandle, uint64(0), 'concaveshape', vertices(:), numel(vertices)/3, faces, numel(faces)/3);
-                    phx.engine.io('prepare', body.WorldHandle, sh_id, 'dynamictrimesh');
-                    phx.engine.io('prepare', body.WorldHandle, sh_id, 'validation');
-                    eh = phx.engine.io('add', body.WorldHandle, 'rigidbody', body.TypeID, sh_id, body.Transform, body.Mass, body.Inertia);
+                    eh = obj.createTrimeshBody(body, vertices(:), numel(vertices)/3, faces, numel(faces)/3);
             end
-        end
-
-        function createComponent(obj, body)
         end
     end
 

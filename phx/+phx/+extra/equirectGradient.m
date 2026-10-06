@@ -1,5 +1,5 @@
 function rgb = equirectGradient(varargin)
-%EQUIRECTGRADIENT  Gridless orientation sky from four colours.
+%phx.extra.equirectGradient Gridless orientation sky from four colours
 %
 %   RGB = EQUIRECTGRADIENT(Name,Value,...) builds an seamless
 %   equirectangular background coloured purely by a gradient between four
@@ -28,6 +28,11 @@ function rgb = equirectGradient(varargin)
 %     rgb = equirectGradient; imshow(rgb);
 %     equirectGradient('NorthColor',[0.9 0.9 0.95], ...
 %                                  'SouthColor',[0.12 0.13 0.16]);
+
+%   Copyright 2026 HUMUSOFT s.r.o.
+%   SPDX-License-Identifier: LicenseRef-PHX-Preview-1.0
+%   Licensed under the PHX Preview License v1.0; see LICENSE and NOTICE.
+%   ^..^
 
     p = inputParser;
     addParameter(p,'Width',1024, @(x)isnumeric(x)&&isscalar(x)&&x>=8);

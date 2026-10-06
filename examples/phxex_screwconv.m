@@ -1,9 +1,11 @@
 function phxex_screwconv(showGraphs)
-% PHXEX_SCREWCONV Demonstrate screw conveyor
+% PHXEX_SCREWCONV Screw conveyor moving balls from a hopper
 %
-% This feature demonstrates the use of profile extrusion to create a screw
-% conveyor that picks up balls from the hopper and moves them through the
-% corridor.
+% The screw is a flat profile swept along a helix (phx.shape.Extrusion). It
+% turns kinematically, picks up balls from a hopper and pushes them along a
+% corridor; the axial force on the screw is logged.
+%
+% phxex_screwconv(false) skips the plot.
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 

@@ -6,7 +6,19 @@ classdef Script < phx.base.Object
 %   can be defined using an interpolated curve or a time-dependent callback
 %   function.
 %
-%   See also phx.Logger
+%   phx.Script(objects, {propName, time, values}) drives the property
+%   propName of the given objects along the curve interpolated through the
+%   given times and values (one row of values per time).
+%
+%   phx.Script(objects, {propName, time, values, interp, extrap}) also
+%   selects the interpolation and extrapolation methods (default "linear").
+%
+%   phx.Script(objects, {propName, expression}) sets the property to the
+%   value of the given expression of time t, e.g. "[2*pi*t 0 0]".
+%
+%   phx.Script(objects, curve1, curve2, ...) drives several properties.
+%
+%   See also phx.Function, phx.Logger
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 %   SPDX-License-Identifier: LicenseRef-PHX-Preview-1.0

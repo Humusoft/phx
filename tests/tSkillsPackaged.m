@@ -63,18 +63,18 @@ classdef tSkillsPackaged < PhxTestCase
         end
 
         function packagingKeepsMarkdownFiles(tc)
-            % A blanket "**/*.md" exclusion in toolbox.ignore would drop every
+            % A blanket "**/*.md" exclusion in package.ignore would drop every
             % SKILL.md from the .mltbx without any other visible symptom.
-            ignoreFile = fullfile(tc.Root, "toolbox.ignore");
-            tc.assumeTrue(isfile(ignoreFile), "toolbox.ignore not found.");
+            ignoreFile = fullfile(tc.Root, "package.ignore");
+            tc.assumeTrue(isfile(ignoreFile), "package.ignore not found.");
 
             lines = strtrim(splitlines(string(fileread(ignoreFile))));
             lines = lines(~startsWith(lines, "%") & ~startsWith(lines, "#") & lines ~= "");
 
             tc.verifyFalse(any(lines == "**/*.md"), ...
-                "toolbox.ignore excludes **/*.md, which would drop the shipped skills.");
+                "package.ignore excludes **/*.md, which would drop the shipped skills.");
             tc.verifyFalse(any(lines == "phx/skills/" | lines == "phx/skills/**"), ...
-                "toolbox.ignore excludes the shipped skills folder.");
+                "package.ignore excludes the shipped skills folder.");
         end
     end
 

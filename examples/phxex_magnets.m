@@ -136,21 +136,8 @@ function phxex_magnets(nBalls, annealTime, seed)
 
     % Final structure analysis: chains, rings and bond alignment
     [adj, alignment] = bondAlignment(balls, d);
-    clusterId = zeros(1, nBalls);
-    nClusters = 0;
-    for i = 1:nBalls
-        if clusterId(i) == 0
-            nClusters = nClusters + 1;
-            stack = i;
-            while ~isempty(stack)
-                j = stack(end); stack(end) = [];
-                if clusterId(j) == 0
-                    clusterId(j) = nClusters;
-                    stack = [stack find(adj(j, :) & clusterId == 0)]; %#ok<AGROW> DFS
-                end
-            end
-        end
-    end
+    clusterId = conncomp(graph(adj));       % touching magnets form one chain
+    nClusters = max(clusterId);
     sizes = accumarray(clusterId', 1);
     deg = sum(adj, 2)';
     nRings = 0;

@@ -12,7 +12,7 @@ function phxex_wankel(showGraphs)
     end
 
     % Resources directory
-    resdir = fullfile(fileparts(mfilename("fullpath")), "res", " ");
+    resdir = fullfile(fileparts(mfilename("fullpath")), "res") + filesep;
 
     % Generate custom equirectangular background
     % imwrite(phx.extra.equirectHall('Text', {'HUMUSOFT', 'PHX', '^..^', '2026'}, 'Width', 4096), resdir+"HumusoftHall.png");

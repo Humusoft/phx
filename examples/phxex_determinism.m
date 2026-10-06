@@ -1,13 +1,12 @@
 function phxex_determinism(numOfBalls)
-% PHXEX_DETERMINISM A hardcore test of determinism
+% PHXEX_DETERMINISM Thousands of balls landing twice in the same spots
 %
-% This function sets up a physical simulation with thousands of dynamic
-% balls.
+% Balls fall into an arena. Each is then coloured by the pixel of an image
+% under the spot where it came to rest, all are reset to their start and
+% the run is repeated: the simulation is deterministic, so they land in the
+% same spots again and the image appears.
 %
-% The simulation is run twice with the same initial conditions. The result
-% of both runs is the same, as demonstrated by coloring the balls according
-% to the image in the first run, which then composes the same image in the
-% second run.
+% phxex_determinism(n) uses n balls (default 2000).
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 
@@ -16,7 +15,7 @@ function phxex_determinism(numOfBalls)
     end
 
     % Resources directory
-    resdir = fullfile(fileparts(mfilename("fullpath")), "res", " ");
+    resdir = fullfile(fileparts(mfilename("fullpath")), "res") + filesep;
 
     % Figure setup
     rng(0); % Set random seed for reproducibility

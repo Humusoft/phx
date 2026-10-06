@@ -75,7 +75,7 @@ char/string is treated as a MAT file to load; a struct is scanned for its <code 
 <tr><td class="name">HideInvalid</td><td class="dflt">false</td>
 <td>Turn off visibility for all objects that become invalid during the simulation.</td></tr>
 <tr><td class="name">EngineSettings</td><td class="dflt">[]</td>
-<td>Initial engine-specific settings, e.g. a <code class="phx-inline">phx.engine.BulletSettings</code> object.</td></tr>
+<td>Initial engine-specific settings, a <a href="phx.engine.BulletSettings.html">phx.engine.BulletSettings</a> object, applied once as the physics world is created.</td></tr>
 <tr><td class="name">Time</td><td class="type">double (read-only)</td>
 <td>Current simulation time, in seconds. Starts at 0 and advances with each <code class="phx-inline">step</code>.</td></tr>
 </table>
@@ -132,6 +132,7 @@ the cost of a genuinely headless step.</div>
 <tr><th>Function</th><th>Description</th></tr>
 <tr><td class="name">step</td><td>Perform one or more simulation steps.</td></tr>
 <tr><td class="name">addObjects</td><td>Add bodies (with their children) and rebuild the execution pipelines.</td></tr>
+<tr><td class="name">findBodies</td><td>Find the bodies drawn in an axes (static).</td></tr>
 <tr><td class="name">dispStructure</td><td>Display the object tree of the scene.</td></tr>
 <tr><td class="name">dispPipelines</td><td>Display the compute and compute-and-redraw execution pipelines.</td></tr>
 <tr><td class="name">delete</td><td>Destroy the engine world and remove the simulation.</td></tr>
@@ -159,6 +160,16 @@ constraint networks. The way each redraw is performed is set by the
 <div class="phx-desc">
 <p>Adds bodies (and all their children) to a running simulation and rebuilds the pipelines, then
 returns the added bodies for further manipulation.</p>
+</div>
+
+<h3 class="phx-h3">findBodies</h3>
+<span class="phx-syntax">bodies = phx.Simulation.findBodies(ax)</span>
+<div class="phx-desc">
+<p>Static method that returns a row array of the valid <a href="phx.Body.html">phx.Body</a> objects
+drawn directly in the axes <code class="phx-inline">ax</code>, in the order of
+<code class="phx-inline">ax.Children</code> (the most recently created first). The objects attached to
+the bodies, such as joints, are reached through their <code class="phx-inline">Children</code>. Use it
+to save the scene shown in an axes, see <a href="phx_ug_scenes.html">Saving and Loading Scenes</a>.</p>
 </div>
 
 <h2 class="phx-h2">Examples</h2>
@@ -193,6 +204,7 @@ delete(sim);                           <span class="cmt">% tear down the engine 
 <span class="lbl">See also</span>
 <a href="phx.Body.html">phx.Body</a>,
 <a href="phx.base.Object.html">phx.base.Object</a>,
+<a href="phx.engine.BulletSettings.html">phx.engine.BulletSettings</a>,
 <a href="phx.Spring.html">phx.Spring</a>
 </div>
 

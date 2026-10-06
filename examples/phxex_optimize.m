@@ -1,20 +1,11 @@
 function phxex_optimize(targetX, targetH)
 % PHXEX_OPTIMIZE Optimizing a projectile launch with PHX as the model
 %
-% This demo shows PHX used as a black-box physics model inside a MATLAB
-% optimization loop. A projectile is launched with some speed and elevation
-% angle, flies under gravity (with quadratic aerodynamic drag from
-% phx.Resistance) and bounces off the terrain. We want it to land on a target. The launch speed
-% and angle are tuned automatically with fminsearch (base MATLAB, no toolbox
-% required) so that the landing point hits the target.
-%
-% Each optimization iteration runs a full PHX simulation WITHOUT graphics
-% (phx.Body([], ...) and a head-less phx.Simulation), which is fast and
-% deterministic - exactly the workflow where coupling a physics engine to
-% MATLAB's solvers pays off and where a pure game engine would not help.
-%
-% After the optimum is found, the winning launch is replayed once with the
-% viewer so the trajectory and the hit can be seen.
+% A projectile flies under gravity with quadratic drag (phx.Resistance) and
+% bounces off the terrain. fminsearch tunes its launch speed and elevation
+% so that it lands on a target; every evaluation is a full headless PHX
+% simulation (phx.Body([], ...)). The winning launch is then replayed in
+% the viewer.
 %
 % Input Arguments:
 %     targetX - horizontal distance to the target

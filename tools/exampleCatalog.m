@@ -40,7 +40,6 @@ function catalog = exampleCatalog
         entry("phxex_stack",       "Contacts, stacking and granular", 6)
         entry("phxex_galton",      "Contacts, stacking and granular", 25)
         entry("phxex_droptest",    "Contacts, stacking and granular", 6)
-        entry("phxex_capsize",     "Contacts, stacking and granular", 20)
         entry("phxex_soil",        "Contacts, stacking and granular", 20)
         entry("phxex_grip",        "Contacts, stacking and granular", 10)
         entry("phxex_isolation",   "Contacts, stacking and granular", 22)
@@ -73,6 +72,7 @@ function catalog = exampleCatalog
         entry("phxex_stairfall",   "Vehicles, robots and control",    8)
         entry("phxex_walker",      "Vehicles, robots and control",    1)  % the chase camera is still close in at the start
         entry("phxex_kinova",      "Vehicles, robots and control",   13)  % wall-clock; the plan and the import take about 4.5 s before the arm moves
+        entry("phxex_seaplate",    "Vehicles, robots and control",   12)  % wall-clock, runs faster than real time; afloat, the ball still on the plate
 
         entry("phxex_magnets",     "Fields, magnetism and fluids",   15)
         entry("phxex_magpendulum", "Fields, magnetism and fluids",   12)

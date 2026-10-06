@@ -204,7 +204,6 @@ classdef Geometry
             f = F';
             N = V(f(:), :);
             N = (N(1:3:end, :) + N(2:3:end, :) + N(3:3:end, :))/3;
-            % N = V;
             V = V.*ASize/2;
 
             % Deformation
@@ -301,10 +300,7 @@ classdef Geometry
             % Compute segment normals. The normal at a profile point is the
             % chord between its two neighbours - a central difference, centred
             % on the point itself - rotated by -90 deg in the profile plane.
-            % The earlier v0(k) - v0(k-2) spanned the same chord but was centred
-            % on k-1, which rotated the shading of every extrusion by one
-            % profile segment (45 deg on an 8-segment profile, 2.5 deg on a
-            % 144-segment one). A closed profile repeats its first point, so at
+            % A closed profile repeats its first point, so at
             % the seam the neighbours are taken across it, not onto the
             % duplicate, and the two coincident points get the same normal.
             nP = size(v0, 1);
@@ -324,24 +320,23 @@ classdef Geometry
 
             % Face indexes for first part. The winding runs so that a triangle
             % normal, (spine step) x (profile tangent), comes out parallel to
-            % the vertex normals above rather than against them. The two used to
-            % disagree, which left every caller a choice between shading that
-            % faces out and a collision mesh that faces out - never both.
+            % the vertex normals above, so that the shading and the collision
+            % mesh both face out.
             f = (1:Segments)';
             f0 = [f, f + 1, f + Segments + 2; f, f + Segments + 2, f + Segments + 1];
 
-            % Texture Y-coord through spine. The caps no longer ride on the
-            % spine, so this runs over the real spine points alone; each cap
-            % inherits the coordinates of the ring it sits on.
+            % Texture Y-coord through spine. It runs over the spine points
+            % alone; each cap inherits the coordinates of the ring it sits on.
             nS = size(Spine, 1);
             tY = linspace(0, 1, nS);
 
             % Main part: one cross-section per spine point. Row 1 of R is the
             % local tangent, so the profile plane is truly perpendicular to the
             % curve; rows 2-3 orient the profile within that plane by referencing
-            % a fixed world up-direction. This replaces the old zero-roll atan2
-            % aim, which mis-oriented (and was singular for) any segment with a
-            % world-Z component. (row-vector convention: local basis -> rows of R)
+            % a fixed world up-direction. Built from vectors rather than angles,
+            % the frame stays regular for a segment in any direction, including
+            % one with a world-Z component.
+            % (row-vector convention: local basis -> rows of R)
             lp = Segments + 1;
 
             % Per-point tangents: at interior vertices the normalized average of
@@ -365,11 +360,10 @@ classdef Geometry
             % (+Z, falling back to +X where the tangent runs along +-Z). Anchoring
             % the roll to a global direction - rather than parallel-transporting
             % it point to point - keeps a non-circular profile from slowly rolling
-            % about the tangent along a curved or helical spine, so e.g. the
-            % flighting of phxex_screwconv stays a regular screw instead of a
-            % warped one; for a straight or planar spine it reproduces the
-            % historical frame exactly. Then place a scaled, translated ring per
-            % point, and its normals through the same frame.
+            % about the tangent along a curved or helical spine, so e.g. a
+            % screw flight stays a regular screw instead of a warped one. Then
+            % place a scaled, translated ring per point, and its normals
+            % through the same frame.
             for i = 1:nS
                 p = Tg(i, :);
                 ref = [0 0 1];
@@ -389,14 +383,11 @@ classdef Geometry
                 end
             end
 
-            % Close the ends with a real triangulation of the profile outline.
-            % Each cap gets its own copy of the ring it sits on, so it carries
-            % the flat cap normal while inheriting that ring's texture
-            % coordinates - the texture runs across the rim exactly as before.
-            % The outline used to be collapsed onto a point instead, which put
-            % zero-area triangles into roughly 60 % of the faces and fanned the
-            % cap from the profile origin, so any outline not star-shaped about
-            % that origin got cap triangles hanging outside the solid.
+            % Close the ends with a real triangulation of the profile outline,
+            % which keeps the cap inside the solid for any outline, and without
+            % zero-area triangles. Each cap gets its own copy of the ring it
+            % sits on, so it carries the flat cap normal while inheriting that
+            % ring's texture coordinates, and the texture runs on across the rim.
             if BeginCap || EndCap
                 cf = phx.internal.Geometry.capFaces(Profile);
             end

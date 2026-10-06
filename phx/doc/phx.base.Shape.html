@@ -40,9 +40,9 @@ and are settable as <code class="phx-inline">Name,Value</code> pairs in any shap
 <tr><td class="name">ForcePatch</td><td class="dflt">false</td>
 <td>Force the use of a <code class="phx-inline">patch</code> object for drawing instead of the fast world primitive.</td></tr>
 <tr><td class="name">Texture</td><td class="type">string</td>
-<td>Texture image. Setting it loads the image (with alpha, if present) as the surface texture. Accepts either a path to an image file or the name of a built-in texture: <code class="phx-inline">"checker"</code>, <code class="phx-inline">"metal"</code>, <code class="phx-inline">"tiles"</code> or <code class="phx-inline">"wood"</code> (matched case-insensitively).</td></tr>
+<td>Texture image. Setting it loads the image (with alpha, if present) as the surface texture. Accepts either a path to an image file or the name of a built-in texture: <code class="phx-inline">"checker"</code>, <code class="phx-inline">"metal"</code>, <code class="phx-inline">"tiles"</code> or <code class="phx-inline">"wood"</code> (matched case-insensitively). An empty string removes the texture.</td></tr>
 <tr><td class="name">TextureBlend</td><td class="dflt">1</td>
-<td>Texture blending ratio (0&ndash;1) between the texture and the surface color.</td></tr>
+<td>Texture blending ratio (0&ndash;1) between the texture and the surface color: 1 shows the texture as it is, 0 the plain color. The alpha channel of the texture is kept.</td></tr>
 </table>
 
 <div class="phx-note">

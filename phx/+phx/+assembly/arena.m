@@ -18,7 +18,7 @@ function parts = arena(varargin)
 %   - Size: inner dimensions [x y z] of the arena - the usable floor area
 %     x-by-y and the inner height z of the walls. Default [2 2 0.5].
 %   - Thickness: thickness of the floor and wall plates, default 0.1.
-%   - Color: common color of all parts, default [0.75 0.73 0.7].
+%   - Color: common color of all parts, default [1 1 1].
 %   - Friction: friction coefficients of all parts, default [0.5 0 0].
 %   - Position: world position of the arena origin (the middle of the
 %     floor surface), default [0 0 0].
@@ -34,7 +34,7 @@ function parts = arena(varargin)
 %       set(parts.walls, "Color", [0.4 0.55 0.7]);
 %       sim = phx.Simulation(gca);
 %
-%   See also phx.assembly.import, phx.Body, phx.shape.Box, phx.Simulation
+%   See also phx.assembly.wall, phx.assembly.import, phx.Body, phx.shape.Box, phx.Simulation
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 %   SPDX-License-Identifier: LicenseRef-PHX-Preview-1.0

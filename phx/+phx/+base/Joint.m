@@ -24,16 +24,13 @@ classdef Joint < phx.base.Object
 %   following steps.
 %
 %   See also phx.RevoluteJoint, phx.PrismaticJoint, phx.CylindricalJoint,
-%   phx.SphericalJoint, phx.FixedJoint, phx.GearJoint, phx.GenericJoint
+%   phx.SphericalJoint, phx.FixedJoint, phx.GearJoint, phx.GenericJoint,
+%   phx.BushingJoint
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 %   SPDX-License-Identifier: LicenseRef-PHX-Preview-1.0
 %   Licensed under the PHX Preview License v1.0; see LICENSE and NOTICE.
 %   ^..^
-
-    properties (Access = protected)
-        WorldHandle = []
-    end
 
     properties
         % Enable mutual collisions of connected bodies
@@ -105,7 +102,8 @@ classdef Joint < phx.base.Object
         end
 
         function value = get.PointA(obj)
-            value = obj.TransformA(13:15);
+            m = obj.TransformA;
+            value = [m(13) m(14) m(15)];
         end
 
         function set.PointB(obj, value)
@@ -113,7 +111,8 @@ classdef Joint < phx.base.Object
         end
 
         function value = get.PointB(obj)
-            value = obj.TransformB(13:15);
+            m = obj.TransformB;
+            value = [m(13) m(14) m(15)];
         end
 
         function set.AxisA(obj, value)
@@ -124,7 +123,8 @@ classdef Joint < phx.base.Object
         end
 
         function value = get.AxisA(obj)
-            value = obj.TransformA(9:11);
+            m = obj.TransformA;
+            value = [m(9) m(10) m(11)];
         end
 
         function set.AxisB(obj, value)
@@ -135,7 +135,8 @@ classdef Joint < phx.base.Object
         end
 
         function value = get.AxisB(obj)
-            value = obj.TransformB(9:11);
+            m = obj.TransformB;
+            value = [m(9) m(10) m(11)];
         end
 
         function set.EulerAnglesA(obj, value)
@@ -143,7 +144,7 @@ classdef Joint < phx.base.Object
         end
 
         function value = get.EulerAnglesA(obj)
-            value = phx.internal.Math.decomp321(obj.TransformA(1:3, 1:3));
+            value = phx.internal.Math.decomp321(obj.TransformA); % reads only the rotation part
         end
 
         function set.EulerAnglesB(obj, value)
@@ -151,11 +152,11 @@ classdef Joint < phx.base.Object
         end
 
         function value = get.EulerAnglesB(obj)
-            value = phx.internal.Math.decomp321(obj.TransformB(1:3, 1:3));
+            value = phx.internal.Math.decomp321(obj.TransformB); % reads only the rotation part
         end
 
         function value = get.AxisAngleA(obj)
-            value = phx.internal.Math.decompAA(obj.TransformA(1:3, 1:3));
+            value = phx.internal.Math.decompAA(obj.TransformA); % reads only the rotation part
         end
 
         function set.AxisAngleA(obj, value)
@@ -163,7 +164,7 @@ classdef Joint < phx.base.Object
         end
 
         function value = get.AxisAngleB(obj)
-            value = phx.internal.Math.decompAA(obj.TransformB(1:3, 1:3));
+            value = phx.internal.Math.decompAA(obj.TransformB); % reads only the rotation part
         end
 
         function set.AxisAngleB(obj, value)

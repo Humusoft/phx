@@ -44,6 +44,9 @@ are given in the local coordinates of each body (<code class="phx-inline">PointA
 <tr><td class="name"><a href="phx.GenericJoint.html">GenericJoint</a></td>
     <td>6 &mdash; with limits</td>
     <td>General constraint, each axis free, locked or bounded by end stops.</td></tr>
+<tr><td class="name"><a href="phx.BushingJoint.html">BushingJoint</a></td>
+    <td>6 &mdash; elastic</td>
+    <td>Compliant fixed connection with a spring and damper on every axis.</td></tr>
 </table>
 
 <pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
@@ -117,8 +120,9 @@ own weight. See <code>phxex_springs</code>.</figcaption>
 </figure>
 
 <h2 class="phx-h2">Ropes and generic couplings</h2>
-<p><a href="phx.Rope.html">phx.Rope</a> connects two bodies with an inextensible rope that can be
-routed over pulleys &mdash; hoists, tackles and counterweights. For a compliant fixed connection there is
+<p><a href="phx.Rope.html">phx.Rope</a> connects bodies with a rope that can be routed over pulleys
+&mdash; hoists, tackles and counterweights. The rope is a stiff spring-damper that pulls but never
+pushes. For a compliant fixed connection there is
 <a href="phx.BushingJoint.html">phx.BushingJoint</a>
 (an elastic bushing with a spring/damper on all 6 axes).</p>
 
@@ -130,6 +134,8 @@ routed over pulleys &mdash; hoists, tackles and counterweights. For a compliant 
 <a href="phx.SphericalJoint.html">phx.SphericalJoint</a>,
 <a href="phx.FixedJoint.html">phx.FixedJoint</a>,
 <a href="phx.GearJoint.html">phx.GearJoint</a>,
+<a href="phx.GenericJoint.html">phx.GenericJoint</a>,
+<a href="phx.BushingJoint.html">phx.BushingJoint</a>,
 <a href="phx.Spring.html">phx.Spring</a>,
 <a href="phx.Rope.html">phx.Rope</a>
 </div>

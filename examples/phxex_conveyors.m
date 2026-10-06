@@ -21,7 +21,7 @@ function phxex_conveyors
     bottleSizePerc = 100;
 
     % Resources directory
-    resdir = fullfile(fileparts(mfilename("fullpath")), "res", " ");
+    resdir = fullfile(fileparts(mfilename("fullpath")), "res") + filesep;
 
     % Figure setup
     viewer = phx.extra.Viewer("clear", "DefaultCameraPosition", [3.8 -2.6 2.4], "DefaultCameraTarget", [1 -0.2 0], "Texture", resdir+"HumusoftHall.png");

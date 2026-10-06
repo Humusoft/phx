@@ -1,5 +1,5 @@
 function img = planarMarbleTiles(varargin)
-%PLANARMARBLETILES  Generate a marble tile texture.
+%phx.extra.planarMarbleTiles Generate a marble tile texture
 %
 %   IMG = PLANARMARBLETILES() returns a grayscale image (a double matrix in the
 %   range 0..1) with an 8x8 grid of marble tiles separated by light grout.

@@ -23,6 +23,7 @@ classdef Body < phx.base.Object
 %#ok<*INUSD> OK to see the full list of arguments for callbacks
 
 % TODO dependent props for accelerations (computed as totalforce/mass)
+% TODO collision groups
 
     % Internal
     properties (Access = ?phx.base.Object)
@@ -33,18 +34,8 @@ classdef Body < phx.base.Object
         States = struct
     end
 
-    properties (SetAccess = protected, Transient)
-        WorldHandle = []
-    end
-
     % Kinematic state in a global coordinate system
     properties
-        % Linear acceleration
-        %LinearAcceleration = [0 0 0]
-
-        % Angular acceleration
-        %AngularAcceleration = [0 0 0]
-
         % Linear velocity
         LinearVelocity = [0 0 0]
 
@@ -112,9 +103,6 @@ classdef Body < phx.base.Object
 
         % Enable collision response for this body
         Collisions (1, 1) logical = true
-
-        % Collision group
-        % CollisionGroup = 0 % TODO implement collision groups
 
         % Virtual velocity of the body surface (m/s) in the body frame, e.g. for
         % conveyor belts; the body does not move, but contacts with it are solved
@@ -295,7 +283,9 @@ classdef Body < phx.base.Object
         end
 
         function value = get.Position(obj)
-            value = obj.Matrix(13:15);
+            % Scalar indexing into a local copy is twice as fast as Matrix(13:15)
+            m = obj.Matrix;
+            value = [m(13) m(14) m(15)];
         end
 
         function set.Position(obj, value)
@@ -304,7 +294,8 @@ classdef Body < phx.base.Object
         end
 
         function value = get.Orientation(obj)
-            value = obj.Matrix(1:3, 1:3);
+            m = obj.Matrix;
+            value = [m(1) m(5) m(9); m(2) m(6) m(10); m(3) m(7) m(11)];
             value = value./sqrt(sum(value.^2)); % normalize to remove scale
         end
 
@@ -314,7 +305,7 @@ classdef Body < phx.base.Object
         end
 
         function value = get.AxisAngle(obj)
-            value = phx.internal.Math.decompAA(obj.Matrix(1:3, 1:3));
+            value = phx.internal.Math.decompAA(obj.Matrix); % reads only the rotation part
         end
 
         function set.AxisAngle(obj, value)
@@ -323,7 +314,7 @@ classdef Body < phx.base.Object
         end
 
         function value = get.EulerAngles(obj)
-            value = phx.internal.Math.decomp321(obj.Matrix(1:3, 1:3));
+            value = phx.internal.Math.decomp321(obj.Matrix); % reads only the rotation part
         end
 
         function set.EulerAngles(obj, value)
@@ -332,7 +323,7 @@ classdef Body < phx.base.Object
         end
 
         function value = get.Quaternion(obj)
-            value = phx.internal.Math.decompQ(obj.Matrix(1:3, 1:3));
+            value = phx.internal.Math.decompQ(obj.Matrix); % reads only the rotation part
         end
 
         function set.Quaternion(obj, value)
@@ -391,14 +382,6 @@ classdef Body < phx.base.Object
                 phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'inertia', value);
             end            
         end
-
-        % function value = get.Inertia(obj)
-        %     if ~isempty(obj.ObjectHandle)
-        %         value = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'inertia');
-        %     else
-        %         value = obj.Inertia;
-        %     end
-        % end
 
         function set.Friction(obj, coeffs)
             obj.Friction = coeffs;
@@ -621,25 +604,17 @@ classdef Body < phx.base.Object
             transform = obj.Matrix*T;
         end
 
-        % function dispHull(objs)
-        %     for obj = objs
-        %         v = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'vertices');
-        %         DT = delaunayTriangulation(v');
-        %         %patch(obj.Graphics, "Faces", DT.ConnectivityList, "Vertices", DT.Points, "FaceColor", "none", "EdgeColor", obj.Shape.Color/2);
-        %         patch(obj.Graphics, "Faces", DT.ConnectivityList, "Vertices", DT.Points, "FaceColor", obj.Shape.Color, "EdgeColor", "none", "FaceAlpha", 0.25);
-        %     end
-        % end
-
-        function overlay(obj, type, state)
-        %overlay Shows or hides an auxiliary visual overlay of a body.
+        function guide(obj, type, state)
+        %guide Shows or hides an auxiliary guide graphic of a body.
         %
-        %   overlay(body, type) toggles the overlay of the given type on or
-        %   off (it is created if not present, otherwise it is removed).
+        %   guide(body, type) toggles the guide of the given type on or off
+        %   (it is created if not present, otherwise it is removed).
         %
-        %   overlay(body, type, state) explicitly turns the overlay "on" or
+        %   guide(body, type, state) explicitly turns the guide "on" or
         %   "off". The default state "switch" toggles the current state.
         %
-        %   The type argument selects what is drawn:
+        %   Guides are auxiliary graphics, not part of the body's shape. The
+        %   type argument selects what is drawn:
         %   - "center": a marker at the body origin
         %   - "system": the body coordinate system (RGB axes triad)
         %   - "bbox":   the bounding box wireframe

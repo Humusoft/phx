@@ -1,5 +1,5 @@
 classdef Camera < phx.base.Object
-%phx.Camera Camera
+%phx.Camera Camera following bodies of the scene
 %
 %   Camera object allows you to attach camera position and target to
 %   selected bodies.
@@ -12,7 +12,7 @@ classdef Camera < phx.base.Object
 %   phx.Camera(___, name, value, ...) creates a Camera and sets properties values
 %   according to given name-value pairs.
 %
-%   See also phx.Trace
+%   See also phx.extra.Viewer, phx.Trace
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 %   SPDX-License-Identifier: LicenseRef-PHX-Preview-1.0

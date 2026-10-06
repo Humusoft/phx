@@ -25,11 +25,6 @@ classdef FixedJoint < phx.base.Joint
         hM
     end
 
-    properties
-        % Draw joint as overlay
-        Overlay (1, 1) logical = false
-    end
-
     methods
         function obj = FixedJoint(ParentA, ParentB, Options)
             arguments
@@ -65,13 +60,12 @@ classdef FixedJoint < phx.base.Joint
         function valid = initObject(obj, world)
             valid = obj.checkObject;
             if valid && isempty(obj.ObjectHandle)
-                % The engine takes most of the constraint parameters only as
-                % it creates the constraint, so the constraint is built once
-                % and then kept across pipeline rebuilds. Parameters that can
-                % be changed later write through from their own setters.
+                % The engine takes the constraint parameters only as it creates
+                % the constraint, so the constraint is built once and then kept
+                % across pipeline rebuilds. Properties changed after that do not
+                % reach it.
                 obj.WorldHandle = world;
                 obj.ObjectHandle = phx.engine.io('add', world, 'fixedconstraint', obj.Parents{1}.ObjectHandle, obj.Parents{2}.ObjectHandle, obj.TransformA(:), obj.TransformB(:), ~obj.MutualCollisions);
-                %phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'error', 0.5, 0.5);
             end
         end
     end

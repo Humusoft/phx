@@ -339,7 +339,6 @@ classdef Simulation < phx.base.Object
             % Remove first array element (because it is empty)
             obj.EPComplete(1) = [];
             obj.EPCompute(1) = [];
-            %obj.dispPipelines; % DEBUG display pipelines
         end
     end
 
@@ -397,6 +396,16 @@ classdef Simulation < phx.base.Object
         end
 
         function bodies = findBodies(ax)
+        %findBodies Finds the bodies drawn in an axes.
+        %
+        %   bodies = phx.Simulation.findBodies(ax) returns a row array of the
+        %   valid phx.Body objects drawn directly in the axes ax, in the order
+        %   of ax.Children (the most recently created first). The objects
+        %   attached to the bodies, such as joints, are reached through their
+        %   Children.
+        %
+        % See also phx.Simulation, phx.Body
+
             bodies = phx.Body.empty;
             children = ax.Children;
             for i = 1:numel(children)

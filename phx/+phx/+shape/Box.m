@@ -67,9 +67,6 @@ classdef Box < phx.base.Shape
             bsize = obj.Size/2; % half-extents
             eh = phx.engine.io('add', body.WorldHandle, 'box', body.TypeID, bsize, body.Transform, body.Mass, body.Inertia);
         end
-
-        function createComponent(obj, body)
-        end
     end
     
 end

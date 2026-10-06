@@ -8,7 +8,7 @@ function phxex_rotmagdip
 %   Copyright 2026 HUMUSOFT s.r.o.
 
     % Resources directory
-    resdir = fullfile(fileparts(mfilename("fullpath")), "res", " ");
+    resdir = fullfile(fileparts(mfilename("fullpath")), "res") + filesep;
 
     % Figure setup
     [~, ax] = phx.extra.Viewer("clear", "DefaultCameraPosition", [1, 0, 80], "ViewMode", "plain"); % Set camera position and view mode
