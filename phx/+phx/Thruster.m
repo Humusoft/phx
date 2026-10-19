@@ -1,5 +1,5 @@
 classdef Thruster < phx.base.Object
-%phx.Thruster Thrust actuator
+%phx.Thruster Body-fixed thrust actuator
 %
 %   Thruster applies a body-fixed thrust force to a body. The mounting
 %   point and the thrust direction are defined in the local space of the

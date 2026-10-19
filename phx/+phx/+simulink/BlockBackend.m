@@ -14,8 +14,8 @@ classdef BlockBackend < handle
         InputRefs (1, :) phx.simulink.ParameterReference
         OutputRefs (1, :) phx.simulink.ParameterReference
         Viewer (1, 1) logical = false
-        RenderEachStep (1, 1) logical = true
-        Substeps (1, 1) double {mustBePositive, mustBeInteger} = 1
+        RedrawSteps (1, 1) double {mustBeInteger, mustBeGreaterThanOrEqual(RedrawSteps, -1)} = 1   % as the redrawStep of phx.Simulation.step, counted in sample times
+        StepCount (1, 1) double = 0            % sample times stepped since Start
         CameraResolution (1, :) double = []   % [H W]; non-empty/positive enables the rendered-image output port
         CameraOn (1, 1) logical = false       % resolved in setup (needs the viewer)
         CameraPort (1, 1) double = 0           % index of the image output port

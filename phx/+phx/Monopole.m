@@ -1,5 +1,5 @@
 classdef Monopole < phx.base.Object
-%phx.Monopole Monopole interaction
+%phx.Monopole Monopole interaction between bodies
 %
 %   Monopole object allows you to assign a monopole charge to selected bodies.
 %   All bodies in the group formed by this object then interact with each

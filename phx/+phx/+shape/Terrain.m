@@ -2,7 +2,11 @@ classdef Terrain < phx.base.Shape
 %phx.shape.Terrain Terrain heightfield
 %
 %   Visual appearance is a surface generated from the Height matrix sampled
-%   over a rectangle of the given Size, optionally textured.
+%   over a rectangle of the given Size, optionally textured. The columns of
+%   Height run along x and its rows along y, Height(1, 1) at the lowest x
+%   and y. A texture is laid out the same way, image row 1 along the lowest
+%   y, so an image of the same grid (or colormapTexture of Height) lines up
+%   with the heights.
 %
 %   The collision shape is a heightfield built in the engine from the same
 %   data. A terrain is typically used as a static body.
@@ -46,7 +50,7 @@ classdef Terrain < phx.base.Shape
             % The surface is centred between its lowest and highest point, as
             % the engine centres the heightfield
             c = (max(obj.Height(:)) + min(obj.Height(:)))/2;
-            [V, N, F, T] = phx.internal.Geometry.terrain([obj.Size 1], obj.Height - c, false);
+            [V, N, F, T] = phx.internal.Geometry.terrain([obj.Size 1], obj.Height - c);
 
             primitive = obj.drawMesh(target, V, N, F, T, obj.getTexture);
             setappdata(primitive, "phxShape", obj);

@@ -8,6 +8,12 @@ classdef Shape
 %   parameters shared by all shapes - surface color, material, style and
 %   optional texture.
 %
+%   Texture coordinates (u, v) address the image like a matrix: u runs
+%   along the columns from left to right and v along the rows from top to
+%   bottom, so (0, 0) is the top-left corner of the image. The shapes lay
+%   the image out unmirrored, seen from outside; phx.shape.Terrain aligns
+%   it with its Height matrix instead (row 1 at the lowest y).
+%
 %   See also phx.Body
 
 %   Copyright 2026 HUMUSOFT s.r.o.
@@ -84,7 +90,9 @@ classdef Shape
         %
         %   obj = colormapTexture(obj, cdata) maps the scalar values in cdata
         %   to colors and stores the result as the surface texture of the
-        %   shape. The default colormap is used.
+        %   shape. The default colormap is used. The matrix is mapped like
+        %   an image file: its columns run along the texture coordinate u and
+        %   its rows along v, row 1 at v = 0.
         %
         %   obj = colormapTexture(obj, cdata, cmap) uses the given colormap,
         %   an Nx3 matrix of RGB rows. The values in cdata are normalized to
@@ -99,7 +107,7 @@ classdef Shape
             end
 
             [a, b] = bounds(cdata(:));
-            cdata = (cdata' - a)./(b - a);
+            cdata = (cdata - a)./(b - a);
 
             indices = round(cdata*(size(cmap, 1) - 1)) + 1;
             [M, N] = size(cdata);
@@ -111,7 +119,7 @@ classdef Shape
             img(:, :, 4) = 255; % opaque RGBA, see loadTexture
 
             obj.Texture = ""; % the generated texture has no file
-            obj.TextureData = permute(img, [3 1 2]);
+            obj.TextureData = permute(img, [3 2 1]);
         end
 
         function obj = nextColor(obj)
@@ -274,7 +282,9 @@ classdef Shape
             else
                 img(:, :, 4) = alpha;
             end
-            data = permute(img, [3 1 2]);
+            % Texture coordinate u runs along the image columns and v along
+            % the rows, so CData is channel x columns x rows
+            data = permute(img, [3 2 1]);
         end
 
         function clr = newColor(newValue)

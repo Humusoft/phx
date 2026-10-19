@@ -53,8 +53,7 @@ function phxex_tackle(mCrate)
 
     % The crate with the moving block on top (two routing points)
     crate = phx.Body(ax, "Position", [-1 0 0.3], ...
-        "Shape", {"Box", "Size", [0.8 0.6 0.6], "Color", [0.7 0.5 0.3]}, ...
-        "Friction", [0.4 0.05 0.05]);
+        "Shape", {"Box", "Size", [0.8 0.6 0.6], "Color", [0.7 0.5 0.3], "Texture", "stone", "TextureBlend", 0.4});
     crate.Mass = mCrate;
     crate.Inertia = mCrate*[0.06 0.08 0.08];
 

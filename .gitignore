@@ -10,7 +10,7 @@ doc/logo/
 # Packaged toolbox build output (distributed via GitHub Releases, not tracked in git)
 /release/
 
-# Doc search config written by builddocsearchdb (absolute local paths); ships in the .mltbx
+# Doc search config written by builddocsearchdb (absolute local paths); also kept out of the .mltbx
 phx/doc/custom_toolbox.json
 
 # MATLAB Project build cache

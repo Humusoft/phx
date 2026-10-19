@@ -45,8 +45,8 @@ function phxex_antisway
     % Two identical crane scenes side by side
     figure(1); clf;
     tl = tiledlayout(1, 2, "TileSpacing", "compact", "Padding", "compact");
-    axA = nexttile(tl); title(axA, "Direct move");
-    axB = nexttile(tl); title(axB, "Input-shaped move");
+    axA = nexttile(tl); titleA = title(axA, "Direct move");
+    axB = nexttile(tl); titleB = title(axB, "Input-shaped move");
     A = buildCrane(axA);
     B = buildCrane(axB);
 
@@ -78,8 +78,8 @@ function phxex_antisway
         log.offB(end + 1) = B.hook.Position(1) - B.trolley.Position(1);
         log.tiltA(end + 1) = tilt(A.plate);
         log.tiltB(end + 1) = tilt(B.plate);
-        title(axA, sprintf("Direct move   sway %5.2f m", log.offA(end)));
-        title(axB, sprintf("Input-shaped move   sway %5.2f m", log.offB(end)));
+        titleA.String = sprintf("Direct move   sway %5.2f m", log.offA(end));
+        titleB.String = sprintf("Input-shaped move   sway %5.2f m", log.offB(end));
     end
 
     % Residual sway after both trolleys have stopped

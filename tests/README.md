@@ -35,6 +35,7 @@ Prefer headless bodies (`[]` axes) unless the test is about the drawing.
 | `tInternals` | nothing (one `Graphics` case) | — / `Graphics` | the undocumented MATLAB internals PHX deliberately uses (perf) still exist and behave |
 | `tReadPly` | nothing | — | the pure-MATLAB PLY reader: ASCII/binary (both endiannesses), vertices, normals, color, polygon fan-triangulation |
 | `tExtrusion` | nothing | — | the rotation-minimizing frame of the swept-profile generator |
+| `tTextureMapping` | nothing (two `Graphics` cases) | — / `Graphics` | texture orientation: image files and `colormapTexture` laid out with u along the columns, the generated shapes unmirrored from outside with the image top at the profile/spine end, Terrain following its Height matrix, OBJ/PLY coordinates flipped into the image's v |
 | `tSimulation` | engine (one `Graphics` case) | `Engine` / `Graphics` | free fall, static bodies, time accumulation, determinism, draw-path independence of mesh collision hulls |
 | `tPipelineRebuild` | engine (two `Graphics` cases) | `Engine` / `Graphics` | rebuilding the execution pipelines: a body added or deleted mid-run, body identity across a rebuild, invisible bodies kept out of the redraw, and the mid-run `delete` that used to crash the process |
 | `tStoredState` | graphics (transfer tests also engine) | `Graphics` / `Engine` | the named kinematic-state store (`storeState`/`restoreState`/`clearStates`) and the pose & velocity transfer across engine initialization and teardown |
@@ -58,7 +59,7 @@ Prefer headless bodies (`[]` axes) unless the test is about the drawing.
 | `tPhxSimulinkRefs` | nothing | — | `ParameterReference` parsing and the `BlockBackend` port-reference helpers |
 | `tSkillsPackaged` | nothing (source checkout only) | — | the AI agent skills in `phx/skills` (shipped in the `.mltbx`) stay identical to the working ones in `.claude/skills`, front-matter names match their folders, and `package.ignore` does not exclude them |
 | `tExampleGallery` | nothing (source checkout only) | — | the generated Examples gallery, its thumbnails and the toc stay in sync with `examples/` |
-| `tDocLinks` | nothing (source checkout only) | — | no HTML help page links to or shows a file that is not there |
+| `tDocLinks` | nothing (source checkout only) | — | no HTML help page links to or shows a file that is not there; Contents.m, the reference toc and the product page group the classes alike |
 
 - **`Graphics`** — the test creates figures (invisible ones), so a display-capable session is needed. Headless bodies (`[]` axes) need no display and run untagged.
 - **`Engine`** — needs the `phx.engine.io` MEX; gracefully *assumed away* (filtered, not failed) when absent.

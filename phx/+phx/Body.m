@@ -1,5 +1,5 @@
 classdef Body < phx.base.Object
-%phx.Body Physical body
+%phx.Body Rigid body with pose, mass, friction and forces
 %
 %   Body is the principal object of PHX. It represents all
 %   movable objects in the virtual world.
@@ -109,6 +109,15 @@ classdef Body < phx.base.Object
         % as if its surface were sliding, so other bodies are dragged along within
         % the limits of the contact friction
         SurfaceVelocity (1, 3) double {mustBeFinite} = [0 0 0]
+
+        % Force at the centre of mass (N) in the body frame
+        % Every assignment applies it for the next step only, the engine does
+        % not hold it yet: a script assigns it before each step. The PHX Model
+        % block writes its inputs at every sample, so there it acts throughout.
+        AppliedForce (1, 3) double {mustBeFinite} = [0 0 0]
+
+        % Torque (N*m) in the body frame, applied like AppliedForce
+        AppliedTorque (1, 3) double {mustBeFinite} = [0 0 0]
 
         % Custom callback for double-click action on any part of this body
         % (works only in the phx.extra.Viewer)
@@ -410,6 +419,20 @@ classdef Body < phx.base.Object
             obj.SurfaceVelocity = value;
             if ~isempty(obj.ObjectHandle)
                 phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'surfacevelocity', value);
+            end
+        end
+
+        function set.AppliedForce(obj, value)
+            obj.AppliedForce = value;
+            if any(value) && ~isempty(obj.ObjectHandle)
+                [~] = phx.engine.io('apply', obj.WorldHandle, obj.ObjectHandle, 'centralforce', value, true);
+            end
+        end
+
+        function set.AppliedTorque(obj, value)
+            obj.AppliedTorque = value;
+            if any(value) && ~isempty(obj.ObjectHandle)
+                [~] = phx.engine.io('apply', obj.WorldHandle, obj.ObjectHandle, 'torque', value, true);
             end
         end
 

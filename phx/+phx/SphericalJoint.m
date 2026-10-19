@@ -1,5 +1,5 @@
 classdef SphericalJoint < phx.base.Joint
-%phx.SphericalJoint Spherical joint
+%phx.SphericalJoint Spherical joint (ball joint, 3 DOF)
 %
 %   Spherical joint realizes a kinematic constraint with 3 degrees of freedom
 %   specified as rotations around the X, Y and Z axis.

@@ -22,6 +22,12 @@
 <code class="phx-inline">Size</code>, optionally textured. The collision shape is a heightfield built
 in the engine from the same data. A terrain is typically used as a static body.</p>
 
+<p>The columns of <code class="phx-inline">Height</code> run along x and its rows along y, with
+<code class="phx-inline">Height(1,1)</code> at the lowest x and y. A texture is laid out the same way,
+image row 1 along the lowest y, so an image of the same grid &ndash; or
+<code class="phx-inline">colormapTexture</code> of <code class="phx-inline">Height</code> &ndash; lines up
+with the heights.</p>
+
 <h2 class="phx-h2">Creation</h2>
 <h3 class="phx-h3">Syntax</h3>
 <span class="phx-syntax">shape = phx.shape.Terrain</span>

@@ -152,12 +152,9 @@ runtests_phx("pure")         % headless: no engine, no graphics
 Only two tags remain: `Engine` (needs the MEX) and `Graphics` (needs a display-capable
 session / `hgtransform`). Engine tests are **assumed away** (filtered, not failed) when
 the MEX is absent — a green "pure" run does not prove the engine path works. Tags are
-per test method, so most files span layers. Fully pure: `tPhxMath`, `tShapeMass`,
-`tExtrusion`, `tReadPly`. Mixed: `tBodyKinematics`, `tInternals`, `tZone`,
-`tAssembly`, `tImport`, `tBuoyancy`. Engine-only: `tSimulation`,
-`tForceApplication`. See
-[tests/README.md](tests/README.md) for the layer table and the not-yet-covered areas
-(joint/spring feedback, pipeline rebuild on add/delete).
+per test method, so most files span layers. The table of test files, their layers and
+what each covers, and the areas not covered yet, are in `tests/README.md`; keep that
+table current when adding a test file.
 
 ## Writing a new simulable object
 

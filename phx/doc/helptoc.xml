@@ -15,6 +15,7 @@
         <tocitem target="phx_ug_logging.html">Measuring and logging</tocitem>
         <tocitem target="phx_ug_control.html">Automation and control</tocitem>
         <tocitem target="phx_ug_scenes.html">Saving and loading scenes</tocitem>
+        <tocitem target="phx_ug_simulink.html">Simulink co-simulation</tocitem>
         <tocitem target="phx_ug_viewer.html">Interactive viewer</tocitem>
         <tocitem target="phx_ug_skills.html">AI agent skills</tocitem>
     </tocitem>
@@ -35,8 +36,23 @@
         <tocitem target="phx.Simulation.html">Core
             <tocitem target="phx.Simulation.html">phx.Simulation</tocitem>
             <tocitem target="phx.Body.html">phx.Body</tocitem>
-            <tocitem target="phx.base.Object.html">phx.base.Object</tocitem>
             <tocitem target="phx.engine.BulletSettings.html">phx.engine.BulletSettings</tocitem>
+            <tocitem target="phx.base.Object.html">phx.base.Object</tocitem>
+        </tocitem>
+
+        <tocitem target="phx.base.Shape.html">Shapes
+            <tocitem target="phx.shape.Box.html">phx.shape.Box</tocitem>
+            <tocitem target="phx.shape.Sphere.html">phx.shape.Sphere</tocitem>
+            <tocitem target="phx.shape.Cylinder.html">phx.shape.Cylinder</tocitem>
+            <tocitem target="phx.shape.Tube.html">phx.shape.Tube</tocitem>
+            <tocitem target="phx.shape.Cone.html">phx.shape.Cone</tocitem>
+            <tocitem target="phx.shape.Capsule.html">phx.shape.Capsule</tocitem>
+            <tocitem target="phx.shape.Mesh.html">phx.shape.Mesh</tocitem>
+            <tocitem target="phx.shape.Extrusion.html">phx.shape.Extrusion</tocitem>
+            <tocitem target="phx.shape.Revolution.html">phx.shape.Revolution</tocitem>
+            <tocitem target="phx.shape.Rock.html">phx.shape.Rock</tocitem>
+            <tocitem target="phx.shape.Terrain.html">phx.shape.Terrain</tocitem>
+            <tocitem target="phx.base.Shape.html">phx.base.Shape</tocitem>
         </tocitem>
 
         <tocitem target="phx.base.Joint.html">Joints
@@ -51,33 +67,17 @@
             <tocitem target="phx.base.Joint.html">phx.base.Joint</tocitem>
         </tocitem>
 
-        <tocitem target="phx.Spring.html">Springs &amp; Ropes
+        <tocitem target="phx.Spring.html">Springs and ropes
             <tocitem target="phx.Spring.html">phx.Spring</tocitem>
             <tocitem target="phx.Rope.html">phx.Rope</tocitem>
         </tocitem>
 
-        <tocitem target="phx.Thruster.html">Force &amp; Field Elements
+        <tocitem target="phx.Thruster.html">Forces and fields
             <tocitem target="phx.Thruster.html">phx.Thruster</tocitem>
             <tocitem target="phx.Resistance.html">phx.Resistance</tocitem>
             <tocitem target="phx.Buoyancy.html">phx.Buoyancy</tocitem>
             <tocitem target="phx.Monopole.html">phx.Monopole</tocitem>
             <tocitem target="phx.Dipole.html">phx.Dipole</tocitem>
-        </tocitem>
-
-        <tocitem target="phx.base.Shape.html">Geometry
-            <tocitem target="phx.shape.Box.html">phx.shape.Box</tocitem>
-            <tocitem target="phx.shape.Sphere.html">phx.shape.Sphere</tocitem>
-            <tocitem target="phx.shape.Cylinder.html">phx.shape.Cylinder</tocitem>
-            <tocitem target="phx.shape.Tube.html">phx.shape.Tube</tocitem>
-            <tocitem target="phx.shape.Cone.html">phx.shape.Cone</tocitem>
-            <tocitem target="phx.shape.Capsule.html">phx.shape.Capsule</tocitem>
-            <tocitem target="phx.shape.Globe.html">phx.shape.Globe</tocitem>
-            <tocitem target="phx.shape.Mesh.html">phx.shape.Mesh</tocitem>
-            <tocitem target="phx.shape.Extrusion.html">phx.shape.Extrusion</tocitem>
-            <tocitem target="phx.shape.Revolution.html">phx.shape.Revolution</tocitem>
-            <tocitem target="phx.shape.Rock.html">phx.shape.Rock</tocitem>
-            <tocitem target="phx.shape.Terrain.html">phx.shape.Terrain</tocitem>
-            <tocitem target="phx.base.Shape.html">phx.base.Shape</tocitem>
         </tocitem>
 
         <tocitem target="phx.assembly.arena.html">Assemblies
@@ -88,7 +88,7 @@
             <tocitem target="phx.assembly.import.html">phx.assembly.import</tocitem>
         </tocitem>
 
-        <tocitem target="phx.Logger.html">Observers &amp; Automation
+        <tocitem target="phx.Logger.html">Measurement and automation
             <tocitem target="phx.Logger.html">phx.Logger</tocitem>
             <tocitem target="phx.Trace.html">phx.Trace</tocitem>
             <tocitem target="phx.Measure.html">phx.Measure</tocitem>
@@ -97,17 +97,17 @@
             <tocitem target="phx.Script.html">phx.Script</tocitem>
             <tocitem target="phx.Function.html">phx.Function</tocitem>
             <tocitem target="phx.template.Interaction.html">phx.template.Interaction</tocitem>
-            <tocitem target="phx.Camera.html">phx.Camera</tocitem>
-        </tocitem>
-
-        <tocitem target="phx.extra.Viewer.html">Viewer
-            <tocitem target="phx.extra.Viewer.html">phx.extra.Viewer</tocitem>
-            <tocitem target="phx.PlanarShadow.html">phx.PlanarShadow</tocitem>
         </tocitem>
 
         <tocitem target="PhxModel.html" image="$toolbox/matlab/icons/simulink_icon.gif">Simulink
             <tocitem target="PhxModel.html">PhxModel</tocitem>
             <tocitem target="PhxAction.html">PhxAction</tocitem>
+        </tocitem>
+
+        <tocitem target="phx.extra.Viewer.html">Visualization
+            <tocitem target="phx.extra.Viewer.html">phx.extra.Viewer</tocitem>
+            <tocitem target="phx.Camera.html">phx.Camera</tocitem>
+            <tocitem target="phx.PlanarShadow.html">phx.PlanarShadow</tocitem>
         </tocitem>
 
     </tocitem>

@@ -107,6 +107,58 @@ classdef tZone < PhxTestCase
             z.update();
             tc.verifyEqual(z.Count, 0);
         end
+
+        function massAndCenterOfMassOfOccupants(tc)
+            % Mass sums the occupants, CenterOfMass is their mass-weighted
+            % mean; a body outside the zone contributes nothing.
+            anchor = tc.spawnBodyOn(tc.Ax, [0 0 0], "static");
+            a = tc.spawnBodyOn(tc.Ax, [0.5 0 0], "dynamic");
+            b = tc.spawnBodyOn(tc.Ax, [-0.5 0.2 0], "dynamic");
+            c = tc.spawnBodyOn(tc.Ax, [5 0 0], "dynamic");
+            a.Mass = 1; b.Mass = 3; c.Mass = 5;
+            z = phx.Zone(anchor, "Size", [2 2 2], "Bodies", [a b c]);
+
+            z.update();
+            tc.verifyEqual(z.Mass, 4);
+            tc.verifyEqual(z.CenterOfMass, [-0.25 0.15 0], "AbsTol", 1e-12);
+
+            b.Position = [5 0 0];                     % b leaves, a remains
+            z.update();
+            tc.verifyEqual(z.Mass, 1);
+            tc.verifyEqual(z.CenterOfMass, [0.5 0 0], "AbsTol", 1e-12);
+        end
+
+        function emptyZoneHasNaNCenterOfMass(tc)
+            anchor = tc.spawnBodyOn(tc.Ax, [0 0 0], "static");
+            b = tc.spawnBodyOn(tc.Ax, [5 0 0], "dynamic");
+            z = phx.Zone(anchor, "Size", [2 2 2], "Bodies", b);
+
+            z.update();
+            tc.verifyEqual(z.Mass, 0);
+            tc.verifyEqual(z.CenterOfMass, NaN(1, 3));
+        end
+
+        function nonDynamicOccupantsCarryNoMass(tc)
+            % Static and kinematic occupants count in Count, but not in Mass
+            % or CenterOfMass.
+            anchor = tc.spawnBodyOn(tc.Ax, [0 0 0], "kinematic");
+            s = tc.spawnBodyOn(tc.Ax, [0.5 0 0], "static");
+            k = tc.spawnBodyOn(tc.Ax, [0 0.5 0], "kinematic");
+            d = tc.spawnBodyOn(tc.Ax, [-0.5 0 0], "dynamic");
+            s.Mass = 7; k.Mass = 7; d.Mass = 2;
+            z = phx.Zone(anchor, "Size", [2 2 2], "Bodies", [s k d]);
+
+            z.update();
+            tc.verifyEqual(z.Count, 3);
+            tc.verifyEqual(z.Mass, 2);
+            tc.verifyEqual(z.CenterOfMass, [-0.5 0 0], "AbsTol", 1e-12);
+
+            d.Position = [5 0 0];                     % only non-dynamic bodies left
+            z.update();
+            tc.verifyEqual(z.Count, 2);
+            tc.verifyEqual(z.Mass, 0);
+            tc.verifyEqual(z.CenterOfMass, NaN(1, 3));
+        end
     end
 
     % --- Pipeline integration (needs the engine) -------------------------
@@ -193,6 +245,27 @@ classdef tZone < PhxTestCase
             tc.verifyEqual(z.EnteredCount, 1);
             tc.verifyEqual(z.ExitedCount, 1);
             tc.verifyEqual(z.Count, 0);
+        end
+
+        function centerOfMassFollowsSimulatedBodies(tc)
+            % After stepping, CenterOfMass of a passive zone agrees with the
+            % engine-reported positions of the settled occupants.
+            tc.requireEngine;
+            floor = phx.Body(tc.Ax, "Type", "static", "Position", [0 0 0], ...
+                "Shape", {"Box", "Size", [10 10 1]});
+            a = phx.Body(tc.Ax, "Position", [1 0 2], "Shape", {"Sphere", "Diameter", 0.5});
+            b = phx.Body(tc.Ax, "Position", [-1 1 2], "Shape", {"Sphere", "Diameter", 0.5});
+            a.Mass = 1; b.Mass = 3;
+            z = phx.Zone(floor, "Position", [0 0 2], "Size", [8 8 4], ...
+                "SimulationOrder", "none");
+            sim = phx.Simulation([floor a b]);
+            tc.addTeardown(@() delete(sim));
+
+            sim.step(1, 200, -1);
+            z.update();
+            tc.verifyEqual(z.Mass, 4);
+            tc.verifyEqual(z.CenterOfMass, (1*a.Position + 3*b.Position)/4, ...
+                "AbsTol", 1e-9);
         end
     end
 

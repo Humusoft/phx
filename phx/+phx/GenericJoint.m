@@ -1,5 +1,5 @@
 classdef GenericJoint < phx.base.Joint
-%phx.GenericJoint Generic joint
+%phx.GenericJoint Generic joint (6 DOF with limits)
 %
 %   Generic joint realizes a kinematic constraint with 6 degrees of freedom -
 %   three translations and three rotations - each of them independently free,

@@ -1,5 +1,5 @@
 classdef Dipole < phx.base.Object
-%phx.Dipole Dipole interaction
+%phx.Dipole Dipole interaction between bodies
 %
 %   Dipole object allows you to assign a dipole charge to selected bodies.
 %   Each body carries two opposite poles, +Charge and -Charge, placed at

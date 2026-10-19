@@ -1,5 +1,5 @@
 classdef PlanarShadow < phx.base.Object
-%phx.PlanarShadow Planar shadow
+%phx.PlanarShadow Shadow of bodies projected onto a plane
 %
 %   PlanarShadow draws the shadow of one or more bodies as a projection of
 %   their visual geometry onto a plane. The plane is given by a point

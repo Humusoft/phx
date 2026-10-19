@@ -1,5 +1,5 @@
 classdef GearJoint < phx.base.Joint
-%phx.GearJoint Gear joint
+%phx.GearJoint Gear joint (coupled rotation of two bodies)
 %
 %   Gear joint couples the rotations of two bodies about their joint axes
 %   with a defined ratio of their angular velocities. It constrains this one

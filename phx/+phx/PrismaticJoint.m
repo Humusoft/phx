@@ -1,5 +1,5 @@
 classdef PrismaticJoint < phx.base.Joint
-%phx.PrismaticJoint Prismatic joint
+%phx.PrismaticJoint Prismatic joint (slider, 1 DOF)
 %
 %   Prismatic joint realizes a kinematic constraint with 1 degree of freedom
 %   specified as translation along the sliding axis. The sliding axis is the
@@ -69,6 +69,12 @@ classdef PrismaticJoint < phx.base.Joint
         % The motor regulates to TargetVelocity while it needs less than this;
         % when the target is out of reach it simply delivers MaxForce.
         MaxForce (1, 1) double {mustBeNonnegative} = 0
+
+        % Force applied along the joint axis (N)
+        % Acts on the second body and, reversed, on the first one, until
+        % changed. Driven through the motor: a nonzero value overrides
+        % TargetVelocity and MaxForce.
+        AppliedForce (1, 1) double {mustBeFinite} = 0
     end
 
     methods
@@ -80,6 +86,20 @@ classdef PrismaticJoint < phx.base.Joint
         function set.MaxForce(obj, value)
             obj.MaxForce = value;
             obj.applyMotor;
+        end
+
+        function set.AppliedForce(obj, value)
+            obj.AppliedForce = value;
+            if value ~= 0
+                % The motor saturated towards an unreachable target
+                % delivers exactly the force
+                if ~isempty(obj.ObjectHandle)
+                    phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'linearmotor', ...
+                        true, sign(value)*1e6, abs(value));
+                end
+            else
+                obj.applyMotor; % hand the motor back
+            end
         end
 
         function obj = PrismaticJoint(ParentA, ParentB, Options)
@@ -133,8 +153,8 @@ classdef PrismaticJoint < phx.base.Joint
             if valid && isempty(obj.ObjectHandle)
                 % The engine takes the constraint parameters only as it creates
                 % the constraint, so the constraint is built once and then kept
-                % across pipeline rebuilds. Only the motor (TargetVelocity,
-                % MaxForce) writes through from its setters; other properties
+                % across pipeline rebuilds. Only the motor (TargetVelocity, MaxForce,
+                % AppliedForce) writes through from its setters; other properties
                 % changed after that do not reach the constraint.
                 obj.WorldHandle = world;
                 M = phx.PrismaticJoint.EngineFrame;
@@ -145,6 +165,9 @@ classdef PrismaticJoint < phx.base.Joint
                 % Seed the fresh constraint with the current motor setting;
                 % later changes reach the engine from the setters
                 obj.applyMotor;
+                if obj.AppliedForce ~= 0
+                    obj.AppliedForce = obj.AppliedForce; % its setter takes the motor over
+                end
             end
         end
     end

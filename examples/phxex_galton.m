@@ -118,7 +118,7 @@ function phxex_galton(nBalls, nRows, seed)
 
     % Phase 1 - release the balls one by one above the top pin and let the
     % board do its work; each ball is spawned into the running simulation
-    shp = phx.shape.Sphere("Diameter", d, "Division", 2);
+    shp = phx.shape.Sphere("Diameter", d, "Segments", 10);
     releasePeriod = 0.7; % time between two released balls
     dt = 0.05;           % outer simulation step
     released = 0;

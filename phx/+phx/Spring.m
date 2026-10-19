@@ -110,6 +110,21 @@ classdef Spring < phx.base.Object
         end
 
         function showCharacteristic(obj, x, vmul)
+        %showCharacteristic Plots the force-travel characteristic of the spring.
+        %
+        %   showCharacteristic(obj) plots the spring force over one cycle of
+        %   a sinusoidal travel of amplitude 1 m, at the velocity multiples
+        %   0, 1 and 10, in a new figure.
+        %
+        %   showCharacteristic(obj, x) uses the travel amplitude x, in metres,
+        %   or, for a vector x, the travel samples themselves.
+        %
+        %   showCharacteristic(obj, x, vmul) sets the velocity multiples;
+        %   each adds vmul times the normalized travel velocity times Damping
+        %   to the elastic force.
+        %
+        % See also phx.Spring
+
             arguments
                 obj 
                 x (1, :) double = 1

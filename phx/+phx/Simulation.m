@@ -1,5 +1,5 @@
 classdef Simulation < phx.base.Object
-%phx.Simulation Physical simulation
+%phx.Simulation Scene root that steps the physics engine
 %
 %   Simulation is the topmost object in the hierarchy of the physical
 %   scene.

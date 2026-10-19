@@ -72,6 +72,11 @@ delete(sim);</pre>
 <code class="phx-inline">"SimulationOrder", "none"</code> (it then costs nothing per step) and read it once
 after stepping with <code class="phx-inline">update(z)</code>.</p>
 
+<p>For the fill of a hopper or a load bed, the zone also reports the total mass of its dynamic
+occupants and their common center of mass, <code class="phx-inline">Mass</code> and
+<code class="phx-inline">CenterOfMass</code>. Both can be recorded with
+<code class="phx-inline">phx.Logger(z, "Parameters", ["Mass", "CenterOfMass"])</code>.</p>
+
 <p>Where a zone asks &ldquo;what is in this box&rdquo;, a <code class="phx-inline">phx.Raycast</code>
 asks &ldquo;what is in this direction, and how far&rdquo;. The rays are defined in the local frame of
 an anchor body, so they follow it, and every result is a matrix with one column per ray:</p>

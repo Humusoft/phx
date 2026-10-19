@@ -25,7 +25,7 @@ function phxex_determinism(numOfBalls)
     phx.assembly.arena("Size", [50 50 2], "Thickness", 1);
 
     % Create dynamic balls scattered in a tall column above the arena
-    ballShape = phx.shape.Sphere("Diameter", 1.41, "Division", 2);
+    ballShape = phx.shape.Sphere("Diameter", 1.41, "Segments", 14);
     balls = phx.assembly.scatter(ballShape, numOfBalls, "Region", [40 40 numOfBalls*0.1], ...
         "Spacing", 1.41, "Position", [0 0 10], "Color", hsv(numOfBalls));
     balls.storeState("initial_state"); % Store the initial state of the balls

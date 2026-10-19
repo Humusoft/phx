@@ -23,7 +23,7 @@ function phxex_gravity(simTime, particleCount, showGraphs)
     [~, ax] = phx.extra.Viewer("clear", "ViewMode", "plain", "DefaultCameraPosition", [0 -100 0], "ViewMode", "plain");
 
     % Create a particle shape for the simulation
-    particleShape = phx.shape.Sphere("Diameter", particleSize, "Division", 1, "Density", particleDensity);
+    particleShape = phx.shape.Sphere("Diameter", particleSize, "Segments", 5, "Density", particleDensity);
 
     % Initialize particles with random positions and velocities
     for i = 1:particleCount
@@ -37,7 +37,7 @@ function phxex_gravity(simTime, particleCount, showGraphs)
     end
 
     % Create a central body (star) for the simulation
-    centralShape = phx.shape.Sphere("Diameter", 1, "Division", 3, "Density", 1e11, "Color", [1 1 1]);
+    centralShape = phx.shape.Sphere("Diameter", 1, "Segments", 20, "Density", 1e11, "Color", [1 1 1]);
     planets(end+1) = phx.Body(ax, "Position", [0 0 0], "Shape", centralShape);
 
     % Set up logging for the central body's linear velocity

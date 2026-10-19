@@ -180,11 +180,13 @@ phx.Body("Shape", {"Tube",     "InnerDiameter", 0.5, "Height", 1, "Taper", -0.8}
 phx.Body("Shape", {"path/to/model.stl", "Scale", 0.06*[1 1 1], "Material", "glossy"});
 ```
 
-Available: `Box`, `Sphere`, `Cylinder`, `Tube`, `Cone`, `Capsule`, `Globe`, `Mesh`,
+Available: `Box`, `Sphere`, `Cylinder`, `Tube`, `Cone`, `Capsule`, `Mesh`,
 `Extrusion`, `Revolution`, `Rock`, `Terrain`. Sizing properties are
 shape-specific — `Box` uses `Size`; round shapes accept **`Radius`** *or* `Diameter`
 (interchangeable), and the axial extent is **`Height`** (not `Length`) with a modeling
-`Axis` (`"x"`/`"y"`/`"z"`) on `Cylinder`/`Cone`/`Capsule`. Most accept `Color` and
+`Axis` (`"x"`/`"y"`/`"z"`) on `Cylinder`/`Cone`/`Capsule`. Round shapes set their visual
+detail with `Segments` (`Sphere` default 28; about 10 is plenty for hundreds of small
+particles) — the collision shape stays an ideal primitive either way. Most accept `Color` and
 `Density` (auto-computes mass/inertia if you don't set them), and texture/material
 options. Shapes carry no attachment points: where a joint or spring grabs a body is set
 on the connector itself (`PointA`/`PointB` in body-local coordinates).
@@ -196,27 +198,41 @@ carries data (group, state, a mapped value) rather than shape: it renders the au
 independent of it: `"smooth"` (default), `"edged"`, `"flat"` or `"wireframe"`.
 
 **Textures.** `Texture` takes an image file path *or* the name of a built-in texture
-bundled with the toolbox — **`"checker"`, `"wood"`, `"tiles"`, `"metal"`** (matched
+bundled with the toolbox — **`"checker"`, `"wood"`, `"tiles"`, `"metal"`, `"stone"`, `"stripes"`** (matched
 case-insensitively). `TextureBlend` (0–1, default 1) mixes the texture with `Color`, so
 a light blend keeps the body's own color while giving it surface detail:
 
 ```matlab
 crate = phx.shape.Box("Size", 0.4, "Texture", "wood", "TextureBlend", 0.5);
-ball  = phx.shape.Globe("Diameter", 1, "Color", [0.9 0.3 0.3], ...
-                        "Texture", "checker", "TextureBlend", 0.3);
+ball  = phx.shape.Sphere("Diameter", 1, "Color", [0.9 0.3 0.3], ...
+                         "Texture", "checker", "TextureBlend", 0.3);
 ```
 
 `"checker"` at a low blend is the standard trick for making a spinning or rolling body
 read as a solid object — without it, a uniformly colored sphere looks static. An unknown
 name errors (`phx:Shape:fileNotFound`) instead of falling back, and the shape names
 are a *different* set from the viewer's sky textures (`"nebula"` is not a shape texture),
-so use only the four above.
+so use only the five above.
 
 > **Textures render only in `phx.extra.Viewer` axes.** Only the viewer's axes take the
 > fast world-primitive draw path that carries texture data; in plain axes (and whenever
 > `ForcePatch` is true) the shape falls back to a `patch` and the texture is silently
 > ignored — nothing errors, the surface just shows its `Color`. So if you set a texture,
 > build the scene into the viewer's `ax`.
+
+**Texture orientation.** An image reads unmirrored from outside. `Sphere` takes a standard
+2:1 equirectangular map (top row at the +z pole, left/right edges on the +x meridian,
+longitude anticlockwise about +z). A `Box` side face shows the image upright (top
+towards +z), the top face with the image top towards +y. Revolved shapes put the image
+top at the end of the profile, `Extrusion` at the end of the spine. `Rock` projects the
+image onto each face along the axis closest to its normal (the whole image spans the
+`Diameter`), so a noise-like texture such as the built-in `"stone"` suits it best. `Terrain` instead
+follows its `Height` matrix (image row 1 along the lowest y), like `colormapTexture`,
+whose matrix columns run along u and rows along v. `Mesh` `UV` data: u along the image
+columns, v *down* the rows ((0,0) = top-left); OBJ/PLY files (v up) are converted on load.
+A `Mesh` without UVs (any STL, or OBJ/PLY/data without them) box-projects `Texture` like
+`Rock`: the whole image spans the largest extent of the mesh, with no repeat and visible
+jumps where neighbouring faces change axis, so prefer a noise-like texture there.
 
 **Imported geometry — `phx.shape.Mesh`.** One class covers all file formats: **STL,
 Wavefront OBJ and Stanford PLY** (there is no separate `OBJ`/`STL` shape class). The

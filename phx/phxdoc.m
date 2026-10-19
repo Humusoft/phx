@@ -1,5 +1,5 @@
 function phxdoc(name)
-%PHXDOC Open a PHX HTML reference page in the Help browser.
+%PHXDOC Open a PHX reference page in the Help browser
 %
 %   PHX integrates its HTML reference pages into the Help browser under
 %   Supplemental Software, but the built-in DOC command shows the code

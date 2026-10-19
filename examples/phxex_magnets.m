@@ -55,9 +55,9 @@ function phxex_magnets(nBalls, annealTime, seed)
     % Static arena: floor and low walls
     phx.assembly.arena("Size", [arena, arena, 0.8], "Thickness", 0.2, "Color", [1 1 1], "Friction", mu);
 
-    % Spherical magnets: a globe shape with the north half painted red and
+    % Spherical magnets: spheres with the north half painted red and
     % the south half blue; the dipole axis runs through the texture poles
-    shp = phx.shape.Globe("Diameter", d, "Density", rho, "Segments", 24);
+    shp = phx.shape.Sphere("Diameter", d, "Density", rho);
     shp = shp.colormapTexture([1; 0], [0.35 0.45 1; 1 0.35 0.3]);
     cols = ceil(sqrt(nBalls));
     pitch = (arena - 2)/(cols - 1);

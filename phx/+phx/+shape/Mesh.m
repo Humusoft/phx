@@ -1,5 +1,5 @@
 classdef Mesh < phx.base.Shape
-%phx.shape.Mesh Triangular mesh shape (imported or from data)
+%phx.shape.Mesh Triangular mesh shape imported from a file or built from data
 %
 %   A general triangular-mesh shape whose geometry is either loaded from a
 %   file (the Source property) or supplied directly as data (the Vertices,
@@ -10,6 +10,12 @@ classdef Mesh < phx.base.Shape
 %   colors are taken automatically from the referenced .mtl materials. A PLY
 %   file loads as a single mesh; its per-vertex color is averaged into one
 %   diffuse color (per-vertex color is not rendered).
+%
+%   A Texture set on a mesh without texture coordinates (STL, or a file or
+%   data with no UVs) is box-projected: each face takes the image projected
+%   along the axis closest to its normal, the whole image spanning the
+%   largest extent of the mesh. A noise-like texture (such as the built-in
+%   "stone") hides the jumps where neighbouring faces change axis best.
 %
 %   The mesh can be scaled (Scale), recentred to its bounding-box origin
 %   (Centered) and, for STL, decimated (Details).
@@ -93,7 +99,8 @@ classdef Mesh < phx.base.Shape
         % Matrix Mx3 of vertex indices (direct geometry input)
         Faces (:, 3) double
 
-        % Matrix Nx2 of vertex texture coordinates (direct geometry input)
+        % Matrix Nx2 of vertex texture coordinates (direct geometry input);
+        % u runs along the image columns, v down its rows from the top
         UV (:, 2) double
     end
 
@@ -255,8 +262,12 @@ classdef Mesh < phx.base.Shape
             clrShape = obj.Color;
             obj.Color = obj.submeshColor(sm);
             texture = obj.submeshTexture(sm);
+            uvs = sm.uv;
+            if isempty(uvs) && ~isempty(texture)
+                [vertices, faces, normals, uvs] = obj.boxProjection(vertices, faces, normals);
+            end
 
-            primitive = obj.drawMesh(target, vertices, normals, faces, sm.uv, texture);
+            primitive = obj.drawMesh(target, vertices, normals, faces, uvs, texture);
             setappdata(primitive, "phxShape", obj);
             obj.Color = clrShape;
         end
@@ -270,14 +281,36 @@ classdef Mesh < phx.base.Shape
         end
 
         function texture = submeshTexture(obj, sm)
-            % A material texture wins; a manually set Texture fills in
-            % materials that have none and overrides untextured meshes
+            % A material texture wins where the mesh has UVs for it; a
+            % manually set Texture fills in everywhere else, box-projected
+            % where the mesh has no UVs
             if ~isempty(sm.uv) && strlength(sm.texture) > 0
                 texture = phx.base.Shape.loadTexture(sm.texture);
-            elseif ~isempty(sm.uv)
-                texture = obj.getTexture;
             else
-                texture = [];
+                texture = obj.getTexture;
+            end
+        end
+
+        function [V, F, N, T] = boxProjection(obj, V, F, N)
+            % Box-projected UVs of a submesh that has none. The axes follow
+            % the drawn normals, which face outwards whatever the winding,
+            % and the image spans the largest extent of the whole shape, so
+            % all submeshes share one projection.
+            perVertex = isequal(size(N), size(V));
+            if perVertex
+                FN = N(F(:, 1), :) + N(F(:, 2), :) + N(F(:, 3), :);
+            else
+                FN = N;
+            end
+            if obj.Centered
+                center = [0 0 0];
+            else
+                center = obj.Center.*obj.Scale;
+            end
+            span = max(obj.BBox.*abs(obj.Scale));
+            [V, F, T, idx] = phx.internal.Geometry.boxUV(V, F, span, Center = center, Normals = FN);
+            if perVertex
+                N = N(idx, :);
             end
         end
 

@@ -13,7 +13,7 @@
 <div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.PrismaticJoint</div>
 
 <h1 class="phx-title">phx.PrismaticJoint</h1>
-<p class="phx-purpose">Prismatic joint</p>
+<p class="phx-purpose">Prismatic joint (slider, 1 DOF)</p>
 <p class="phx-classref">Class&nbsp;&nbsp;phx.PrismaticJoint &nbsp;|&nbsp; Superclass: <a href="phx.base.Joint.html">phx.base.Joint</a></p>
 
 <h2 class="phx-h2">Description</h2>
@@ -26,6 +26,9 @@ keep their relative orientation and slide without rotating.</p>
 <code class="phx-inline">MaxForce</code>, and delivers <code class="phx-inline">MaxForce</code>
 whenever the target is out of reach. Both properties can be changed while the simulation runs or
 driven from Simulink.</p>
+<p>A force along the axis can also be applied directly with
+<code class="phx-inline">AppliedForce</code>, for instance from a hydraulic cylinder model or a
+controller in Simulink.</p>
 
 <h2 class="phx-h2">Creation</h2>
 <h3 class="phx-h3">Syntax</h3>
@@ -65,6 +68,7 @@ each other; an offset along the sliding axis merely shifts the zero of the free 
 <tr><td class="name">EulerAnglesB</td><td class="dflt">[0 0 0]</td><td>Euler angles (z&rarr;y&rarr;x order) of the joint frame relative to body B; the rotation part of <code class="phx-inline">TransformB</code> (dependent).</td></tr>
 <tr><td class="name">TargetVelocity</td><td class="dflt">0</td><td>Target motor velocity along the joint axis, <span class="phx-unit">m/s</span>. The sign gives the direction of travel.</td></tr>
 <tr><td class="name">MaxForce</td><td class="dflt">0</td><td>Maximal force the motor can deliver, <span class="phx-unit">N</span>. Must be non-negative; 0 means no motor.</td></tr>
+<tr><td class="name">AppliedForce</td><td class="dflt">0</td><td>Force applied along the joint axis, <span class="phx-unit">N</span>, on body B and, reversed, on body A; it acts until changed. It drives the joint through the motor, so while it is nonzero <code class="phx-inline">TargetVelocity</code> and <code class="phx-inline">MaxForce</code> are set aside; they apply again once it returns to 0.</td></tr>
 <tr><td class="name">Overlay</td><td class="dflt">false</td><td>Draw the joint as an overlay (always on top).</td></tr>
 </table>
 <p>Reaction feedback (<code class="phx-inline">ForceA</code>, <code class="phx-inline">TorqueA</code>,
@@ -94,12 +98,12 @@ without any control law of your own:</p>
 <tr><th>To get</th><th>TargetVelocity</th><th>MaxForce</th></tr>
 <tr><td class="name">No motor (default)</td><td class="dflt">any</td><td class="dflt">0</td></tr>
 <tr><td class="name">Speed drive</td><td class="dflt">the wanted speed, signed</td><td class="dflt">the force limit</td></tr>
-<tr><td class="name">Pure force source</td><td class="dflt">deliberately out of reach, e.g. <code class="phx-inline">sign(f)*1e6</code></td><td class="dflt"><code class="phx-inline">abs(f)</code></td></tr>
+<tr><td class="name">Pure force source</td><td class="dflt" colspan="2">set <code class="phx-inline">AppliedForce</code> instead, it does the same as an out-of-reach target with the limit <code class="phx-inline">abs(f)</code></td></tr>
 <tr><td class="name">Friction brake</td><td class="dflt">0</td><td class="dflt">the holding force</td></tr>
 </table>
 <p>A speed drive holds its target exactly while it stays under the limit, so nothing needs tuning.
-A force source works because the motor cannot reach an impossible target and therefore saturates,
-delivering the limit and nothing else. A target of zero turns the same mechanism into Coulomb
+A force source (<code class="phx-inline">AppliedForce</code>) works because the motor cannot reach an
+impossible target and therefore saturates, delivering the limit and nothing else. A target of zero turns the same mechanism into Coulomb
 friction: the joint is held until the load exceeds <code class="phx-inline">MaxForce</code> and then
 slips, at the acceleration the surplus load is worth.</p>
 
@@ -107,8 +111,8 @@ slips, at the acceleration the surplus load is worth.</p>
 <span class="lbl">Note.</span> <code class="phx-inline">MaxForce</code> is a force in newtons, not a
 fraction of anything, so size it against the load the joint actually carries &mdash; a body of a
 cubic metre of default density already weighs a tonne. Like the motor of a
-<a href="phx.RevoluteJoint.html">phx.RevoluteJoint</a>, this one is part of the constraint, so its
-reaction lands on the other body: a carriage driven along a rail pushes back on whatever holds the
+<a href="phx.RevoluteJoint.html">phx.RevoluteJoint</a>, this one (and with it <code class="phx-inline">AppliedForce</code>) is part of the
+constraint, so its reaction lands on the other body: a carriage driven along a rail pushes back on whatever holds the
 rail.</div>
 
 <h2 class="phx-h2">Examples</h2>

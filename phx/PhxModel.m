@@ -1,5 +1,5 @@
 function PhxModel(block, varargin)
-%PhxModel Simulink block
+%PhxModel PHX Model block: co-simulate a PHX scene from Simulink
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 %   SPDX-License-Identifier: LicenseRef-PHX-Preview-1.0
@@ -29,18 +29,17 @@ function setup(block)
     BB.InputRefs = phx.simulink.BlockBackend.processRefList(block.DialogPrm(2).Data);
     BB.OutputRefs = phx.simulink.BlockBackend.processRefList(block.DialogPrm(3).Data);
     BB.Viewer = block.DialogPrm(4).Data;
-    BB.RenderEachStep = block.DialogPrm(5).Data;
+    BB.RedrawSteps = block.DialogPrm(5).Data;
     BB.DefaultCameraPosition = block.DialogPrm(6).Data;
     BB.DefaultCameraTarget = block.DialogPrm(7).Data;
 
-    % Sample time
+    % Sample time, which is also the physics step: Simulink handles slower
+    % rates itself, and substeps would hold a kinematic pose or a coupling
+    % force over several engine steps
     block.SampleTimes = [block.DialogPrm(8).Data zeros(1, 2-numel(block.DialogPrm(8).Data))];
 
-    % Number of physics substeps per sample time
-    BB.Substeps = block.DialogPrm(9).Data;
-
     % Optional rendered-image output (synthetic camera): [H W], needs the viewer
-    BB.CameraResolution = block.DialogPrm(10).Data;
+    BB.CameraResolution = block.DialogPrm(9).Data;
     BB.CameraOn = ~isempty(BB.CameraResolution) && all(BB.CameraResolution > 0) && BB.Viewer;
     if BB.CameraOn
         block.AllowSignalsWithMoreThan2D = true;   % the camera image is an [H W 3] signal
@@ -89,7 +88,7 @@ function setup(block)
     end
 
     % Register the parameters
-    block.NumDialogPrms = 10;
+    block.NumDialogPrms = 9;
     block.DialogPrmsTunable = repmat({'Nontunable'}, 1, block.NumDialogPrms);
 
     % Options
@@ -126,6 +125,7 @@ function Start(block, BB)
 
     % Create simulation object
     BB.Sim = phx.Simulation([]);
+    BB.StepCount = 0;
     BB.Sim.addObjects(BB.Source);
     BB.Sim.propagate("ParentAxes", BB.hA);
 
@@ -205,14 +205,26 @@ function Update(block, BB)
         end
     end
 
-    % Simulation step
+    % Simulation step. RedrawSteps means what redrawStep of phx.Simulation.step
+    % means, with each sample time a substep: N > 0 redraws every N-th one, 0
+    % updates the view without flushing it, -1 leaves it alone. Between
+    % redraws the camera output still needs a current view, just not a flush.
     dt = block.SampleTimes(1);
+    redraw = -1;
     if BB.Viewer
-        % redrawStep: RenderEachStep true -> draw every substep, false -> once per sample time
-        BB.Sim.step(dt, BB.Substeps, BB.RenderEachStep);
-    else
-        BB.Sim.step(dt, BB.Substeps, -1);
+        redraw = BB.RedrawSteps;
+        if redraw > 0
+            BB.StepCount = BB.StepCount + 1;
+            if mod(BB.StepCount, redraw) == 0
+                redraw = 1;
+            elseif BB.CameraOn
+                redraw = 0;
+            else
+                redraw = -1;
+            end
+        end
     end
+    BB.Sim.step(dt, 1, redraw);
 end
 
 function Terminate(~, BB)

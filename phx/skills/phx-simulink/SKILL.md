@@ -4,7 +4,7 @@ description: >
   Drive a PHX physics scene from Simulink through the single PhxModel block
   (PhxLibrary.slx). Use when wiring Simulink signals to phx.* object properties
   (input/output port references like Body.Position(1:3)), setting the block's
-  scene Source / Substeps / viewer, building or debugging a PHX co-simulation
+  scene Source / sample time / viewer, building or debugging a PHX co-simulation
   model, or doing closed-loop control of a PHX scene from Simulink.
 ---
 
@@ -20,9 +20,10 @@ bound to *public properties* of named scene objects.
   MATLAB S-function, `phx/PhxModel.m`, backed by `phx.simulink.BlockBackend`).
 - Worked examples in `examples/`: **`phxex_sim_stand.slx`** (open-loop, sine-driven
   suspension stand), **`phxex_sim_ballplate2.slx`** (closed-loop centroid control of two
-  balls in a tilting bowl), and **`phxex_sim_sorter.slx`** (vision-in-the-loop color
+  balls in a tilting bowl), **`phxex_sim_sorter.slx`** (vision-in-the-loop color
   sorter: rendered camera → Computer Vision Toolbox → trapdoor; a PHX Action block also
-  spawns the cubes onto the carousel at runtime). Their scenes are built by
+  spawns the cubes onto the carousel at runtime), and **`phxex_sim_swingover.slx`**
+  (a scheduled trolley path swings a load over a wall). Their scenes are built by
   `model_*.m` → `saved_*.mat`.
 
 ## Block parameters (the mask)
@@ -33,12 +34,17 @@ bound to *public properties* of named scene objects.
 | Input ports | `InputRefs` | newline/comma list of references *written* each step |
 | Output ports | `OutputRefs` | references *read* each step |
 | Show viewer | `ShowViewer` | open an interactive 3-D `phx.extra.Viewer` |
-| Render each step | `RenderEach` | redraw every substep vs. once per sample time |
+| Redraw steps | `RedrawSteps` | redraw every N-th sample time (default 1); 0 = update the view without a redraw, −1 = leave it alone. Same meaning as `redrawStep` of `phx.Simulation.step`, each sample time being one step |
 | Camera position / target | `CameraPosition` / `CameraTarget` | initial view |
-| Simulation step | `SimulationStep` | block sample time (s) |
-| Substeps | `Substeps` | physics substeps per sample time (**see kinematic note**) |
 | Camera resolution [H W] | `CameraResolution` | `[0 0]` off; `[H W]` adds a rendered-image output port |
+| Simulation step | `SimulationStep` | block sample time (s) = the engine step; one engine step per sample |
+| Simplified icon | `SimpleIcon` | show only the source on the icon, or label every port |
 | *Edit ports…* (button) | — | launches `phx.simulink.portEditor` to pick references |
+
+There are no substeps: each sample time is exactly one engine step. A slower controller
+gets its own sample time (Simulink multirate, Rate Transition where needed), and the
+viewer's cost is cut with `RedrawSteps`, not with a longer block step. A redraw costs
+more than a physics step: at `SimulationStep = 0.001` redraw every ~20th sample.
 
 ## Port references — the grammar
 
@@ -75,8 +81,8 @@ synthetic camera for vision-in-the-loop (feed it to Image Processing / Computer 
 blocks). The frame is `getframe` of the viewer axes, resized to `[H W]` with `imresize`
 (base MATLAB, no toolbox needed). Aim the camera with `CameraPosition`/`CameraTarget`
 (e.g. top-down `[0 -1 25]` → `[0 0 0]`). Notes: it requires the viewer (`ShowViewer`
-on), forces a redraw each step (slower — sample the vision loop coarsely), and works
-headless under `-batch`. The block enables N-D signals (`AllowSignalsWithMoreThan2D`)
+on), updates the view every sample whatever `RedrawSteps` is (each frame costs a render —
+sample the vision loop coarsely), and works headless under `-batch`. The block enables N-D signals (`AllowSignalsWithMoreThan2D`)
 for this port. Ground-truth object properties remain available on the other ports for
 validating the vision estimate.
 
@@ -84,11 +90,21 @@ validating the vision estimate.
 
 Because ports are properties, choose them semantically:
 
-- **Inputs** = *settable* properties. Prescribe motion of a `kinematic` body via
-  `Position` / `EulerAngles` / `Orientation`, command `LinearVelocity` /
-  `AngularVelocity`, or set `Mass` / `Friction` / `Type`. (Force/torque actuation via
-  `applyForce`/`applyTorque` is a method, not yet a port — model the actuator as a
-  body whose pose/velocity you command, or as a future `PermanentForce`-style property.)
+- **Inputs** = *settable* properties. The actuators are properties already:
+  - **Force / torque**: a `phx.Thruster` on the body, driven through its `Throttle`
+    (−1…1, scaled by `MaxThrust`).
+  - **Joint motors**: `TargetVelocity` of a `RevoluteJoint` / `PrismaticJoint`, with
+    `MaxTorque` / `MaxForce` as the motor's strength (also settable from a port).
+  - **Joint torque / force**: `AppliedTorque` of a `RevoluteJoint`, `AppliedForce` of a
+    `PrismaticJoint` — a pure torque/force between the two bodies, held until the next
+    sample. The input for actuators computed elsewhere, e.g. a Simscape cylinder whose
+    force drives the joint. Wire either it or the motor ports to a joint, not both.
+  - **Prescribed motion**: `Position` / `EulerAngles` / `Orientation` of a `kinematic`
+    body (see the kinematic note below), or `LinearVelocity` / `AngularVelocity`.
+  - Parameters such as `Mass`, `Friction` or a spring's `Stiffness`.
+
+  Only the methods (`applyForce`, `applyTorque`) are not ports; call them from a PHX
+  Action block when an event needs them.
 - **Outputs** = any readable property: `Position`, `Orientation`, `LinearVelocity`,
   `TotalForce`, `Energy`, a `Spring.Length`, a joint angle, etc. (read-only ones like
   `TotalForce`/`Energy` are output-only).
@@ -114,19 +130,12 @@ one. `phxex_sim_ballplate2` and `phxex_sim_sorter` close their loops this way.
 `Simulink:Engine:AlgLoopTroubleInFixedStepNoSolverSwitch`; the algebraic-loop solver also
 re-entered `Outputs` — and therefore `Sim.step` — several times per sample time.)
 
-## Substeps & KINEMATIC control (the key gotcha)
+## KINEMATIC control (the key gotcha)
 
-`Substeps > 1` makes the block loop `Sim.step(dt, N)` — N engine steps per sample
-time. This is fine for **purely dynamic** scenes (more substeps = smaller engine `dt`
-= stiffer-constraint stability).
-
-**But for a pose-driven KINEMATIC body, set `Substeps = 1` and use a small `SimulationStep`
-instead.** MATLAB-level substeps are *not* Bullet substeps: the block sets the kinematic
-pose **once** per sample time and then loops the engine with the pose frozen, so the
-whole per-step pose increment is applied in `dt/N` → the kinematic body looks **N× too
-fast** for one substep and violently punches away bodies it touches (explosive ejections).
-A small sample time with `Substeps = 1` moves the kinematic body smoothly. (This was the
-root cause of the ball-in-bowl "explosions"; `dt = 5 ms`, `Substeps = 1` fixed it.)
+A pose written to a kinematic body is reached in the one engine step of the sample, so
+the body moves by the whole per-sample increment at once. **Use a small `SimulationStep`
+for pose-driven scenes** (the ball-in-bowl demo needs `dt = 5 ms`): large increments make
+the body punch away whatever it touches (explosive ejections).
 
 Related: **never set a kinematic pose in one large jump** even outside Simulink —
 teleporting a kinematic body into a resting body ejects it. Ramp it.
@@ -160,14 +169,16 @@ set_param([M '/PHX'], ...
     'ModelSource', 'saved_scene.mat', ...
     'InputRefs',   'Plate.EulerAngles(1:2)', ...
     'OutputRefs',  sprintf('Ball1.Position(1:2)\nBall2.Position(1:2)'), ...
-    'ShowViewer',  'on', 'Substeps', '1', 'SimulationStep', '0.005');
+    'ShowViewer',  'on', 'RedrawSteps', '4', 'SimulationStep', '0.005');
 % ... add controller blocks, wire output -> controller -> PHX input (no delay block) ...
 set_param(M, 'Solver', 'FixedStepDiscrete', 'FixedStep', '0.005', 'StopTime', '20');
 save_system(M);
 ```
 
-The block sets its own `SampleTimes`; give the model a **fixed-step discrete** solver
-with `FixedStep` = the block's `SimulationStep`. Run headless with
+The block has its own discrete sample time (`SimulationStep`) and runs with any solver:
+`phxex_sim_stand` uses a variable-step one. With a fixed-step solver, `FixedStep` must
+divide the block's `SimulationStep` (equal, or e.g. 0.005 for a 0.01 block step as in
+`phxex_sim_ballplate2`); a fixed-step discrete solver suits an all-discrete model. Run headless with
 `-batch "sim('my_phx_model')"` (graphics/viewer work under `-batch`, invisibly).
 
 ## `phx.simulink.*` internals (for programmatic / advanced use)
@@ -183,8 +194,9 @@ with `FixedStep` = the block's `SimulationStep`. Run headless with
 
 ## Gotchas checklist
 
-- **Kinematic control → `Substeps = 1` + small sample time** (above). Substeps>1 only for
-  dynamic-only scenes.
+- **Kinematic control → small sample time** (above); the sample time is the engine step.
+- **Small sample time → raise `RedrawSteps`**: redrawing at every millisecond sample costs
+  several times the physics.
 - **Feedback loop → wire it directly**, no Memory/Unit Delay: the block is not a direct
   feedthrough and already carries one sample of delay. A delay block adds a second one.
 - **Reference an object by `Name`** — set unique `Name`s in the scene builder; an unset/

@@ -1,9 +1,12 @@
 classdef Rock < phx.base.Shape
-%phx.shape.Rock Rock shape
+%phx.shape.Rock Procedurally generated irregular rock
 %
 %   Visual appearance is a procedurally generated irregular rock created by
 %   perturbing an icosahedron. Roundness controls how close the result is to
-%   the ideal spherical shape and Diameter (or Radius) sets its size.
+%   the ideal spherical shape and Diameter (or Radius) sets its size. Each
+%   face takes the texture projected along the axis closest to its normal,
+%   the whole image spanning the Diameter; a noise-like texture hides the
+%   jumps at the face edges best (such as the built-in "stone").
 %
 %   The collision shape is the convex hull of the generated mesh, while the
 %   mass properties are modeled as an ideal sphere of the given Density.
@@ -13,7 +16,7 @@ classdef Rock < phx.base.Shape
 %   phx.shape.Rock(Name, Value, ...) creates a shape and sets properties
 %   values according to given name-value pairs.
 %
-%   See also phx.Body, phx.shape.Sphere, phx.shape.Globe
+%   See also phx.Body, phx.shape.Sphere
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 %   SPDX-License-Identifier: LicenseRef-PHX-Preview-1.0
@@ -63,8 +66,8 @@ classdef Rock < phx.base.Shape
         end
 
         function drawTo(obj, target)
-            [V, N, F] = phx.internal.Geometry.rock(obj.Radius*2, obj.Roundness);
-            primitive = obj.drawMesh(target, V, N, F, [], []);
+            [V, N, F, T] = phx.internal.Geometry.rock(obj.Radius*2, obj.Roundness);
+            primitive = obj.drawMesh(target, V, N, F, T, obj.getTexture);
             setappdata(primitive, "phxShape", obj);
         end
 

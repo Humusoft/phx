@@ -26,8 +26,8 @@ function model_ballplate2
 
     % Two dynamic balls (density-based mass/inertia; a little rolling friction
     % damps the in-bowl oscillation so a simple proportional controller suffices)
-    Ball1 = phx.Body("Position", [ 2 0 2], "Shape", {"Globe", "Diameter", 1.8, "Density", 1, "Color", [0.90 0.30 0.30], "Texture", "checker", "TextureBlend", 0.5}, "Friction", [0.6 0.05 0], "Name", "Ball1"); %#ok<NASGU>
-    Ball2 = phx.Body("Position", [-4 0 4], "Shape", {"Globe", "Diameter", 2.3, "Density", 2, "Color", [0.30 0.50 0.90], "Texture", "checker", "TextureBlend", 0.5}, "Friction", [0.6 0.05 0], "Name", "Ball2"); %#ok<NASGU>
+    Ball1 = phx.Body("Position", [ 2 0 2], "Shape", {"Sphere", "Diameter", 1.8, "Density", 1, "Color", [0.90 0.30 0.30], "Texture", "checker", "TextureBlend", 0.5}, "Friction", [0.6 0.05 0], "Name", "Ball1"); %#ok<NASGU>
+    Ball2 = phx.Body("Position", [-4 0 4], "Shape", {"Sphere", "Diameter", 2.3, "Density", 2, "Color", [0.30 0.50 0.90], "Texture", "checker", "TextureBlend", 0.5}, "Friction", [0.6 0.05 0], "Name", "Ball2"); %#ok<NASGU>
 
     save("saved_ballplate2.mat", "Bowl", "Ball1", "Ball2");
 end

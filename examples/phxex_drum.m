@@ -192,7 +192,7 @@ function [balls, class] = fillDrum(ax, R, L, d, counts)
     balls = phx.Body.empty;
     for i = 1:n
         balls(i) = phx.Body(ax, "Position", P(i, :), "Friction", [0.3 0.01 0.005], ...
-            "Color", colors(class(i), :), "Shape", {"Sphere", "Diameter", dBall(i)});
+            "Color", colors(class(i), :), "Shape", {"Sphere", "Diameter", dBall(i), "Segments", 20});
     end
 end
 

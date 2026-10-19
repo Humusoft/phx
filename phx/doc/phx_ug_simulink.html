@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulink Co-Simulation</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; User Guide &rsaquo; Simulink co-simulation</div>
+
+<h1 class="phx-title">Simulink Co-Simulation</h1>
+<p class="phx-purpose">Running a PHX scene as a block of a Simulink model</p>
+
+<p>PHX joins Simulink as <b>one co-simulation block</b>, not as a palette of physical primitives.
+The scene is built in MATLAB exactly as in the rest of this guide; the
+<a href="PhxModel.html">PHX Model</a> block loads it, steps its
+<a href="phx.Simulation.html">phx.Simulation</a> once per sample time and exchanges signals with
+the rest of the model. Both blocks of the toolbox are in the library
+<code class="phx-inline">PhxLibrary</code>, which appears in the Simulink Library Browser as PHX Toolbox.</p>
+
+<h2 class="phx-h2">Preparing the scene</h2>
+<p>The block's <b>Source</b> is either a scene script (a function that builds the scene and returns
+its bodies) or a MAT file with a saved scene, see <a href="phx_ug_scenes.html">Saving and loading
+scenes</a>. A script runs again at the start of every simulation; a MAT file only loads, which is
+faster and lets the block check the port references while you edit the mask.</p>
+<p>Ports address objects by their <code class="phx-inline">Name</code>, so give every object you
+want to connect a unique name:</p>
+
+<pre class="phx-code"><span class="kw">function</span> bodies = model_pendulum
+    ax = cla(clf); view(3); axis equal; grid on; camlight headlight;
+    anchor = phx.Body(ax, <span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Name"</span>, <span class="str">"Anchor"</span>);
+    bob    = phx.Body(ax, <span class="str">"Position"</span>, [1 0 0], <span class="str">"Name"</span>, <span class="str">"Bob"</span>);
+    phx.RevoluteJoint(anchor, bob, <span class="str">"PointB"</span>, [-1 0 0], <span class="str">"AxisA"</span>, [0 1 0]);
+    phx.Thruster(bob, <span class="str">"Direction"</span>, [0 0 1], <span class="str">"MaxThrust"</span>, 5e3, <span class="str">"Name"</span>, <span class="str">"Drive"</span>);
+    bodies = [anchor bob];
+<span class="kw">end</span></pre>
+
+<h2 class="phx-h2">Ports are properties</h2>
+<p>Each port is bound to one public property of a named object, written as
+<code class="phx-inline">Name.Property</code> or, for part of it,
+<code class="phx-inline">Name.Property(indices)</code>. The signal width follows from the property,
+so <code class="phx-inline">Bob.Position</code> is a 3-element signal and
+<code class="phx-inline">Bob.Position(3)</code> a scalar. The <b>Edit ports&hellip;</b> button of
+the mask lists the objects of the scene and their properties to pick from.</p>
+<ul>
+<li><b>Inputs</b> write the property at every step, so they must name a settable property: the
+pose or velocity of a kinematic body, a <code class="phx-inline">Throttle</code> of a thruster,
+the <code class="phx-inline">TargetVelocity</code> of a joint motor.</li>
+<li><b>Outputs</b> read any property, read-only ones included:
+<code class="phx-inline">Position</code>, <code class="phx-inline">LinearVelocity</code>,
+<code class="phx-inline">TotalForce</code>, the <code class="phx-inline">Angle</code> of a joint.</li>
+</ul>
+<p>Methods such as <code class="phx-inline">applyForce</code> cannot be ports. Drive the scene
+through properties, or call methods from a PHX Action block, see below.</p>
+
+<h2 class="phx-h2">Timing and solver</h2>
+<p>The block has a discrete sample time, the <b>Simulation step</b>, and each sample advances the
+scene by one engine step of that length. Keep it at about 5&nbsp;ms or less when the scene has
+joints or stacked contacts, as in MATLAB. A controller that should run slower than the scene does
+not need a longer block step: give it its own sample time and let Simulink handle the rates, with a
+Rate Transition block where needed.</p>
+<p>The block runs with any Simulink solver; the shipped examples use a fixed-step discrete solver
+with a fixed step that divides the block's sample time. A continuous part of the model, a plant
+model or a filter, can use a continuous solver, and the PHX block still steps only at its own
+samples.</p>
+
+<div class="phx-note">
+<span class="lbl">Kinematic inputs.</span> A pose written to a kinematic body is reached in the one
+engine step of the sample, so the body moves by the whole increment at once. Keep the
+<b>Simulation step</b> small for a scene driven through kinematic poses, and never let a body jump
+into a resting one.
+</div>
+
+<h2 class="phx-h2">Feedback loops and the sample delay</h2>
+<p>At every sample the block first reports the outputs, the state of the scene at the current time
+<i>t</i>, and then writes the inputs and steps the scene from <i>t</i> to <i>t</i>&nbsp;+&nbsp;<i>dt</i>.
+An input therefore shows up on the outputs one sample later, as with a Unit Delay. In return the
+block is not a direct feedthrough, so a controller can be wired straight from its outputs back to
+its inputs without an algebraic loop. Do not add a Memory or Unit Delay block to the loop; it would
+add a second sample of delay.</p>
+
+<h2 class="phx-h2">Viewer and camera image</h2>
+<p>With <b>Show viewer</b> on, the scene is drawn in a <a href="phx.extra.Viewer.html">phx.extra.Viewer</a>
+while the model runs. <b>Redraw steps</b> sets how often it is redrawn: every N-th sample, as the
+<code class="phx-inline">redrawStep</code> argument of <code class="phx-inline">step</code> does in MATLAB.
+A redraw costs more than a physics step, so with a step of a millisecond redraw every 20th sample or
+so. Setting <b>Camera resolution</b> to <code class="phx-inline">[H W]</code> adds an output port
+with the rendered view as an <code class="phx-inline">H</code>-by-<code class="phx-inline">W</code>-by-3
+<code class="phx-inline">uint8</code> image, a synthetic camera for vision-in-the-loop models. The
+image is current at every sample whatever the Redraw steps, and each frame costs a render, so sample
+such a loop coarsely.</p>
+
+<h2 class="phx-h2">Changing the scene during the run: PHX Action</h2>
+<p>The <a href="PhxAction.html">PHX Action</a> block runs your MATLAB code against the scene of a PHX
+Model block on every rising edge of its trigger input. Use it for events and structural changes:
+adding or removing bodies, calling methods, anything a property port cannot express. The code sees
+the simulation as <code class="phx-inline">sim</code>, the time as <code class="phx-inline">t</code>,
+its data inputs and a <code class="phx-inline">state</code> struct kept between triggers, and it
+assigns the data outputs.</p>
+
+<h2 class="phx-h2">Examples</h2>
+<figure class="phx-fig">
+<img src="img/ex/phxex_sim_sorter.png" alt="Colour sorter co-simulated from Simulink">
+<figcaption><code>phxex_sim_sorter</code>: a rendered camera image tells the parts apart by colour,
+a trapdoor sorts them, and a PHX Action block feeds new parts onto the carousel.</figcaption>
+</figure>
+<ul>
+<li><code class="phx-inline">phxex_sim_stand</code> &mdash; open loop: a buggy on four shaker stands,
+each driven by its own sine wave.</li>
+<li><code class="phx-inline">phxex_sim_ballplate2</code> &mdash; closed loop: tilting a bowl steers
+the centroid of two balls along a reference path.</li>
+<li><code class="phx-inline">phxex_sim_sorter</code> &mdash; vision in the loop and a PHX Action
+block.</li>
+<li><code class="phx-inline">phxex_sim_swingover</code> &mdash; a scheduled trolley path swings a
+load over a wall.</li>
+</ul>
+<p>Their scenes are built by the <code class="phx-inline">model_*.m</code> scripts in
+<code class="phx-inline">examples</code> and saved to the <code class="phx-inline">saved_*.mat</code>
+files the blocks load.</p>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="PhxModel.html">PhxModel</a>,
+<a href="PhxAction.html">PhxAction</a>,
+<a href="phx.Simulation.html">phx.Simulation</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_control.html">Automation and control</a>,
+<a href="phx_ug_scenes.html">Saving and loading scenes</a>,
+<a href="phx_ex_gallery.html">Examples</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox User Guide</div>
+
+</div>
+</body>
+</html>

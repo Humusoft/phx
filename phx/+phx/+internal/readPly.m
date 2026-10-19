@@ -321,12 +321,13 @@ function sub = buildSubmesh(elements, fileName)
     end
 
     % Optional texture coordinates (s/t, or the u/v and texture_u/texture_v
-    % aliases). Passed through as-is; a texture image itself is not read from
-    % PLY, so these only take effect if the user assigns a Texture.
+    % aliases), mapped into the PHX texture space like OBJ: PLY's t runs up
+    % the image, PHX's v down. A texture image itself is not read from PLY,
+    % so these only take effect if the user assigns a Texture.
     s = firstColumn(vE, ["s", "u", "texture_u"]);
     t = firstColumn(vE, ["t", "v", "texture_v"]);
     if ~isempty(s) && ~isempty(t)
-        sub.uv = [s t];
+        sub.uv = [s, 1 - t];
     else
         sub.uv = [];
     end

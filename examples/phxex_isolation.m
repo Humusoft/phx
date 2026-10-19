@@ -138,12 +138,12 @@ function [bodies, roof] = buildTower(ax, x0, zBase, P)
         zw = zBase + s*h + P.wallH/2;
         for sgn = [-1 1]
             b = phx.Body(ax, "Position", [x0 + sgn*P.span/2, 0, zw], "Friction", [P.mu 0 0], ...
-                "Shape", {"Box", "Size", [P.wallT P.wallD P.wallH], "Color", [0.66 0.67 0.68]});
+                "Shape", {"Box", "Size", [P.wallT P.wallD P.wallH], "Color", [1 1 1], "Texture", "stone", "TextureBlend", 0.5});
             bodies(end+1) = b; %#ok<AGROW>
         end
         zs = zBase + s*h + P.wallH + P.slabZ/2;
         roof = phx.Body(ax, "Position", [x0 0 zs], "Friction", [P.mu 0 0], ...
-            "Shape", {"Box", "Size", [P.slabX P.slabY P.slabZ], "Color", [0.44 0.49 0.56]});
+            "Shape", {"Box", "Size", [P.slabX P.slabY P.slabZ], "Color", [0.3 0.3 0.3], "Texture", "stone", "TextureBlend", 0.5});
         bodies(end+1) = roof; %#ok<AGROW>
     end
 end

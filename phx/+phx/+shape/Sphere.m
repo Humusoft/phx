@@ -1,18 +1,20 @@
 classdef Sphere < phx.base.Shape
 %phx.shape.Sphere Sphere shape
-% 
-%   Visual appearance is based on a geometry of icosahedron with 
-%   an adjustable level of details.
+%
+%   Visual appearance is based on a latitude-longitude grid with an
+%   adjustable level of details. A texture is mapped as a standard 2:1
+%   equirectangular image: its top row at the +z pole, its left and right
+%   edges on the +x meridian, longitude growing anticlockwise about +z.
 %
 %   Collision shape and mass properties are modeled as an ideal sphere
 %   independent on visual details.
-%   
+%
 %   phx.shape.Sphere() creates a shape with default parameters.
 %
 %   phx.shape.Sphere(Name, Value, ...) creates a shape and sets properties
 %   values according to given name-value pairs.
 %
-%   See also phx.Body, phx.shape.Globe
+%   See also phx.Body, phx.shape.Rock
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 %   SPDX-License-Identifier: LicenseRef-PHX-Preview-1.0
@@ -21,18 +23,13 @@ classdef Sphere < phx.base.Shape
 
 %#ok<*INUSD> OK to see the full list of arguments for callbacks
 
-    properties (Access = private, Transient)
-        Vertices
-        Normals
-        Faces
-    end
-
     properties
         % Sphere diameter
         Diameter (1, 1) double = 1
 
-        % Number of division of the icosahedron shape
-        Division (1, 1) double = 3
+        % Number of meridian segments; the parallels follow at the same
+        % angular step
+        Segments (1, 1) double = 28
 
         % Volumetric density (kg/m^3)
         Density (1, 1) double = 1000
@@ -54,9 +51,6 @@ classdef Sphere < phx.base.Shape
             if isnan(obj.Color(1))
                 obj.Color = phx.base.Shape.newColor;
             end
-
-            % Prepare geometry
-            [obj.Vertices, obj.Normals, obj.Faces] = phx.internal.Geometry.icosphere(obj.Division);
         end
 
         function obj = set.Radius(obj, radius)
@@ -68,7 +62,8 @@ classdef Sphere < phx.base.Shape
         end
 
         function drawTo(obj, target)
-            primitive = obj.drawMesh(target, obj.Vertices*obj.Radius, obj.Normals, obj.Faces, [], []);
+            [V, N, F, T] = phx.internal.Geometry.sphere(obj.Diameter, obj.Segments);
+            primitive = obj.drawMesh(target, V, N, F, T, obj.getTexture);
             setappdata(primitive, "phxShape", obj);
         end
 

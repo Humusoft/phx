@@ -13,14 +13,15 @@
 <div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.Zone</div>
 
 <h1 class="phx-title">phx.Zone</h1>
-<p class="phx-purpose">Spatial detection zone</p>
+<p class="phx-purpose">Spatial zone detecting bodies inside a region</p>
 <p class="phx-classref">Class&nbsp;&nbsp;phx.Zone &nbsp;|&nbsp; Superclass: <a href="phx.base.Object.html">phx.base.Object</a></p>
 
 <h2 class="phx-h2">Description</h2>
 <p><code class="phx-inline">phx.Zone</code> monitors which bodies are located inside a box-shaped region
 of space. It reports the current occupants as an array of <a href="phx.Body.html">phx.Body</a>
 objects (<code class="phx-inline">Contents</code>) and their number (<code class="phx-inline">Count</code>),
-keeps cumulative <code class="phx-inline">EnteredCount</code> / <code class="phx-inline">ExitedCount</code>
+the total mass of the dynamic occupants and their common center of mass
+(<code class="phx-inline">Mass</code>, <code class="phx-inline">CenterOfMass</code>), keeps cumulative <code class="phx-inline">EnteredCount</code> / <code class="phx-inline">ExitedCount</code>
 tallies, and can call user functions the moment a body enters or leaves the region.</p>
 
 <p>A zone is anchored to a parent body and defined relative to it, so a zone attached to a moving
@@ -65,6 +66,8 @@ region relative to the anchor.</p>
 <tr><td class="name">Overlay</td><td class="dflt">false</td><td>Draw the region box as an overlay (always on top).</td></tr>
 <tr><td class="name">Count</td><td class="type">double (read-only)</td><td>Number of bodies currently inside the zone.</td></tr>
 <tr><td class="name">Contents</td><td class="type">phx.Body array (read-only)</td><td>Bodies currently inside the zone.</td></tr>
+<tr><td class="name">Mass</td><td class="type">double (read-only)</td><td>Total mass of the dynamic bodies currently inside the zone, <span class="phx-unit">kg</span>. Static and kinematic occupants count in <code class="phx-inline">Count</code> but carry no mass here.</td></tr>
+<tr><td class="name">CenterOfMass</td><td class="type">1&times;3 double (read-only)</td><td>Common center of mass [x y z] of the dynamic bodies currently inside the zone, in world coordinates, <span class="phx-unit">m</span>; <code class="phx-inline">[NaN NaN NaN]</code> when there are none. A body counts whole or not at all, according to whether its own center of mass lies in the region.</td></tr>
 <tr><td class="name">EnteredCount</td><td class="type">double (read-only)</td><td>Cumulative number of enter events since the last pipeline rebuild.</td></tr>
 <tr><td class="name">ExitedCount</td><td class="type">double (read-only)</td><td>Cumulative number of exit events since the last pipeline rebuild.</td></tr>
 </table>
@@ -77,7 +80,7 @@ makes the zone passive, evaluated only on demand via <code class="phx-inline">up
 <h2 class="phx-h2">Methods</h2>
 <table class="phx-tbl">
 <tr><th>Method</th><th>Description</th></tr>
-<tr><td class="name" id="update">update(z)</td><td>Recompute occupancy now and fire any enter/exit callbacks. Use it to read <code class="phx-inline">Count</code> / <code class="phx-inline">Contents</code> from a passive zone, which is not evaluated during stepping. Accepts an array of zones.</td></tr>
+<tr><td class="name" id="update">update(z)</td><td>Recompute occupancy now and fire any enter/exit callbacks. Use it to read <code class="phx-inline">Count</code>, <code class="phx-inline">Contents</code>, <code class="phx-inline">Mass</code> or <code class="phx-inline">CenterOfMass</code> from a passive zone, which is not evaluated during stepping. Accepts an array of zones.</td></tr>
 </table>
 
 <h2 class="phx-h2">Examples</h2>
@@ -113,6 +116,26 @@ sim.step(3, 600, -1);
 update(z);              <span class="cmt">% single on-demand tally</span>
 disp(z.Count);
 delete(sim);</pre>
+
+<h4 class="phx-h4">Log the fill of a hopper</h4>
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+floor = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [10 10 0.3]});
+for i = 1:5
+    b = phx.Body(<span class="str">"Position"</span>, [i-3 0 5+i], <span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>, <span class="str">"Diameter"</span>, 0.6});
+    b.Mass = i;
+end
+
+<span class="cmt">% record the mass in the region and where its center lies</span>
+z = phx.Zone(floor, <span class="str">"Position"</span>, [0 0 1], <span class="str">"Size"</span>, [8 8 2]);
+log1 = phx.Logger(z, <span class="str">"Parameters"</span>, [<span class="str">"Mass"</span>, <span class="str">"CenterOfMass"</span>], <span class="str">"Frequency"</span>, 100);
+
+sim = phx.Simulation;
+sim.step(3, 600, 1);
+delete(sim);
+
+plot(log1.Time, log1.Data(:, 1));       <span class="cmt">% column 1 = Mass, 2:4 = CenterOfMass</span>
+xlabel(<span class="str">"time [s]"</span>); ylabel(<span class="str">"mass in zone [kg]"</span>);</pre>
 
 <div class="phx-seealso">
 <span class="lbl">See also</span>

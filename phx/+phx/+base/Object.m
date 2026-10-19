@@ -202,7 +202,7 @@ classdef Object < matlab.mixin.SetGetExactNames
 
         function visible = get.Visible(obj)
             if isvalid(obj.Graphics)
-                visible = obj.Graphics.Visible;
+                visible = logical(obj.Graphics.Visible); % an OnOffSwitchState on the hgtransform
             else
                 visible = false;
             end

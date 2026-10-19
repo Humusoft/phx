@@ -107,8 +107,8 @@ function mesh = readObjMesh(fileName)
             if all(sm.vt(:) > 0) && ~isempty(UV)
                 tidx = reshape(sm.vt', [], 1);
                 raw = UV(tidx, :);
-                % Map into the PHX texture space (V flipped, axes swapped)
-                subsOut(s).uv = [1 - raw(:, 2), raw(:, 1)];
+                % Map into the PHX texture space (v runs down the image)
+                subsOut(s).uv = [raw(:, 1), 1 - raw(:, 2)];
             else
                 subsOut(s).uv = [];
             end

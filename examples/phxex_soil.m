@@ -23,7 +23,7 @@ function phxex_soil
     rocks = phx.assembly.scatter({"Rock", "Radius", 3}, 50, "Region", [20 40 20], "Spacing", 3, "Position", [40 0 2], "Color", [0.9 0.6 0.4], "RandomTint", 0.7);
     
     % Create a kinematic body (bucket) for interaction
-    exc = phx.Body(ax, "Type", "kinematic", "Position", [0 0 11], "Shape", {resdir+"Bucket.stl", "Scale", 0.2, "Centered", true, "Color", 0.4, "Envelope", "concave", "Style", "flat"});
+    exc = phx.Body(ax, "Type", "kinematic", "Position", [0 0 11], "Shape", {resdir+"Bucket.stl", "Scale", 0.2, "Centered", true, "Color", 0.4, "Envelope", "concave", "Style", "flat", "Texture", "stone", "TextureBlend", 0.2});
 
     % Add planar shadows
     phx.PlanarShadow([exc rocks], "Anchor", ground, "Position", [0 0 0.5]);

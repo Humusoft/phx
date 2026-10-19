@@ -13,7 +13,7 @@
 <div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.Camera</div>
 
 <h1 class="phx-title">phx.Camera</h1>
-<p class="phx-purpose">Camera</p>
+<p class="phx-purpose">Camera following bodies of the scene</p>
 <p class="phx-classref">Class&nbsp;&nbsp;phx.Camera &nbsp;|&nbsp; Superclass: <a href="phx.base.Object.html">phx.base.Object</a></p>
 
 <h2 class="phx-h2">Description</h2>
@@ -57,8 +57,8 @@ properties.</p>
 <tr><td class="name">PointA</td><td class="dflt">[0 0 0]</td><td>Connecting point in the local space of the first body (camera position offset).</td></tr>
 <tr><td class="name">PointB</td><td class="dflt">[0 0 0]</td><td>Connecting point in the local space of the second body (camera target offset).</td></tr>
 <tr><td class="name">TrackingLag</td><td class="dflt">0</td><td>Time the camera lags behind the tracked pose, <span class="phx-unit">s</span> (0 = rigid tracking, <code class="phx-inline">Inf</code> = static camera).</td></tr>
-<tr><td class="name">Viewer</td><td class="dflt">[]</td><td>PHX viewer or axes to drive. Empty picks the <a href="phx.extra.Viewer.html">phx.extra.Viewer</a> of the current figure, or the current axes.</td></tr>
-<tr><td class="name">RecordFile</td><td class="type">string</td><td>Video file name. When set, the view is recorded to an MPEG&#8209;4 file during the simulation.</td></tr>
+<tr><td class="name">Viewer</td><td class="dflt">[]</td><td>PHX viewer or axes to drive. Empty picks the <a href="phx.extra.Viewer.html">phx.extra.Viewer</a> of the figure the first body is drawn in, or that body's axes.</td></tr>
+<tr><td class="name">RecordFile</td><td class="type">string</td><td>Video file name. When set, the view is recorded to an MPEG&#8209;4 file during the simulation, one frame per redraw at most. The file is finalized when the camera is deleted.</td></tr>
 <tr><td class="name">RecordFPS</td><td class="dflt">30</td><td>Video frame rate based on simulation time, <span class="phx-unit">frames/s</span>.</td></tr>
 </table>
 

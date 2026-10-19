@@ -13,7 +13,7 @@
 <div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.Body</div>
 
 <h1 class="phx-title">phx.Body</h1>
-<p class="phx-purpose">Physical body</p>
+<p class="phx-purpose">Rigid body with pose, mass, friction and forces</p>
 <p class="phx-classref">Class&nbsp;&nbsp;phx.Body &nbsp;|&nbsp; Superclass: <a href="phx.base.Object.html">phx.base.Object</a></p>
 
 <h2 class="phx-h2">Description</h2>
@@ -84,6 +84,15 @@ bodies are dragged along. The drag is limited by friction exactly as an ordinary
 so both bodies need a nonzero <code class="phx-inline">Friction(1)</code> for the surface to
 pull. Set on the moving body rather than on the belt, it drives that body the opposite way,
 because the value describes the <em>relative</em> motion of the contacting surfaces.</td></tr>
+<tr><td class="name">AppliedForce</td><td class="dflt">[0 0 0]</td>
+<td>Force at the centre of mass, <span class="phx-unit">N</span>, given in the <em>body</em> frame.
+Every assignment applies it for the next simulation step, like
+<code class="phx-inline">applyForce</code>, so a script assigns it before each step. The
+<a href="PhxModel.html">PHX Model</a> block writes its inputs at every sample, so a force driven from
+Simulink acts throughout.</td></tr>
+<tr><td class="name">AppliedTorque</td><td class="dflt">[0 0 0]</td>
+<td>Torque, <span class="phx-unit">N&middot;m</span>, given in the <em>body</em> frame; applied like
+<code class="phx-inline">AppliedForce</code>.</td></tr>
 <tr><td class="name">Shape</td><td class="type">phx.shape.* | cell (write-only)</td>
 <td>Geometry worn by the body. Assign a <code class="phx-inline">phx.shape.*</code> object or a cell array such as <code class="phx-inline">{"Box","Size",[2 1 1]}</code>.</td></tr>
 <tr><td class="name">OnDoubleClickFcn</td><td class="dflt">[]</td>
@@ -128,7 +137,9 @@ because the value describes the <em>relative</em> motion of the contacting surfa
 next simulation step only. Without <code class="phx-inline">point</code> the force acts at the body
 origin; otherwise it acts at <code class="phx-inline">point</code> (local space by default). The two
 logical flags select local (<code class="phx-inline">true</code>, default) or world space for the
-force and the point respectively.</p>
+force and the point respectively. To drive a body with a force from Simulink, use the
+<code class="phx-inline">AppliedForce</code> and <code class="phx-inline">AppliedTorque</code>
+properties as block inputs.</p>
 </div>
 
 <h3 class="phx-h3">applyTorque</h3>

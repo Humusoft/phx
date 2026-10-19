@@ -1,5 +1,5 @@
 classdef Script < phx.base.Object
-%phx.Script Automation script
+%phx.Script Automation script prescribing property profiles over time
 %
 %   The Script object allows you to control the values of selected parameters
 %   of other objects during simulation. The value profile for each parameter

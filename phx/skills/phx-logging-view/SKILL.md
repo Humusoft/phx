@@ -64,7 +64,8 @@ on top of geometry.
 
 A box-shaped region anchored to a body (so it moves with a moving anchor) that
 reports which bodies are inside. Use it for counting, sorting, catch basins,
-end-of-conveyor detection, "did it reach the target area" checks.
+end-of-conveyor detection, "did it reach the target area" checks, and the fill
+of a hopper or load bed (mass and its center).
 
 ```matlab
 % Active zone: evaluated every step, callbacks fire on the transitions
@@ -76,9 +77,18 @@ zone = phx.Zone(ground, "Bodies", rocks, ...       % watch set (default: all
 
 zone.Contents        % phx.Body array currently inside
 zone.Count           % how many
+zone.Mass            % total mass of the DYNAMIC bodies inside (kg)
+zone.CenterOfMass    % their common center of mass, world [x y z]; NaN(1,3) if none
 zone.EnteredCount    % cumulative throughput since the last pipeline rebuild
 zone.ExitedCount
+
+% Record the fill over time (Data columns: 1 = Mass, 2:4 = CenterOfMass)
+L = phx.Logger(zone, "Parameters", ["Mass", "CenterOfMass"], "Frequency", 100);
 ```
+
+`Mass`/`CenterOfMass` skip static and kinematic occupants (they still count in
+`Count`), and a body counts whole or not at all, by whether its own center of
+mass is inside.
 
 **Passive zones cost nothing per substep.** Create the zone with
 `"SimulationOrder", "none"` and call `update(zones)` when you actually want the
@@ -163,8 +173,26 @@ simulation and draws the link into the scene. Dependent readouts, all loggable:
 
 ## phx.Camera — scriptable camera
 
-`phx.Camera` is a simulable object, so a camera pose can be scripted with
-`phx.Script` or follow a body, useful for fly-throughs and recorded videos.
+`phx.Camera(bodyA, bodyB)` places the view camera at body A and aims it at body B
+(offsets `PointA`/`PointB` in the local frames), every redraw. Use an invisible body as a
+camera rig and move it with `phx.Script` for fly-throughs, or attach the camera to a
+moving body to chase it. `TrackingLag` (s) smooths the motion with a first-order lag
+(0 = rigid, `Inf` = static). `Viewer` defaults to the viewer of the figure body A is
+drawn in, or to its axes.
+
+**Recording a video.** Set `RecordFile` (MPEG-4) and optionally `RecordFPS` (default
+30, frames per second of *simulation* time). Frames are grabbed on redraws, so the run
+must redraw (not `redrawStep = -1`) at least as often as the frame rate, otherwise you
+get one frame per redraw. Recording starts when the simulation is built; the file is
+finalized only when the camera itself is deleted (`delete(sim)` leaves it open):
+
+```matlab
+rig = phx.Body("Type", "kinematic", "Position", [6 -6 3], "Visible", false, "Collisions", false);
+cam = phx.Camera(rig, ball, "TrackingLag", 0.2, "RecordFile", "drop.mp4");
+sim = phx.Simulation;
+sim.step(5, 500, 2);          % redraw every 2nd of 100 substeps/s = 50 redraws/s >= 30 fps
+delete(cam);                  % closes drop.mp4
+```
 
 ## phx.PlanarShadow — shadow on a plane (on request only)
 

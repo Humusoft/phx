@@ -31,12 +31,12 @@ function phxex_buggy(showGraphs)
     % Add logger to specific elements (springs)
     log = phx.Logger(buggy.chassis.Children(5:8), "Parameters", "Length", "Frequency", 100);
 
-    % Create cones
+    % Create cones and obstacle
     shpCone = phx.shape.Cone("Diameter", 2, "Height", 6, "Texture", "checker", "TextureBlend", 0.25, "Color", [1 0.5 0]);
     phx.Body("Position", [-30 -7 0], "Shape", shpCone, "Mass", 1, "Inertia", 0.1);
     phx.Body("Position", [-40 -7 0], "Shape", shpCone, "Mass", 1, "Inertia", 0.1);
     phx.Body("Position", [-50 -7 0], "Shape", shpCone, "Mass", 1, "Inertia", 0.1);
-    phx.Body("Type", "static", "Position", [-50 6.5 0], "Shape", {"Cylinder", "Diameter", 3, "Height", 14, "Color", [1 1 0.8]});
+    phx.Body("Type", "static", "Position", [-50 6.5 0], "Shape", {"Cylinder", "Diameter", 3, "Height", 14, "Color", [1 0.9 0.8], "Texture", "stripes", "TextureBlend", 0.2});
 
     % Simulation loop
     sim = phx.Simulation;

@@ -1,5 +1,5 @@
 classdef CylindricalJoint < phx.base.Joint
-%phx.CylindricalJoint Cylindrical joint
+%phx.CylindricalJoint Cylindrical joint (slide and spin about one axis, 2 DOF)
 %
 %   Cylindrical joint realizes a kinematic constraint with 2 degrees of freedom
 %   specified as translation along an axis and rotation about the same axis - a

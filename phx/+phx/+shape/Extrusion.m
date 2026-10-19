@@ -1,5 +1,5 @@
 classdef Extrusion < phx.base.Shape
-%phx.shape.Extrusion Extrusion shape
+%phx.shape.Extrusion Profile extruded along a spine
 %
 %   Visual appearance is based on a geometry of a profile extruded along a
 %   spine curve.

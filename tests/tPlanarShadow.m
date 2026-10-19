@@ -163,7 +163,7 @@ classdef tPlanarShadow < PhxTestCase
         function detailDecimatesTheCachedGeometry(tc)
             % A coarser silhouette still lands in the plane under the body
             b = tc.spawnBodyOn(tc.Ax, [0 0 2], "static");
-            b.Shape = {"Sphere", "Radius", 0.5, "Division", 4};
+            b.Shape = {"Sphere", "Radius", 0.5, "Segments", 40};
             full = phx.PlanarShadow(b, "Offset", 0);
             coarse = phx.PlanarShadow(b, "Offset", 0, "Detail", 0.1);
             tc.mkSim();

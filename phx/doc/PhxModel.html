@@ -13,7 +13,7 @@
 <div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; PhxModel</div>
 
 <h1 class="phx-title">PhxModel</h1>
-<p class="phx-purpose">Co-simulate a PHX scene from Simulink&reg;</p>
+<p class="phx-purpose">PHX Model block: co-simulate a PHX scene from Simulink&reg;</p>
 <p class="phx-classref">Simulink&nbsp;block &nbsp;|&nbsp; Library: <code class="phx-inline">PhxLibrary.slx</code></p>
 
 <h2 class="phx-h2">Description</h2>
@@ -84,25 +84,28 @@ once when the simulation starts.</td></tr>
 <tr><td class="name">ShowViewer</td><td class="dflt">on</td>
 <td>Open an interactive <a href="phx.extra.Viewer.html">phx.extra.Viewer</a> figure that renders the scene
 while the model runs.</td></tr>
-<tr><td class="name">RenderEach</td><td class="dflt">on</td>
-<td><strong>Render each step</strong>. When the viewer is on, redraw on every substep (on) or only once per
-simulation step (off).</td></tr>
+<tr><td class="name">RedrawSteps</td><td class="dflt">1</td>
+<td><strong>Redraw steps</strong>. When the viewer is on, redraw it every N-th sample time
+(1&nbsp;=&nbsp;every sample); 0 updates the view without forcing a redraw and &minus;1 leaves the view
+untouched. The same meaning as <code class="phx-inline">redrawStep</code> of
+<a href="phx.Simulation.html">phx.Simulation</a> <code class="phx-inline">step</code>, with each sample time
+one step. A redraw costs more than a physics step, so a model with a small Simulation step runs much
+faster with a larger value.</td></tr>
 <tr><td class="name">CameraPosition</td><td class="dflt">[-10,-10,10]</td>
 <td>Initial viewer camera position, in world coordinates.</td></tr>
 <tr><td class="name">CameraTarget</td><td class="dflt">[0,0,0]</td>
 <td>Initial viewer camera target, in world coordinates.</td></tr>
-<tr><td class="name">SimulationStep</td><td class="dflt">0.01</td>
-<td>Block sample time, in seconds. Each sample time advances the scene by that interval.</td></tr>
-<tr><td class="name">SimpleIcon</td><td class="dflt">on</td>
-<td><strong>Simplified icon</strong>. Show only the scene source on the block icon (on), or label every
-port with its reference (off).</td></tr>
-<tr><td class="name">Substeps</td><td class="dflt">1</td>
-<td>Number of engine substeps per sample time; the engine step is <code class="phx-inline">SimulationStep/Substeps</code>.
-More substeps stabilise stiff constraint networks.</td></tr>
 <tr><td class="name">CameraResolution</td><td class="dflt">[0 0]</td>
 <td>Optional rendered-image output; <code class="phx-inline">[0&nbsp;0]</code> turns it off. When set to
 <code class="phx-inline">[H&nbsp;W]</code> (and the viewer is on), an extra <code class="phx-inline">uint8</code>
-output port emits the rendered scene as an <code class="phx-inline">[H&nbsp;W&nbsp;3]</code> image signal.</td></tr>
+output port emits the rendered scene as an <code class="phx-inline">[H&nbsp;W&nbsp;3]</code> image signal,
+current at every sample whatever the Redraw steps.</td></tr>
+<tr><td class="name">SimulationStep</td><td class="dflt">0.01</td>
+<td>Block sample time, in seconds, which is also the engine step: each sample time advances the scene
+by one step of that length.</td></tr>
+<tr><td class="name">SimpleIcon</td><td class="dflt">on</td>
+<td><strong>Simplified icon</strong>. Show only the scene source on the block icon (on), or label every
+port with its reference (off).</td></tr>
 </table>
 
 <p class="phx-eg">The first column gives the parameter names used with <code class="phx-inline">set_param</code>;
@@ -160,21 +163,30 @@ Plate.Orientation(1:2)
 <span class="cmt">% OutputRefs</span>
 Ball.Position
 Ball.LinearVelocity</pre>
-<p class="phx-eg">For a kinematically pose-driven body, keep <code class="phx-inline">Substeps</code> at 1 and use a
-smaller sample time &mdash; with several substeps the whole pose increment is applied on the first
-substep, so the body appears to move N&times; faster between samples.</p>
+<p class="phx-eg">A kinematic body moves by the whole pose increment of a sample in one step. Keep the
+sample time small enough that the increments are small too; a body that jumps into a resting one
+throws it away.</p>
 </div>
 
 <p>Ready-made co-simulation models live in <code class="phx-inline">examples/</code>:
-<code class="phx-inline">phxex_sim_stand.slx</code>, <code class="phx-inline">phxex_sim_ballplate2.slx</code> and
-<code class="phx-inline">phxex_sim_sorter.slx</code>, each paired with a <code class="phx-inline">model_*.m</code>
-scene builder.</p>
+<code class="phx-inline">phxex_sim_stand.slx</code>, <code class="phx-inline">phxex_sim_ballplate2.slx</code>,
+<code class="phx-inline">phxex_sim_sorter.slx</code> and <code class="phx-inline">phxex_sim_swingover.slx</code>, each paired
+with a <code class="phx-inline">model_*.m</code> scene builder. See also the user guide chapter
+<a href="phx_ug_simulink.html">Simulink co-simulation</a>.</p>
+
+<div class="phx-note">
+<span class="lbl">Solver.</span> The block has its own discrete sample time, the
+<strong>Simulation step</strong>, and runs with any Simulink solver. With a fixed-step solver the
+fixed step must divide the Simulation step; a fixed-step discrete solver suits a model that is
+discrete throughout.
+</div>
 
 <div class="phx-note">
 <span class="lbl">Stability.</span> Tight constraint networks need a small engine step (about
-<code class="phx-inline">dt&nbsp;&le;&nbsp;5&nbsp;ms</code>). Reach this either with a small
-<strong>Simulation step</strong> or by raising <strong>Substeps</strong> so that
-<code class="phx-inline">SimulationStep/Substeps</code> stays small.
+<code class="phx-inline">dt&nbsp;&le;&nbsp;5&nbsp;ms</code>), and the <strong>Simulation step</strong> is that
+engine step. A controller that should run slower than the scene gets its own sample time in Simulink,
+with a Rate Transition block where needed; raise <strong>Redraw steps</strong> to keep the viewer from
+redrawing at every sample.
 </div>
 
 <div class="phx-seealso">
@@ -183,6 +195,11 @@ scene builder.</p>
 <a href="phx.Simulation.html">phx.Simulation</a>,
 <a href="phx.Body.html">phx.Body</a>,
 <a href="phx.extra.Viewer.html">phx.extra.Viewer</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_simulink.html">Simulink co-simulation</a>
 </div>
 
 <div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>

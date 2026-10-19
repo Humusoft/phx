@@ -1,5 +1,5 @@
 classdef Revolution < phx.base.Shape
-%phx.shape.Revolution Revolution shape
+%phx.shape.Revolution Profile revolved about an axis
 %
 %   Visual appearance is based on a geometry of revolved profile defined by
 %   the user.

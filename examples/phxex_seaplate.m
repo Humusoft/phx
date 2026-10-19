@@ -112,7 +112,7 @@ function phxex_seaplate(duration, maxAmplitude, balance)
         "Visible", false);
     p = Tplate*[ballStart, plateT/2 + ballR, 1]';
     ball = phx.Body(ax, "Position", p(1:3)', ...
-        "Shape", {"Globe", "Radius", ballR, "Density", 1000, "Color", [0.9 0.3 0.25], ...
+        "Shape", {"Sphere", "Radius", ballR, "Density", 1000, "Color", [0.9 0.3 0.25], ...
         "Texture", "checker", "TextureBlend", 0.5}, "Friction", [0.6 0.002 0]);
 
     % Short-crested sea: one dominant swell and two smaller ones from other
@@ -133,7 +133,7 @@ function phxex_seaplate(duration, maxAmplitude, balance)
     gBall = 5/7*9.81;
     wn = 0.8;
     zeta = 0.7;
-    ctrl = struct("robot", robot, "base", base, "hand", hand, "Ttool", Ttool, ...
+    ctrl = struct("base", base, "hand", hand, "Ttool", Ttool, ...
         "Thold", base.Transform*Thold, "zBase0", base.Position(3), "q0", q0, ...
         "plate", plate, "ball", ball, "plateR", plateR, "balance", balance, ...
         "Kp", wn^2/gBall, "Kd", 2*zeta*wn/gBall, "tiltMax", deg2rad(8), ...
@@ -234,7 +234,6 @@ function armControl(fcn, motor, dt, c)
     q = [motor.Angle];
     s = fcn.UserData;
     Tb = c.base.Transform;
-    Rb = Tb(1:3, 1:3);
     Tt = c.hand.Transform*c.Ttool;
     pt = Tt(1:3, 4);
 
@@ -275,11 +274,18 @@ function armControl(fcn, motor, dt, c)
     v(3) = v(3) + c.heave*s.vb(3) + (1 - c.heave)*(zb - s.zSlow)/c.heaveTau;
     w = c.gain*rotationVector(Rwant*Tt(1:3, 1:3)') - s.wb;
 
+    % Geometric Jacobian in the world, read off the simulated links: each
+    % joint turns the plate about the Z axis of its frame on the inner link
+    J = zeros(6, n);
+    for k = 1:n
+        Tj = motor(k).Parents{1}.Transform*motor(k).TransformA;
+        J(:, k) = [Tj(1:3, 3); cross(Tj(1:3, 3), pt - Tj(1:3, 4))];
+    end
+
     % Joint rates by damped least squares; the redundant seventh joint is
     % drawn back toward the starting configuration
-    J = geometricJacobian(c.robot, q, "EndEffector_Link");
     Jinv = J'/(J*J' + 0.02^2*eye(6));
-    qd = Jinv*[Rb'*w; Rb'*v] + (eye(n) - Jinv*J)*2*wrapAngle(c.q0 - q)';
+    qd = Jinv*[w; v] + (eye(n) - Jinv*J)*2*wrapAngle(c.q0 - q)';
     qd = max(-c.Vmax, min(c.Vmax, qd));
     for k = 1:n
         motor(k).TargetVelocity = qd(k);

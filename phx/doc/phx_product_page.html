@@ -59,6 +59,7 @@ a time:</p>
 <li><a href="phx_ug_logging.html">Measuring and logging</a> &mdash; Logger, Trace, Measure, Zone, Raycast</li>
 <li><a href="phx_ug_control.html">Automation and control</a> &mdash; Script and Function</li>
 <li><a href="phx_ug_scenes.html">Saving and loading scenes</a> &mdash; storing a model in a MAT file</li>
+<li><a href="phx_ug_simulink.html">Simulink co-simulation</a> &mdash; a scene as a block of a Simulink model</li>
 <li><a href="phx_ug_viewer.html">Interactive viewer</a> &mdash; sky, camera, shadows, mouse editing</li>
 <li><a href="phx_ug_skills.html">AI agent skills</a> &mdash; teaching an AI assistant the PHX API</li>
 </ul>
@@ -87,6 +88,29 @@ example is a single command in the Command Window.</p>
 </div>
 
 <div class="phx-card">
+<h3>Shapes &mdash; primitives</h3>
+<ul>
+<li><a href="phx.shape.Box.html">phx.shape.Box</a> &mdash; box shape</li>
+<li><a href="phx.shape.Sphere.html">phx.shape.Sphere</a> &mdash; sphere shape</li>
+<li><a href="phx.shape.Cylinder.html">phx.shape.Cylinder</a> &mdash; cylinder shape</li>
+<li><a href="phx.shape.Tube.html">phx.shape.Tube</a> &mdash; tube, pipe or funnel shape</li>
+<li><a href="phx.shape.Cone.html">phx.shape.Cone</a> &mdash; cone shape</li>
+<li><a href="phx.shape.Capsule.html">phx.shape.Capsule</a> &mdash; capsule shape</li>
+</ul>
+</div>
+
+<div class="phx-card">
+<h3>Shapes &mdash; custom &amp; imported</h3>
+<ul>
+<li><a href="phx.shape.Mesh.html">phx.shape.Mesh</a> &mdash; triangular mesh (STL/OBJ/PLY import or data)</li>
+<li><a href="phx.shape.Extrusion.html">phx.shape.Extrusion</a> &mdash; extrusion shape</li>
+<li><a href="phx.shape.Revolution.html">phx.shape.Revolution</a> &mdash; revolution shape</li>
+<li><a href="phx.shape.Rock.html">phx.shape.Rock</a> &mdash; rock shape</li>
+<li><a href="phx.shape.Terrain.html">phx.shape.Terrain</a> &mdash; terrain heightfield</li>
+</ul>
+</div>
+
+<div class="phx-card">
 <h3>Joints</h3>
 <ul>
 <li><a href="phx.RevoluteJoint.html">phx.RevoluteJoint</a> &mdash; 1 DOF hinge</li>
@@ -101,7 +125,7 @@ example is a single command in the Command Window.</p>
 </div>
 
 <div class="phx-card">
-<h3>Springs &amp; ropes</h3>
+<h3>Springs and ropes</h3>
 <ul>
 <li><a href="phx.Spring.html">phx.Spring</a> &mdash; spring&ndash;damper</li>
 <li><a href="phx.Rope.html">phx.Rope</a> &mdash; rope over pulleys</li>
@@ -109,7 +133,7 @@ example is a single command in the Command Window.</p>
 </div>
 
 <div class="phx-card">
-<h3>Force &amp; field elements</h3>
+<h3>Forces and fields</h3>
 <ul>
 <li><a href="phx.Thruster.html">phx.Thruster</a> &mdash; body-fixed thrust</li>
 <li><a href="phx.Resistance.html">phx.Resistance</a> &mdash; drag vs. environment</li>
@@ -120,42 +144,18 @@ example is a single command in the Command Window.</p>
 </div>
 
 <div class="phx-card">
-<h3>Geometry &mdash; primitives</h3>
-<ul>
-<li><a href="phx.shape.Box.html">phx.shape.Box</a> &mdash; box shape</li>
-<li><a href="phx.shape.Sphere.html">phx.shape.Sphere</a> &mdash; sphere shape</li>
-<li><a href="phx.shape.Cylinder.html">phx.shape.Cylinder</a> &mdash; cylinder shape</li>
-<li><a href="phx.shape.Tube.html">phx.shape.Tube</a> &mdash; tube, pipe or funnel shape</li>
-<li><a href="phx.shape.Cone.html">phx.shape.Cone</a> &mdash; cone shape</li>
-<li><a href="phx.shape.Capsule.html">phx.shape.Capsule</a> &mdash; capsule shape</li>
-<li><a href="phx.shape.Globe.html">phx.shape.Globe</a> &mdash; globe shape</li>
-</ul>
-</div>
-
-<div class="phx-card">
-<h3>Geometry &mdash; custom &amp; imported</h3>
-<ul>
-<li><a href="phx.shape.Mesh.html">phx.shape.Mesh</a> &mdash; triangular mesh (STL/OBJ/PLY import or data)</li>
-<li><a href="phx.shape.Extrusion.html">phx.shape.Extrusion</a> &mdash; extrusion shape</li>
-<li><a href="phx.shape.Revolution.html">phx.shape.Revolution</a> &mdash; revolution shape</li>
-<li><a href="phx.shape.Rock.html">phx.shape.Rock</a> &mdash; rock shape</li>
-<li><a href="phx.shape.Terrain.html">phx.shape.Terrain</a> &mdash; terrain heightfield</li>
-</ul>
-</div>
-
-<div class="phx-card">
 <h3>Assemblies</h3>
 <ul>
 <li><a href="phx.assembly.arena.html">phx.assembly.arena</a> &mdash; floor plate enclosed by four walls</li>
 <li><a href="phx.assembly.chain.html">phx.assembly.chain</a> &mdash; chain of rigid links along a polyline</li>
 <li><a href="phx.assembly.scatter.html">phx.assembly.scatter</a> &mdash; bodies scattered inside a box region</li>
 <li><a href="phx.assembly.wall.html">phx.assembly.wall</a> &mdash; wall of bricks laid in a running bond</li>
-<li><a href="phx.assembly.import.html">phx.assembly.import</a> &mdash; model imported from URDF, OBJ, STL or PLY</li>
+<li><a href="phx.assembly.import.html">phx.assembly.import</a> &mdash; model imported from URDF, OBJ, STL, PLY or a rigidBodyTree</li>
 </ul>
 </div>
 
 <div class="phx-card">
-<h3>Observers &amp; automation</h3>
+<h3>Measurement and automation</h3>
 <ul>
 <li><a href="phx.Logger.html">phx.Logger</a> &mdash; record properties over time</li>
 <li><a href="phx.Trace.html">phx.Trace</a> &mdash; trail of a body point</li>
@@ -165,15 +165,6 @@ example is a single command in the Command Window.</p>
 <li><a href="phx.Script.html">phx.Script</a> &mdash; prescribed value profiles</li>
 <li><a href="phx.Function.html">phx.Function</a> &mdash; custom per-step callback</li>
 <li><a href="phx.template.Interaction.html">phx.template.Interaction</a> &mdash; template for a custom class</li>
-<li><a href="phx.Camera.html">phx.Camera</a> &mdash; camera attached to bodies</li>
-</ul>
-</div>
-
-<div class="phx-card">
-<h3>Viewer</h3>
-<ul>
-<li><a href="phx.extra.Viewer.html">phx.extra.Viewer</a> &mdash; interactive scene viewer</li>
-<li><a href="phx.PlanarShadow.html">phx.PlanarShadow</a> &mdash; shadow projected onto a plane</li>
 </ul>
 </div>
 
@@ -182,6 +173,15 @@ example is a single command in the Command Window.</p>
 <ul>
 <li><a href="PhxModel.html">PhxModel</a> &mdash; co-simulation block</li>
 <li><a href="PhxAction.html">PhxAction</a> &mdash; triggered scene actions</li>
+</ul>
+</div>
+
+<div class="phx-card">
+<h3>Visualization</h3>
+<ul>
+<li><a href="phx.extra.Viewer.html">phx.extra.Viewer</a> &mdash; interactive scene viewer</li>
+<li><a href="phx.Camera.html">phx.Camera</a> &mdash; camera attached to bodies</li>
+<li><a href="phx.PlanarShadow.html">phx.PlanarShadow</a> &mdash; shadow projected onto a plane</li>
 </ul>
 </div>
 

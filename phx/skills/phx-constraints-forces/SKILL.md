@@ -42,14 +42,15 @@ Joint classes:
   locked, lower<upper = limited travel. Very stiff springs are clamped by the solver
   (ceiling ~ mass·inertia/dt²) — add substeps or use `FixedJoint` for truly rigid.
 - `phx.RevoluteJoint` — hinge; 1 rotational DOF (`PointA/B`, `AxisA/B`). **Motorized:**
-  `TargetVelocity` (rad/s) + `MaxTorque` (N·m) — see the motor section below.
+  `TargetVelocity` (rad/s) + `MaxTorque` (N·m), or a plain torque `AppliedTorque` (N·m)
+  — see the motor section below.
 - `phx.PrismaticJoint` — slider; 1 translational DOF along `AxisA/B`, i.e. the **local Z
   axis of the joint frame** — the same axis convention as the hinge, so the default frames
   slide along world Z. Mind that this joint also **locks the rotation about** that axis,
   which `AxisA/B` do not describe: they suffice when both bodies share an orientation, but
   otherwise set the frames in full via `TransformA/B` (4×4) or the dependent `PointA/B` +
   `EulerAnglesA/B` (z→y→x) views, so both frames coincide in *every* axis.
-  **Motorized:** `TargetVelocity` (m/s) + `MaxForce` (N).
+  **Motorized:** `TargetVelocity` (m/s) + `MaxForce` (N), or a plain force `AppliedForce` (N).
   See `phxex_camvalve` (valve train), `phxex_vengine`, `phxex_joints`.
 - `phx.CylindricalJoint` — shaft in a sleeve; 2 DOF, translation along **and** rotation about
   `AxisA/B` (the joint frame's local Z). A prismatic and a revolute joint on one axis. Unlike
@@ -214,21 +215,21 @@ Mind the two independent frame flags: `isLocalForce` rotates the vector with the
 `isLocalPoint` interprets the point of application in body coordinates. Passing a world
 force at a local point (or vice versa) is legal and often what you want — e.g. gravity-
 like world force applied at a local hardpoint. To drive a wheel or a shaft use the
-**joint motor** below, not `applyTorque` — an external torque on a jointed body puts no
-reaction on the body it is hinged to, so the chassis never feels the push it should.
+**joint motor** or the joint's `AppliedTorque` below, not `applyTorque` — an external
+torque on a jointed body puts no reaction on the body it is hinged to, so the chassis
+never feels the push it should.
 
 ## Joint motors — phx.RevoluteJoint, phx.PrismaticJoint
 
 Both joints can drive themselves. The motor is a **saturated velocity source**: it holds
 `TargetVelocity` while it needs less than `MaxTorque` (N·m) / `MaxForce` (N), and delivers
-exactly that limit when the target is out of reach. Two numbers therefore cover four kinds
+exactly that limit when the target is out of reach. Two numbers therefore cover three kinds
 of drive:
 
 | To get | TargetVelocity | MaxTorque / MaxForce |
 |---|---|---|
 | no motor (default) | anything | `0` |
 | speed drive | the wanted speed, signed | the limit |
-| pure torque/force source | out of reach, `sign(u)*1e6` | `abs(u)` |
 | friction brake | `0` | the holding torque/force |
 
 ```matlab
@@ -249,6 +250,27 @@ hub.MaxTorque = 1;              % lets go once the load passes 1 N*m
   from the `Angle`/`Distance` error — that is the one mode that costs a per-step write.
 - `phx.CylindricalJoint` has no motor, and a prismatic joint's rotation is locked, so its
   slider has nothing to turn.
+
+### Pure torque / force — `AppliedTorque`, `AppliedForce`
+
+When the drive is a torque or a force rather than a speed (an actuator model, a
+hydraulic cylinder computed in Simscape, a control law that outputs N·m), set
+`RevoluteJoint.AppliedTorque` (N·m) or `PrismaticJoint.AppliedForce` (N). It acts on
+body B about/along the joint axis and, reversed, on body A, and it **stays until you
+change it** — no per-step call, unlike `applyTorque`.
+
+```matlab
+hub = phx.RevoluteJoint(base, disc, "AppliedTorque", 2);   % 2 N*m from now on
+sim = phx.Simulation(gca);
+sim.step(1, 100, 1);
+hub.AppliedTorque = 0;          % off again
+```
+
+- It is realised by the joint's motor, so use **either** the motor **or** the applied
+  value on one joint: a nonzero `AppliedTorque`/`AppliedForce` takes the motor over, `0`
+  hands it back to `TargetVelocity` + `MaxTorque`/`MaxForce`, and writing those two
+  while the applied value is nonzero takes the motor back from it.
+- Signed; the sign follows the joint axis like `Angle` / `Distance`.
 
 ## Driving parameters over time — phx.Script
 

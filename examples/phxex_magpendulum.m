@@ -62,7 +62,7 @@ function phxex_magpendulum(nGrid, tMaxRun)
 
     % Anchor point of the pendulums
     anchor = phx.Body(ax, "Type", "static", "Position", [0 0 zA], ...
-        "Shape", {"Sphere", "Diameter", 0.25, "Division", 2, "Color", [0.3 0.3 0.3]}, ...
+        "Shape", {"Sphere", "Diameter", 0.25, "Segments", 10, "Color", [0.3 0.3 0.3]}, ...
         "Collisions", false);
 
     % Part 1 - twin pendulums starting 1 mm apart ----------------------------
@@ -162,7 +162,7 @@ function phxex_magpendulum(nGrid, tMaxRun)
     % Creates a pendulum rod with a magnetic tip: a thin cylinder hanging
     % from the anchor, its dipole pole placed at the lower physical end
         rod = phx.Body(ax, "Shape", {"Cylinder", "Diameter", 0.15, "Height", L, ...
-            "Segments", 10, "Density", 50, "Color", clr}, "Collisions", false);
+            "Density", 50, "Color", clr}, "Collisions", false);
         setRod(rod, tipXY);
         % A long thin rod has a ~500:1 inertia anisotropy that makes the
         % constraint solver spin it up about its own axis; an isotropic

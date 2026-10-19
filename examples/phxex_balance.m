@@ -41,8 +41,8 @@ function phxex_balance(Kp, Kd)
 
     % Ball dropped from a position above the plate
     p0 = [1.5 1.5];
-    ball = phx.Body(ax, "Position", [p0, 2.0], "Shape", {"Globe", "Radius", ballR, "Color", [1 0.5 0.2], ...
-        "Material", "glossy", "Texture", "checker", "TextureBlend", 0.2});
+    ball = phx.Body(ax, "Position", [p0, 2.0], "Shape", {"Sphere", "Radius", ballR, "Color", [1 0.5 0.2], ...
+        "Material", "glossy", "Texture", "stone", "TextureBlend", 0.5});
     ball.LinearVelocity = [-1 0 -1];
 
     % Visual trail of the ball path on the plate

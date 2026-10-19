@@ -1,5 +1,5 @@
 classdef FixedJoint < phx.base.Joint
-%phx.FixedJoint Fixed joint
+%phx.FixedJoint Fixed joint (rigid connection, 0 DOF)
 %
 %   Fixed joint realizes a kinematic constraint with 0 degrees of freedom.
 %

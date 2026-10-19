@@ -1,5 +1,5 @@
 classdef Logger < phx.base.Object
-%phx.Logger Data logger
+%phx.Logger Data logger recording object properties over time
 %
 %   Logger allows you to record the progress of any property of any physical
 %   object during the simulation.

@@ -40,7 +40,7 @@ and are settable as <code class="phx-inline">Name,Value</code> pairs in any shap
 <tr><td class="name">ForcePatch</td><td class="dflt">false</td>
 <td>Force the use of a <code class="phx-inline">patch</code> object for drawing instead of the fast world primitive.</td></tr>
 <tr><td class="name">Texture</td><td class="type">string</td>
-<td>Texture image. Setting it loads the image (with alpha, if present) as the surface texture. Accepts either a path to an image file or the name of a built-in texture: <code class="phx-inline">"checker"</code>, <code class="phx-inline">"metal"</code>, <code class="phx-inline">"tiles"</code> or <code class="phx-inline">"wood"</code> (matched case-insensitively). An empty string removes the texture.</td></tr>
+<td>Texture image. Setting it loads the image (with alpha, if present) as the surface texture. Accepts either a path to an image file or the name of a built-in texture: <code class="phx-inline">"checker"</code>, <code class="phx-inline">"metal"</code>, <code class="phx-inline">"stone"</code>, <code class="phx-inline">"stripes"</code>, <code class="phx-inline">"tiles"</code> or <code class="phx-inline">"wood"</code> (matched case-insensitively). An empty string removes the texture.</td></tr>
 <tr><td class="name">TextureBlend</td><td class="dflt">1</td>
 <td>Texture blending ratio (0&ndash;1) between the texture and the surface color: 1 shows the texture as it is, 0 the plain color. The alpha channel of the texture is kept.</td></tr>
 </table>
@@ -60,6 +60,19 @@ In plain axes &ndash; and whenever <code class="phx-inline">ForcePatch</code> is
 surface simply shows its <code class="phx-inline">Color</code>.
 </div>
 
+<div class="phx-note">
+<span class="lbl">Texture orientation.</span> Texture coordinates address the image like a matrix:
+<code class="phx-inline">u</code> runs along its columns from left to right and
+<code class="phx-inline">v</code> along its rows from top to bottom. The shapes lay the image out
+unmirrored, seen from outside: a <a href="phx.shape.Box.html">Box</a> face reads upright with the
+image top towards +z on the sides and towards +y on the top face, and on the revolved and extruded
+shapes the image top lies at the end of the profile or spine.
+<a href="phx.shape.Rock.html">Rock</a> and a <a href="phx.shape.Mesh.html">Mesh</a> without texture
+coordinates project the image onto each face along the axis closest to its normal.
+<a href="phx.shape.Terrain.html">Terrain</a> lays the image out like its
+<code class="phx-inline">Height</code> matrix instead.
+</div>
+
 <h2 class="phx-h2">Object Functions</h2>
 <table class="phx-tbl">
 <tr><th>Function</th><th>Description</th></tr>
@@ -75,7 +88,9 @@ surface simply shows its <code class="phx-inline">Color</code>.
 <p>Maps the scalar values in <code class="phx-inline">cdata</code> to colors and stores the result as
 the surface texture of the shape. <code class="phx-inline">cmap</code> is an N&times;3 matrix of RGB
 rows (default <code class="phx-inline">parula(10)</code>); <code class="phx-inline">cdata</code> is
-normalized to the full range of the colormap.</p>
+normalized to the full range of the colormap. The matrix is laid out like an image file: its
+columns run along <code class="phx-inline">u</code> and its rows along <code class="phx-inline">v</code>,
+row 1 at the top.</p>
 </div>
 
 <h2 class="phx-h2">Abstract Methods</h2>
@@ -91,7 +106,7 @@ can wear, including:</p>
 <p><code class="phx-inline">Box</code>, <code class="phx-inline">Sphere</code>,
 <code class="phx-inline">Cylinder</code>, <code class="phx-inline">Tube</code>,
 <code class="phx-inline">Cone</code>, <code class="phx-inline">Capsule</code>,
-<code class="phx-inline">Globe</code>, <code class="phx-inline">Mesh</code>,
+<code class="phx-inline">Mesh</code>,
 <code class="phx-inline">Extrusion</code>, <code class="phx-inline">Revolution</code>,
 <code class="phx-inline">Rock</code> and <code class="phx-inline">Terrain</code>.</p>
 
@@ -122,7 +137,7 @@ the textures are not rendered:</p>
 <pre class="phx-code">[~, ax] = phx.extra.Viewer(<span class="str">"clear"</span>);
 
 crate = phx.shape.Box(<span class="str">"Size"</span>, 2, <span class="str">"Texture"</span>, <span class="str">"wood"</span>);            <span class="cmt">% built-in texture</span>
-earth = phx.shape.Globe(<span class="str">"Diameter"</span>, 2, <span class="str">"Texture"</span>, <span class="str">"earth.jpg"</span>);  <span class="cmt">% image file</span>
+earth = phx.shape.Sphere(<span class="str">"Diameter"</span>, 2, <span class="str">"Texture"</span>, <span class="str">"earth.jpg"</span>); <span class="cmt">% image file</span>
 
 phx.Body(ax, <span class="str">"Position"</span>, [-2 0 0], <span class="str">"Shape"</span>, crate);
 phx.Body(ax, <span class="str">"Position"</span>, [ 2 0 0], <span class="str">"Shape"</span>, earth);</pre>

@@ -1,63 +1,49 @@
 % TOOLBOX IGNORE FILE
-% Specify the files/folder to exclude from packaging.
-% Paths are relative to the toolbox root folder.
-% List only one exclusion per line.
+% Files and folders excluded from the .mltbx, one per line, relative to the
+% toolbox root. Syntax: folder/ (whole folder), folder/* (its contents),
+% folder/** (contents and subfolders), *.ext, **/*.ext (in all subfolders),
+% file.ext, folder/file.ext, **/file.ext. A leading '%' must be written as
+% '\%'. This file itself is never packaged.
+%
+% What ships: phx/, examples/, doc/GettingStarted.mlx, the license files and
+% phx_logo.png (the toolbox image); the packager adds its own README.md and
+% resources/*.json.
 
-% EXAMPLES
-% folder/                - Exclude folder and all of its content
-% folder/*               - Exclude contents of folder 
-% folder/**              - Exclude all contents of folder and subfolders
-% *.extension            - Exclude files with extension in folder
-% **/*.extension         - Exclude all files with extension in folder and all subfolders
-% file.extension         - Exclude specific file
-% folder/file.extension  - Exclude specific file in a subfolder
-% **/file.extension      - Exclude specific file in all subfolders  
-
-% Notes:
-% - If a path starts with '%', include '\' before '%', for example, "\%examplefile.svn".
-% - This file, 'package.ignore', is always excluded from the toolbox and including it is not supported.
-
-%% Recommended Exclusions (remove lines to re-include files):
-
-% Exclude source control files
-% (not **/*.md - the AI agent skills in phx/skills are Markdown and DO ship)
-README.md
-CONTRIBUTING.md
-CODE_REVIEW.md
-CLAUDE.md
-**/*.gif
-phx/+phx/+engine/*.pdb
-phx/+phx/+engine/bullet_*.*
-phx/+phx/+engine/switchEngine.*
-% phx/**/*.m
-phx/phx2p.*
-phx/listNotes.*
-examples/model_*.*
-examples/res/Buggy*.*
-.claude/
+% Repository and development folders
 .git/
+.gitignore
+.claude/
+resources/
 tools/
+tests/
 release/
 publications/
 customer/
 doc/logo/
-tests/
-.gitignore
+
+% Repository documents (not **/*.md - the agent skills in phx/skills ship)
+README.md
+CONTRIBUTING.md
+CODE_REVIEW.md
+CLAUDE.md
 deploymentLog.html
+**/*.gif
+
+% Developer-only parts of the toolbox
+phx/+phx/+engine/*.pdb
+phx/+phx/+engine/bullet_*.*
+phx/+phx/+engine/switchEngine.*
+phx/+phx/+extra/Editor.m
 phx/doc/custom_toolbox.json
 
-% Toolbox files and project files
+% Scene builders of the Simulink examples (their saved_*.mat scenes ship)
+examples/model_*.*
+examples/res/Buggy*.*
+
+% Build outputs, project files, backups and caches
 **/*.mltbx
 **/*.prj
-
-% Backup files
 **/*.asv
 **/*.bak
-**/*.prj.bak
-
-% Local MATLAB/Simulink tool caches
 **/slprj
 **/.buildtool/
-
-% Project resources folder
-resources/

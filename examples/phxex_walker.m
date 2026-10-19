@@ -69,8 +69,8 @@ function phxex_walker(freq, duty)
         "Shape", {"Box", "Size", bx, "Color", [0.30 0.45 0.70]});
 
     % Obstacles
-    phx.Body("Position", [2 0 0.1], "Shape", {"Box", "Size", [1 1 0.1], "Color", [1 1 0.5], "Texture", "wood", "TextureBlend", 0.3});
-    phx.Body("Position", [2 0 0.4], "Shape", {"Globe", "Diameter", 0.5, "Color", [1 0 0], "Texture", "checker", "TextureBlend", 0.3});
+    phx.Body("Position", [2 0 0.1], "Shape", {"Box", "Size", [1 1 0.1], "Color", [1 1 0.5], "Texture", "stripes", "TextureBlend", 0.3});
+    phx.Body("Position", [2 0 0.4], "Shape", {"Sphere", "Diameter", 0.5, "Color", [1 0 0], "Texture", "checker", "TextureBlend", 0.3});
 
     % Every leg starts in the pose its own gait phase asks for
     for k = 1:4

@@ -8,6 +8,16 @@ classdef Geometry
 
     methods (Static)
         function [Mass, I0, Icm, cm] = meshMass(vertices, faces, rho)
+        %meshMass Mass and inertia tensor of a closed triangle mesh.
+        %
+        %   [Mass, I0] = meshMass(vertices, faces, rho) integrates the solid
+        %   bounded by the mesh at density rho; I0 is the inertia tensor about
+        %   the origin of the vertex coordinates. With rho = 1, Mass is the
+        %   volume.
+        %
+        %   [Mass, I0, Icm, cm] = meshMass(___) also returns the centre of
+        %   mass cm (1x3) and the inertia tensor Icm about it.
+
             a = vertices(faces(:, 1), :);
             b = vertices(faces(:, 2), :);
             c = vertices(faces(:, 3), :);
@@ -187,7 +197,7 @@ classdef Geometry
             N = V;
         end
 
-        function [V, N, F] = rock(ASize, Roundness)
+        function [V, N, F, T] = rock(ASize, Roundness)
             % Basic geometry
             fi = (1 + sqrt(5))/2;
             V = [0 +1 +fi; 0 +1 -fi; 0 -1 +fi; 0 -1 -fi];
@@ -208,6 +218,75 @@ classdef Geometry
 
             % Deformation
             V(1:4:end) = V(1:4:end)*Roundness;
+
+            % Texture coordinates: each face carries its own corners and
+            % takes the box projection along its undeformed normal. The
+            % flat faces hide the jumps at the edges; the radius bounds the
+            % deformed vertices, so the coordinates stay within the image.
+            V = V(f(:), :);
+            F = reshape(1:numel(f), 3, [])';
+            [V, F, T] = phx.internal.Geometry.boxUV(V, F, ASize, Normals = N);
+        end
+
+        function [V, F, T, idx] = boxUV(V, F, Span, Options)
+        %boxUV Box-projected texture coordinates of a triangle mesh.
+        %
+        %   [V, F, T] = boxUV(V, F, Span) gives each face the image projected
+        %   along the coordinate axis closest to its normal, unmirrored when
+        %   seen from outside. The image spans a cube of side Span centred
+        %   at the origin, the same on all six sides. A vertex shared by
+        %   faces projected along different axes is split, so V and F come
+        %   back with the duplicated vertices and T holds one row per
+        %   vertex of the new V.
+        %
+        %   [V, F, T, idx] = boxUV(___) also returns the rows of the input V
+        %   the new vertices come from, so per-vertex data such as normals
+        %   follow with N(idx, :).
+        %
+        %   [___] = boxUV(___, Center = c) centres the cube at c (1x3).
+        %
+        %   [___] = boxUV(___, Normals = FN) selects the axes by the face
+        %   normals FN (one row per face) instead of the geometric normals
+        %   of counterclockwise faces.
+
+            arguments
+                V (:, 3) double
+                F (:, 3) double
+                Span (1, 1) double {mustBePositive}
+                Options.Center (1, 3) double = [0 0 0]
+                Options.Normals double = []
+            end
+
+            FN = Options.Normals;
+            if isempty(FN)
+                FN = cross(V(F(:, 2), :) - V(F(:, 1), :), V(F(:, 3), :) - V(F(:, 1), :), 2);
+            end
+
+            % Side of the box for every face: 1-3 = +x +y +z, 4-6 = -x -y -z
+            [~, k] = max(abs(FN), [], 2);
+            negative = FN(sub2ind(size(FN), (1:size(FN, 1))', k)) < 0;
+            side = k + 3*negative;
+
+            % One vertex per original vertex and side
+            corners = reshape(F', [], 1);
+            [~, first, F] = unique([corners repelem(side, 3, 1)], "rows", "stable");
+            idx = corners(first);
+            V = V(idx, :);
+            F = reshape(F, 3, [])';
+            vertexSide = side(ceil(first/3));
+
+            T = zeros(size(V, 1), 2);
+            for s = 1:6
+                axis = zeros(1, 3);
+                axis(mod(s - 1, 3) + 1) = 1 - 2*(s > 3);
+                up = [0 0 1];
+                if s == 3 || s == 6
+                    up = [0 1 0];
+                end
+                right = cross(-axis, up);
+                in = vertexSide == s;
+                T(in, :) = 0.5 + (V(in, :) - Options.Center)*[right' -up']/Span;
+            end
         end
 
         function [V, N, F, T] = revolution(ZX, Segments, beginCap, endCap)
@@ -258,6 +337,10 @@ classdef Geometry
                 T(nv*i+1:nv*i+nv, :) = t + [i/Segments 0];
                 F(nf*i-nf+1:nf*i, :) = f + (i - 1)*r;
             end
+
+            % The rings advance clockwise seen from +z; run u the other way
+            % so that the texture reads unmirrored from outside
+            T(:, 1) = 1 - T(:, 1);
 
             % Remove degenerated faces. A face is degenerate only when two of
             % its vertices coincide, which is what the zero-radius rings of
@@ -327,8 +410,11 @@ classdef Geometry
 
             % Texture Y-coord through spine. It runs over the spine points
             % alone; each cap inherits the coordinates of the ring it sits on.
+            % The image top lies at the last spine point, as the top of a
+            % revolution lies at its last profile point, so that the
+            % texture reads unmirrored from outside.
             nS = size(Spine, 1);
-            tY = linspace(0, 1, nS);
+            tY = linspace(1, 0, nS);
 
             % Main part: one cross-section per spine point. Row 1 of R is the
             % local tangent, so the profile plane is truly perpendicular to the
@@ -432,8 +518,9 @@ classdef Geometry
         end
 
         function [V, N, F, T] = sphere(ASize, Segments)
-            % Main geometry
-            a = linspace(-90, 90, Segments)';
+            % Main geometry: Segments meridians and a parallel at the same
+            % angular step, so that the cells at the equator are square
+            a = linspace(-90, 90, round(Segments/2) + 1)';
             z = sind(a)*0.5;
             x = cosd(a)*0.5;
             [V, N, F, T] = phx.internal.Geometry.revolution([z x], Segments, false, false);
@@ -442,7 +529,7 @@ classdef Geometry
             V = V.*ASize;
         end
 
-        function [V, N, F, T] = terrain(ASize, Height, PlanarNormals)
+        function [V, N, F, T] = terrain(ASize, Height)
             % Vertexes
             x = linspace(0, 1, size(Height, 2));
             y = linspace(0, 1, size(Height, 1));
@@ -454,12 +541,8 @@ classdef Geometry
             F = F(:, [1 3 2]);
 
             % Normal vectors
-            if PlanarNormals
-                N = repmat([0 0 1], [size(V, 1) 1]);
-            else
-                tr = triangulation(F, V);
-                N = -tr.vertexNormal;
-            end
+            tr = triangulation(F, V);
+            N = -tr.vertexNormal;
 
             % Texture coordinates
             T = [gx(:) gy(:)];

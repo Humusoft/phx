@@ -1,5 +1,5 @@
 function PhxAction(block)
-%PhxAction Simulink block: run user MATLAB code against a running PHX scene.
+%PhxAction PHX Action block: run MATLAB code against a running PHX scene
 %
 %   On a rising edge of the trigger (input port 1) the block executes the user
 %   Code against the scene of a bound PhxModel block, enabling structural

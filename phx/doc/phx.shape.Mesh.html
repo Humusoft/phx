@@ -13,7 +13,7 @@
 <div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.shape.Mesh</div>
 
 <h1 class="phx-title">phx.shape.Mesh</h1>
-<p class="phx-purpose">Triangular mesh shape (imported from a file or built from data)</p>
+<p class="phx-purpose">Triangular mesh shape imported from a file or built from data</p>
 <p class="phx-classref">Class&nbsp;&nbsp;phx.shape.Mesh &nbsp;|&nbsp; Superclass: <a href="phx.base.Shape.html">phx.base.Shape</a></p>
 
 <h2 class="phx-h2">Description</h2>
@@ -26,6 +26,12 @@ textures are taken automatically from the referenced <code class="phx-inline">.m
 multi-object OBJ into separate bodies, use <a href="phx.assembly.import.html">phx.assembly.import</a> instead.
 A PLY file loads as a single mesh; its per-vertex color is averaged into one diffuse color (per-vertex color
 is not rendered).</p>
+
+<p>A <code class="phx-inline">Texture</code> set on a mesh without texture coordinates &ndash; an STL file, or a
+file or data with no <code class="phx-inline">UV</code> &ndash; is box-projected: each face takes the image
+projected along the axis closest to its normal, unmirrored seen from outside, and the whole image spans the
+largest extent of the mesh. The image therefore does not repeat, and it jumps where neighbouring faces change
+axis; a noise-like texture such as the built-in <code class="phx-inline">"stone"</code> hides the jumps best.</p>
 
 <p>The collision shape is selected by <code class="phx-inline">Envelope</code>. A bounding
 <code class="phx-inline">"box"</code>, <code class="phx-inline">"cylinder"</code> or <code class="phx-inline">"sphere"</code>
@@ -61,7 +67,7 @@ passing <code class="phx-inline">phx.shape.Mesh("Source", "file.stl", "Envelope"
 <tr><td class="name">Vertices</td><td class="type">N&times;3 double</td><td>Vertex coordinates (direct data input).</td></tr>
 <tr><td class="name">Normals</td><td class="type">N&times;3 double</td><td>Vertex normals (direct data input).</td></tr>
 <tr><td class="name">Faces</td><td class="type">M&times;3 double</td><td>Triangle vertex indices (direct data input).</td></tr>
-<tr><td class="name">UV</td><td class="type">N&times;2 double</td><td>Vertex texture coordinates (direct data input).</td></tr>
+<tr><td class="name">UV</td><td class="type">N&times;2 double</td><td>Vertex texture coordinates (direct data input). <code class="phx-inline">u</code> runs along the image columns and <code class="phx-inline">v</code> down its rows, so (0,&nbsp;0) is the top-left corner of the image. The OBJ and PLY coordinates of a <code class="phx-inline">Source</code> file, whose <code class="phx-inline">v</code> runs up the image, are converted on load. Without them, a <code class="phx-inline">Texture</code> is box-projected.</td></tr>
 <tr><td class="name">Scale</td><td class="dflt">[1 1 1]</td><td>Scale factor applied to the mesh; a negative factor mirrors it along that axis.</td></tr>
 <tr><td class="name">Centered</td><td class="dflt">true</td><td>Move the origin to the centre of the bounding box.</td></tr>
 <tr><td class="name">Density</td><td class="dflt">1000</td><td>Volumetric density, <span class="phx-unit">kg/m&sup3;</span>.</td></tr>
@@ -76,12 +82,18 @@ passing <code class="phx-inline">phx.shape.Mesh("Source", "file.stl", "Envelope"
 </table>
 
 <p>Appearance properties are inherited from <a href="phx.base.Shape.html">phx.base.Shape</a>. A manually set
-<code class="phx-inline">Texture</code> fills in materials that carry no texture of their own.</p>
+<code class="phx-inline">Texture</code> fills in materials that carry no texture of their own, box-projected
+where the mesh has no texture coordinates.</p>
 
 <h2 class="phx-h2">Examples</h2>
 <h4 class="phx-h4">Import an STL as a rolling wheel</h4>
 <pre class="phx-code">shape = phx.shape.Mesh(<span class="str">"Source"</span>, <span class="str">"wheel.stl"</span>, <span class="str">"Scale"</span>, 0.01, <span class="str">"Envelope"</span>, <span class="str">"cylinder"</span>);
 b = phx.Body(<span class="str">"Shape"</span>, shape);</pre>
+
+<h4 class="phx-h4">Texture an STL model</h4>
+<pre class="phx-code"><span class="cmt">% STL has no texture coordinates, so the texture is box-projected</span>
+[viewer, ax] = phx.extra.Viewer(<span class="str">"clear"</span>);
+b = phx.Body(ax, <span class="str">"Shape"</span>, {<span class="str">"part.stl"</span>, <span class="str">"Scale"</span>, 0.01, <span class="str">"Texture"</span>, <span class="str">"stone"</span>});</pre>
 
 <h4 class="phx-h4">Import a textured OBJ</h4>
 <pre class="phx-code"><span class="cmt">% Colours and textures come from the OBJ's .mtl materials</span>

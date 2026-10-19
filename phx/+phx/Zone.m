@@ -7,8 +7,10 @@ classdef Zone < phx.base.Object
 %   body moves along with it.
 %
 %   The current occupants are available as an array of phx.Body objects
-%   (Contents) and their number (Count). Cumulative throughput is available
-%   as EnteredCount / ExitedCount. Optional EnteredFcn / ExitedFcn callbacks
+%   (Contents) and their number (Count). The total mass of the dynamic
+%   occupants and their common center of mass are available as Mass and
+%   CenterOfMass. Cumulative throughput is available as EnteredCount /
+%   ExitedCount. Optional EnteredFcn / ExitedFcn callbacks
 %   fire the moment a body enters or leaves the region.
 %
 %   z = phx.Zone(body) creates a unit-cube zone centered on the origin of
@@ -51,6 +53,13 @@ classdef Zone < phx.base.Object
 
         % Number of bodies currently inside the zone
         Count
+
+        % Total mass (kg) of the dynamic bodies currently inside the zone
+        Mass
+
+        % Common center of mass [x y z] of the dynamic bodies currently
+        % inside the zone, in world coordinates; NaN when there are none
+        CenterOfMass
     end
 
     properties (SetAccess = private)
@@ -117,6 +126,20 @@ classdef Zone < phx.base.Object
 
         function n = get.Count(obj)
             n = nnz(obj.Mask);
+        end
+
+        function m = get.Mass(obj)
+            m = sum(obj.massPoints);
+        end
+
+        function p = get.CenterOfMass(obj)
+            [m, P] = obj.massPoints;
+            M = sum(m);
+            if M > 0
+                p = (P*m')'/M;
+            else
+                p = [NaN NaN NaN];
+            end
         end
 
         function update(objs)
@@ -202,6 +225,29 @@ classdef Zone < phx.base.Object
             end
 
             obj.Mask = inside;
+        end
+
+        function [m, P] = massPoints(obj)
+            % Masses (1-by-N) and world centers of mass (3-by-N) of the
+            % dynamic occupants. Static and kinematic bodies are skipped: a
+            % zone on a moving anchor watches static scenery too, and its
+            % density-derived Mass would pull the center off the payload.
+            % Body frames sit at the center of mass, so the cached Matrix
+            % gives it without an engine round-trip.
+            W = obj.Watched(obj.Mask);
+            if ~isempty(W)
+                W = W([W.Type] == "dynamic");
+            end
+            n = numel(W);
+            m = zeros(1, n);
+            P = zeros(3, n);
+            for k = 1:n
+                m(k) = W(k).Mass;
+                t = W(k).Matrix;
+                P(1, k) = t(13);
+                P(2, k) = t(14);
+                P(3, k) = t(15);
+            end
         end
 
         function buildBox(obj)

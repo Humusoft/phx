@@ -1,5 +1,5 @@
 classdef RevoluteJoint < phx.base.Joint
-%phx.RevoluteJoint Revolute joint
+%phx.RevoluteJoint Revolute joint (hinge, 1 DOF)
 %
 %   Revolute joint realizes a kinematic constraint with 1 degree of freedom
 %   specified as rotations around the axis. The rotation axis is the Z axis of
@@ -48,6 +48,12 @@ classdef RevoluteJoint < phx.base.Joint
         % The motor regulates to TargetVelocity while it needs less than this;
         % when the target is out of reach it simply delivers MaxTorque.
         MaxTorque (1, 1) double {mustBeNonnegative} = 0
+
+        % Torque applied about the joint axis (N*m)
+        % Acts on the second body and, reversed, on the first one, until
+        % changed. Driven through the motor: a nonzero value overrides
+        % TargetVelocity and MaxTorque.
+        AppliedTorque (1, 1) double {mustBeFinite} = 0
     end
 
     methods
@@ -89,6 +95,20 @@ classdef RevoluteJoint < phx.base.Joint
             obj.MaxTorque = value;
             obj.applyMotor;
         end
+
+        function set.AppliedTorque(obj, value)
+            obj.AppliedTorque = value;
+            if value ~= 0
+                % The motor saturated towards an unreachable target
+                % delivers exactly the torque
+                if ~isempty(obj.ObjectHandle)
+                    phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'motor', ...
+                        true, sign(value)*1e6, abs(value));
+                end
+            else
+                obj.applyMotor; % hand the motor back
+            end
+        end
     end
 
     methods (Access = private)
@@ -110,8 +130,8 @@ classdef RevoluteJoint < phx.base.Joint
             if valid && isempty(obj.ObjectHandle)
                 % The engine takes the constraint parameters only as it creates
                 % the constraint, so the constraint is built once and then kept
-                % across pipeline rebuilds. Only the motor (TargetVelocity,
-                % MaxTorque) writes through from its setters; other properties
+                % across pipeline rebuilds. Only the motor (TargetVelocity, MaxTorque,
+                % AppliedTorque) writes through from its setters; other properties
                 % changed after that do not reach the constraint.
                 obj.WorldHandle = world;
                 obj.ObjectHandle = phx.engine.io('add', world, 'hingeconstraint', obj.Parents{1}.ObjectHandle, obj.Parents{2}.ObjectHandle, ...
@@ -119,6 +139,9 @@ classdef RevoluteJoint < phx.base.Joint
                 % Seed the fresh constraint with the current motor setting;
                 % later changes reach the engine from the setters
                 obj.applyMotor;
+                if obj.AppliedTorque ~= 0
+                    obj.AppliedTorque = obj.AppliedTorque; % its setter takes the motor over
+                end
             end
         end
     end

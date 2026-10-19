@@ -1,5 +1,5 @@
 classdef Viewer < handle
-%phx.extra.Viewer Enhanced viewer
+%phx.extra.Viewer Interactive scene viewer
 %
 %   Mouse navigation
 %   - left button: pan or move selected object
@@ -226,6 +226,7 @@ classdef Viewer < handle
             obj.SkySphere = hgtransform(obj.Axes, 'Tag', 'phxViewer');
             obj.SkySphere.Matrix([1 6 11]) = norm(obj.CameraPosition)*obj.SkySphereSize;
             [V, N, F, T] = phx.internal.Geometry.sphere(2, 48);
+            T(:, 1) = 1 - T(:, 1); % the sky is seen from inside, mirrored
             vertices = single(V');
             normals = single(N');
             faces = uint32(F');
