@@ -48,7 +48,7 @@ objects given by <code class="phx-inline">parents</code>.</p>
 <tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
 <tr><td class="name">Parameters</td><td class="type">1&times;N string</td><td>List of object properties to record during the simulation.</td></tr>
 <tr><td class="name">Frequency</td><td class="dflt">10</td><td>Desired recording frequency, <span class="phx-unit">Hz</span> (the resulting frequency may be limited by the simulation step).</td></tr>
-<tr><td class="name">Time</td><td class="type">M&times;1 double (read-only)</td><td>Time axis of the recorded channels (the time step may be irregular if the simulation step and the recording frequency are not divisible).</td></tr>
+<tr><td class="name">Time</td><td class="type">M&times;1 double (read-only)</td><td>Time axis of the recorded channels. Each sample is taken at the simulation step nearest to a multiple of 1/<code class="phx-inline">Frequency</code>, so the time step is irregular if the simulation step and the recording period are not divisible. <code class="phx-inline">Time</code> is the start of that step; the recorded values are the state after it.</td></tr>
 <tr><td class="name">Data</td><td class="type">M&times;K double (read-only)</td><td>Common matrix of values of all channels, one row per sample.</td></tr>
 </table>
 

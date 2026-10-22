@@ -40,8 +40,11 @@ classdef Logger < phx.base.Object
     end
 
     properties (Dependent)
-        % Time axis of recorded channels (time step may be irregular if
-        % simulation step and recording frequency are not divisible)
+        % Time axis of recorded channels. Each sample is taken at the
+        % simulation step nearest to a multiple of 1/Frequency, so the time
+        % step is irregular if simulation step and recording period are not
+        % divisible. Time is the start of that step; the values are the
+        % state after it.
         Time
 
         % Common matrix of values of all channels (use getChannel function
@@ -167,7 +170,15 @@ classdef Logger < phx.base.Object
         function resolveState(cellObjs, dt, time, world)
             for i = 1:numel(cellObjs)
                 obj = cellObjs{i};
-                if time >= obj.NextTime
+                % Samples lie on the grid n/Frequency; a step takes the grid
+                % points up to its midpoint, i.e. those nearer to it than to
+                % the next step. Both the test and the next point are worked
+                % out from the same x, so a point exactly mid-step cannot be
+                % taken twice, and no float sum has to match another bit for
+                % bit.
+                f = obj.Frequency;
+                x = (time + dt/2)*f;
+                if x >= round(obj.NextTime*f)
                     % Collect the pieces of the row and join them once
                     getters = obj.Getters;
                     parents = obj.Parents;
@@ -192,7 +203,9 @@ classdef Logger < phx.base.Object
                     end
                     obj.AllData(k, :) = newData';
                     obj.Count = k;
-                    obj.NextTime = obj.NextTime + 1/obj.Frequency;
+                    % First grid point past this step; taken from the grid,
+                    % not accumulated, so a long step leaves no backlog
+                    obj.NextTime = (floor(x) + 1)/f;
                 end
             end
         end
