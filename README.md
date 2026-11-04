@@ -5,8 +5,8 @@
 PHX Toolbox allows you to build models from physical objects such as bodies with different
 shapes, joints, springs, ropes, force fields, sensors, or custom elements. The model is drawn
 directly into MATLAB axes and can be simulated immediately with one command. Simulation is
-powered by the [Bullet](https://github.com/bulletphysics/bullet3) physics engine, enhanced
-to allow co-simulation with custom MATLAB elements. 
+powered by the [Jolt Physics](https://github.com/jrouwe/JoltPhysics) engine, enhanced
+for engineering use and for co-simulation with custom MATLAB elements.
 
 [![Open in MATLAB Online](https://www.mathworks.com/images/responsive/global/open-in-matlab-online.svg)](https://matlab.mathworks.com/open/github/v1?repo=Humusoft/phx&project=PHXToolbox.prj&file=examples/phxex_buggy.m)
 
@@ -41,7 +41,7 @@ see **AI agent skills** in the User Guide for how to point your assistant at the
 
 * MATLAB **R2025a or newer**
 * Simulink (only for the Simulink block)
-* Windows, Linux, or macOS (prebuilt engine binaries are bundled for all three)
+* Windows (the Linux and macOS builds of the engine are in preparation)
 
 ## Installation
 
@@ -81,8 +81,8 @@ MATLAB (`.m`) source and use PHX for free, including commercially — but it is 
 for sale and may not be used to build a competing product. The physics engine is
 provided as a compiled binary.
 
-PHX bundles the Bullet Physics engine under the zlib License; see
-[`NOTICE.txt`](NOTICE.txt) for attribution.
+PHX bundles the Jolt Physics engine under the MIT License, with portions derived from
+Bullet Physics under the zlib License; see [`NOTICE.txt`](NOTICE.txt) for attribution.
 
 A separate **commercial license** will be available from HUMUSOFT s.r.o. for uses the
 Preview License does not permit. Contact us at phx@humusoft.cz.

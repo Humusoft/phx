@@ -2,9 +2,10 @@
 name: phx-engine-gotchas
 description: >
   Low-level PHX engine reference and pitfalls — the stringly-typed phx.engine.io
-  gateway (add/set/get/apply/remove/step), phx.engine.BulletSettings, the
-  phx:Component:mnemonic error-ID convention, the matlab.unittest suite, and known
-  quirks (timestep stability, body sleeping). Use when debugging PHX behavior,
+  gateway (add/set/get/apply/remove/step) to the Jolt Physics engine,
+  phx.engine.Settings, the phx:Component:mnemonic error-ID convention, the
+  matlab.unittest suite, and known quirks (timestep stability, solver iterations).
+  Use when debugging PHX behavior,
   writing new simulable objects, or running the tests.
 ---
 
@@ -12,7 +13,9 @@ description: >
 
 ## phx.engine.io — the single gateway
 
-All physics goes through one stringly-typed MEX dispatcher in `phx/+phx/+engine/`.
+All physics goes through one stringly-typed MEX dispatcher in `phx/+phx/+engine/`, a
+gateway to the Jolt Physics engine (adapted for engineering use; its sources are not part
+of the toolbox).
 The first arg is a **verb**, then a world handle and/or object handle, then a field
 name and payload. Verbs and field names are raw strings — **typos surface only at
 runtime**, so prefer the high-level `phx.*` classes and only drop to `io` when
@@ -55,7 +58,7 @@ own target — always pass a magnitude. `'angledist'` **lags one step** (it repo
 frames as the solver last saw them), which is why `phx.base.Joint` works `Angle` and
 `Distance` out in MATLAB instead — that is also ~4x faster than the `get`. And the
 slider's `'angularmotor'` does nothing on a `phx.PrismaticJoint`, whose rotation is
-locked by Bullet's default angular limits; there is no gateway field to unlock them,
+locked by the slider's angular limits; there is no gateway field to unlock them,
 which is why `phx.CylindricalJoint` is built on `'generic6dofconstraint'` instead.
 
 **`apply` fields and their frame flags** — the payload layout differs per field, and
@@ -75,21 +78,27 @@ MATLAB. A local point is taken relative to the body origin; the engine computes 
 moment arm about the centre of mass itself. Applied forces last **one step** and are
 cleared afterwards. The public wrappers are `Body.applyForce`/`Body.applyTorque`.
 
-## phx.engine.BulletSettings — initial engine config
+## phx.engine.Settings — initial engine config
 
-Pass engine-specific initial settings via the simulation's `EngineSettings`:
+Pass initial engine settings via the simulation's `EngineSettings`; they are read once,
+as the world is created:
 
 ```matlab
 sim = phx.Simulation(ax, "EngineSettings", ...
-    phx.engine.BulletSettings("AutoActivated", true));   % opt back INTO sleeping
+    phx.engine.Settings("LengthScale", 0.01, "Threads", 4));
 ```
 
-`AutoActivated` controls Bullet's auto-deactivation of resting bodies. **It defaults
-to `false`** (bodies never sleep) — the predictable, no-surprises behavior you want
-out of the box. Set it to `true` only as a deliberate optimization for large,
-mostly-resting scenes; the speedup from sleeping is usually negligible, so leaving
-the default alone is almost always right. If you do opt into `true`, mind the
-wake-map quirk below.
+- `LengthScale` — the size class of the parts that touch (1 m, 0.1 for decimetres, 0.01
+  for centimetres). The collision tolerances follow it in automatic mode: `Margin` (4 %,
+  the rounding of convex shapes, taken inside them), `SpeculativeDistance` (2 %) and
+  `PenetrationSlop` (0.1 %). Setting one switches it to manual, like MATLAB axis limits.
+  Set `LengthScale` for small parts instead of tuning the tolerances one by one.
+- `Iterations` (10) — velocity iterations for contacts and stacks; `JointIterations` (50)
+  — those of every group of bodies held by joints (motors hold, chains stay stiff);
+  `PositionIterations` (2).
+- `Threads` (1) — more pay off from hundreds of bodies; `ContactCache` (off) — faster
+  piles at rest, but slowly rolling bodies gain speed, so leave it off.
+- Bodies **never sleep** (no setting); `phx.Particles` has its own `Sleeping`.
 
 ## Error-ID convention
 
@@ -107,34 +116,23 @@ new code, follow the same namespace.
   the engine constraint immediately (the freed body falls that instant); bodies keep
   their `ObjectHandle` and engine state across the rebuild. Only caveat: go through
   `addObjects` / `delete` rather than mutating the `Children` cell array by hand.
-- **Tight constraint networks need a small timestep.** Joint chains, ropes, and
+- **Tight constraint networks need a small timestep.** Joint chains and
   stacked/contact-heavy scenes want `dt = interval/substeps ≤ 5 ms` for stability —
-  raise `substeps` (or lower `interval`) rather than taking big steps.
+  raise `substeps` (or lower `interval`) rather than taking big steps. Springs, ropes
+  and torsion springs are the exception: the engine solves them stably at any
+  stiffness, so a stiff spring alone is no reason for a smaller `dt`.
 - **Remedy for a scene that stays soft at a sane `dt`: solver iterations.** Leave
-  `BulletSettings` alone in ordinary scenes. Reach for it only when, already at
-  `dt ≤ 5 ms`, joints visibly pull apart, a chain sags like rubber or a stack sinks
-  and drifts (typical with a heavy body hanging on light links). Then either raise
-  `phx.engine.BulletSettings("Iterations", 20…50)` (default 10; error falls roughly
-  as 1/iterations, cost grows with them) or, for a small jointed mechanism, try
-  `"Solver", "dantzig"`, which solves the joints exactly and ignores `Iterations`
-  (too slow for big piles of contacts). Neither helps when the step itself is too
-  long; at `dt = 10 ms` a heavy-tipped chain fell apart with both, so lower `dt`
-  first.
+  `phx.engine.Settings` alone in ordinary scenes. Reach for it only when, already at
+  `dt ≤ 5 ms`, a stack sinks and drifts (raise `Iterations`, default 10) or a jointed
+  mechanism sags or rings (raise `JointIterations`, default 50, up to 100; it costs
+  only the jointed groups). Neither helps when the step itself is too long, so lower
+  `dt` first. There is no choice of solver.
 - **Static vs kinematic vs dynamic**: `static` bodies have infinite mass and never
   move; `kinematic` bodies are driven by you and push dynamics but ignore forces;
   only `dynamic` bodies integrate forces. Set mass/inertia explicitly for controlled
   vehicles instead of relying on shape density.
-- **Body sleeping / the wake-map** (only relevant if you set `AutoActivated=true`;
-  the default `false` sidesteps all of this). A resting body auto-deactivates after
-  ~2 s (its `LinearVelocity` snaps to *exactly* 0 — a reliable "is it asleep?" probe).
-  A sleeper is re-activated when something touches it **directly**: any applied
-  force/torque (so all field/spring/rope/thruster elements are fine), a velocity or
-  transform write, or a new contact from a dynamic *or* kinematic body. It is **NOT**
-  woken by changes to its *environment*: changing world gravity (`sim.Gravity = …`)
-  or moving/removing the static support under it both leave the sleeper frozen (the
-  classic Bullet "body floating in mid-air"). There is no `activate`/`wake` method —
-  the only nudge is a self-write like `b.Position = b.Position`. The default `false`
-  avoids all of this.
+- **Negative time steps are refused** (`phx:engine:badArgument`): the engine only steps
+  forward.
 
 ## Tests — matlab.unittest suite
 

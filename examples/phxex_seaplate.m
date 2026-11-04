@@ -143,9 +143,7 @@ function phxex_seaplate(duration, maxAmplitude, balance)
     onPlate = phx.Measure(plate, ball, "Visible", false);
     logBall = phx.Logger(onPlate, "Parameters", "PositionInA", "Frequency", 50);
 
-    % Bodies in creation order, base first, which suits the joint chain; the
-    % joints need the exact (dantzig) solver to run their motors at the
-    % commanded rates
+    % Bodies in creation order, base first, which suits the joint chain
     arm = struct2cell(bodies);
     arm = [arm{:}];
     sim = phx.Simulation([seabedBody pont arm plate ball], "EngineSettings", ...

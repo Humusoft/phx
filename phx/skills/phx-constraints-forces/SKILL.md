@@ -372,8 +372,7 @@ unless you draw your own overlay; keeping the figure clickable is already the de
 `RedrawMode`'s job. See **phx-scene-basics**.
 
 A controlled vehicle that momentarily hovers near-still keeps responding to thrust
-because Bullet sleeping is off by default (`BulletSettings.AutoActivated=false`);
-see **phx-engine-gotchas**.
+because bodies never fall asleep; see **phx-engine-gotchas**.
 
 Keep `dt ≤ 5 ms` for tight constraint networks (joint chains, stacked contacts) or
 they destabilize. You can create or delete joints/springs mid-run freely:
@@ -386,5 +385,5 @@ pipelines automatically; add new elements via `sim.addObjects(...)`. See
 - **phx-scene-basics** — bodies, shapes, `Simulation.step`, running headless.
 - **phx-logging-view** — record forces/angles/velocities with `phx.Logger`, draw
   `phx.Trace`, detect bodies in a region with `phx.Zone`.
-- **phx-engine-gotchas** — pipeline rebuilds, `dt` stability, `BulletSettings`, error IDs.
+- **phx-engine-gotchas** — pipeline rebuilds, `dt` stability, `phx.engine.Settings`, error IDs.
 - **phx-simulink** — drive actuator/sensor properties from Simulink (the co-simulation block).

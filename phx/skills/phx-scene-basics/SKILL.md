@@ -2,7 +2,7 @@
 name: phx-scene-basics
 description: >
   Build and run a physics scene with the PHX MATLAB toolbox (phx.* objects over
-  the Bullet engine). Use when creating phx.Body objects, attaching phx.shape.*
+  the Jolt Physics engine). Use when creating phx.Body objects, attaching phx.shape.*
   geometry, soft and flexible bodies or particle groups (phx.SoftBody,
   phx.FlexibleBody, phx.Particles), importing meshes (STL/OBJ/PLY) or URDF models, using the phx.assembly
   prefab builders (arena, chain, scatter, wall, import), drawing the scene into
@@ -14,7 +14,7 @@ description: >
 # PHX scene basics
 
 PHX is a MATLAB toolbox (package root `phx/+phx`, requires MATLAB R2025a or newer) — a thin
-object-oriented layer over the Bullet physics engine reached through one MEX
+object-oriented layer over the Jolt Physics engine reached through one MEX
 gateway (`phx.engine.io`). You build a scene from `phx.*` handle objects that
 draw into MATLAB axes via `hgtransform`, then step it with a `phx.Simulation`.
 
@@ -642,7 +642,7 @@ Subclasses implement four methods: `initObject(obj, world)` (build/refresh engin
 counterpart; return `false` to exclude), `destroyObject(obj)`, and the **static,
 batch-by-class** `resolveState(cellObjs, dt, time, world)` and
 `updateView(cellObjs, dt, time, world)`. New objects route **all** engine access
-through `phx.engine.io` — never call Bullet directly. Use the `phx.template.Interaction`
+through `phx.engine.io` — never call the engine any other way. Use the `phx.template.Interaction`
 class as a starting point.
 
 ## Related skills

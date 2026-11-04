@@ -31,9 +31,6 @@ slprj/
 # Debug symbols (MEX build artifact, not shipped)
 *.pdb
 
-# Engine variant binaries -- not for public release (only the active io.mex* ships)
-phx/+phx/+engine/bullet_*
-
 # OS files
 .DS_Store
 Thumbs.db
