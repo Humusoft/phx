@@ -26,32 +26,32 @@ function phxex_stack(n, mu, tiltRate)
 
     % Figure setup
     figure(1);
-    [viewer, ax] = phx.extra.Viewer("clear", "DefaultCameraTarget", [0 0 3], ...
-        "DefaultCameraPosition", [18 -18 8]);
+    [viewer, ax] = phx.extra.Viewer("clear", "DefaultCameraTarget", [0 0 0.3], ...
+        "DefaultCameraPosition", [1.8 -1.8 0.8]);
 
     % Box geometry (width depth height) and stacking parameters
-    s = [3 3 1];           % size of a single box
-    gap = 0.02;            % tiny gap to seat boxes without initial overlap
+    s = [0.3 0.3 0.1];     % size of a single box (a 1 kg carton)
+    gap = 0.002;           % tiny gap to seat boxes without initial overlap
 
     % Static ground far below to catch anything that falls off
-    phx.Body(ax, "Type", "static", "Position", [0 0 -5], ...
-        "Shape", {"Box", "Size", [60 60 1], "Color", [1 1 1]});
+    phx.Body(ax, "Type", "static", "Position", [0 0 -0.5], ...
+        "Shape", {"Box", "Size", [6 6 0.1], "Color", [1 1 1]});
 
     % Kinematic pallet - we drive its tilt directly, the boxes only respond
     % to it through contact (no joints, no constraints holding them).
     pallet = phx.Body(ax, "Type", "kinematic", "Position", [0 0 0], ...
-        "Shape", {"Box", "Size", [8 8 0.5], "Color", [0.6 0.4 0.2]}, ...
+        "Shape", {"Box", "Size", [0.8 0.8 0.05], "Color", [0.6 0.4 0.2]}, ...
         "Friction", [mu 0 0]);
 
     % Build the stack. A small random horizontal offset per box makes the
     % outcome realistic rather than a perfectly balanced ideal column.
     clr = (jet(n) + 1)/2;
     for i = 1:n
-        z = 0.25 + (i - 0.5)*s(3) + i*gap;     % center height of i-th box
-        off = (rand(1, 2) - 0.5)*0.1;          % small placement imperfection
+        z = 0.025 + (i - 0.5)*s(3) + i*gap;    % center height of i-th box
+        off = (rand(1, 2) - 0.5)*0.01;         % small placement imperfection
         box(i) = phx.Body(ax, "Position", [off, z], ...
-            "Shape", {"Box", "Size", s, "Color", clr(i, :), "Texture", "wood", "TextureBlend", 0.5}, ...
-            "Friction", [mu 0 0], "Mass", 1, "Inertia", 0.1);
+            "Shape", {"Box", "Size", s, "Color", clr(i, :), "Texture", "wood", "TextureBlend", 0.4}, ...
+            "Friction", [mu 0 0], "Mass", 1, "Inertia", [s(2)^2 + s(3)^2, s(1)^2 + s(3)^2, s(1)^2 + s(2)^2]/12);
     end
 
     % Measure the horizontal drift of the top box w.r.t. the pallet origin.
@@ -86,19 +86,9 @@ function phxex_stack(n, mu, tiltRate)
             collapseAngle = tiltDeg;
         end
 
-        viewer.displayText(sprintf("Tilt: %.1f deg   |   top drift: %.2f", tiltDeg, drift.Distance));
+        viewer.displayText(sprintf("Tilt: %.1f deg   |   top drift: %.3f m", tiltDeg, drift.Distance));
     end
-
     delete(sim);
-
-    % Report and plot the result
-    if isnan(collapseAngle)
-        fprintf("Stack survived up to %.1f deg tilt (mu = %.2f, n = %d).\n", ...
-            tiltDeg, mu, n);
-    else
-        fprintf("Stack collapsed at ~%.1f deg tilt (mu = %.2f, n = %d).\n", ...
-            collapseAngle, mu, n);
-    end
 
     clf(figure(2));
     tiltX = logTilt.getChannel(1);          % EulerAngles channel -> [X Y Z]

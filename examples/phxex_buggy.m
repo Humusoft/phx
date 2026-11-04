@@ -15,14 +15,14 @@ function phxex_buggy(showGraphs)
 
     % Setup figure
     figure(1);
-    [~, ax] = phx.extra.Viewer("clear", "DefaultCameraTarget", [-21 4 -5], "DefaultCameraPosition", [-81 -47 15]);
+    [~, ax] = phx.extra.Viewer("clear", "DefaultCameraTarget", [-2.1 0.4 -0.5], "DefaultCameraPosition", [-8.1 -4.7 1.5], "Lighting", "studio");
 
     % Speed gauge
-    speed = uigauge(gcf, "Limits", [0 5], "Position", [10 10 120 120]);
+    speed = uigauge(gcf, "Limits", [0 10], "Position", [10 10 120 120]);
 
     % Create ground
-    phx.Body(ax, "Type", "static", "Position", [0 0 -5], "Shape", {"Box", "Size", [50 50 1], "Texture", "tiles"}, "EulerAngles", [0 -0.12 0]);
-    phx.Body(ax, "Type", "static", "Position", [-50 0 -8], "Shape", {"Box", "Size", [50 50 1], "Texture", "tiles"});
+    phx.Body(ax, "Type", "static", "Position", [0 0 -0.5], "Shape", {"Box", "Size", [5 5 0.1], "Texture", "tiles", "Material", "metal"}, "EulerAngles", [0 -0.12 0]);
+    phx.Body(ax, "Type", "static", "Position", [-5 0 -0.8], "Shape", {"Box", "Size", [5 5 0.1], "Texture", "tiles", "Material", "metal"});
 
     % Load buggy model and show it in the current axes
     buggy = load("saved_buggy.mat");
@@ -32,15 +32,16 @@ function phxex_buggy(showGraphs)
     log = phx.Logger(buggy.chassis.Children(5:8), "Parameters", "Length", "Frequency", 100);
 
     % Create cones and obstacle
-    shpCone = phx.shape.Cone("Diameter", 2, "Height", 6, "Texture", "checker", "TextureBlend", 0.25, "Color", [1 0.5 0]);
-    phx.Body("Position", [-30 -7 0], "Shape", shpCone, "Mass", 1, "Inertia", 0.1);
-    phx.Body("Position", [-40 -7 0], "Shape", shpCone, "Mass", 1, "Inertia", 0.1);
-    phx.Body("Position", [-50 -7 0], "Shape", shpCone, "Mass", 1, "Inertia", 0.1);
-    phx.Body("Type", "static", "Position", [-50 6.5 0], "Shape", {"Cylinder", "Diameter", 3, "Height", 14, "Color", [1 0.9 0.8], "Texture", "stripes", "TextureBlend", 0.2});
+    shpCone = phx.shape.Cone("Diameter", 0.2, "Height", 0.6, "Texture", "xor", "TextureBlend", 0.25, "Color", [1 0.5 0]);
+    phx.Body("Position", [-3 -0.7 0], "Shape", shpCone, "Mass", 1, "Inertia", 0.1);
+    phx.Body("Position", [-4 -0.7 0], "Shape", shpCone, "Mass", 1, "Inertia", 0.1);
+    phx.Body("Position", [-5 -0.7 0], "Shape", shpCone, "Mass", 1, "Inertia", 0.1);
+    phx.Body("Type", "static", "Position", [-5 0.65 0], "Shape", {"Cylinder", "Diameter", 0.3, "Height", 1.4, "Color", [1 0.8 0.6], "Texture", "stone", "TextureBlend", 0.6});
 
-    % Simulation loop
-    sim = phx.Simulation;
-    for i = 1:280
+    % Simulation loop; a margin of a few millimetres keeps the wheels clear
+    % of the body in Bullet
+    sim = phx.Simulation("EngineSettings", phx.engine.BulletSettings("Margin", 0.004));
+    for i = 1:120
         sim.step(0.05, 50, 50);
         speed.Value = abs(buggy.wheelFR.AngularVelocity(2));
     end

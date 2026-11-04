@@ -37,7 +37,7 @@ function phxex_galton(nBalls, nRows, seed)
     rng(seed); % Random seed for reproducible release jitter
 
     % Board proportions (everything derives from the ball diameter)
-    d = 1.2;               % ball diameter
+    d = 0.012;             % ball diameter: glass marbles of 12 mm
     sx = 3.0*d;            % horizontal pin pitch = bin width
     pinD = 0.7*d;          % pin diameter
     dz = 1.9*d;            % vertical distance between pin rows
@@ -48,13 +48,13 @@ function phxex_galton(nBalls, nRows, seed)
 
     % Theoretical binomial distribution and the bin height needed to hold it
     pmf = arrayfun(@(k) nchoosek(nRows, k), 0:nRows)*0.5^nRows;
-    hBin = ceil(nBalls*max(pmf)*1.3/1.7) + 2;
+    hBin = (ceil(nBalls*max(pmf)*1.3/1.7) + 2)/100;   % 7.6 mm per ball, plus 20 mm
 
     % Vertical layout: bins at the bottom, pin rows above, drop point on top
-    zRowBot = hBin + 1.5;
+    zRowBot = hBin + 0.015;
     zRowTop = zRowBot + (nRows - 1)*dz;
-    zDrop = zRowTop + 2.0;
-    hWall = zDrop + 2;
+    zDrop = zRowTop + 0.02;
+    hWall = zDrop + 0.02;
 
     % Figure setup
     figure(1);
@@ -62,27 +62,27 @@ function phxex_galton(nBalls, nRows, seed)
         "DefaultCameraPosition", [0 -2.0*hWall 0.6*hWall]);
 
     % Static floor (also the anchor for the bin zones)
-    floor = phx.Body(ax, "Type", "static", "Position", [0 0 -0.5], ...
-        "Shape", {"Box", "Size", [2*halfW + 6, 6, 1], "Color", [1 1 1]});
+    floor = phx.Body(ax, "Type", "static", "Position", [0 0 -0.005], ...
+        "Shape", {"Box", "Size", [2*halfW + 0.06, 0.06, 0.01], "Color", [1 1 1]});
 
     % Back glass (solid) and front glass (wireframe, so we can see inside);
     % both collide with the balls and keep the board effectively 2D
-    phx.Body(ax, "Type", "static", "Position", [0 gapY/2 + 0.15, hWall/2], ...
-        "Shape", {"Box", "Size", [2*halfW + 0.4, 0.3, hWall], "Color", [0.85 0.87 0.92]});
-    phx.Body(ax, "Type", "static", "Position", [0, -gapY/2 - 0.15, hWall/2], ...
-        "Shape", {"Box", "Size", [2*halfW + 0.4, 0.3, hWall], ...
+    phx.Body(ax, "Type", "static", "Position", [0 gapY/2 + 0.0015, hWall/2], ...
+        "Shape", {"Box", "Size", [2*halfW + 0.004, 0.003, hWall], "Color", [0.85 0.87 0.92]});
+    phx.Body(ax, "Type", "static", "Position", [0, -gapY/2 - 0.0015, hWall/2], ...
+        "Shape", {"Box", "Size", [2*halfW + 0.004, 0.003, hWall], ...
         "Style", "wireframe", "Color", [0.6 0.7 0.8], "ForcePatch", true});
 
     % Side walls (outer edges of the first and last bin)
     for sgn = [-1 1]
-        phx.Body(ax, "Type", "static", "Position", [sgn*(halfW + 0.1), 0, hWall/2], ...
-            "Shape", {"Box", "Size", [0.2 gapY hWall], "Color", [0.5 0.5 0.55]});
+        phx.Body(ax, "Type", "static", "Position", [sgn*(halfW + 0.001), 0, hWall/2], ...
+            "Shape", {"Box", "Size", [0.002 gapY hWall], "Color", [0.5 0.5 0.55]});
     end
 
     % Bin dividers (interior bin edges only, side walls close the outer bins)
     for j = 1:nRows
         phx.Body(ax, "Type", "static", "Position", [(j - nBins/2)*sx, 0, hBin/2], ...
-            "Shape", {"Box", "Size", [0.2 gapY hBin], "Color", [0.5 0.5 0.55]});
+            "Shape", {"Box", "Size", [0.002 gapY hBin], "Color", [0.5 0.5 0.55]});
     end
 
     % Pin grid (quincunx): odd rows have a pin right below the drop point,
@@ -106,7 +106,7 @@ function phxex_galton(nBalls, nRows, seed)
     bins = phx.Zone.empty;
     for k = 0:nRows
         bins(k + 1) = phx.Zone(floor, "Position", [(k - nRows/2)*sx, 0, hWall/2], ...
-            "Size", [sx, gapY + 0.4, hWall], "SimulationOrder", "none", ...
+            "Size", [sx, gapY + 0.004, hWall], "SimulationOrder", "none", ...
             "Visible", false); %#ok<AGROW> fixed nBins
     end
 
@@ -118,17 +118,17 @@ function phxex_galton(nBalls, nRows, seed)
 
     % Phase 1 - release the balls one by one above the top pin and let the
     % board do its work; each ball is spawned into the running simulation
-    shp = phx.shape.Sphere("Diameter", d, "Segments", 10);
-    releasePeriod = 0.7; % time between two released balls
-    dt = 0.05;           % outer simulation step
+    shp = phx.shape.Sphere("Diameter", d, "Segments", 10, "Density", 2500);
+    releasePeriod = 0.07; % time between two released balls
+    dt = 0.005;           % outer simulation step, in substeps of 1 ms
     released = 0;
     while released < nBalls
         if sim.Time >= released*releasePeriod
-            jit = (rand(1, 1) - 0.5)*1.0;    % entry jitter randomizes the path (the ball still hits the top pin)
+            jit = (rand(1, 1) - 0.5)*0.01;   % entry jitter randomizes the path (the ball still hits the top pin)
 
             shp = shp.nextColor;
             balls(released + 1) = phx.Body(ax, "Position", [jit 0 zDrop], ...
-                "Shape", shp, "Mass", 1, "Inertia", 0.1); %#ok<AGROW> unknown rate
+                "Shape", shp); %#ok<AGROW> unknown rate
 
             sim.addObjects(balls(released + 1));
             released = released + 1;
@@ -138,7 +138,7 @@ function phxex_galton(nBalls, nRows, seed)
     end
 
     % Phase 2 - let the last balls trickle down and the piles settle
-    sim.step(20, 2000, 10);
+    sim.step(2, 2000, 10);
 
     % Tally the settled piles from the zones and recolor each ball by its bin
     update(bins);
@@ -150,16 +150,8 @@ function phxex_galton(nBalls, nRows, seed)
     delete(sim);
 
     % Final x positions are still needed for the sample statistics below
-    xFinal = arrayfun(@(b) b.Position(1), balls);
     drawnow;
     viewer.displayText(sprintf("Done: %d balls in %d bins", nBalls, nBins));
-
-    % Report the sample statistics against the binomial theory
-    stdTheory = sqrt(nRows)*sx/2;
-    fprintf("Balls per bin:    %s\n", join(string(counts'), " "));
-    fprintf("Expected per bin: %s\n", join(string(round(nBalls*pmf, 1)), " "));
-    fprintf("Final x position: mean %.2f (theory 0), std %.2f (theory %.2f).\n", ...
-        mean(xFinal), std(xFinal), stdTheory);
 
     % Compare the measured histogram with the binomial expectation
     clf(figure(2));
