@@ -62,7 +62,10 @@ classdef Body < phx.base.Object
 
         % Quaternion rotation
         Quaternion (1, 4) double {mustBeFinite}
+    end
 
+    % Read-only state computed by the engine
+    properties (Dependent, SetAccess = private)
         % Total force in the centre of the body
         TotalForce (1, 3) double
 
@@ -124,7 +127,7 @@ classdef Body < phx.base.Object
         OnDoubleClickFcn = []
     end
 
-    properties (Dependent, Hidden)
+    properties (Dependent, Hidden, SetAccess = private)
         % Numerical representation of Type property
         % (0 = static, 1 = kinematic, 2 = dynamic)
         TypeID

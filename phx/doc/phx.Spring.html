@@ -51,8 +51,8 @@ attached at their origins. Use <code class="phx-inline">PointA</code> and
 <tr><td class="name">Colormap</td><td class="dflt">"none"</td><td>Name of the colormap used to color the spring by force.</td></tr>
 <tr><td class="name">ColorRange</td><td class="dflt">[0 100]</td><td>Force range mapped across the whole colormap, <span class="phx-unit">N</span>.</td></tr>
 <tr><td class="name">Overlay</td><td class="dflt">false</td><td>Draw the spring as an overlay (always on top).</td></tr>
-<tr><td class="name">Force</td><td class="type">1&times;3 double (read-only)</td><td>Current spring force vector, <span class="phx-unit">N</span>.</td></tr>
-<tr><td class="name">Length</td><td class="type">double (read-only)</td><td>Current extension beyond <code class="phx-inline">FreeLength</code>, <span class="phx-unit">m</span>.</td></tr>
+<tr><td class="name">Force</td><td class="type">1&times;3 double (read-only)</td><td>Current spring force acting on the first body, <span class="phx-unit">N</span>; the second body gets the opposite force.</td></tr>
+<tr><td class="name">Length</td><td class="type">double (read-only)</td><td>Current length of the spring, the distance between the two connecting points, <span class="phx-unit">m</span>. The extension is <code class="phx-inline">Length - FreeLength</code>.</td></tr>
 <tr><td class="name">Energy</td><td class="type">double (read-only)</td><td>Elastic energy stored in the spring, <span class="phx-unit">J</span> (dependent).</td></tr>
 </table>
 

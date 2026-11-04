@@ -17,6 +17,9 @@ classdef PrimitiveHelper < handle
         DiffuseStrength (1, 1) double
         SpecularStrength (1, 1) double
         SpecularExponent (1, 1) double
+    end
+
+    properties (Dependent, SetAccess = private)
         Vertices (:, 3) double
         LinearizedFaces (1, :) double
     end

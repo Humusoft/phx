@@ -72,7 +72,7 @@ classdef Dipole < phx.base.Object
         VectorLength (1, 1) double = 1
     end
 
-    properties (Dependent)
+    properties (Dependent, SetAccess = private)
         % Potential energy of the pole pairs (J)
         Energy (1, 1) double
     end
