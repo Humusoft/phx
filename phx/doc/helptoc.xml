@@ -70,6 +70,14 @@
         <tocitem target="phx.Spring.html">Springs and ropes
             <tocitem target="phx.Spring.html">phx.Spring</tocitem>
             <tocitem target="phx.Rope.html">phx.Rope</tocitem>
+            <tocitem target="phx.TorsionSpring.html">phx.TorsionSpring</tocitem>
+        </tocitem>
+
+        <tocitem target="phx.SoftBody.html">Deformable bodies and particles
+            <tocitem target="phx.SoftBody.html">phx.SoftBody</tocitem>
+            <tocitem target="phx.FlexibleBody.html">phx.FlexibleBody</tocitem>
+            <tocitem target="phx.IntersectionWeld.html">phx.IntersectionWeld</tocitem>
+            <tocitem target="phx.Particles.html">phx.Particles</tocitem>
         </tocitem>
 
         <tocitem target="phx.Thruster.html">Forces and fields

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.FlexibleBody</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.FlexibleBody</div>
+
+<h1 class="phx-title">phx.FlexibleBody</h1>
+<p class="phx-purpose">Deformable solid made of tetrahedra</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.FlexibleBody &nbsp;|&nbsp; Superclass: <a href="phx.base.Object.html">phx.base.Object</a></p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.FlexibleBody</code> is a solid of an elastic material given by its
+Young's modulus and Poisson's ratio: a block of rubber or foam, a soft gripper pad, a bushing. Its
+mesh of tetrahedra deforms as the stable Neo-Hookean material, which also holds for large
+deformations; the vertices are particles carrying the mass of the tetrahedra around them. It collides
+with rigid bodies (<a href="phx.Body.html">phx.Body</a>), not with soft or flexible bodies. No joint
+holds it directly: a body welded into it with <a href="phx.IntersectionWeld.html">phx.IntersectionWeld</a>
+holds and loads it instead.</p>
+<p><code class="phx-inline">ElementOrder</code> selects the elements. Linear tetrahedra are solved
+with as many solver substeps as <code class="phx-inline">Iterations</code> gives, so a stiff material
+on a fine mesh needs more of them and still comes out softer than it is. Quadratic tetrahedra, with a
+vertex in the middle of each edge, bend without the stiffening of linear ones on a coarse mesh and
+are solved implicitly by Newton iterations until the force left unbalanced falls below
+<code class="phx-inline">Tolerance</code>, so their stiffness does not depend on
+<code class="phx-inline">Iterations</code>, which only limits the iterations per step.</p>
+<p>The mesh is the rest shape, placed at <code class="phx-inline">Position</code> and
+<code class="phx-inline">Orientation</code> when the simulation creates the body; the rest shape and
+the material are read once, at that moment. A flexible body is a top-level object: hand it to the
+simulation like a body.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">flex = phx.FlexibleBody(ax,"Vertices",V,"Tetrahedra",T)</span>
+<span class="phx-syntax">flex = phx.FlexibleBody(___,"ElementOrder","quadratic")</span>
+<span class="phx-syntax">flex = phx.FlexibleBody(___,Name,Value)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">flex = phx.FlexibleBody(ax,"Vertices",V,"Tetrahedra",T)</code> creates a
+flexible body of the tetrahedral mesh <code class="phx-inline">V</code> (N&times;3, in the body frame)
+and <code class="phx-inline">T</code> (K&times;4 vertex indices, as
+<code class="phx-inline">delaunayTriangulation</code> or <code class="phx-inline">generateMesh</code>
+give them) and draws its surface into the axes <code class="phx-inline">ax</code>;
+<code class="phx-inline">[]</code> draws nothing.</p>
+<p><code class="phx-inline">flex = phx.FlexibleBody(___,"ElementOrder","quadratic")</code> creates a
+body of quadratic tetrahedra. <code class="phx-inline">T</code> is either K&times;4, and the vertices
+in the middles of the edges are added to <code class="phx-inline">V</code>, or K&times;10, a
+quadratic mesh as <code class="phx-inline">generateMesh</code> gives it with
+<code class="phx-inline">GeometricOrder="quadratic"</code> (the corners, then the vertices of the
+edges 12 23 13 14 24 34). The added vertices follow <code class="phx-inline">V</code> in
+<code class="phx-inline">CurrentVertices</code> and <code class="phx-inline">VonMisesStress</code>.</p>
+</div>
+
+<h2 class="phx-h2">Properties</h2>
+<h3 class="phx-h3">Rest shape and material (read when the simulation starts)</h3>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">Vertices</td><td class="type">N&times;3 double</td><td>Vertices of the mesh in the body frame.</td></tr>
+<tr><td class="name">Tetrahedra</td><td class="type">K&times;4 or K&times;10 double</td><td>Tetrahedra as vertex indices.</td></tr>
+<tr><td class="name">ElementOrder</td><td class="dflt">"linear"</td><td>Order of the elements: <code class="phx-inline">"linear"</code> or <code class="phx-inline">"quadratic"</code>.</td></tr>
+<tr><td class="name">Position</td><td class="dflt">[0 0 0]</td><td>Position of the rest shape when the body is created, <span class="phx-unit">m</span>.</td></tr>
+<tr><td class="name">Orientation</td><td class="dflt">eye(3)</td><td>Orientation of the rest shape when the body is created.</td></tr>
+<tr><td class="name">Density</td><td class="dflt">1000</td><td>Density of the material, <span class="phx-unit">kg/m&sup3;</span>.</td></tr>
+<tr><td class="name">YoungsModulus</td><td class="dflt">1e6</td><td>Young's modulus of the material, <span class="phx-unit">Pa</span>.</td></tr>
+<tr><td class="name">PoissonsRatio</td><td class="dflt">0.45</td><td>Poisson's ratio of the material, from 0 to 0.5 for an incompressible one.</td></tr>
+</table>
+
+<h3 class="phx-h3">Settings (apply at any time)</h3>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">VertexRadius</td><td class="dflt">0</td><td>Radius of the spheres the vertices collide as, <span class="phx-unit">m</span>.</td></tr>
+<tr><td class="name">Iterations</td><td class="dflt">10</td><td>Solver substeps per simulation step; for quadratic tetrahedra the most Newton iterations per step.</td></tr>
+<tr><td class="name">Tolerance</td><td class="dflt">1e-4</td><td>Force left unbalanced at which a step of quadratic tetrahedra has converged, relative to the weight of the body; 0 always takes <code class="phx-inline">Iterations</code> iterations.</td></tr>
+<tr><td class="name">Damping</td><td class="dflt">0</td><td>Damping of the vertex velocities, dv/dt&nbsp;=&nbsp;&minus;Damping&middot;v, <span class="phx-unit">1/s</span>.</td></tr>
+<tr><td class="name">Friction</td><td class="dflt">0.5</td><td>Friction coefficient; a contact combines the values of both bodies.</td></tr>
+<tr><td class="name">Restitution</td><td class="dflt">0</td><td>Restitution (bounciness) coefficient, 0 = no bounce.</td></tr>
+<tr><td class="name">Colormap</td><td class="dflt">"none"</td><td>Name of the colormap that colors the surface by the von Mises stress; <code class="phx-inline">"none"</code> draws the plain <code class="phx-inline">Color</code>.</td></tr>
+<tr><td class="name">ColorRange</td><td class="dflt">[0 1e6]</td><td>Stress range mapped across the whole colormap, <span class="phx-unit">Pa</span>.</td></tr>
+<tr><td class="name">Color</td><td class="type">1&times;3 double</td><td>Color of the drawn surface.</td></tr>
+</table>
+
+<h3 class="phx-h3">Derived (read-only)</h3>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type</th><th>Description</th></tr>
+<tr><td class="name">Faces</td><td class="type">M&times;3 double</td><td>Boundary triangles of the mesh, wound outwards; a face of a quadratic tetrahedron is split into four at its edge vertices.</td></tr>
+<tr><td class="name">Mass</td><td class="type">double</td><td>Mass of the body, <span class="phx-unit">kg</span>.</td></tr>
+<tr><td class="name">CurrentVertices</td><td class="type">N&times;3 double</td><td>Present vertex positions in the global frame, with the added edge vertices of quadratic tetrahedra.</td></tr>
+<tr><td class="name">VonMisesStress</td><td class="type">N&times;1 double</td><td>Von Mises stress at the vertices, averaged over the tetrahedra around each, <span class="phx-unit">Pa</span>; zero before the simulation starts.</td></tr>
+</table>
+
+<h2 class="phx-h2">Object Functions</h2>
+<table class="phx-tbl">
+<tr><th>Function</th><th>Description</th></tr>
+<tr><td class="name">boundingBox</td><td>Axis-aligned bounding box of the present meshes of one or more flexible bodies, a 2&times;3 matrix [min; max].</td></tr>
+</table>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">A rubber block dropped on the floor, colored by stress</h4>
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+floor = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Position"</span>, [0 0 -0.1], <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [3 3 0.2]});
+[x, y, z] = ndgrid(-0.2:0.1:0.2);
+V = [x(:) y(:) z(:)];
+block = phx.FlexibleBody(gca, <span class="str">"Vertices"</span>, V, <span class="str">"Tetrahedra"</span>, delaunay(V), ...
+    <span class="str">"Position"</span>, [0 0 0.6], <span class="str">"YoungsModulus"</span>, 2e5, ...
+    <span class="str">"Colormap"</span>, <span class="str">"turbo"</span>, <span class="str">"ColorRange"</span>, [0 2e4]);
+
+sim = phx.Simulation({floor, block});
+sim.step(2, 400, 4);</pre>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.SoftBody.html">phx.SoftBody</a>,
+<a href="phx.IntersectionWeld.html">phx.IntersectionWeld</a>,
+<a href="phx.Body.html">phx.Body</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_bodies.html">Bodies and shapes</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

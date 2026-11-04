@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.SoftBody</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.SoftBody</div>
+
+<h1 class="phx-title">phx.SoftBody</h1>
+<p class="phx-purpose">Deformable body made of a triangle mesh</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.SoftBody &nbsp;|&nbsp; Superclass: <a href="phx.base.Object.html">phx.base.Object</a></p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.SoftBody</code> is a mesh whose vertices are particles of equal mass
+held together by its edges: a cloth if the mesh is open, a cushion or a ball if it is closed,
+optionally inflated by a gas pressure. It collides with rigid bodies
+(<a href="phx.Body.html">phx.Body</a>), not with other soft bodies. No joint can hold it directly: a
+body welded into it with <a href="phx.IntersectionWeld.html">phx.IntersectionWeld</a> holds and loads
+it instead.</p>
+<p>The mesh is the rest shape, placed at <code class="phx-inline">Position</code> and
+<code class="phx-inline">Orientation</code> when the simulation creates the soft body. The rest shape
+and its material are read once, at that moment; the settings in the second group of properties
+apply at any time. A soft body is a top-level object: hand it to the simulation like a body.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">soft = phx.SoftBody(ax,"Vertices",V,"Faces",F)</span>
+<span class="phx-syntax">soft = phx.SoftBody(___,Name,Value)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">soft = phx.SoftBody(ax,"Vertices",V,"Faces",F)</code> creates a soft body
+of the triangle mesh <code class="phx-inline">V</code> (N&times;3, in the body frame) and
+<code class="phx-inline">F</code> (M&times;3 vertex indices, as for <code class="phx-inline">patch</code>)
+and draws it into the axes <code class="phx-inline">ax</code>; <code class="phx-inline">[]</code> draws
+nothing. A soft body without a mesh is an error.</p>
+</div>
+
+<h2 class="phx-h2">Properties</h2>
+<h3 class="phx-h3">Rest shape and material (read when the simulation starts)</h3>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">Vertices</td><td class="type">N&times;3 double</td><td>Vertices of the mesh in the body frame.</td></tr>
+<tr><td class="name">Faces</td><td class="type">M&times;3 double</td><td>Triangles of the mesh as vertex indices. A closed mesh holding a <code class="phx-inline">Pressure</code> lists them counter-clockwise seen from outside.</td></tr>
+<tr><td class="name">Position</td><td class="dflt">[0 0 0]</td><td>Position of the rest shape when the soft body is created, <span class="phx-unit">m</span>.</td></tr>
+<tr><td class="name">Orientation</td><td class="dflt">eye(3)</td><td>Orientation of the rest shape when the soft body is created.</td></tr>
+<tr><td class="name">Mass</td><td class="dflt">1</td><td>Total mass, spread evenly over the vertices, <span class="phx-unit">kg</span>.</td></tr>
+<tr><td class="name">Compliance</td><td class="dflt">0</td><td>Compliance of the edges, the inverse of their stiffness, <span class="phx-unit">m/N</span>; 0 keeps them at their rest length.</td></tr>
+<tr><td class="name">BendCompliance</td><td class="dflt">Inf</td><td>Compliance of the bend edges across each pair of adjacent triangles, <span class="phx-unit">m/N</span>; <code class="phx-inline">Inf</code> leaves them out.</td></tr>
+</table>
+
+<h3 class="phx-h3">Settings (apply at any time)</h3>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">Pressure</td><td class="dflt">0</td><td>Gas pressure inside a closed mesh as n&middot;R&middot;T, <span class="phx-unit">J</span>: it pushes on the faces with this value over the enclosed volume.</td></tr>
+<tr><td class="name">VertexRadius</td><td class="dflt">0</td><td>Radius of the spheres the vertices collide as, <span class="phx-unit">m</span>.</td></tr>
+<tr><td class="name">Iterations</td><td class="dflt">5</td><td>Solver substeps of the soft body per simulation step.</td></tr>
+<tr><td class="name">Damping</td><td class="dflt">0</td><td>Damping of the vertex velocities, dv/dt&nbsp;=&nbsp;&minus;Damping&middot;v, <span class="phx-unit">1/s</span>.</td></tr>
+<tr><td class="name">Friction</td><td class="dflt">0.5</td><td>Friction coefficient; a contact combines the values of both bodies.</td></tr>
+<tr><td class="name">Restitution</td><td class="dflt">0</td><td>Restitution (bounciness) coefficient, 0 = no bounce.</td></tr>
+<tr><td class="name">Color</td><td class="type">1&times;3 double</td><td>Color of the drawn mesh.</td></tr>
+<tr><td class="name">CurrentVertices</td><td class="type">N&times;3 double (read-only)</td><td>Present vertex positions in the global frame: the deformed mesh while the simulation runs, the placed rest shape before.</td></tr>
+</table>
+
+<h2 class="phx-h2">Object Functions</h2>
+<table class="phx-tbl">
+<tr><th>Function</th><th>Description</th></tr>
+<tr><td class="name">boundingBox</td><td>Axis-aligned bounding box of the present meshes of one or more soft bodies, a 2&times;3 matrix [min; max].</td></tr>
+</table>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">An inflated ball dropped on the floor</h4>
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+floor = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Position"</span>, [0 0 -0.1], <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [3 3 0.2]});
+[x, y, z] = sphere(16);
+V = unique([x(:) y(:) z(:)]*0.3, <span class="str">"rows"</span>);
+F = convhull(V);                               <span class="cmt">% outward, counter-clockwise</span>
+ball = phx.SoftBody(gca, <span class="str">"Vertices"</span>, V, <span class="str">"Faces"</span>, F, <span class="str">"Position"</span>, [0 0 1], ...
+    <span class="str">"Compliance"</span>, 1e-4, <span class="str">"Pressure"</span>, 200);
+
+sim = phx.Simulation({floor, ball});
+sim.step(3, 600, 6);</pre>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.FlexibleBody.html">phx.FlexibleBody</a>,
+<a href="phx.IntersectionWeld.html">phx.IntersectionWeld</a>,
+<a href="phx.Body.html">phx.Body</a>,
+<a href="phx.Simulation.html">phx.Simulation</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_bodies.html">Bodies and shapes</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

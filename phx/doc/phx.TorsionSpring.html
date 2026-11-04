@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.TorsionSpring</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.TorsionSpring</div>
+
+<h1 class="phx-title">phx.TorsionSpring</h1>
+<p class="phx-purpose">Torsion spring-damper between two bodies</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.TorsionSpring &nbsp;|&nbsp; Superclass: <a href="phx.base.Object.html">phx.base.Object</a></p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.TorsionSpring</code> is a combined element consisting of an ideal
+torsion spring, an ideal rotary damper and, with a nonzero <code class="phx-inline">Inertance</code>,
+an ideal rotary inerter in parallel. It acts about the z axis of <code class="phx-inline">TransformA</code>
+with the torque
+<code class="phx-inline">M = Stiffness&middot;(Angle - RestAngle) + Damping&middot;rate + Inertance&middot;acceleration</code>,
+where rate and acceleration are those of the angle. It only turns the bodies about the axis: put it
+on a hinge (<a href="phx.RevoluteJoint.html">phx.RevoluteJoint</a>) with the same frames to spring
+the hinge.</p>
+<p>The angle is that of the joints: of the x axis of frame B about the z axis of frame A. While the
+simulation runs it is followed continuously, so the spring winds over any number of turns, like a
+clock spring. The physics engine solves the spring together with the joints and contacts, by a step
+that keeps its energy and stays stable at any stiffness, damping and inertance. The frames are read
+when the simulation starts.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">spring = phx.TorsionSpring(bodyA,bodyB)</span>
+<span class="phx-syntax">spring = phx.TorsionSpring(___,Name,Value)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">spring = phx.TorsionSpring(bodyA,bodyB)</code> creates a torsion spring
+between two bodies about the z axis of their frames of origin. Set other frames with
+<code class="phx-inline">TransformA</code> and <code class="phx-inline">TransformB</code>, as for the
+joints.</p>
+</div>
+
+<h3 class="phx-h3">Input Arguments</h3>
+<table class="phx-tbl">
+<tr><th>Argument</th><th>Type</th><th>Description</th></tr>
+<tr><td class="name">bodyA, bodyB</td><td class="type">phx.Body (scalar)</td><td>The two bodies the spring connects.</td></tr>
+</table>
+
+<h2 class="phx-h2">Properties</h2>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">TransformA</td><td class="dflt">eye(4)</td><td>Frame of the spring in the local space of body A; the spring acts about its z axis.</td></tr>
+<tr><td class="name">TransformB</td><td class="dflt">eye(4)</td><td>Frame of the spring in the local space of body B.</td></tr>
+<tr><td class="name">RestAngle</td><td class="dflt">0</td><td>Angle at which the spring is relaxed, <span class="phx-unit">rad</span>.</td></tr>
+<tr><td class="name">Stiffness</td><td class="dflt">1</td><td>Torsional stiffness, <span class="phx-unit">N&middot;m/rad</span>.</td></tr>
+<tr><td class="name">Damping</td><td class="dflt">0</td><td>Rotary damping coefficient, <span class="phx-unit">N&middot;m&middot;s/rad</span>.</td></tr>
+<tr><td class="name">Inertance</td><td class="dflt">0</td><td>Rotary inertance of an inerter in parallel, <span class="phx-unit">kg&middot;m&sup2;</span>: a torque proportional to the relative angular acceleration about the axis.</td></tr>
+<tr><td class="name">Radius</td><td class="dflt">0.1</td><td>Radius of the drawn symbol, <span class="phx-unit">m</span>.</td></tr>
+<tr><td class="name">Overlay</td><td class="dflt">false</td><td>Draw the spring as an overlay (always on top).</td></tr>
+<tr><td class="name">Torque</td><td class="type">1&times;3 double (read-only)</td><td>Torque acting on the first body, <span class="phx-unit">N&middot;m</span>; the second body gets the opposite torque.</td></tr>
+<tr><td class="name">Angle</td><td class="type">double (read-only)</td><td>Angle of frame B about the axis, <span class="phx-unit">rad</span>: within [&minus;&pi;,&nbsp;&pi;] before the simulation starts, then continuous over the turns.</td></tr>
+<tr><td class="name">Energy</td><td class="type">double (read-only)</td><td>Elastic energy stored in the spring, <span class="phx-unit">J</span> (dependent).</td></tr>
+</table>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">A sprung door</h4>
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+frame = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [0.1 0.1 2]});
+door  = phx.Body(<span class="str">"Position"</span>, [0.5 0 0], <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [0.9 0.05 2]});
+
+T = [eye(3) [-0.5 0 0]'; 0 0 0 1];           <span class="cmt">% hinge axis at the door edge</span>
+phx.RevoluteJoint(frame, door, <span class="str">"TransformB"</span>, T);
+phx.TorsionSpring(frame, door, <span class="str">"TransformB"</span>, T, ...
+    <span class="str">"Stiffness"</span>, 50, <span class="str">"Damping"</span>, 10, <span class="str">"RestAngle"</span>, 0);
+
+door.AngularVelocity = [0 0 3];                <span class="cmt">% push it open</span>
+sim = phx.Simulation(<span class="str">"Gravity"</span>, [0 0 0]);
+sim.step(5, 1000, 10);</pre>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.Spring.html">phx.Spring</a>,
+<a href="phx.RevoluteJoint.html">phx.RevoluteJoint</a>,
+<a href="phx.base.Joint.html">phx.base.Joint</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_joints.html">Joints, springs and ropes</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

@@ -32,6 +32,12 @@ negative values winch it in. <code class="phx-inline">Displacement</code> can be
 <code class="phx-inline">phx.Script</code>, and <code class="phx-inline">Length</code> and
 <code class="phx-inline">Force</code> can be recorded by a <code class="phx-inline">phx.Logger</code>.</p>
 
+<p>The physics engine holds the rope over its pulleys and solves it together with the joints and
+contacts, by a step that keeps its energy and stays stable at any stiffness and damping. The rope
+needs at least two different bodies. <code class="phx-inline">Force</code> is the tension applied
+over the last step; <code class="phx-inline">Length</code> is read from the current poses of the
+bodies.</p>
+
 <h2 class="phx-h2">Creation</h2>
 <h3 class="phx-h3">Syntax</h3>
 <span class="phx-syntax">rope = phx.Rope(bodies)</span>

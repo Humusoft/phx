@@ -36,6 +36,13 @@
 % Springs and ropes
 %   phx.Spring                - Linear spring-damper between two bodies
 %   phx.Rope                  - Rope routed over pulleys
+%   phx.TorsionSpring         - Torsion spring-damper between two bodies
+%
+% Deformable bodies and particles
+%   phx.SoftBody              - Deformable body made of a triangle mesh
+%   phx.FlexibleBody          - Deformable solid made of tetrahedra
+%   phx.IntersectionWeld      - Rigid body welded into a soft body where they overlap
+%   phx.Particles             - Group of sphere particles simulated and drawn in bulk
 %
 % Forces and fields
 %   phx.Thruster              - Body-fixed thrust actuator

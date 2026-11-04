@@ -17,10 +17,17 @@
 <p class="phx-classref">Class&nbsp;&nbsp;phx.Spring &nbsp;|&nbsp; Superclass: <a href="phx.base.Object.html">phx.base.Object</a></p>
 
 <h2 class="phx-h2">Description</h2>
-<p><code class="phx-inline">phx.Spring</code> is a combined element consisting of an ideal spring and
-an ideal damper in parallel, connecting two bodies between local connection points. The force
-follows <code class="phx-inline">F = Stiffness&middot;(length - FreeLength) + Damping&middot;velocity</code>
-and acts along the line joining the two points. The spring can be colored by its force magnitude.</p>
+<p><code class="phx-inline">phx.Spring</code> is a combined element consisting of an ideal spring, an
+ideal damper and, with a nonzero <code class="phx-inline">Inertance</code>, an ideal inerter in
+parallel, connecting two bodies between local connection points. The force follows
+<code class="phx-inline">F = Stiffness&middot;(length - FreeLength) + Damping&middot;velocity + Inertance&middot;acceleration</code>,
+where velocity and acceleration are those of the length, and acts along the line joining the two
+points. The spring can be colored by its force magnitude.</p>
+<p>The physics engine solves the spring together with the joints and contacts, by a step that
+keeps its energy and stays stable at any stiffness, damping and inertance. A stiff spring therefore
+needs no shorter time step than the rest of the scene. <code class="phx-inline">Force</code> is the
+force the spring applied over the last step; <code class="phx-inline">Length</code> is read from the
+current poses of the bodies.</p>
 
 <h2 class="phx-h2">Creation</h2>
 <h3 class="phx-h3">Syntax</h3>
@@ -48,6 +55,7 @@ attached at their origins. Use <code class="phx-inline">PointA</code> and
 <tr><td class="name">FreeLength</td><td class="dflt">0</td><td>Unstretched length of the spring, <span class="phx-unit">m</span>.</td></tr>
 <tr><td class="name">Stiffness</td><td class="dflt">20</td><td>Spring stiffness, <span class="phx-unit">N/m</span>.</td></tr>
 <tr><td class="name">Damping</td><td class="dflt">0</td><td>Damping coefficient, <span class="phx-unit">N&middot;s/m</span>.</td></tr>
+<tr><td class="name">Inertance</td><td class="dflt">0</td><td>Inertance of an inerter in parallel, <span class="phx-unit">kg</span>: a force proportional to the relative acceleration of the connecting points along the line. A mass m on a spring with inertance b oscillates as a mass m&nbsp;+&nbsp;b.</td></tr>
 <tr><td class="name">Colormap</td><td class="dflt">"none"</td><td>Name of the colormap used to color the spring by force.</td></tr>
 <tr><td class="name">ColorRange</td><td class="dflt">[0 100]</td><td>Force range mapped across the whole colormap, <span class="phx-unit">N</span>.</td></tr>
 <tr><td class="name">Overlay</td><td class="dflt">false</td><td>Draw the spring as an overlay (always on top).</td></tr>
@@ -88,6 +96,7 @@ s.showCharacteristic(0.2, [0 1 10]);   <span class="cmt">% +-0.2 m travel, 3 vel
 <div class="phx-seealso">
 <span class="lbl">See also</span>
 <a href="phx.Rope.html">phx.Rope</a>,
+<a href="phx.TorsionSpring.html">phx.TorsionSpring</a>,
 <a href="phx.BushingJoint.html">phx.BushingJoint</a>,
 <a href="phx.SphericalJoint.html">phx.SphericalJoint</a>,
 <a href="phx.Body.html">phx.Body</a>

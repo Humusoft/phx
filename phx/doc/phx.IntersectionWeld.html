@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.IntersectionWeld</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.IntersectionWeld</div>
+
+<h1 class="phx-title">phx.IntersectionWeld</h1>
+<p class="phx-purpose">Rigid body welded into a soft body where they overlap</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.IntersectionWeld &nbsp;|&nbsp; Superclass: <a href="phx.base.Object.html">phx.base.Object</a></p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.IntersectionWeld</code> joins a <a href="phx.SoftBody.html">phx.SoftBody</a>
+or a <a href="phx.FlexibleBody.html">phx.FlexibleBody</a> to a <a href="phx.Body.html">phx.Body</a>
+that is placed so that it overlaps the soft body: every vertex of the soft body that lies inside the
+body's shape when the simulation starts is welded to the body. The body then holds and loads the soft
+body like a metal insert held in rubber: joints, motors, springs and forces act on the soft body
+through it, and the soft body acts back on the body. The two do not collide with each other. One body
+may be welded into several soft bodies and so join them.</p>
+<p>The body should overlap at least three vertices that do not lie on one line, or it cannot pass on
+a turn, and it should not be much lighter than the vertices it holds. The weld is deleted together
+with either of its two objects.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">weld = phx.IntersectionWeld(softBody,body)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">weld = phx.IntersectionWeld(softBody,body)</code> welds
+<code class="phx-inline">body</code> into <code class="phx-inline">softBody</code>.</p>
+</div>
+
+<h3 class="phx-h3">Input Arguments</h3>
+<table class="phx-tbl">
+<tr><th>Argument</th><th>Type</th><th>Description</th></tr>
+<tr><td class="name">softBody</td><td class="type">phx.SoftBody or phx.FlexibleBody (scalar)</td><td>The deformable body.</td></tr>
+<tr><td class="name">body</td><td class="type">phx.Body (scalar)</td><td>The rigid body that overlaps it.</td></tr>
+</table>
+
+<h2 class="phx-h2">Properties</h2>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type</th><th>Description</th></tr>
+<tr><td class="name">VertexCount</td><td class="type">double (read-only)</td><td>Number of vertices of the soft body welded to the body; 0 before the simulation starts. Fewer than 3 gives a warning as the simulation starts.</td></tr>
+</table>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">A rubber block hanging from a plate</h4>
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+[x, y, z] = ndgrid(-0.2:0.1:0.2);
+V = [x(:) y(:) z(:)];
+block = phx.FlexibleBody(gca, <span class="str">"Vertices"</span>, V, <span class="str">"Tetrahedra"</span>, delaunay(V), ...
+    <span class="str">"Position"</span>, [0 0 1], <span class="str">"YoungsModulus"</span>, 1e5);
+plate = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Position"</span>, [0 0 1.2], ...
+    <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [0.6 0.6 0.05]});
+weld = phx.IntersectionWeld(block, plate);    <span class="cmt">% holds the top layer of vertices</span>
+
+sim = phx.Simulation({plate, block});
+sim.step(2, 400, 4);
+weld.VertexCount</pre>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.SoftBody.html">phx.SoftBody</a>,
+<a href="phx.FlexibleBody.html">phx.FlexibleBody</a>,
+<a href="phx.FixedJoint.html">phx.FixedJoint</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_bodies.html">Bodies and shapes</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>
