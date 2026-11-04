@@ -39,7 +39,7 @@ classdef Logger < phx.base.Object
         Getters
     end
 
-    properties (Dependent)
+    properties (Dependent, SetAccess = private)
         % Time axis of recorded channels. Each sample is taken at the
         % simulation step nearest to a multiple of 1/Frequency, so the time
         % step is irregular if simulation step and recording period are not
@@ -64,7 +64,7 @@ classdef Logger < phx.base.Object
     methods
         function obj = Logger(Parents, Options)
             arguments
-                Parents (1, :) % can be a cell array of different objects (inherited from phx.base.Object)
+                Parents (1, :) {mustBeNonempty} % can be a cell array of different objects (inherited from phx.base.Object)
                 Options.?phx.Logger
             end
 

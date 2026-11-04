@@ -87,7 +87,7 @@ classdef Buoyancy < phx.base.Object
     methods
         function obj = Buoyancy(Parents, Options)
             arguments
-                Parents (1, :) {mustBeA(Parents, "phx.Body")}
+                Parents (1, :) {mustBeNonempty, mustBeA(Parents, "phx.Body")}
                 Options.?phx.Buoyancy
             end
 

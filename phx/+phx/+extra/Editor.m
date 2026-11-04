@@ -327,6 +327,8 @@ classdef Editor < handle
             if isempty(obj.Axes) || ~isvalid(obj.Axes)
                 bodies = phx.Body.empty;
             else
+                % TODO findBodies was removed; use phx.Simulation.findTopLevel,
+                % which returns a cell array of all top-level objects, not only bodies
                 bodies = phx.Simulation.findBodies(obj.Axes);
             end
         end

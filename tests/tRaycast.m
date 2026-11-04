@@ -155,7 +155,8 @@ classdef tRaycast < PhxTestCase
 
             sim.step(0.01, 1, -1);
             tc.verifyTrue(all(rc.Hits));
-            tc.verifyEqual(rc.Points(3, :), zeros(1, n), "AbsTol", 1e-9);
+            % Micrometres: an engine may cast in single precision
+            tc.verifyEqual(rc.Points(3, :), zeros(1, n), "AbsTol", 1e-6);
             tc.verifyEqual(rc.Points(1, :), h*tan(th), "AbsTol", 1e-6);
             tc.verifyEqual(rc.Distances, h./cos(th), "AbsTol", 1e-6);
             tc.verifyNumElements(rc.Bodies, nnz(rc.Hits));

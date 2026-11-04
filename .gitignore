@@ -4,6 +4,9 @@ publications/
 # Customer-specific work -- kept locally, not in the public repo
 customer/
 
+# Experimental Jolt Physics gateway -- its own local repository, not in the public repo
+tools/jolt/
+
 # Logo drafts and banners -- kept locally, not in the public repo
 doc/logo/
 

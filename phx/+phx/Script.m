@@ -36,7 +36,7 @@ classdef Script < phx.base.Object
     methods
         function obj = Script(Parents, Curves)
             arguments
-                Parents (1, :) % can be a cell array of different objects (inherited from phx.base.Object)
+                Parents (1, :) {mustBeNonempty} % can be a cell array of different objects (inherited from phx.base.Object)
             end
             arguments (Repeating)
                 Curves (1, :) cell

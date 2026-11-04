@@ -70,6 +70,10 @@ char/string is treated as a MAT file to load; a struct is scanned for its <code 
 <td>How the figure is refreshed when the view is redrawn: <code class="phx-inline">"full"</code>,
 <code class="phx-inline">"interactive"</code>, <code class="phx-inline">"performance"</code> or
 <code class="phx-inline">"none"</code>. See <a href="#redrawmode">Redraw modes</a> below.</td></tr>
+<tr><td class="name">PacingRate</td><td class="dflt">Inf</td>
+<td>Maximum ratio of simulation time to real time: <code class="phx-inline">1</code> runs at most in
+real time, <code class="phx-inline">0.5</code> at half speed, <code class="phx-inline">Inf</code> as
+fast as possible. See <a href="#pacing">Pacing</a> below.</td></tr>
 <tr><td class="name">ExcludeInvisible</td><td class="dflt">true</td>
 <td>Exclude all initially invisible objects from rendering.</td></tr>
 <tr><td class="name">HideInvalid</td><td class="dflt">false</td>
@@ -127,12 +131,40 @@ or its bodies from such a callback. For runs that need no picture at all, suppre
 update, while the redraw pipeline keeps running &mdash; on a 200-body scene that is several times
 the cost of a genuinely headless step.</div>
 
+<h3 class="phx-h3" id="pacing">Pacing</h3>
+<p>By default <code class="phx-inline">step</code> runs as fast as the computer allows, so a simple
+scene can be over before the eye follows it. <code class="phx-inline">PacingRate</code> sets an upper
+limit on the speed of the run instead: the simulation waits whenever it gets ahead of real time
+multiplied by <code class="phx-inline">PacingRate</code>.</p>
+
+<pre class="phx-code">sim = phx.Simulation(ax, <span class="str">"PacingRate"</span>, 1);   <span class="cmt">% at most real time</span>
+sim.step(5, 500, 10);</pre>
+
+<p>The wait happens at each redraw and at the end of each <code class="phx-inline">step</code>, so the
+code between two calls of <code class="phx-inline">step</code> in a loop counts towards the real
+time as well. A single long <code class="phx-inline">step</code> that does not redraw
+(<code class="phx-inline">redrawStep</code> of <code class="phx-inline">-1</code>) runs at full speed and
+waits only at its end.</p>
+
+<p>Pacing only slows a run down. A scene that cannot keep up runs as fast as it can, and after a slow
+moment (a heavy frame, a breakpoint, a pause between two calls) it continues from there at the set
+rate rather than speeding up to catch up. Setting <code class="phx-inline">PacingRate</code> starts the
+timing afresh.</p>
+
+<div class="phx-note">
+<span class="lbl">Note.</span> The wait is done with <code class="phx-inline">pause</code>, which
+services the callback queue and refreshes the figure. With <code class="phx-inline">"performance"</code>
+or <code class="phx-inline">"none"</code> redraw modes the figure therefore reacts and updates during
+the waits. On Windows a single wait can last up to about 16&nbsp;ms longer than requested; the next
+wait makes up for it, so the rate does not drift. Pacing has no effect while
+<code class="phx-inline">pause</code> is turned off by <code class="phx-inline">pause("off")</code>.</div>
+
 <h2 class="phx-h2">Object Functions</h2>
 <table class="phx-tbl">
 <tr><th>Function</th><th>Description</th></tr>
 <tr><td class="name">step</td><td>Perform one or more simulation steps.</td></tr>
-<tr><td class="name">addObjects</td><td>Add bodies (with their children) and rebuild the execution pipelines.</td></tr>
-<tr><td class="name">findBodies</td><td>Find the bodies drawn in an axes (static).</td></tr>
+<tr><td class="name">addObjects</td><td>Add top-level objects (with their children) and rebuild the execution pipelines.</td></tr>
+<tr><td class="name">findTopLevel</td><td>Find the top-level objects drawn in an axes (static).</td></tr>
 <tr><td class="name">dispStructure</td><td>Display the object tree of the scene.</td></tr>
 <tr><td class="name">dispPipelines</td><td>Display the compute and compute-and-redraw execution pipelines.</td></tr>
 <tr><td class="name">delete</td><td>Destroy the engine world and remove the simulation.</td></tr>
@@ -150,26 +182,32 @@ substep. With <code class="phx-inline">redrawStep</code> the view is additionall
 <code class="phx-inline">redrawStep</code>-th substep. Use a value of <code class="phx-inline">-1</code>
 to suppress rendering entirely (headless runs). Smaller substeps improve the stability of stiff
 constraint networks. The way each redraw is performed is set by the
-<a href="#redrawmode">RedrawMode</a> property.</p>
+<a href="#redrawmode">RedrawMode</a> property; the speed of the run can be limited by the
+<a href="#pacing">PacingRate</a> property.</p>
 </div>
 
 <h3 class="phx-h3">addObjects</h3>
-<span class="phx-syntax">bodies = addObjects(sim,axes)</span>
-<span class="phx-syntax">bodies = addObjects(sim,fileName)</span>
-<span class="phx-syntax">bodies = addObjects(sim,bodies)</span>
+<span class="phx-syntax">objs = addObjects(sim,axes)</span>
+<span class="phx-syntax">objs = addObjects(sim,fileName)</span>
+<span class="phx-syntax">objs = addObjects(sim,bodies)</span>
 <div class="phx-desc">
-<p>Adds bodies (and all their children) to a running simulation and rebuilds the pipelines, then
-returns the added bodies for further manipulation.</p>
+<p>Adds top-level objects, such as bodies, with all their children to a running simulation and
+rebuilds the pipelines, then returns the added objects in a cell array for further manipulation. A
+top-level object is one that no other object owns: a joint, a spring or a logger comes along with the
+bodies it belongs to and cannot be added on its own. From axes and from a MAT file only the top-level
+objects are taken; anything else stored there is left out.</p>
 </div>
 
-<h3 class="phx-h3">findBodies</h3>
-<span class="phx-syntax">bodies = phx.Simulation.findBodies(ax)</span>
+<h3 class="phx-h3">findTopLevel</h3>
+<span class="phx-syntax">objs = phx.Simulation.findTopLevel(ax)</span>
 <div class="phx-desc">
-<p>Static method that returns a row array of the valid <a href="phx.Body.html">phx.Body</a> objects
-drawn directly in the axes <code class="phx-inline">ax</code>, in the order of
-<code class="phx-inline">ax.Children</code> (the most recently created first). The objects attached to
-the bodies, such as joints, are reached through their <code class="phx-inline">Children</code>. Use it
-to save the scene shown in an axes, see <a href="phx_ug_scenes.html">Saving and Loading Scenes</a>.</p>
+<p>Static method that returns a row cell array of the valid top-level objects, such as
+<a href="phx.Body.html">phx.Body</a> objects, drawn directly in the axes
+<code class="phx-inline">ax</code>, in the order of <code class="phx-inline">ax.Children</code> (the
+most recently created first). These are the objects that <code class="phx-inline">addObjects</code>
+takes from axes. The objects attached to them, such as joints, are reached through their
+<code class="phx-inline">Children</code>. Use it to save the scene shown in an axes, see
+<a href="phx_ug_scenes.html">Saving and Loading Scenes</a>.</p>
 </div>
 
 <h2 class="phx-h2">Examples</h2>

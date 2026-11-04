@@ -28,8 +28,8 @@ model &mdash; an imported robot, a vehicle &mdash; out of the script that simula
 <h2 class="phx-h2">Saving a scene</h2>
 
 <p>Save the variables holding the bodies. Their names do not matter: on loading, PHX picks every
-<code class="phx-inline">phx.Body</code> it finds in the file and ignores anything else stored
-alongside them.</p>
+top-level object it finds in the file, that is every <code class="phx-inline">phx.Body</code> and any
+other object that no other object owns, and ignores anything else stored alongside them.</p>
 
 <pre class="phx-code">ground = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [6 6 0.3]});
 arm    = phx.Body(<span class="str">"Position"</span>, [0 0 2], <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [1 0.2 0.2]});
@@ -37,11 +37,16 @@ phx.RevoluteJoint(ground, arm, <span class="str">"PointA"</span>, [0 0 2]);
 
 save(<span class="str">"scene.mat"</span>, <span class="str">"ground"</span>, <span class="str">"arm"</span>);   <span class="cmt">% the joint is a child of both, it travels along</span></pre>
 
-<p>To store whatever is currently drawn in an axes &mdash; the form the viewer uses &mdash; collect
-the bodies first with <a href="phx.Simulation.html">phx.Simulation.findBodies</a>:</p>
+<p>To store whatever is currently drawn in an axes, collect the top-level objects first with
+<a href="phx.Simulation.html">phx.Simulation.findTopLevel</a>. It returns them in a cell array, which
+loading does not look into; when they are all bodies, join them into one array:</p>
 
-<pre class="phx-code">bodies = phx.Simulation.findBodies(ax);
+<pre class="phx-code">objs = phx.Simulation.findTopLevel(ax);
+bodies = [objs{:}];
 save(<span class="str">"scene.mat"</span>, <span class="str">"bodies"</span>);</pre>
+
+<p>The viewer&rsquo;s <b>Save model</b> stores one variable per class instead, named after it
+(<code class="phx-inline">Body</code>, &hellip;), so that a scene of mixed objects is saved too.</p>
 
 <p>For a larger model it pays to keep the parts named, so that the script loading it can address them
 individually. Build a struct and write it out field by field with

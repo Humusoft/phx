@@ -33,6 +33,13 @@ classdef Simulation < phx.base.Object
         PipelineHold = 0
     end
 
+    properties (Access = private, Transient)
+        % Pacing anchor: tic at the anchor (0 = not anchored) and the
+        % simulation time at the same moment
+        PacingClock = uint64(0)
+        PacingTime = 0
+    end
+
     properties (SetAccess = private)
         % Simulation time
         Time = 0
@@ -51,6 +58,11 @@ classdef Simulation < phx.base.Object
 
         % Turn off visibility for all objects that become invalid during the simulation
         HideInvalid (1, 1) logical = false
+
+        % Maximum ratio of simulation time to real time (Inf = unpaced)
+        %   Checked at every redraw and at the end of each step; a late
+        %   simulation continues from there and never catches up.
+        PacingRate (1, 1) double {mustBePositive} = Inf
 
         % Global gravitational acceleration
         Gravity (1, 3) double = [0 0 -9.81]
@@ -78,43 +90,59 @@ classdef Simulation < phx.base.Object
         end
 
         function bodies = addObjects(obj, simObjects)
-        %addObjects Adds phx.Body objects with all of their children objects to
+        %addObjects Adds top-level objects with all of their children objects to
         % the current simulation and rebuilds execution pipelines.
         %
-        %   addObjects(axes) adds all bodies available in the given axes object.
+        %   A top-level object is one that no other object owns, such as a
+        %   phx.Body: everything attached to it (joints, springs, sensors)
+        %   comes along as its child. Soft bodies, flexible bodies and
+        %   particle groups are top-level objects too.
         %
-        %   addObjects(fileName) adds all bodies available in the given MAT file.
+        %   addObjects(axes) adds all top-level objects drawn in the given axes.
         %
-        %   addObjects(bodies) adds all bodies from given array, cell array or structure.
+        %   addObjects(fileName) adds all top-level objects in the given MAT file.
         %
-        %   bodies = addObjects(___) returns added bodies for further manipulation.
+        %   addObjects(objects) adds the objects of the given array, cell array
+        %   or structure; an object owned by another one is an error.
+        %
+        %   bodies = addObjects(___) returns the added objects for further
+        %   manipulation.
         %
         % See also phx.Simulation, phx.Body
 
             bodies = {};
-            switch class(simObjects)
-                case {'matlab.graphics.axis.Axes', 'matlab.ui.control.UIAxes'}
-                    obj.Children = addParent(phx.Simulation.findBodies(simObjects), obj);
-                    bodies = obj.Children;
-                case {'string', 'char'}
-                    mat = load(simObjects);
-                    bodies = obj.addObjects(mat);
-                case 'struct'
-                    for field = fieldnames(simObjects)'
-                        switch class(simObjects.(field{1}))
-                            case 'phx.Body'
-                                bodies = [bodies simObjects.(field{1})]; %#ok<AGROW> unknown count
-                        end
+            if isa(simObjects, 'matlab.graphics.axis.Axes') || isa(simObjects, 'matlab.ui.control.UIAxes')
+                obj.Children = addParent(phx.Simulation.findTopLevel(simObjects), obj);
+                bodies = obj.Children;
+            elseif ischar(simObjects) || isstring(simObjects)
+                bodies = obj.addObjects(load(simObjects));
+            elseif isstruct(simObjects)
+                % Fields holding anything else, such as joints or settings, are left out
+                for field = fieldnames(simObjects)'
+                    value = simObjects.(field{1});
+                    if isa(value, 'phx.base.Object')
+                        bodies = [bodies num2cell(value(arrayfun(@phx.Simulation.isTopLevel, value)))]; %#ok<AGROW> unknown count
                     end
-                    bodies = obj.addObjects(bodies);
-                case {'phx.Body', 'cell'}
-                    bodies = addParent(simObjects, obj, "phx.Body");
-                    bodies = bodies(:)'; % ensure row format
-                    obj.Children = [obj.Children bodies];
-                otherwise
-                    error("phx:Simulation:unsupportedSource", "Unsupported source type '%s'.", class(simObjects));
+                end
+                bodies = obj.addObjects(bodies);
+            elseif iscell(simObjects) || isa(simObjects, 'phx.base.Object')
+                if ~iscell(simObjects)
+                    simObjects = num2cell(simObjects);
+                end
+                for i = 1:numel(simObjects)
+                    mustBeA(simObjects{i}, "phx.base.Object");
+                    if ~phx.Simulation.isTopLevel(simObjects{i})
+                        error("phx:Simulation:notTopLevel", ...
+                            "A %s belongs to another object; add the object it belongs to instead.", class(simObjects{i}));
+                    end
+                end
+                bodies = addParent(simObjects, obj);
+                bodies = bodies(:)'; % ensure row format
+                obj.Children = [obj.Children bodies];
+            else
+                error("phx:Simulation:unsupportedSource", "Unsupported source type '%s'.", class(simObjects));
             end
-            
+
             obj.updatePipelines;
         end
 
@@ -171,6 +199,12 @@ classdef Simulation < phx.base.Object
             world = obj.ObjectHandle;
             epCompute = obj.EPCompute;
             epComplete = obj.EPComplete;
+            paced = obj.PacingRate < Inf;
+            if paced && obj.PacingClock == 0
+                obj.PacingClock = tic;
+                obj.PacingTime = time;
+            end
+            animate = false;
 
             % Simulation steps
             for s = 1:substeps
@@ -190,6 +224,9 @@ classdef Simulation < phx.base.Object
                 time = time + dt;
 
                 if animate
+                    if paced
+                        obj.pace(time);
+                    end
                     switch obj.RedrawMode
                         case "performance"
                             matlab.graphics.internal.drawnow.startUpdate;
@@ -201,7 +238,17 @@ classdef Simulation < phx.base.Object
                 end
             end
 
+            % The last substep has not been paced by a redraw
+            if paced && ~animate
+                obj.pace(time);
+            end
+
             obj.Time = obj.Time + interval;
+        end
+
+        function set.PacingRate(obj, value)
+            obj.PacingRate = value;
+            obj.PacingClock = uint64(0);
         end
 
         function set.Gravity(obj, value)
@@ -234,6 +281,23 @@ classdef Simulation < phx.base.Object
                     obj.EPCompute(end + 1) = entry;
                 end
                 obj.EPComplete(end + 1) = entry;
+            end
+        end
+
+        function pace(obj, time)
+        %pace Waits until the simulation time is due in real time.
+        %
+        %   The anchor stays fixed while the simulation keeps up, so an
+        %   oversleep of pause is made up in the next wait. A simulation
+        %   that is late is re-anchored at the current moment instead of
+        %   catching up, so it never runs faster than PacingRate.
+
+            wait = (time - obj.PacingTime)/obj.PacingRate - toc(obj.PacingClock);
+            if wait > 0
+                pause(wait);
+            else
+                obj.PacingClock = tic;
+                obj.PacingTime = time;
             end
         end
     end
@@ -358,8 +422,15 @@ classdef Simulation < phx.base.Object
         end
 
         function destroyObject(obj)
+            % A simulation whose construction failed has no world yet
+            if isempty(obj.ObjectHandle)
+                return
+            end
+
+            % Bodies and soft bodies keep different states
+            state = cell(1, numel(obj.Children));
             for i = 1:numel(obj.Children)
-                state(i) = obj.Children{i}.stateTransfer;
+                state{i} = obj.Children{i}.stateTransfer;
             end
 
             phx.engine.io('clear', obj.ObjectHandle);
@@ -367,7 +438,7 @@ classdef Simulation < phx.base.Object
 
             for i = 1:numel(obj.Children)
                 if isvalid(obj.Children{i}.Graphics)
-                    obj.Children{i}.stateTransfer(state(i));
+                    obj.Children{i}.stateTransfer(state{i});
                 end
             end
         end
@@ -395,25 +466,35 @@ classdef Simulation < phx.base.Object
             obj.updatePipelines;
         end
 
-        function bodies = findBodies(ax)
-        %findBodies Finds the bodies drawn in an axes.
+        function objs = findTopLevel(ax)
+        %findTopLevel Finds the top-level objects drawn in an axes.
         %
-        %   bodies = phx.Simulation.findBodies(ax) returns a row array of the
-        %   valid phx.Body objects drawn directly in the axes ax, in the order
-        %   of ax.Children (the most recently created first). The objects
-        %   attached to the bodies, such as joints, are reached through their
-        %   Children.
+        %   objs = phx.Simulation.findTopLevel(ax) returns a row cell array of
+        %   the valid top-level objects drawn directly in the axes ax, such as
+        %   bodies, in the order of ax.Children (the most recently created
+        %   first). A top-level object is one that no other object owns; the
+        %   objects attached to it, such as joints, are reached through its
+        %   Children. These are the objects that addObjects takes from axes.
         %
-        % See also phx.Simulation, phx.Body
+        % See also phx.Simulation.addObjects, phx.Body
 
-            bodies = phx.Body.empty;
+            objs = {};
             children = ax.Children;
             for i = 1:numel(children)
-                body = getappdata(children(i), 'phxObject');
-                if ~isempty(body) && isa(body, 'phx.Body') && isvalid(body)
-                    bodies(end + 1) = body; %#ok<AGROW> unknown size
+                found = getappdata(children(i), 'phxObject');
+                if ~isempty(found) && phx.Simulation.isTopLevel(found)
+                    objs{end + 1} = found; %#ok<AGROW> unknown size
                 end
             end
+        end
+    end
+
+    methods (Static, Access = private)
+        function tf = isTopLevel(simObject)
+            % A valid object that no other object owns; a simulation it already
+            % belongs to does not count, so a scene can be simulated again
+            tf = isvalid(simObject) && ~isa(simObject, 'phx.Simulation') ...
+                && all(cellfun(@(p) isa(p, 'phx.Simulation'), simObject.Parents));
         end
     end
 

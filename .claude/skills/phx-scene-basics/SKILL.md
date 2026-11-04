@@ -498,18 +498,35 @@ responsive is `RedrawMode`'s job, not an extra flush per substep. Add a single `
 in the *outer* loop iteration only when you draw your own overlay next to the scene
 (`text`, `plot`, `viewer.displayText`), which the scene's own redraw doesn't cover.
 
+`sim.PacingRate` caps the speed of the run: `1` = at most real time, `0.5` = half speed,
+`Inf` (the default) = as fast as the computer allows. The wait happens at each redraw and
+at the end of each `step` (a `redrawStep = -1` call waits only at its end); a scene that
+falls behind just runs as fast as it can and never speeds up to catch up. The wait is a
+`pause`, so even under `"performance"` the window reacts while it waits.
+**Don't set it on your own.** When a simple scene — a falling ball, a pendulum, an
+educational demo — will be over faster than the eye can follow, offer it to the user as an
+option in one line of your reply (e.g. "it runs about 10x faster than real time; add
+`"PacingRate", 1` to watch it at real speed") and add it only if they want it. Never pace
+headless runs, parameter sweeps or anything that reports a timing number.
+
+```matlab
+sim = phx.Simulation(ax, "PacingRate", 1);   % at most real time — only on the user's request
+```
+
 ## Saving & loading scenes (MAT files)
 
 A scene is just `phx.Body` handle objects, so plain `save`/`load` is the whole mechanism —
 there is no export format. **Save the bodies**: everything attached to one (shapes, joints,
 springs, ropes, force elements, loggers, zones) is a *child* of that body and is written
-with it. Variable names are irrelevant on the way back in — loading picks every `phx.Body`
-in the file and ignores the rest.
+with it. Variable names are irrelevant on the way back in — loading picks every top-level
+object (`phx.Body` or anything else no other object owns) in the file and ignores the rest,
+including cell arrays.
 
 ```matlab
 save("scene.mat", "ground", "arm");            % the joint between them travels along
-bodies = phx.Simulation.findBodies(ax);        % or grab whatever is drawn in an axes
-save("scene.mat", "bodies");                   % (this is what the viewer's Save model does)
+objs = phx.Simulation.findTopLevel(ax);        % or grab whatever is drawn in an axes (a cell)
+bodies = [objs{:}];                            % all bodies here: join them, a cell is not loaded
+save("scene.mat", "bodies");                   % (the viewer's Save model writes one variable per class)
 
 model.chassis = chassis; model.wheels = [wFL wFR wRL wRR];
 save("saved_buggy.mat", "-struct", "model");   % keeps the parts named
