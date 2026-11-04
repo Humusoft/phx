@@ -3,7 +3,8 @@ name: phx-scene-basics
 description: >
   Build and run a physics scene with the PHX MATLAB toolbox (phx.* objects over
   the Bullet engine). Use when creating phx.Body objects, attaching phx.shape.*
-  geometry, importing meshes (STL/OBJ/PLY) or URDF models, using the phx.assembly
+  geometry, soft and flexible bodies or particle groups (phx.SoftBody,
+  phx.FlexibleBody, phx.Particles), importing meshes (STL/OBJ/PLY) or URDF models, using the phx.assembly
   prefab builders (arena, chain, scatter, wall, import), drawing the scene into
   phx.extra.Viewer (the default) or plain axes, stepping a phx.Simulation,
   saving a scene to a MAT file or loading one back, or running a PHX scene
@@ -366,6 +367,53 @@ convex hull would seal the bore shut and nothing could be poured through it.
 `Profile`. That last one is how a revolved profile gets a **smooth rolling rim** (a
 wheel, a washer) instead of a faceted hull, and it is the only envelope of that shape
 that needs no graphics.
+
+## Deformable bodies and particles
+
+Besides rigid `phx.Body` objects a scene can hold three engine objects of their own kind.
+Each takes the axes (or `[]`) as its first argument like a body, is **top-level** (hand it
+to `phx.Simulation` / `addObjects` like a body, e.g. `phx.Simulation({floor, ball})` or
+the axes) and has `boundingBox`. They are newer than the rest of PHX and their tuning is
+still in progress: check the result visually, and prefer rigid bodies unless deformation
+or a bulk of grains is the point.
+
+```matlab
+% Soft body: a triangle mesh whose vertices are particles held by its edges
+[x, y, z] = sphere(16); V = unique([x(:) y(:) z(:)]*0.3, "rows"); F = convhull(V);
+ball = phx.SoftBody(ax, "Vertices", V, "Faces", F, "Position", [0 0 1], ...
+    "Mass", 1, "Compliance", 1e-4, "Pressure", 200);   % closed mesh, inflated
+
+% Flexible body: an elastic solid of tetrahedra (Neo-Hookean)
+[x, y, z] = ndgrid(-0.2:0.1:0.2); W = [x(:) y(:) z(:)];
+block = phx.FlexibleBody(ax, "Vertices", W, "Tetrahedra", delaunay(W), ...
+    "Position", [1 0 0.5], "YoungsModulus", 2e5, "PoissonsRatio", 0.45, ...
+    "ElementOrder", "quadratic");                      % or "linear" (default)
+
+% A rigid body overlapping it holds it: vertices inside the body are welded to it
+plate = phx.Body(ax, "Type", "static", "Position", [1 0 0.7], ...
+    "Shape", {"Box", "Size", [0.6 0.6 0.05]});
+phx.IntersectionWeld(block, plate);
+
+% Particles: thousands of equal spheres simulated and drawn in bulk
+gravel = phx.Particles(ax, "Positions", P, "Radius", 0.02, "Density", 1600, ...
+    "Color", [0.8 0.6 0.4], "RandomTint", 0.4, "MarkerSize", 8);
+gravel.add(Pnew); gravel.remove(gravel.Positions(:, 3) < -1);   % any time, also mid-run
+```
+
+- `SoftBody` (cloth, cushion, inflated ball) and `FlexibleBody` (rubber block, pad,
+  bushing) collide with rigid bodies only, not with each other. **No joint attaches to
+  them**: weld a `phx.Body` into them with `phx.IntersectionWeld` (it should overlap at
+  least 3 vertices not on one line) and connect joints, springs and forces to that body.
+- The mesh is the rest shape, placed at `Position`/`Orientation` when the simulation
+  starts; mesh and material are read then, the friction/damping/pressure settings at any
+  time. `CurrentVertices` gives the deformed mesh; `FlexibleBody.VonMisesStress` the
+  stress per vertex (colour it with `Colormap`/`ColorRange`).
+- `FlexibleBody` linear tetrahedra get softer than the material on a coarse mesh; the
+  quadratic ones keep the stiffness and are solved implicitly (`Tolerance`).
+- `Particles`: at most 10 000 per group (use more groups); `Positions`/`Velocities` are
+  N×3 arrays, `applyForces(F)` acts in the next step of a running simulation. Set the
+  engine's `LengthScale` to the grain size class (`phx.engine.Settings("LengthScale",
+  0.01)` for centimetre grains).
 
 ## Prefab assemblies (`phx.assembly.*`)
 

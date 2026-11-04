@@ -2,7 +2,7 @@
 name: phx-constraints-forces
 description: >
   Connect and actuate PHX bodies — joints (Fixed/Bushing/Revolute/Prismatic/
-  Cylindrical/Spherical/Gear/Generic), springs and ropes (Spring/Rope), force/field elements
+  Cylindrical/Spherical/Gear/Generic), springs and ropes (Spring/Rope/TorsionSpring), force/field elements
   (Thruster, Buoyancy, Resistance, Dipole, Monopole) and ad-hoc
   applyForce/applyTorque. Also covers driving parameters over time with phx.Script,
   per-step control laws with phx.Function, and the read-state / set-actuator / step
@@ -117,19 +117,39 @@ initializes, so changing it mid-run only takes effect after a pipeline rebuild
 ## Springs & ropes (compliant elements)
 
 ```matlab
-% Spring = ideal spring + damper in parallel
+% Spring = ideal spring + damper (+ inerter) in parallel
 s = phx.Spring(boxA, boxB, ...
     "Stiffness", 3e5, "Damping", 2e3, ...
     "FreeLength", 0, ...                   % rest length
+    "Inertance", 0, ...                    % kg; an inerter adds it to the moving mass
     "PointA", [2 0 0], "PointB", [-2 0 0], ...
     "Visible", true, "Colormap", "jet", "ColorRange", [0 2e6]);  % color = force magnitude
-s.Force                                    % read current force vector (3-vector)
-s.Length                                   % read current length
+s.Force                                    % force on boxA over the last step (3-vector)
+s.Length                                   % current length (distance of the points)
 s.Energy                                   % elastic energy (J), dependent
+
+% Torsion spring about the z axis of TransformA (frames as for the joints)
+t = phx.TorsionSpring(frame, door, "TransformB", T, ...
+    "Stiffness", 50, "Damping", 10, "RestAngle", 0);   % N*m/rad, N*m*s/rad, rad
+t.Angle                                    % continuous over turns while running
+t.Torque                                   % torque on the first body (3-vector)
 ```
 
-- `phx.Spring` — linear spring+damper between two points. `Colormap`/`ColorRange`
-  visualize force magnitude along the drawn line.
+- **All three are constraints of the engine**, solved with the joints and contacts by a
+  step that keeps their energy and is **stable at any stiffness and damping** — a stiff
+  spring needs no shorter `dt` than the rest of the scene. They need no MATLAB work per
+  step. Changing `Stiffness`, `Damping`, `FreeLength` or `Inertance` mid-run takes effect
+  at once.
+- `phx.Spring` — linear spring+damper between two points, force
+  `k·(L − FreeLength) + c·L' + b·L''`. `Inertance` b (kg) is an ideal inerter in parallel:
+  a mass m on it oscillates as m + b (suspension and vibration-isolation models).
+  `Length` is the full current length (extension = `Length - FreeLength`).
+  `Colormap`/`ColorRange` visualize force magnitude along the drawn line.
+- `phx.TorsionSpring` — torsion spring+rotary damper (+ rotary `Inertance`, kg·m²) about
+  the z axis of `TransformA`; it only turns the bodies about that axis, so put it on a
+  `phx.RevoluteJoint` with the **same frames** to spring the hinge. The angle (that of
+  the joints) is followed continuously, so it winds over any number of turns like a clock
+  spring.
 - `phx.Rope` — a rope routed through **two or more** bodies: the first and last are
   the rope ends, every body in between acts as an ideal frictionless **pulley**, so a
   single tension acts along the whole run (a body may appear repeatedly with different
@@ -138,7 +158,8 @@ s.Energy                                   % elastic energy (J), dependent
   (spring+damper when stretched past its free length, slack otherwise). The free length
   is taken from the initial configuration (`InitialLength`) and shifted at runtime by
   `Displacement` — positive pays out, negative winches in, drivable by a `phx.Script`.
-  `Length` and `Force` are readable/loggable. See `phxex_tackle`.
+  `Length` and `Force` (the tension) are readable/loggable. It needs at least two
+  **different** bodies. See `phxex_tackle`.
 
 Note: `phx.BushingJoint` (the compliant 6-DOF counterpart of `phx.FixedJoint` — an
 elastic bushing with per-axis linear/angular stiffness and damping) is a **joint**, not a
