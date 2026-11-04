@@ -116,7 +116,7 @@ classdef PlanarShadow < phx.base.Object
     methods
         function obj = PlanarShadow(Bodies, Options)
             arguments
-                Bodies (1, :) {mustBeA(Bodies, "phx.Body")}
+                Bodies (1, :) {mustBeNonempty, mustBeA(Bodies, "phx.Body")}
                 Options.?phx.PlanarShadow
             end
 

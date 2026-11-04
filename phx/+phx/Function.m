@@ -40,7 +40,7 @@ classdef Function < phx.base.Object
     methods
         function obj = Function(Parents, Callback)
             arguments
-                Parents (1, :) % can be a cell array of different objects (inherited from phx.base.Object)
+                Parents (1, :) {mustBeNonempty} % can be a cell array of different objects (inherited from phx.base.Object)
                 Callback (1, 1) function_handle
             end
 

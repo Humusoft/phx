@@ -399,9 +399,15 @@ classdef Viewer < handle
             
             unknownLimits = true;
             if obj.ViewMode == "axis"
-                bodies = phx.Simulation.findBodies(obj.Axes);
-                if ~isempty(bodies)
-                    bbox = bodies.boundingBox;
+                % Objects without a boundingBox method do not count
+                bbox = [Inf Inf Inf; -Inf -Inf -Inf];
+                for found = phx.Simulation.findTopLevel(obj.Axes)
+                    if ismethod(found{1}, "boundingBox")
+                        b = found{1}.boundingBox;
+                        bbox = [min(bbox(1, :), b(1, :)); max(bbox(2, :), b(2, :))];
+                    end
+                end
+                if all(isfinite(bbox), "all")
                     obj.Axes.XLim = bbox(1:2);
                     obj.Axes.YLim = bbox(3:4);
                     obj.Axes.ZLim = bbox(5:6);
@@ -448,7 +454,7 @@ classdef Viewer < handle
 
             switch value
                 case "headlight"
-                    obj.Lights = light(obj.Axes, 'Style', 'local', 'Tag', 'phxViewer', 'Position', obj.Axes.CameraPosition);
+                    obj.Lights = light(obj.Axes, 'Style', 'infinite', 'Tag', 'phxViewer', 'Position', obj.Axes.CameraPosition);
                 case "studio"
                     obj.Lights(1) = light(obj.Axes, 'Style', 'infinite', 'Tag', 'phxViewer', 'Position', [0.4545 -0.4545  0.7660], 'Color', [0.8317 0.7984 0.7485]); % key
                     obj.Lights(2) = light(obj.Axes, 'Style', 'infinite', 'Tag', 'phxViewer', 'Position', [-0.6124  0.6124  0.5000], 'Color', [0.4292 0.4591 0.4990]); % back
@@ -1024,8 +1030,21 @@ classdef Viewer < handle
         function menuSave(obj, source, event)
             [file, folder] = uiputfile("*.mat", source.Text, "model.mat");
             if ischar(file)
-                bodies = phx.Simulation.findBodies(obj.Axes);
-                save(fullfile(folder, file), "bodies");
+                % One variable per class, named after it (Body, Particles, ...)
+                scene = struct();
+                for found = phx.Simulation.findTopLevel(obj.Axes)
+                    type = class(found{1});
+                    name = regexprep(type, ".*\.", "");
+                    if isfield(scene, name) && ~strcmp(class(scene.(name)), type)
+                        name = strrep(type, ".", "_"); % same name in another namespace
+                    end
+                    if isfield(scene, name)
+                        scene.(name)(end + 1) = found{1};
+                    else
+                        scene.(name) = found{1};
+                    end
+                end
+                save(fullfile(folder, file), "-struct", "scene");
             end
         end
     end

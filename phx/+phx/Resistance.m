@@ -45,7 +45,7 @@ classdef Resistance < phx.base.Object
     methods
         function obj = Resistance(Parents, Options)
             arguments
-                Parents (1, :) {mustBeA(Parents, "phx.Body")}
+                Parents (1, :) {mustBeNonempty, mustBeA(Parents, "phx.Body")}
                 Options.?phx.Resistance
             end
 
