@@ -223,7 +223,7 @@ classdef Rope < phx.base.Object
                 % update it
                 obj.WorldHandle = world;
                 handles = cellfun(@(p) p.ObjectHandle, obj.Parents);
-                obj.ObjectHandle = phx.engine.io('add', world, 'ropeconstraint', handles, obj.Points', ...
+                obj.ObjectHandle = phx.engine.io('add', world, 'rope', handles, obj.Points', ...
                     obj.engineLength, obj.Stiffness, obj.Damping);
             end
         end

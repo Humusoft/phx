@@ -65,7 +65,7 @@ classdef FixedJoint < phx.base.Joint
                 % across pipeline rebuilds. Properties changed after that do not
                 % reach it.
                 obj.WorldHandle = world;
-                obj.ObjectHandle = phx.engine.io('add', world, 'fixedconstraint', obj.Parents{1}.ObjectHandle, obj.Parents{2}.ObjectHandle, obj.TransformA(:), obj.TransformB(:), ~obj.MutualCollisions);
+                obj.ObjectHandle = phx.engine.io('add', world, 'fixed', [obj.Parents{1}.ObjectHandle obj.Parents{2}.ObjectHandle], obj.TransformA, obj.TransformB, obj.MutualCollisions);
             end
         end
     end

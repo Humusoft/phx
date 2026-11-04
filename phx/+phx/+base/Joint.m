@@ -86,16 +86,18 @@ classdef Joint < phx.base.Object
         % from the first coordinate system and positive on its positive side.
         Distance (1, 1) double
 
-        % Force acting on the body A
+        % Force the joint exerted on body A in the last step (N, world frame)
         ForceA (1, 3) double
 
-        % Torque acting on the body A
+        % Torque the joint exerted on body A in the last step (N*m, world frame)
+        % About the centre of mass of body A.
         TorqueA (1, 3) double
 
-        % Force acting on the body B
+        % Force the joint exerted on body B in the last step (N, world frame)
         ForceB (1, 3) double
 
-        % Torque acting on the body B
+        % Torque the joint exerted on body B in the last step (N*m, world frame)
+        % About the centre of mass of body B.
         TorqueB (1, 3) double
     end
 
@@ -199,8 +201,8 @@ classdef Joint < phx.base.Object
 
         function value = get.ForceA(obj)
             if ~isempty(obj.ObjectHandle)
-                [f, ~, ~, ~] = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'feedback');
-                value = f;
+                F = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'feedback');
+                value = F(:, 1)';
             else
                 value = [NaN NaN NaN];
             end
@@ -208,8 +210,8 @@ classdef Joint < phx.base.Object
 
         function value = get.TorqueA(obj)
             if ~isempty(obj.ObjectHandle)
-                [~, f, ~, ~] = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'feedback');
-                value = f;
+                F = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'feedback');
+                value = F(:, 2)';
             else
                 value = [NaN NaN NaN];
             end
@@ -217,8 +219,8 @@ classdef Joint < phx.base.Object
 
         function value = get.ForceB(obj)
             if ~isempty(obj.ObjectHandle)
-                [~, ~, f, ~] = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'feedback');
-                value = f;
+                F = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'feedback');
+                value = F(:, 3)';
             else
                 value = [NaN NaN NaN];
             end
@@ -226,8 +228,8 @@ classdef Joint < phx.base.Object
 
         function value = get.TorqueB(obj)
             if ~isempty(obj.ObjectHandle)
-                [~, ~, ~, f] = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'feedback');
-                value = f;
+                F = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'feedback');
+                value = F(:, 4)';
             else
                 value = [NaN NaN NaN];
             end

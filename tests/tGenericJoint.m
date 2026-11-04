@@ -5,9 +5,9 @@ classdef tGenericJoint < PhxTestCase
 %   limits equal is locked at that value - which, with the all-zero defaults,
 %   makes a bare joint rigid - an axis whose lower limit exceeds its upper one
 %   is free, and anything in between bounds the travel. The
-%   angular limits are checked in both directions because the engine measures
-%   the angles the other way round and the class compensates for it - a
-%   regression there would silently mirror every bounded rotation.
+%   angular limits are checked in both directions, as a sign slip in the
+%   chain to the engine would silently mirror every bounded rotation. The
+%   limits write through to a running simulation.
 %
 %   Only what is specific to this joint lives here; what it shares with the
 %   rest of the family - the joint frame properties inherited from
@@ -114,6 +114,30 @@ classdef tGenericJoint < PhxTestCase
             sim.step(3, 3000, -1);
             p = b.Position;
             tc.verifyEqual(atan2(-p(3), p(2)), 0.2, "AbsTol", 0.02);
+        end
+
+        function limitsSetDuringTheRunTakeEffect(tc)
+            % Starting rigid, the joint lets the body drop onto a stop
+            % opened mid-run, moves with the stop, and lets go when freed
+            [~, b, j, sim] = tc.scene();
+            sim.step(0.5, 250, -1);
+            tc.verifyEqual(b.Position, [0 0 0], "AbsTol", 1e-3);
+
+            j.LowerLinearLimits = [0 0 -0.3];
+            sim.step(1, 500, -1);
+            tc.verifyEqual(b.Position(3), -0.3, "AbsTol", 2e-3, ...
+                "The stop opened during the run did not take effect.");
+
+            j.LowerLinearLimits = [0 0 -0.5];
+            sim.step(1, 500, -1);
+            tc.verifyEqual(b.Position(3), -0.5, "AbsTol", 2e-3);
+
+            j.LowerAngularLimits = [1 1 1];
+            j.UpperAngularLimits = [-1 -1 -1];
+            j.LowerLinearLimits = [1 1 1];
+            j.UpperLinearLimits = [-1 -1 -1];
+            sim.step(0.5, 250, -1);
+            tc.verifyLessThan(b.Position(3), -1, "The freed body did not fall.");
         end
 
         function rotatedJointFrameRotatesTheConstrainedAxes(tc)

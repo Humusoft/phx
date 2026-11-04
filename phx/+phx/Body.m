@@ -114,12 +114,11 @@ classdef Body < phx.base.Object
         SurfaceVelocity (1, 3) double {mustBeFinite} = [0 0 0]
 
         % Force at the centre of mass (N) in the body frame
-        % Every assignment applies it for the next step only, the engine does
-        % not hold it yet: a script assigns it before each step. The PHX Model
-        % block writes its inputs at every sample, so there it acts throughout.
+        % It acts in every step, turning with the body, until changed; set it
+        % to [0 0 0] to stop it.
         AppliedForce (1, 3) double {mustBeFinite} = [0 0 0]
 
-        % Torque (N*m) in the body frame, applied like AppliedForce
+        % Torque (N*m) in the body frame, acting like AppliedForce until changed
         AppliedTorque (1, 3) double {mustBeFinite} = [0 0 0]
 
         % Custom callback for double-click action on any part of this body
@@ -427,15 +426,15 @@ classdef Body < phx.base.Object
 
         function set.AppliedForce(obj, value)
             obj.AppliedForce = value;
-            if any(value) && ~isempty(obj.ObjectHandle)
-                phx.engine.io('apply', obj.WorldHandle, obj.ObjectHandle, 'centralforce', value, true);
+            if ~isempty(obj.ObjectHandle)
+                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'appliedforce', value);
             end
         end
 
         function set.AppliedTorque(obj, value)
             obj.AppliedTorque = value;
-            if any(value) && ~isempty(obj.ObjectHandle)
-                phx.engine.io('apply', obj.WorldHandle, obj.ObjectHandle, 'torque', value, true);
+            if ~isempty(obj.ObjectHandle)
+                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'appliedtorque', value);
             end
         end
 
@@ -824,6 +823,14 @@ classdef Body < phx.base.Object
                 obj.Restitution = obj.Restitution;
                 obj.Collisions = obj.Collisions;
                 obj.SurfaceVelocity = obj.SurfaceVelocity;
+                % The persistent loads go with the engine body, so a new one
+                % takes them over
+                if valid && any(obj.AppliedForce)
+                    obj.AppliedForce = obj.AppliedForce;
+                end
+                if valid && any(obj.AppliedTorque)
+                    obj.AppliedTorque = obj.AppliedTorque;
+                end
             else
                 valid = true;
             end

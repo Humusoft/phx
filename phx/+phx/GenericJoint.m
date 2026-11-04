@@ -15,14 +15,15 @@ classdef GenericJoint < phx.base.Joint
 %     lower > upper   the axis is free (no constraint)
 %
 %   All limits default to zero, so a joint created without them is rigid, like
-%   phx.FixedJoint; open only the axes that are meant to move. The limits are
-%   read when the simulation is built, so set them at construction time -
-%   assigning them later has no effect on a running simulation.
+%   phx.FixedJoint; open only the axes that are meant to move. The limits can
+%   be changed at any time, also while the simulation runs.
 %
-%   Rotation about the Y axis of the joint coordinate system is limited to
-%   roughly +-90 deg by the solver and degenerates near that value. Leave the Y
-%   axis locked or narrowly bounded, and orient the joint coordinate systems so
-%   that a freely rotating axis is X or Z.
+%   The rotation is split into a twist and a swing: the rotation about the Z
+%   axis of the joint coordinate system is the twist, those about its X and Y
+%   axes are the swing, and each of the three is limited separately. For a
+%   rotation about one axis alone the angle is simply the angle of that
+%   rotation; when several rotate at once, a free rotation is best left to
+%   the Z axis (the twist), as phx.CylindricalJoint does.
 %
 %   phx.GenericJoint(bodyA, bodyB) creates a rigid joint between two bodies A
 %   and B with the joint coordinate system of each of them coinciding with the
@@ -101,22 +102,53 @@ classdef GenericJoint < phx.base.Joint
             obj.hM = matlab.graphics.primitive.world.Marker('Parent', obj.Graphics, 'EdgeColorData', clr, 'Style', 'circle', 'Size', 10, 'Layer', phx.internal.choose({'middle', 'front'}, obj.Overlay + 1));
             phx.GenericJoint.updateView({obj});
         end
+
+        function set.LowerLinearLimits(obj, value)
+            obj.LowerLinearLimits = value;
+            obj.pushLimits("linlimits");
+        end
+
+        function set.UpperLinearLimits(obj, value)
+            obj.UpperLinearLimits = value;
+            obj.pushLimits("linlimits");
+        end
+
+        function set.LowerAngularLimits(obj, value)
+            obj.LowerAngularLimits = value;
+            obj.pushLimits("anglimits");
+        end
+
+        function set.UpperAngularLimits(obj, value)
+            obj.UpperAngularLimits = value;
+            obj.pushLimits("anglimits");
+        end
+    end
+
+    methods (Access = private)
+        function pushLimits(obj, field)
+        %pushLimits Writes the linear or angular limits through to the engine.
+            if ~isempty(obj.ObjectHandle)
+                if field == "linlimits"
+                    phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'linlimits', obj.LowerLinearLimits, obj.UpperLinearLimits);
+                else
+                    phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'anglimits', obj.LowerAngularLimits, obj.UpperAngularLimits);
+                end
+            end
+        end
     end
 
     methods (Access = protected)
         function valid = initObject(obj, world)
             valid = obj.checkObject;
             if valid && isempty(obj.ObjectHandle)
-                % The engine takes the constraint parameters only as it creates
-                % the constraint, so the constraint is built once and then kept
-                % across pipeline rebuilds. Properties changed after that do not
-                % reach it.
+                % The frames are taken as the engine creates the constraint,
+                % which is then kept across pipeline rebuilds; the limits
+                % write through from their setters at any time.
                 obj.WorldHandle = world;
-                obj.ObjectHandle = phx.engine.io('add', world, 'generic6dofconstraint', obj.Parents{1}.ObjectHandle, obj.Parents{2}.ObjectHandle, obj.TransformA(:), obj.TransformB(:), 'xyz', ~obj.MutualCollisions);
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'linlimits', obj.LowerLinearLimits, obj.UpperLinearLimits);
-                % The engine measures the angles the other way round, so the
-                % limits are negated and swapped to keep the right-handed sense
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'anglimits', -obj.UpperAngularLimits, -obj.LowerAngularLimits);
+                obj.ObjectHandle = phx.engine.io('add', world, 'generic', [obj.Parents{1}.ObjectHandle obj.Parents{2}.ObjectHandle], ...
+                    obj.TransformA, obj.TransformB, obj.MutualCollisions);
+                obj.pushLimits("linlimits");
+                obj.pushLimits("anglimits");
             end
         end
     end

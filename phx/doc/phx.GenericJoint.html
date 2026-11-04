@@ -38,15 +38,16 @@ measured in the right-handed sense. On each axis independently:</p>
 <div class="phx-note">
 <span class="lbl">Note.</span> All limits default to zero, so a joint created without them locks all
 six axes and behaves like a <a href="phx.FixedJoint.html">phx.FixedJoint</a> &mdash; open only the
-axes that are meant to move. The limits are read when the simulation is built, so set them at
-construction time; assigning them later does not affect a running simulation.
+axes that are meant to move. The limits can be changed at any time, also while the simulation runs:
+an end stop can be moved, and an axis locked or released.
 </div>
 
-<div class="phx-note">
-<span class="lbl">Note.</span> Rotation about the Y axis of the joint frame is limited to roughly
-&plusmn;90&nbsp;deg by the solver and degenerates near that value. Leave the Y axis locked or narrowly
-bounded, and orient the joint frames so that a freely rotating axis is X or Z.
-</div>
+<p>The rotation of body B is split into a <em>twist</em> and a <em>swing</em>: the rotation about the
+Z axis of the joint frame is the twist, the rotations about its X and Y axes are the swing, and each
+of the three is limited separately. For a rotation about one axis alone the angle is simply the angle
+of that rotation. When several axes rotate at once, the angles are those of the swing-twist split
+rather than Euler angles; a rotation meant to stay free, as in
+<a href="phx.CylindricalJoint.html">phx.CylindricalJoint</a>, is best given the Z axis.</p>
 
 <h2 class="phx-h2">Creation</h2>
 <h3 class="phx-h3">Syntax</h3>

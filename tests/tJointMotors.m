@@ -17,7 +17,9 @@ classdef tJointMotors < PhxTestCase
 %     * both properties are write-through, so a scene can steer a motor from
 %       inside the frame loop;
 %     * the effort the motor spends is part of the reaction feedback, which is
-%       what lets a joint be the seam for an external actuator model.
+%       what lets a joint be the seam for an external actuator model;
+%     * AppliedTorque (AppliedForce) is a torque (force) source of its own
+%       that acts together with the motor, not instead of it.
 %
 %   The bodies are headless ([] axes) and the motor is isolated from gravity
 %   wherever the test is about the motor rather than about a load. Mass and
@@ -159,6 +161,52 @@ classdef tJointMotors < PhxTestCase
             tc.verifyEqual(joint.TorqueB(3), T, "AbsTol", 1e-3);
         end
 
+        function appliedTorqueActsTogetherWithTheMotor(tc)
+            % The motor holds its speed against an applied torque it has the
+            % torque for; with the motor switched off the applied torque
+            % alone accelerates the arm at T/I, and it stays until set to 0.
+            tc.requireEngine;
+            I = 2;
+            T = -3;
+            [~, arm, sim, joint] = tc.spinRig("TargetVelocity", 2, "MaxTorque", 50, ...
+                "Inertia", [1 1 I]);
+            joint.AppliedTorque = T;
+
+            sim.step(1, 200, -1);
+            tc.verifyEqual(arm.AngularVelocity(3), 2, "RelTol", 0.01, ...
+                "The motor did not hold its speed against the applied torque.");
+            tc.verifyEqual(joint.TargetVelocity, 2, ...
+                "AppliedTorque must not take the motor over.");
+
+            joint.MaxTorque = 0;                  % motor off, the load stays
+            sim.step(0.5, 100, -1);
+            tc.verifyEqual(arm.AngularVelocity(3), 2 + T/I*0.5, "AbsTol", 0.01);
+            tc.verifyEqual(joint.TorqueB(3), T, "AbsTol", 1e-3, ...
+                "The applied torque is part of the joint feedback.");
+
+            joint.AppliedTorque = 0;
+            w = arm.AngularVelocity(3);
+            sim.step(0.5, 100, -1);
+            tc.verifyEqual(arm.AngularVelocity(3), w, "AbsTol", 1e-6);
+        end
+
+        function appliedForceActsTogetherWithTheMotor(tc)
+            % Same contract in linear units: the motor holds 0.5 m/s against
+            % 4 N; without the motor the slider accelerates at F/m.
+            tc.requireEngine;
+            m = 2;
+            F = 4;
+            [~, slider, sim, joint] = tc.slideRig("TargetVelocity", 0.5, "MaxForce", 50, "Mass", m);
+            joint.AppliedForce = F;
+
+            sim.step(1, 200, -1);
+            tc.verifyEqual(slider.LinearVelocity(3), 0.5, "RelTol", 0.01);
+
+            joint.MaxForce = 0;
+            sim.step(0.5, 100, -1);
+            tc.verifyEqual(slider.LinearVelocity(3), 0.5 + F/m*0.5, "AbsTol", 0.01);
+        end
+
         function prismaticMotorReachesTheTarget(tc)
             tc.requireEngine;
             [~, slider, sim] = tc.slideRig("TargetVelocity", 0.5, "MaxForce", 50);
@@ -241,7 +289,7 @@ classdef tJointMotors < PhxTestCase
             tc.addTeardown(@() delete(rig.Sim));
         end
 
-        function [base, slider, sim] = slideRig(tc, Options)
+        function [base, slider, sim, joint] = slideRig(tc, Options)
             % Static base and a slider free along z, no gravity.
             arguments
                 tc
@@ -253,7 +301,7 @@ classdef tJointMotors < PhxTestCase
             slider = tc.spawnBody([0 0 2], "Mass", Options.Mass);
             tc.addTeardown(@() delete([base slider]));
 
-            phx.PrismaticJoint(base, slider, "PointA", [0 0 0], "PointB", [0 0 0], ...
+            joint = phx.PrismaticJoint(base, slider, "PointA", [0 0 0], "PointB", [0 0 0], ...
                 "TargetVelocity", Options.TargetVelocity, "MaxForce", Options.MaxForce);
             sim = phx.Simulation([base slider], tc.NoGravity{:});
             tc.addTeardown(@() delete(sim));

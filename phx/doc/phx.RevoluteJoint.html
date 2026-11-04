@@ -27,7 +27,7 @@ whenever the target is out of reach. Both properties can be changed while the si
 driven from Simulink.</p>
 <p>A torque about the axis can also be applied directly with
 <code class="phx-inline">AppliedTorque</code>, for instance from a motor model or a controller in
-Simulink.</p>
+Simulink. It acts together with the motor, as a load the motor regulates against.</p>
 
 <h2 class="phx-h2">Creation</h2>
 <h3 class="phx-h3">Syntax</h3>
@@ -60,7 +60,7 @@ axes with name-value arguments (<code class="phx-inline">PointA</code>, <code cl
 <tr><td class="name">AxisB</td><td class="dflt">[0 0 1]</td><td>Rotation-axis direction in the local space of body B.</td></tr>
 <tr><td class="name">TargetVelocity</td><td class="dflt">0</td><td>Target motor velocity about the joint axis, <span class="phx-unit">rad/s</span>. The sign gives the direction of rotation.</td></tr>
 <tr><td class="name">MaxTorque</td><td class="dflt">0</td><td>Maximal torque the motor can deliver, <span class="phx-unit">N&middot;m</span>. Must be non-negative; 0 means no motor.</td></tr>
-<tr><td class="name">AppliedTorque</td><td class="dflt">0</td><td>Torque applied about the joint axis, <span class="phx-unit">N&middot;m</span>, on body B and, reversed, on body A; it acts until changed. It drives the joint through the motor, so while it is nonzero <code class="phx-inline">TargetVelocity</code> and <code class="phx-inline">MaxTorque</code> are set aside; they apply again once it returns to 0.</td></tr>
+<tr><td class="name">AppliedTorque</td><td class="dflt">0</td><td>Torque applied about the joint axis, <span class="phx-unit">N&middot;m</span>, on body B and, reversed, on body A; it acts until changed. It is independent of the motor: both act at once, the motor regulating against the applied torque like against any other load.</td></tr>
 <tr><td class="name">Overlay</td><td class="dflt">false</td><td>Draw the joint as an overlay (always on top).</td></tr>
 </table>
 <p>Reaction feedback (<code class="phx-inline">ForceA</code>, <code class="phx-inline">TorqueA</code>,
@@ -77,7 +77,7 @@ inherited joint frames, so writing those frames another way
 (<code class="phx-inline">EulerAngles*</code>, <code class="phx-inline">AxisAngle*</code>,
 <code class="phx-inline">TransformA</code>/<code class="phx-inline">TransformB</code>) moves the hinge
 axis too. The remaining rotation <i>about</i> the axis does not change what the joint constrains
-&mdash; the hinge is handed only its points and axes &mdash; but it does move the zero of
+&mdash; the hinge leaves exactly that rotation free &mdash; but it does move the zero of
 <code class="phx-inline">Angle</code>, which is read between the two joint frames. Roll one frame
 and the reading shifts with it, so a hinge whose frames start turned against each other reports the
 angle that actually stands between them.</p>
@@ -89,19 +89,21 @@ without any control law of your own:</p>
 <tr><th>To get</th><th>TargetVelocity</th><th>MaxTorque</th></tr>
 <tr><td class="name">No motor (default)</td><td class="dflt">any</td><td class="dflt">0</td></tr>
 <tr><td class="name">Speed drive</td><td class="dflt">the wanted speed, signed</td><td class="dflt">the torque limit</td></tr>
-<tr><td class="name">Pure torque source</td><td class="dflt" colspan="2">set <code class="phx-inline">AppliedTorque</code> instead, it does the same as an out-of-reach target with the limit <code class="phx-inline">abs(tau)</code></td></tr>
+<tr><td class="name">Pure torque source</td><td class="dflt" colspan="2">no motor (<code class="phx-inline">MaxTorque</code> 0) and the torque in <code class="phx-inline">AppliedTorque</code></td></tr>
 <tr><td class="name">Friction brake</td><td class="dflt">0</td><td class="dflt">the holding torque</td></tr>
 </table>
 <p>A speed drive holds its target exactly while it stays under the limit, so nothing needs tuning.
-A torque source (<code class="phx-inline">AppliedTorque</code>) works because the motor cannot reach
-an impossible target and therefore saturates, delivering the limit and nothing else. A target of zero turns the same mechanism into Coulomb
+An out-of-reach target makes the motor saturate and deliver its limit, which is a torque source
+too. <code class="phx-inline">AppliedTorque</code> is a torque source of its own, independent of the
+motor: it adds to the load the motor works against, so a speed drive keeps its speed under an
+applied torque as long as its limit allows. A target of zero turns the motor into Coulomb
 friction: the joint is held until the load exceeds <code class="phx-inline">MaxTorque</code> and
 then slips.</p>
 
 <div class="phx-note">
 <span class="lbl">Note.</span> Unlike an external torque applied with
-<a href="phx.Body.html">phx.Body</a>.<code class="phx-inline">applyTorque</code>, the motor (and with it
-<code class="phx-inline">AppliedTorque</code>) is part of the constraint, so the <b>reaction lands on
+<a href="phx.Body.html">phx.Body</a>.<code class="phx-inline">applyTorque</code>, the motor and
+<code class="phx-inline">AppliedTorque</code> act between the two bodies, so the <b>reaction lands on
 the other body</b>. Driving a wheel hinged to a
 chassis therefore pushes back on the chassis, which is what a real motor mounted on it does. With
 two free bodies both turn, in opposite directions, split inversely by their moments of inertia -

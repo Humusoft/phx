@@ -86,13 +86,13 @@ pull. Set on the moving body rather than on the belt, it drives that body the op
 because the value describes the <em>relative</em> motion of the contacting surfaces.</td></tr>
 <tr><td class="name">AppliedForce</td><td class="dflt">[0 0 0]</td>
 <td>Force at the centre of mass, <span class="phx-unit">N</span>, given in the <em>body</em> frame.
-Every assignment applies it for the next simulation step, like
-<code class="phx-inline">applyForce</code>, so a script assigns it before each step. The
-<a href="PhxModel.html">PHX Model</a> block writes its inputs at every sample, so a force driven from
-Simulink acts throughout.</td></tr>
+It acts in every simulation step, turning with the body, until it is changed; set it to
+<code class="phx-inline">[0 0 0]</code> to stop it. (<code class="phx-inline">applyForce</code>
+acts for the next step only.) Driven from Simulink as an input of the
+<a href="PhxModel.html">PHX Model</a> block, it follows the input at every sample.</td></tr>
 <tr><td class="name">AppliedTorque</td><td class="dflt">[0 0 0]</td>
-<td>Torque, <span class="phx-unit">N&middot;m</span>, given in the <em>body</em> frame; applied like
-<code class="phx-inline">AppliedForce</code>.</td></tr>
+<td>Torque, <span class="phx-unit">N&middot;m</span>, given in the <em>body</em> frame; it acts like
+<code class="phx-inline">AppliedForce</code>, in every step until changed.</td></tr>
 <tr><td class="name">Shape</td><td class="type">phx.shape.* | cell (write-only)</td>
 <td>Geometry worn by the body. Assign a <code class="phx-inline">phx.shape.*</code> object or a cell array such as <code class="phx-inline">{"Box","Size",[2 1 1]}</code>.</td></tr>
 <tr><td class="name">OnDoubleClickFcn</td><td class="dflt">[]</td>

@@ -25,6 +25,9 @@ classdef tForceApplication < PhxTestCase
 %   rotated - can be read in one place. The name of each row becomes the
 %   name of its test.
 %
+%   A test of its own checks the persistent loads AppliedForce and
+%   AppliedTorque: they act in every step, in the body frame, until changed.
+%
 %   See also phx.Body, tSimulation, tShapeMass
 
 %   Copyright 2026 HUMUSOFT s.r.o.
@@ -69,6 +72,35 @@ classdef tForceApplication < PhxTestCase
                 tc.verifyEqual(b.AngularVelocity, Case.AngularVelocity(m, I), ...
                     "AbsTol", Case.Tolerance);
             end
+        end
+    end
+
+    methods (Test, TestTags = {'Engine'})
+        function appliedForcePersistsUntilChanged(tc)
+            % Body.AppliedForce/AppliedTorque act in every step until
+            % changed, in the body frame. Set before the simulation exists,
+            % they reach the engine body as it is created.
+            b = tc.spawnBody(tc.Far, "EulerAngles", tc.Spin, ...
+                "Shape", {"Box", "Size", [0.2 0.2 0.2], "Density", 125});
+            b.AppliedForce = [2 0 0];        % local x = world y
+            b.AppliedTorque = [0 0 0.001];
+            m = b.Mass;
+            I = b.Inertia;
+            sim = phx.Simulation(b, "Gravity", [0 0 0]);
+            tc.addTeardown(@() delete(sim));
+
+            sim.step(0.5, 50, -1);
+            tc.verifyEqual(b.AngularVelocity, [0 0 0.001/I(3)*0.5], "AbsTol", 1e-5);
+            % The force turns with the body, which has turned a little
+            tc.verifyEqual(norm(b.LinearVelocity), 2/m*0.5, "RelTol", 1e-3);
+
+            b.AppliedForce = [0 0 0];
+            b.AppliedTorque = [0 0 0];
+            v = b.LinearVelocity;
+            w = b.AngularVelocity;
+            sim.step(0.5, 50, -1);
+            tc.verifyEqual(b.LinearVelocity, v, "AbsTol", 1e-9, "A zero force stops the load.");
+            tc.verifyEqual(b.AngularVelocity, w, "AbsTol", 1e-9);
         end
     end
 

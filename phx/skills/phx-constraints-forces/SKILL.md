@@ -39,8 +39,9 @@ Joint classes:
   holding both bodies with per-axis `LinearStiffness/Damping` + `AngularStiffness/Damping`
   across all 6 DOF. Optional hard end stops via `Lower/UpperLinearLimits` (m) and
   `Lower/UpperAngularLimits` (rad): per axis, lower>upper = free (default), lower==upper =
-  locked, lower<upper = limited travel. Very stiff springs are clamped by the solver
-  (ceiling ~ mass·inertia/dt²) — add substeps or use `FixedJoint` for truly rigid.
+  locked, lower<upper = limited travel. Springs and limits can be changed at any time, also
+  mid-run. The springs are solved implicitly: stable at any stiffness (a very stiff one
+  holds almost like `FixedJoint`), with a little numerical damping at coarse steps.
 - `phx.RevoluteJoint` — hinge; 1 rotational DOF (`PointA/B`, `AxisA/B`). **Motorized:**
   `TargetVelocity` (rad/s) + `MaxTorque` (N·m), or a plain torque `AppliedTorque` (N·m)
   — see the motor section below.
@@ -65,9 +66,9 @@ Joint classes:
   or free via `Lower/UpperLinearLimits` (m) and `Lower/UpperAngularLimits` (rad): per axis,
   lower==upper = locked at that value (**all default to 0, so a bare joint is rigid** —
   open only what should move), lower<upper = bounded travel, lower>upper = free. Angles are
-  right-handed (the class compensates for the engine measuring them the other way round).
-  Rotation about the joint frame's **Y axis degenerates beyond ~±90°** — orient the frames
-  so a freely rotating axis is X or Z. Limits are read when the simulation is built.
+  right-handed. The rotation is split into a **twist** about the frame's Z axis and a
+  **swing** about X and Y, each limited separately; give a freely rotating axis Z (the
+  twist), as `CylindricalJoint` does. Limits can be changed at any time, also mid-run.
 
 Axes default to local Z (`AxisA = AxisB = [0 0 1]`); set them when the hinge isn't
 on Z. `Overlay` (logical) draws the joint glyph on top of geometry.
@@ -232,6 +233,10 @@ body.applyTorque(T);                             % T in local space
 body.applyTorque(T, false);                      % ... or in world space
 ```
 
+For a load that should stay, set `body.AppliedForce` (N, at the centre of mass) and
+`body.AppliedTorque` (N·m), both in the body frame: they act in **every step, turning
+with the body, until changed** — set `[0 0 0]` to stop them.
+
 Mind the two independent frame flags: `isLocalForce` rotates the vector with the body,
 `isLocalPoint` interprets the point of application in body coordinates. Passing a world
 force at a local point (or vice versa) is legal and often what you want — e.g. gravity-
@@ -287,10 +292,11 @@ sim.step(1, 100, 1);
 hub.AppliedTorque = 0;          % off again
 ```
 
-- It is realised by the joint's motor, so use **either** the motor **or** the applied
-  value on one joint: a nonzero `AppliedTorque`/`AppliedForce` takes the motor over, `0`
-  hands it back to `TargetVelocity` + `MaxTorque`/`MaxForce`, and writing those two
-  while the applied value is nonzero takes the motor back from it.
+- It is independent of the motor: both act at once, the motor regulating against the
+  applied value like against any other load (a speed drive keeps its speed under an applied
+  torque as long as `MaxTorque` allows). For a pure torque/force source leave the motor off.
+- Like the motor it acts between the two bodies, so its reaction lands on body A, and it
+  shows in the joint's `ForceA`…`TorqueB` feedback.
 - Signed; the sign follows the joint axis like `Angle` / `Distance`.
 
 ## Driving parameters over time — phx.Script

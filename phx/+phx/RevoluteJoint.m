@@ -21,8 +21,12 @@ classdef RevoluteJoint < phx.base.Joint
 %   MaxTorque, and TargetVelocity = 0 makes it a friction brake holding the
 %   joint until the load exceeds MaxTorque.
 %
-%   Both motor properties can be changed while the simulation runs or set from
-%   Simulink.
+%   AppliedTorque adds a torque about the axis, acting on the second body and,
+%   reversed, on the first one until changed. It is independent of the motor:
+%   the two act together, so a motor can regulate against an applied load.
+%
+%   The motor properties and AppliedTorque can be changed while the
+%   simulation runs or set from Simulink.
 %
 %   See also phx.SphericalJoint, phx.CylindricalJoint
 
@@ -51,8 +55,7 @@ classdef RevoluteJoint < phx.base.Joint
 
         % Torque applied about the joint axis (N*m)
         % Acts on the second body and, reversed, on the first one, until
-        % changed. Driven through the motor: a nonzero value overrides
-        % TargetVelocity and MaxTorque.
+        % changed, together with the motor if there is one.
         AppliedTorque (1, 1) double {mustBeFinite} = 0
     end
 
@@ -98,15 +101,8 @@ classdef RevoluteJoint < phx.base.Joint
 
         function set.AppliedTorque(obj, value)
             obj.AppliedTorque = value;
-            if value ~= 0
-                % The motor saturated towards an unreachable target
-                % delivers exactly the torque
-                if ~isempty(obj.ObjectHandle)
-                    phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'motor', ...
-                        true, sign(value)*1e6, abs(value));
-                end
-            else
-                obj.applyMotor; % hand the motor back
+            if ~isempty(obj.ObjectHandle)
+                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'appliedtorque', value);
             end
         end
     end
@@ -128,19 +124,20 @@ classdef RevoluteJoint < phx.base.Joint
         function valid = initObject(obj, world)
             valid = obj.checkObject;
             if valid && isempty(obj.ObjectHandle)
-                % The engine takes the constraint parameters only as it creates
-                % the constraint, so the constraint is built once and then kept
-                % across pipeline rebuilds. Only the motor (TargetVelocity, MaxTorque,
-                % AppliedTorque) writes through from its setters; other properties
-                % changed after that do not reach the constraint.
+                % The engine takes the frames only as it creates the
+                % constraint, so the constraint is built once and then kept
+                % across pipeline rebuilds. Only the motor (TargetVelocity,
+                % MaxTorque) and AppliedTorque write through from their
+                % setters; other properties changed after that do not reach
+                % the constraint.
                 obj.WorldHandle = world;
-                obj.ObjectHandle = phx.engine.io('add', world, 'hingeconstraint', obj.Parents{1}.ObjectHandle, obj.Parents{2}.ObjectHandle, ...
-                    obj.PointA, obj.PointB, obj.AxisA, obj.AxisB, true, ~obj.MutualCollisions);
-                % Seed the fresh constraint with the current motor setting;
-                % later changes reach the engine from the setters
+                obj.ObjectHandle = phx.engine.io('add', world, 'revolute', [obj.Parents{1}.ObjectHandle obj.Parents{2}.ObjectHandle], ...
+                    obj.TransformA, obj.TransformB, obj.MutualCollisions);
+                % Seed the fresh constraint with the current settings; later
+                % changes reach the engine from the setters
                 obj.applyMotor;
                 if obj.AppliedTorque ~= 0
-                    obj.AppliedTorque = obj.AppliedTorque; % its setter takes the motor over
+                    phx.engine.io('set', world, obj.ObjectHandle, 'appliedtorque', obj.AppliedTorque);
                 end
             end
         end

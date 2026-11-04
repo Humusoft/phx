@@ -35,8 +35,12 @@ classdef PrismaticJoint < phx.base.Joint
 %   TargetVelocity = 0 makes it a friction brake holding the joint until the
 %   load exceeds MaxForce.
 %
-%   Both motor properties can be changed while the simulation runs or set from
-%   Simulink.
+%   AppliedForce adds a force along the axis, acting on the second body and,
+%   reversed, on the first one until changed. It is independent of the motor:
+%   the two act together, so a motor can regulate against an applied load.
+%
+%   The motor properties and AppliedForce can be changed while the simulation
+%   runs or set from Simulink.
 %
 %   See also phx.RevoluteJoint, phx.CylindricalJoint, phx.FixedJoint
 
@@ -47,13 +51,6 @@ classdef PrismaticJoint < phx.base.Joint
 
 %#ok<*MCSUP> OK to access other properties in setters
 %#ok<*INUSD> OK to see the full list of arguments for callbacks
-
-    properties (Constant, Access = private)
-        % The engine slides along the frame's axis X while PHX exposes axis Z,
-        % so both frames are handed over turned by -90 degrees about Y. The
-        % matrix is written out as integers to keep the frames exact.
-        EngineFrame = [0 0 -1 0; 0 1 0 0; 1 0 0 0; 0 0 0 1]
-    end
 
     properties (Access = private)
         hL
@@ -72,8 +69,7 @@ classdef PrismaticJoint < phx.base.Joint
 
         % Force applied along the joint axis (N)
         % Acts on the second body and, reversed, on the first one, until
-        % changed. Driven through the motor: a nonzero value overrides
-        % TargetVelocity and MaxForce.
+        % changed, together with the motor if there is one.
         AppliedForce (1, 1) double {mustBeFinite} = 0
     end
 
@@ -90,15 +86,8 @@ classdef PrismaticJoint < phx.base.Joint
 
         function set.AppliedForce(obj, value)
             obj.AppliedForce = value;
-            if value ~= 0
-                % The motor saturated towards an unreachable target
-                % delivers exactly the force
-                if ~isempty(obj.ObjectHandle)
-                    phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'linearmotor', ...
-                        true, sign(value)*1e6, abs(value));
-                end
-            else
-                obj.applyMotor; % hand the motor back
+            if ~isempty(obj.ObjectHandle)
+                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'appliedforce', value);
             end
         end
 
@@ -137,11 +126,9 @@ classdef PrismaticJoint < phx.base.Joint
         %applyMotor Pushes the motor setting to the engine.
         % A zero MaxForce switches the motor off rather than clamping it to
         % zero, so that the solver does not assemble its constraint row at all.
-        % Only the linear motor is driven - a prismatic joint locks the
-        % rotation, so the slider's angular motor would have nothing to turn.
 
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'linearmotor', ...
+                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'motor', ...
                     obj.MaxForce > 0, obj.TargetVelocity, obj.MaxForce);
             end
         end
@@ -151,22 +138,20 @@ classdef PrismaticJoint < phx.base.Joint
         function valid = initObject(obj, world)
             valid = obj.checkObject;
             if valid && isempty(obj.ObjectHandle)
-                % The engine takes the constraint parameters only as it creates
-                % the constraint, so the constraint is built once and then kept
-                % across pipeline rebuilds. Only the motor (TargetVelocity, MaxForce,
-                % AppliedForce) writes through from its setters; other properties
-                % changed after that do not reach the constraint.
+                % The engine takes the frames only as it creates the
+                % constraint, so the constraint is built once and then kept
+                % across pipeline rebuilds. Only the motor (TargetVelocity,
+                % MaxForce) and AppliedForce write through from their setters;
+                % other properties changed after that do not reach the
+                % constraint.
                 obj.WorldHandle = world;
-                M = phx.PrismaticJoint.EngineFrame;
-                TA = obj.TransformA*M;
-                TB = obj.TransformB*M;
-                obj.ObjectHandle = phx.engine.io('add', world, 'sliderconstraint', obj.Parents{1}.ObjectHandle, obj.Parents{2}.ObjectHandle, ...
-                    TA(:), TB(:), true, ~obj.MutualCollisions);
-                % Seed the fresh constraint with the current motor setting;
-                % later changes reach the engine from the setters
+                obj.ObjectHandle = phx.engine.io('add', world, 'prismatic', [obj.Parents{1}.ObjectHandle obj.Parents{2}.ObjectHandle], ...
+                    obj.TransformA, obj.TransformB, obj.MutualCollisions);
+                % Seed the fresh constraint with the current settings; later
+                % changes reach the engine from the setters
                 obj.applyMotor;
                 if obj.AppliedForce ~= 0
-                    obj.AppliedForce = obj.AppliedForce; % its setter takes the motor over
+                    phx.engine.io('set', world, obj.ObjectHandle, 'appliedforce', obj.AppliedForce);
                 end
             end
         end

@@ -66,7 +66,7 @@ classdef SphericalJoint < phx.base.Joint
                 % across pipeline rebuilds. Properties changed after that do not
                 % reach it.
                 obj.WorldHandle = world;
-                obj.ObjectHandle = phx.engine.io('add', world, 'pointtopointconstraint', obj.Parents{1}.ObjectHandle, obj.Parents{2}.ObjectHandle, obj.PointA, obj.PointB, ~obj.MutualCollisions);
+                obj.ObjectHandle = phx.engine.io('add', world, 'spherical', [obj.Parents{1}.ObjectHandle obj.Parents{2}.ObjectHandle], obj.TransformA, obj.TransformB, obj.MutualCollisions);
             end
         end
     end

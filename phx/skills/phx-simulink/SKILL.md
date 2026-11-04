@@ -98,7 +98,8 @@ Because ports are properties, choose them semantically:
   - **Joint torque / force**: `AppliedTorque` of a `RevoluteJoint`, `AppliedForce` of a
     `PrismaticJoint` — a pure torque/force between the two bodies, held until the next
     sample. The input for actuators computed elsewhere, e.g. a Simscape cylinder whose
-    force drives the joint. Wire either it or the motor ports to a joint, not both.
+    force drives the joint. It acts together with the motor, which then regulates
+    against it like against any other load.
   - **Prescribed motion**: `Position` / `EulerAngles` / `Orientation` of a `kinematic`
     body (see the kinematic note below), or `LinearVelocity` / `AngularVelocity`.
   - Parameters such as `Mass`, `Friction` or a spring's `Stiffness`.

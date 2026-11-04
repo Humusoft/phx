@@ -32,34 +32,47 @@ phx.engine.io('remove', world, h);                                           % d
 
 Verbs: `add` / `set` / `get` / `apply` / `remove` / `step`. Bodies map to engine
 shapes in each `phx.shape.*` class's `initObject` (`'box'`, `'cylinder'`,
-`'sphere'`, `'convexhull'`, `'rigidbody'`, …); joints map to `'*constraint'` verbs
-in the joint classes. Every failure is a MATLAB error with a `phx:engine:*` identifier
+`'sphere'`, `'convexhull'`, `'rigidbody'`, …); joints map to kinds named after their
+classes in the joint classes. Every failure is a MATLAB error with a `phx:engine:*` identifier
 (`badWorld`, `badHandle`, `badArgument`, `unsupported` for an unknown verb, kind or
 field); verbs that only act (`set`, `apply`, `remove`, `clear`) return nothing, and
 vectors come out as 1x3 rows (batches as 3xN).
 
-**All `'*constraint'` add verbs require a trailing `disableCollisions` logical**
-— without it the call fails with "ArgumentList index out of range". The joint
-classes pass `~obj.MutualCollisions` there (`'sliderconstraint'` for
-`phx.PrismaticJoint` included). Body-level knobs that
-write straight through to the engine: `'restitution'` (Body.Restitution, contact
-bounciness combined from both bodies) alongside the existing `'friction'`/`'collisions'`.
-
-**Joint motor and readout fields** (`set` and `get` both take the same triple):
+**Every joint is added the same way**, with the two body handles as one `[hA hB]`
+argument, the full joint frames (4x4, in the body frames, joint axis = Z) and a positive
+`mutualCollisions` flag (`true` = the two bodies collide; the classes pass
+`obj.MutualCollisions`):
 
 ```matlab
-phx.engine.io('set', w, h, 'motor', on, targetVel, maxTorque);        % hingeconstraint
-phx.engine.io('set', w, h, 'linearmotor', on, targetVel, maxForce);   % sliderconstraint
-phx.engine.io('set', w, h, 'angularmotor', on, targetVel, maxForce);  % sliderconstraint
+h = phx.engine.io('add', w, kind, [hA hB], TA, TB, mutualCollisions, extra...);
+% kind: 'fixed' 'revolute' 'prismatic' 'spherical' 'generic' 'bushing'
+%       'gear' (extra: ratio), 'spring', 'torsionspring' (extra: their settings)
+% 'rope' keeps its own form: io('add', w, 'rope', hs, points, freeLength, k, c)
 ```
 
-Two traps measured on these: the limit is taken **signed**, so a negative
-`maxTorque`/`maxForce` inverts the solver's clamp interval and the motor then fights its
-own target — always pass a magnitude. `phx.base.Joint` works `Angle` and `Distance` out in
-MATLAB from the poses, with no engine call. And the
-slider's `'angularmotor'` does nothing on a `phx.PrismaticJoint`, whose rotation is
-locked by the slider's angular limits; there is no gateway field to unlock them,
-which is why `phx.CylindricalJoint` is built on `'generic6dofconstraint'` instead.
+A revolute joint turns about Z of its frames with the zero angle where their X axes
+coincide; a prismatic joint slides along Z. Body-level knobs that write straight
+through to the engine: `'restitution'` (Body.Restitution, contact bounciness combined
+from both bodies) alongside the existing `'friction'`/`'collisions'`.
+
+**Joint fields** (all settable at any time):
+
+```matlab
+phx.engine.io('set', w, h, 'motor', on, targetVel, maxEffort);  % revolute (N*m), prismatic (N)
+phx.engine.io('set', w, h, 'appliedtorque', T);                 % revolute, kept until 0
+phx.engine.io('set', w, h, 'appliedforce', F);                  % prismatic, kept until 0
+phx.engine.io('set', w, h, 'linlimits', lower, upper);          % generic, bushing
+phx.engine.io('set', w, h, 'anglimits', lower, upper);          % generic, bushing (right-handed)
+phx.engine.io('set', w, h, 'springs', kLin, kAng, cLin, cAng);  % bushing
+F = phx.engine.io('get', w, h, 'feedback');                     % 3x4 [fA tA fB tB]
+```
+
+The motor and the applied torque/force act together. `phx.base.Joint` works `Angle` and
+`Distance` out in MATLAB from the poses, with no engine call, and reads `ForceA`…`TorqueB`
+as columns of one `'feedback'` call (world frame, torques about each body's centre of
+mass, applied loads included). A `phx.Body`'s `AppliedForce`/`AppliedTorque` are the body
+fields `'appliedforce'`/`'appliedtorque'` (body frame), kept by the engine until set to
+zero.
 
 **`apply` fields and their frame flags** — the payload layout differs per field, and
 getting it wrong silently applies a force in the wrong frame (this caused real bugs in
@@ -75,8 +88,9 @@ io('apply', w, h,  'torque',       T, isLocalTorque)
 Prefer passing the **local** force/torque and a **local** point and letting the engine
 rotate them (`Thruster` does this) over pre-rotating by `body.Matrix(1:3,1:3)` in
 MATLAB. A local point is taken relative to the body origin; the engine computes the
-moment arm about the centre of mass itself. Applied forces last **one step** and are
-cleared afterwards. The public wrappers are `Body.applyForce`/`Body.applyTorque`.
+moment arm about the centre of mass itself. Forces given by `apply` last **one step** and
+are cleared afterwards. The public wrappers are `Body.applyForce`/`Body.applyTorque`;
+for a load that should stay, set `Body.AppliedForce`/`AppliedTorque` instead.
 
 ## phx.engine.Settings — initial engine config
 

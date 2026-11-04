@@ -24,11 +24,10 @@ locks the relative pose rigidly, <code class="phx-inline">phx.BushingJoint</code
 against a springy bedding.</p>
 
 <div class="phx-note">
-<span class="lbl">Very stiff springs are clamped by the solver</span> for numerical stability &mdash; the
-ceiling scales with the connected bodies' mass/inertia and shrinks as the time step grows, so
-beyond a certain stiffness the response no longer stiffens. Use more substeps (a smaller time
-step) for stiffer bushings, or <a href="phx.FixedJoint.html">phx.FixedJoint</a> for a truly rigid
-connection.
+<span class="lbl">Note.</span> The springs are solved implicitly, so a bushing stays stable at any
+stiffness, and a very stiff one holds almost like a <a href="phx.FixedJoint.html">phx.FixedJoint</a>.
+The implicit step damps a little of its own, the more the coarser the time step is compared to the
+period of the spring; use more substeps where an undamped bushing has to keep its energy.
 </div>
 
 <h2 class="phx-h2">Creation</h2>
@@ -65,7 +64,11 @@ connection.
 <p>The end-stop limits bound the relative travel on each axis. Setting <b>lower &gt; upper</b>
 disables the stop, leaving the axis free (spring only) &mdash; this is the default; <b>lower ==
 upper</b> locks the axis rigidly at that value; <b>lower &lt; upper</b> limits the travel to that
-range while the spring acts inside it.</p>
+range while the spring acts inside it. The angles are measured in the right-handed sense; the
+rotation is split into a twist about the Z axis and a swing about the X and Y axes, as for
+<a href="phx.GenericJoint.html">phx.GenericJoint</a>.</p>
+<p>The stiffness, the damping and the limits can all be changed at any time, also while the
+simulation runs. An axis whose stiffness and damping are both zero has no spring.</p>
 <p>Reaction feedback and the <code class="phx-inline">MutualCollisions</code> switch (collisions
 between the connected bodies, default <code class="phx-inline">false</code>) are inherited from
 <a href="phx.base.Joint.html">phx.base.Joint</a>.</p>
