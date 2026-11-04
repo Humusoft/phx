@@ -93,7 +93,6 @@ function catalog = exampleCatalog
         entry("phxex_optimize",    "Analysis and workflows",         40)
         entry("phxex_validate",    "Analysis and workflows",         20)
         entry("phxex_determinism", "Analysis and workflows",         15)
-        entry("phxex_reversetime", "Analysis and workflows",          8)
         entry("phxex_noview",      "Analysis and workflows",         15)
         entry("phxex_multisim",    "Analysis and workflows",         10)
         ];
