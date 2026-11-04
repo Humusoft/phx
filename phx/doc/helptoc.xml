@@ -36,7 +36,7 @@
         <tocitem target="phx.Simulation.html">Core
             <tocitem target="phx.Simulation.html">phx.Simulation</tocitem>
             <tocitem target="phx.Body.html">phx.Body</tocitem>
-            <tocitem target="phx.engine.BulletSettings.html">phx.engine.BulletSettings</tocitem>
+            <tocitem target="phx.engine.Settings.html">phx.engine.Settings</tocitem>
             <tocitem target="phx.base.Object.html">phx.base.Object</tocitem>
         </tocitem>
 

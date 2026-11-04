@@ -50,7 +50,7 @@ function phxex_bowlfeeder(Options)
     settle = 0.3;                                   % let the charge settle before shaking
     outlet = buildFeeder(ax, b, f, Az, settle, Options.Parts, ground);
 
-    sim = phx.Simulation(ax, "EngineSettings", phx.engine.BulletSettings("LengthScale", 0.01));
+    sim = phx.Simulation(ax, "EngineSettings", phx.engine.Settings("LengthScale", 0.01));
 
     dt = 1/(f*100);                                 % 100 substeps per drive period
     window = 0.2;

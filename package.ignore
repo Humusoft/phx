@@ -31,8 +31,6 @@ deploymentLog.html
 
 % Developer-only parts of the toolbox
 phx/+phx/+engine/*.pdb
-phx/+phx/+engine/bullet_*.*
-phx/+phx/+engine/switchEngine.*
 phx/+phx/+extra/Editor.m
 phx/doc/custom_toolbox.json
 

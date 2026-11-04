@@ -47,7 +47,7 @@ function phxex_camvalve
 
     % Zero collision margin - the default 40 mm margin dwarfs these
     % centimetre-scale parts and blows the cam/tappet contact apart.
-    sim = phx.Simulation(ax, "EngineSettings", phx.engine.BulletSettings("Margin", 0));
+    sim = phx.Simulation(ax, "EngineSettings", phx.engine.Settings("Margin", 0));
 
     capTop = @() valve.Position(3) + Lvalve;   % tappet-face height (m)
 

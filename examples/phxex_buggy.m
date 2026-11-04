@@ -40,7 +40,7 @@ function phxex_buggy(showGraphs)
 
     % Simulation loop; contact tolerances for gaps of about 10 cm keep the
     % wheels clear of the body
-    sim = phx.Simulation("EngineSettings", phx.engine.BulletSettings("LengthScale", 0.1));
+    sim = phx.Simulation("EngineSettings", phx.engine.Settings("LengthScale", 0.1));
     for i = 1:120
         sim.step(0.05, 50, 50);
         speed.Value = abs(buggy.wheelFR.AngularVelocity(2));

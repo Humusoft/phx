@@ -79,7 +79,7 @@ function phxex_drum(Options)
     % Ball positions every tenth of a second
     logger = phx.Logger(balls, "Parameters", "Position", "Frequency", 10);
 
-    sim = phx.Simulation([drum balls]);
+    sim = phx.Simulation([drum balls], "EngineSettings", phx.engine.Settings("Threads", 8));
     sim.step(settle, settle/dt, 10);
     nTurn = round(turning/dt);
     sim.step(nTurn*dt, nTurn, 10);

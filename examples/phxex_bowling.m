@@ -52,7 +52,7 @@ function out = phxex_bowling(Options)
     [viewer, ax] = phx.extra.Viewer("clear", "DefaultCameraPosition", [21 0 1], "DefaultCameraTarget", [-100 0 -42], "Texture", "tiles");
 
     scene = makeScene(ax, L);
-    sim = phx.Simulation(ax, "EngineSettings", phx.engine.BulletSettings("LengthScale", 0.1));
+    sim = phx.Simulation(ax, "EngineSettings", phx.engine.Settings("LengthScale", 0.1));
 
     cmap = turbo(11);
 

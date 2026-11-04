@@ -79,7 +79,7 @@ fast as possible. See <a href="#pacing">Pacing</a> below.</td></tr>
 <tr><td class="name">HideInvalid</td><td class="dflt">false</td>
 <td>Turn off visibility for all objects that become invalid during the simulation.</td></tr>
 <tr><td class="name">EngineSettings</td><td class="dflt">[]</td>
-<td>Initial engine-specific settings, a <a href="phx.engine.BulletSettings.html">phx.engine.BulletSettings</a> object, applied once as the physics world is created.</td></tr>
+<td>Initial engine settings, a <a href="phx.engine.Settings.html">phx.engine.Settings</a> object, applied once as the physics world is created.</td></tr>
 <tr><td class="name">Time</td><td class="type">double (read-only)</td>
 <td>Current simulation time, in seconds. Starts at 0 and advances with each <code class="phx-inline">step</code>.</td></tr>
 </table>
@@ -222,9 +222,9 @@ sim = phx.Simulation;                  <span class="cmt">% all bodies in the cur
 sim.step(1, 100, 1);                   <span class="cmt">% 1 s in 100 substeps, redraw each step</span></pre>
 
 <h4 class="phx-h4">Custom gravity and engine settings</h4>
-<pre class="phx-code"><span class="cmt">% Zero gravity; let resting bodies sleep (opt-in optimization)</span>
+<pre class="phx-code"><span class="cmt">% Zero gravity; a large scene stepped on four threads</span>
 sim = phx.Simulation(gca, <span class="str">"Gravity"</span>, [0 0 0], <span class="str">"EngineSettings"</span>, ...
-    phx.engine.BulletSettings(<span class="str">"AutoActivated"</span>, true));
+    phx.engine.Settings(<span class="str">"Threads"</span>, 4));
 sim.step(4, 800, -1);                  <span class="cmt">% run headless (no redraw)</span></pre>
 
 <h4 class="phx-h4">Add and delete objects between steps</h4>
@@ -242,7 +242,7 @@ delete(sim);                           <span class="cmt">% tear down the engine 
 <span class="lbl">See also</span>
 <a href="phx.Body.html">phx.Body</a>,
 <a href="phx.base.Object.html">phx.base.Object</a>,
-<a href="phx.engine.BulletSettings.html">phx.engine.BulletSettings</a>,
+<a href="phx.engine.Settings.html">phx.engine.Settings</a>,
 <a href="phx.Spring.html">phx.Spring</a>
 </div>
 

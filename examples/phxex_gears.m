@@ -39,7 +39,7 @@ function phxex_gears
     phx.RevoluteJoint(b2, g2, "TargetVelocity", 5, "MaxTorque", 10);
 
     % Initialize the simulation with specified settings
-    opt = phx.engine.BulletSettings("Margin", 0);
+    opt = phx.engine.Settings("Margin", 0);
     sim = phx.Simulation("EngineSettings", opt);
 
     % Run the simulation for 500 steps

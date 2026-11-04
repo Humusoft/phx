@@ -52,7 +52,7 @@ function phxex_conveyors
     bottle = phx.shape.Revolution("Profile", prof, "Segments", 24, "Color", [0.4 0.6 1], "Material", "glossy", "Envelope", "cylinder", "Texture", "checker", "TextureBlend", 0.15);
 
     % Create the simulation object
-    sim = phx.Simulation("EngineSettings", phx.engine.BulletSettings("LengthScale", 0.1));
+    sim = phx.Simulation("EngineSettings", phx.engine.Settings("LengthScale", 0.1));
 
     % Add bottles and run the simulation repeatedly
     total = 0;

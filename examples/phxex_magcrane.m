@@ -133,7 +133,7 @@ function phxex_magcrane(Options)
     % Contact tolerances for decimetre parts, or the standing rotor would
     % hover visibly above the floor on the default 4 cm margin
     sim = phx.Simulation([parts bridge trolley magnet rotor], ...
-        "EngineSettings", phx.engine.BulletSettings("LengthScale", 0.1)); %, "RedrawMode", "full");
+        "EngineSettings", phx.engine.Settings("LengthScale", 0.1)); %, "RedrawMode", "full");
 
     % Hidden only now: an object that is invisible when the pipelines are
     % built stays out of the redraw (ExcludeInvisible) for the whole run

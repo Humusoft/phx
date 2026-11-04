@@ -65,7 +65,7 @@ function phxex_vengine(opts)
 
     % Centimetre-scale parts -> zero the default collision margin, as in
     % phxex_camvalve (the jointed parts pass through each other anyway).
-    sim = phx.Simulation(ax, "EngineSettings", phx.engine.BulletSettings("Margin", 0));
+    sim = phx.Simulation(ax, "EngineSettings", phx.engine.Settings("Margin", 0));
 
     % --- Run: the bearing motor holds the crankshaft at the target rpm -----
     dt = 1e-3; subFrame = 10;

@@ -41,7 +41,7 @@ function phxex_trainwheel
     grid on;
 
     % Setup simulation with specific options
-    opt = phx.engine.BulletSettings("Margin", 0);
+    opt = phx.engine.Settings("Margin", 0);
     sim = phx.Simulation(ax, "EngineSettings", opt);
 
     % Run the simulation, record lateral wheel position each step

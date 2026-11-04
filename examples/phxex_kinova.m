@@ -157,7 +157,7 @@ function phxex_kinova(sweepTime, Tmax, smooth)
 
     % Contact tolerances for decimetre parts: the default 40 mm margin would
     % inflate the links of a robot this size into a permanent interpenetration
-    sim = phx.Simulation(ax, "EngineSettings", phx.engine.BulletSettings("LengthScale", 0.1));
+    sim = phx.Simulation(ax, "EngineSettings", phx.engine.Settings("LengthScale", 0.1));
 
     % The coupler opens while the arm is already pulling away, so the blade
     % leaves with the motion it had and topples instead of landing on its end

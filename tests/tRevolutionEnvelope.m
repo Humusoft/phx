@@ -119,7 +119,7 @@ classdef tRevolutionEnvelope < PhxTestCase
         function sim = simulation(~, objs)
             % Margin off: these tests are about the envelope geometry itself
             sim = phx.Simulation(objs, ...
-                "EngineSettings", phx.engine.BulletSettings("Margin", 0));
+                "EngineSettings", phx.engine.Settings("Margin", 0));
         end
     end
 

@@ -44,7 +44,7 @@ function phxex_textures
     
     % Initialize the simulation based on all objects from a current scene;
     % contact tolerances for gaps of about 10 cm keep the buggy's wheels clear
-    sim = phx.Simulation("EngineSettings", phx.engine.BulletSettings("LengthScale", 0.1));
+    sim = phx.Simulation("EngineSettings", phx.engine.Settings("LengthScale", 0.1));
     sim.step(9, 900, 1);
 
     % Clean up the simulation object

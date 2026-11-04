@@ -149,7 +149,7 @@ function phxex_seaplate(duration, maxAmplitude, balance)
     arm = struct2cell(bodies);
     arm = [arm{:}];
     sim = phx.Simulation([seabedBody pont arm plate ball], "EngineSettings", ...
-        phx.engine.BulletSettings("LengthScale", 0.1, "Solver", "dantzig"));
+        phx.engine.Settings("LengthScale", 0.1));
 
     % --- Run --------------------------------------------------------------
     dt = 0.0025;

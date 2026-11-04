@@ -8,7 +8,7 @@
 % Core
 %   phx.Simulation            - Scene root that steps the physics engine
 %   phx.Body                  - Rigid body with pose, mass, friction and forces
-%   phx.engine.BulletSettings - Initial settings of the Bullet physics engine
+%   phx.engine.Settings       - Initial settings of the physics engine
 %
 % Shapes
 %   phx.shape.Box             - Box shape
