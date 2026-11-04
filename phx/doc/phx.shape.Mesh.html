@@ -83,7 +83,9 @@ passing <code class="phx-inline">phx.shape.Mesh("Source", "file.stl", "Envelope"
 
 <p>Appearance properties are inherited from <a href="phx.base.Shape.html">phx.base.Shape</a>. A manually set
 <code class="phx-inline">Texture</code> fills in materials that carry no texture of their own, box-projected
-where the mesh has no texture coordinates.</p>
+where the mesh has no texture coordinates. <code class="phx-inline">TextureBlend</code> and
+<code class="phx-inline">TextureTransform</code> act on that <code class="phx-inline">Texture</code> only;
+the textures of the materials are drawn as they are.</p>
 
 <h2 class="phx-h2">Examples</h2>
 <h4 class="phx-h4">Import an STL as a rolling wheel</h4>

@@ -56,6 +56,48 @@ classdef tTextureMapping < PhxTestCase
             tc.verifyTrue(all(data(4, :) == 255));
         end
 
+        function scalarMatrixWithoutColormapIsGrayscale(tc)
+            % Scalar data span the gray levels, laid out like an image file
+            data = phx.base.Shape.matrixTexture([0 1 2; 3 4 6], zeros(0, 3));
+
+            gray = uint8(255*[0 1 2; 3 4 6]/6);
+            tc.verifySize(data, [4 3 2]);
+            for c = 1:3
+                tc.verifyEqual(permute(data(c, :, :), [3 2 1]), gray);
+            end
+            tc.verifyTrue(all(data(4, :) == 255));
+        end
+
+        function uint8MatrixKeepsItsGrayLevels(tc)
+            % uint8 data are absolute gray levels; through a colormap 0-255
+            % spans the whole colormap
+            g = uint8([100 150; 200 250]);
+            data = phx.base.Shape.matrixTexture(g, zeros(0, 3));
+            for c = 1:3
+                tc.verifyEqual(permute(data(c, :, :), [3 2 1]), g);
+            end
+
+            data = phx.base.Shape.matrixTexture(uint8([0 255 128]), [1 0 0; 0 1 0; 0 0 1]);
+            tc.verifyEqual(data(1:3, :)', uint8([255 0 0; 0 0 255; 0 255 0]));
+        end
+
+        function rgbMatrixMatchesUint8Image(tc)
+            % An RGB matrix is used as is, in uint8 or scaled to 0-1
+            img = uint8(reshape(10*(1:24), 2, 4, 3));
+
+            fromUint8 = phx.base.Shape.matrixTexture(img, zeros(0, 3));
+            fromDouble = phx.base.Shape.matrixTexture(double(img)/255, zeros(0, 3));
+
+            tc.verifyEqual(permute(fromUint8(1:3, :, :), [3 2 1]), img);
+            tc.verifyEqual(fromDouble, fromUint8);
+        end
+
+        function invalidTextureMatrixIsRejected(tc)
+            tc.verifyError(@() phx.shape.Box("Texture", rand(2, 2, 2)), "phx:Shape:invalidTexture");
+            tc.verifyError(@() phx.shape.Box("Texture", rand(2, 2, 3, 2)), "phx:Shape:invalidTexture");
+            tc.verifyError(@() phx.shape.Box("Texture", uint16(ones(2, 2, 3))), "phx:Shape:invalidTexture");
+        end
+
         function generatedShapesReadUnmirrored(tc, generator)
             % Seen from outside (against the vertex normals), image right
             % (+u) and image up (-v) form a right-handed pair on every
@@ -131,8 +173,31 @@ classdef tTextureMapping < PhxTestCase
             tc.verifyEqual(string({strips.ColorType}), repmat("texturemapped", 1, numel(strips)));
         end
 
-        function colormapTextureMatchesImageFile(tc)
-            % A scalar matrix lands on the shape as the image of its colors
+        function builtinTextureIsItsGenerator(tc)
+            % A built-in name, in any case, draws the default generator output
+            ax = tc.prepareTexturedAxes;
+            b = phx.Body(ax, "Shape", {"Box", "Texture", "Stone"});
+            tc.addTeardown(@() PhxTestCase.deleteIfValid(b));
+
+            tc.verifyEqual(b.Graphics.Children.Texture.CData, ...
+                phx.base.Shape.matrixTexture(phx.base.Shape.stone, zeros(0, 3)));
+            tc.verifyError(@() phx.shape.Box("Texture", "nosuchtexture"), "phx:Shape:fileNotFound");
+        end
+
+        function renamedMetalWarnsAndDrawsScratches(tc)
+            % The old name of "scratches" still works, with a warning
+            ax = tc.prepareTexturedAxes;
+            shp = tc.verifyWarning(@() phx.shape.Box("Texture", "metal"), "phx:Shape:renamedTexture");
+            b = phx.Body(ax, "Shape", shp);
+            tc.addTeardown(@() PhxTestCase.deleteIfValid(b));
+
+            tc.verifyEqual(b.Graphics.Children.Texture.CData, ...
+                phx.base.Shape.matrixTexture(phx.base.Shape.scratches, zeros(0, 3)));
+        end
+
+        function colormappedMatrixMatchesImageFile(tc)
+            % A scalar matrix lands on the shape as the image of its colors,
+            % whichever of Texture and TextureColormap is set first
             cdata = [0 1 2; 3 4 5];
             cmap = [1 0 0; 0 1 0; 0 0 1; 1 1 0; 0 1 1; 1 0 1];
             img = uint8(255*reshape(cmap(cdata + 1, :), [size(cdata) 3]));
@@ -140,13 +205,13 @@ classdef tTextureMapping < PhxTestCase
             imwrite(img, file);
 
             ax = tc.prepareTexturedAxes;
-            fromMatrix = phx.shape.Box;
-            fromMatrix = fromMatrix.colormapTexture(cdata, cmap);
-            b1 = phx.Body(ax, "Shape", fromMatrix);
-            b2 = phx.Body(ax, "Shape", {"Box", "Texture", file});
-            tc.addTeardown(@() PhxTestCase.deleteIfValid([b1 b2]));
+            b1 = phx.Body(ax, "Shape", {"Box", "Texture", cdata, "TextureColormap", cmap});
+            b2 = phx.Body(ax, "Shape", {"Box", "TextureColormap", cmap, "Texture", cdata});
+            b3 = phx.Body(ax, "Shape", {"Box", "Texture", file});
+            tc.addTeardown(@() PhxTestCase.deleteIfValid([b1 b2 b3]));
 
-            tc.verifyEqual(b1.Graphics.Children.Texture.CData, b2.Graphics.Children.Texture.CData);
+            tc.verifyEqual(b1.Graphics.Children.Texture.CData, b3.Graphics.Children.Texture.CData);
+            tc.verifyEqual(b2.Graphics.Children.Texture.CData, b3.Graphics.Children.Texture.CData);
         end
 
         function sphereShowsImageTopAtNorthPole(tc)

@@ -101,7 +101,10 @@ function mesh = readObjMesh(fileName)
                 nidx = reshape(sm.vn', [], 1);
                 subsOut(s).normals = N(nidx, :);
             else
-                subsOut(s).normals = []; % derived on draw
+                % No file normals: derive them here, while the OBJ vertex
+                % indices still say which corners share a vertex
+                VN = vertexNormals(V, sm.v);
+                subsOut(s).normals = VN(vidx, :);
             end
 
             if all(sm.vt(:) > 0) && ~isempty(UV)
@@ -119,6 +122,23 @@ function mesh = readObjMesh(fileName)
         mesh.groups(g).name = obj.groups(g).name;
         mesh.groups(g).submeshes = subsOut;
     end
+end
+
+function N = vertexNormals(V, F)
+    % Area-weighted average of the face normals around each vertex. The
+    % Y/Z swap mirrors the mesh, so the outward normal of a counter-
+    % clockwise OBJ triangle is (c - a) x (b - a) in PHX axes.
+    a = V(F(:, 1), :);
+    FN = cross(V(F(:, 3), :) - a, V(F(:, 2), :) - a, 2);
+    N = zeros(size(V));
+    for k = 1:3
+        N = N + [accumarray(F(:, k), FN(:, 1), [size(V, 1) 1]), ...
+                 accumarray(F(:, k), FN(:, 2), [size(V, 1) 1]), ...
+                 accumarray(F(:, k), FN(:, 3), [size(V, 1) 1])];
+    end
+    len = vecnorm(N, 2, 2);
+    N = N./len;
+    N(~(len > 0), :) = repmat([0 0 1], nnz(~(len > 0)), 1); % only on zero-area faces
 end
 
 function [color, texture] = resolveMaterial(materials, name)
