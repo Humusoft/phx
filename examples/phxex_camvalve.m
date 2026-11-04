@@ -42,7 +42,7 @@ function phxex_camvalve
     figure(1);
     [viewer, ax] = phx.extra.Viewer("clear", "DefaultCameraPosition", [-0.32 -0.32 0.32], ...
         "DefaultCameraTarget", [0 0 0.23], "Texture", "Tiles");
-    [cam, valve, info] = buildScene(ax, rBase, lift, noseSpan, camThick, ...
+    [cam, valve] = buildScene(ax, rBase, lift, noseSpan, camThick, ...
         zc, Lvalve, mValve, kSpring, cSpring, freeLen);
 
     % Zero collision margin - the default 40 mm margin dwarfs these
@@ -52,8 +52,7 @@ function phxex_camvalve
     capTop = @() valve.Position(3) + Lvalve;   % tappet-face height (m)
 
     % --- Settle: hold the cam nose up, let the spring seat the follower --
-    cam.EulerAngles = [0 0 0];
-    runPhase(sim, cam, 0, 0, tSettle, dt, subFrame);
+    sim.step(tSettle, round(tSettle/dt), subFrame);
 
     % --- Calibration: one slow revolution captures the true lift profile -
     nbins = 720;
@@ -103,16 +102,6 @@ function phxex_camvalve
     end
     delete(sim);
 
-    % --- Report ---------------------------------------------------------
-    if isnan(onsetRpm)
-        fprintf("Valve stayed on the cam up to %.0f rpm (no float detected).\n", rpmHi);
-    else
-        fprintf("Valve float onset at %.0f rpm (follower lifted off by > %.1f mm).\n", ...
-            onsetRpm, gapThresh*1e3);
-    end
-    fprintf("Cam lift %.1f mm, valve mass %.0f g, spring preload %.0f N.\n", ...
-        (liftRest - min(Lref))*1e3, mValve*1e3, kSpring*(freeLen - info.springLen0));
-
     % --- Plots ----------------------------------------------------------
     clf(figure(2));
     subplot(2, 1, 1);
@@ -131,7 +120,7 @@ function phxex_camvalve
 end
 
 % ---------------------------------------------------------------------------
-function [cam, valve, info] = buildScene(ax, rBase, lift, noseSpan, camThick, ...
+function [cam, valve] = buildScene(ax, rBase, lift, noseSpan, camThick, ...
         zc, Lvalve, mValve, kSpring, cSpring, freeLen)
 % Build the cam, the valve on its prismatic guide, and the spring
 
@@ -157,7 +146,7 @@ function [cam, valve, info] = buildScene(ax, rBase, lift, noseSpan, camThick, ..
     vProfile = [0 0; 0 rHead; hHead rHead; hHead rStem; ...
                 Lvalve-hCap rStem; Lvalve-hCap rCap; Lvalve rCap; Lvalve 0];
     valveShape = phx.shape.Revolution("Axis", "z", "Profile", vProfile, "Envelope", "concave", ...
-        "Color", [0.8 0.5 0.2], "Texture", "checker", "TextureBlend", 0.3);
+        "Color", [0.8 0.5 0.2], "Texture", "stripes", "TextureBlend", 0.3);
     zv = zc - rBase - Lvalve;                    % tappet just touching the base circle
     valve = phx.Body(ax, "Position", [0 0 zv], "Shape", valveShape, "Friction", [1 0 0]);
     valve.Mass = mValve;
@@ -179,20 +168,6 @@ function [cam, valve, info] = buildScene(ax, rBase, lift, noseSpan, camThick, ..
     phx.Spring(deck, valve, "PointA", [0 0 -0.005], "PointB", [0 0 pRet], ...
         "Stiffness", kSpring, "Damping", cSpring, "FreeLength", freeLen, ...
         "Visible", true, "Colormap", "jet", "ColorRange", [0 80], "Overlay", true);
-
-    info.springLen0 = (zv + pRet) - (zDeck - 0.005);   % nominal spring length
-end
-
-% ---------------------------------------------------------------------------
-function runPhase(sim, cam, theta0, w, tPhase, dt, subFrame)
-% Advance the sim for tPhase seconds with the cam at constant speed w
-    n = round(tPhase/dt);
-    theta = theta0;
-    for i = 1:n
-        theta = theta + w*dt;
-        cam.EulerAngles = [theta 0 0];
-        sim.step(dt, 1, mod(i, subFrame) == 0);
-    end
 end
 
 % ---------------------------------------------------------------------------

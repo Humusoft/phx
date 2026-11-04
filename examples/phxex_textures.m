@@ -43,8 +43,8 @@ function phxex_textures
     drawnow;
     
     % Initialize the simulation based on all objects from a current scene;
-    % a margin of a few millimetres keeps the buggy's wheels clear of its body
-    sim = phx.Simulation("EngineSettings", phx.engine.BulletSettings("Margin", 0.004));
+    % contact tolerances for gaps of about 10 cm keep the buggy's wheels clear
+    sim = phx.Simulation("EngineSettings", phx.engine.BulletSettings("LengthScale", 0.1));
     sim.step(9, 900, 1);
 
     % Clean up the simulation object

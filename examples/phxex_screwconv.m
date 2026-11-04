@@ -51,8 +51,8 @@ function phxex_screwconv(showGraphs)
     % Force recording
     logger = phx.Logger(screw, "Parameters", "TotalForce", "Frequency", 100);
 
-    % Simulation; a margin of a few millimetres suits the thin screw flight
-    sim = phx.Simulation("EngineSettings", phx.engine.BulletSettings("Margin", 0.004));
+    % Simulation; contact tolerances for the thin screw flight
+    sim = phx.Simulation("EngineSettings", phx.engine.BulletSettings("LengthScale", 0.1));
     sim.step(5, 1500, 5);
     delete(sim);
 

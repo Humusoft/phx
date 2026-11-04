@@ -11,8 +11,7 @@ function phxex_seaplate(duration, maxAmplitude, balance)
 % pitches and rolls under it. The second one tilts the plate to roll the
 % ball back to the centre. The arm is a real one with real limits: its
 % joints turn at most 1.4 rad/s, and it learns how the pontoon moves only
-% through a lagging sensor. Sooner or later a wave group comes that it
-% cannot follow, and the ball goes overboard.
+% through a lagging sensor.
 %
 % Input Arguments:
 %     duration     - simulated time in seconds
@@ -21,10 +20,9 @@ function phxex_seaplate(duration, maxAmplitude, balance)
 %                    the arm only holds the plate level
 %
 % Example:
-%     phxex_seaplate                  % the ball holds until the sea gets rough
-%     phxex_seaplate(80, 0.15, false) % plate only held level, the ball rolls
-%                                     % off before the pontoon floats
-%     phxex_seaplate(80, 0.06)        % a sea the arm can always handle
+%     phxex_seaplate                  % default run
+%     phxex_seaplate(80, 0.15, false) % plate only held level, no balancing
+%     phxex_seaplate(80, 0.06)        % calmer sea
 %
 % Requires Robotics System Toolbox.
 %
@@ -107,13 +105,13 @@ function phxex_seaplate(duration, maxAmplitude, balance)
     Tplate = base.Transform*Thold*trvec2tform([0 0 plateT/2]);
     plate = phx.Body(ax, "Position", Tplate(1:3, 4)', "Orientation", Tplate(1:3, 1:3), ...
         "Shape", {"Cylinder", "Radius", plateR, "Height", plateT, "Density", 1800, ...
-        "Color", [0.85 0.87 0.9], "Texture", "checker", "TextureBlend", 0.3}, "Friction", [0.6 0 0]);
+        "Color", [0.85 0.87 0.9], "Texture", "stripes", "TextureBlend", 0.3}, "Friction", [0.6 0 0]);
     phx.FixedJoint(hand, plate, "TransformA", hand.Transform\Tplate, "TransformB", eye(4), ...
         "Visible", false);
     p = Tplate*[ballStart, plateT/2 + ballR, 1]';
     ball = phx.Body(ax, "Position", p(1:3)', ...
         "Shape", {"Sphere", "Radius", ballR, "Density", 1000, "Color", [0.9 0.3 0.25], ...
-        "Texture", "checker", "TextureBlend", 0.5}, "Friction", [0.6 0.002 0]);
+        "Texture", "stone", "TextureBlend", 0.5}, "Friction", [0.6 0.002 0]);
 
     % Short-crested sea: one dominant swell and two smaller ones from other
     % headings, over a mean level that rises from below the hull to 0
@@ -140,9 +138,10 @@ function phxex_seaplate(duration, maxAmplitude, balance)
         "gain", 4.5, "lag", 0.4, "heave", 0.5, "heaveTau", 3, "Vmax", 1.4);
     phx.Function(motor, @(fcn, ~, dt, ~) armControl(fcn, motor, dt, ctrl));
 
-    % Plate pose and ball position, recorded in the background for the plot
-    logPlate = phx.Logger(plate, "Parameters", "Transform", "Frequency", 50);
-    logBall = phx.Logger(ball, "Parameters", "Position", "Frequency", 50);
+    % Ball position in the frame of the plate, recorded in the background
+    % for the plot
+    onPlate = phx.Measure(plate, ball, "Visible", false);
+    logBall = phx.Logger(onPlate, "Parameters", "PositionInA", "Frequency", 50);
 
     % Bodies in creation order, base first, which suits the joint chain; the
     % joints need the exact (dantzig) solver to run their motors at the
@@ -150,7 +149,7 @@ function phxex_seaplate(duration, maxAmplitude, balance)
     arm = struct2cell(bodies);
     arm = [arm{:}];
     sim = phx.Simulation([seabedBody pont arm plate ball], "EngineSettings", ...
-        phx.engine.BulletSettings("Margin", 0.002, "Solver", "dantzig"));
+        phx.engine.BulletSettings("LengthScale", 0.1, "Solver", "dantzig"));
 
     % --- Run --------------------------------------------------------------
     dt = 0.0025;
@@ -162,7 +161,7 @@ function phxex_seaplate(duration, maxAmplitude, balance)
         sim.step(dt*subSteps, subSteps, subSteps);
         t = sim.Time;
 
-        e = plate.Transform\[ball.Position 1]';
+        e = onPlate.PositionInA;
         off = norm(e(1:2));
         if isnan(liftOff) && pont.Position(3) > zStart + 0.01
             liftOff = t;
@@ -184,25 +183,11 @@ function phxex_seaplate(duration, maxAmplitude, balance)
             break
         end
     end
-
-    % Ball offset from the plate centre, in the plane of the plate: each row
-    % of the plate log is its 4x4 transform by columns, so 1:3 and 5:7 are
-    % the in-plane axes and 13:15 the centre
-    tLog = logPlate.Time;
-    Tp = logPlate.Data;
-    d = logBall.Data - Tp(:, 13:15);
-    offLog = hypot(sum(d.*Tp(:, 1:3), 2), sum(d.*Tp(:, 5:7), 2));
     delete(sim);
 
-    % --- Result -----------------------------------------------------------
-    if isnan(dropped)
-        fprintf("The arm kept the ball on the plate for the whole run, up to %.3f m waves.\n", amp(t));
-    elseif isnan(liftOff) || dropped < liftOff
-        fprintf("The ball rolled off at %.1f s, before the pontoon was even afloat.\n", dropped);
-    else
-        fprintf("Afloat at %.1f s, the ball went overboard at %.1f s in %.3f m waves.\n", ...
-            liftOff, dropped, amp(dropped));
-    end
+    % Ball offset from the plate centre, in the plane of the plate
+    tLog = logBall.Time;
+    offLog = vecnorm(logBall.Data(:, 1:2), 2, 2);
 
     clf(figure(2));
     yyaxis left

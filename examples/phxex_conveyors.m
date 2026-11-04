@@ -31,8 +31,8 @@ function phxex_conveyors
     phx.assembly.arena("Position", [2 0 -0.6], "Size", [1 1 0.5]);
     
     % Belts
-    phx.Body("Type", "static", "Position", [-1 0 0.02], "SurfaceVelocity", [vBelt1 0 0], "Shape", {"Box", "Size", [2 0.8 0.04], "Color", [0 0 1], "Texture", resdir+"arrows.png", "TextureBlend", 0.7}, "Friction", [1 0.05 0]);
-    phx.Body("Type", "static", "Position", [1 0 0.02], "SurfaceVelocity", [vBelt2 0 0], "Shape", {"Box", "Size", [2 0.8 0.03], "Color", [1 0 0], "Texture", resdir+"arrows.png", "TextureBlend", 0.7}, "Friction", [1 0.05 0]);
+    phx.Body("Type", "static", "Position", [-1 0 0.02], "SurfaceVelocity", [vBelt1 0 0], "Shape", {"Box", "Size", [2 0.8 0.04], "Color", [0.4 0.4 0.8], "Texture", "arrows", "TextureBlend", 0.2}, "Friction", [1 0.05 0]);
+    phx.Body("Type", "static", "Position", [1 0 0.02], "SurfaceVelocity", [vBelt2 0 0], "Shape", {"Box", "Size", [2 0.8 0.03], "Color", [0.8 0.4 0.4], "Texture", "arrows", "TextureBlend", 0.2}, "Friction", [1 0.05 0]);
     
     % Flaps
     flapAngle = flapAngle*pi/180;
@@ -49,10 +49,10 @@ function phxex_conveyors
     prof = bottleSizePerc/100*[-0.222 0; -0.222 0.057; 0.056 0.057; 0.078 0.047; ...
                                 0.100 0.029; 0.122 0.024; 0.190 0.024; 0.190 0.027; ...
                                 0.222 0.027; 0.222 0];
-    bottle = phx.shape.Revolution("Profile", prof, "Segments", 24, "Color", [0.4 0.6 1], "Material", "glossy", "Envelope", "cylinder", "Texture", "checker", "TextureBlend", 0.2);
+    bottle = phx.shape.Revolution("Profile", prof, "Segments", 24, "Color", [0.4 0.6 1], "Material", "glossy", "Envelope", "cylinder", "Texture", "checker", "TextureBlend", 0.15);
 
     % Create the simulation object
-    sim = phx.Simulation("EngineSettings", phx.engine.BulletSettings("Margin", 0.001));
+    sim = phx.Simulation("EngineSettings", phx.engine.BulletSettings("LengthScale", 0.1));
 
     % Add bottles and run the simulation repeatedly
     total = 0;

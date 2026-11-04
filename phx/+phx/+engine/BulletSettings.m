@@ -6,16 +6,28 @@ classdef BulletSettings
 %   with the EngineSettings option of phx.Simulation:
 %
 %       sim = phx.Simulation(ax, "EngineSettings", ...
-%           phx.engine.BulletSettings("Margin", 0.002));
+%           phx.engine.BulletSettings("LengthScale", 0.01));
 %
 %   The settings take effect once, as the world is created; changing the
 %   object afterwards does not reach a running simulation.
+%
+%   LengthScale is the typical size of the parts that touch each other, in
+%   metres, as an order of magnitude: 1 for parts of about a metre, 0.1 for
+%   decimetres, 0.01 for centimetres. The collision tolerances in automatic
+%   mode follow from it (the margin is 4 % of it); setting a tolerance
+%   switches it to manual mode, as with the limits of MATLAB axes:
+%
+%       s = phx.engine.BulletSettings("LengthScale", 0.01);
+%       s.Margin        % 4e-4, MarginMode "auto"
+%       s.Margin = 0;   % MarginMode "manual"
 %
 %   Properties:
 %     Solver        - Constraint solver of the engine
 %     Iterations    - Iterations of the constraint solver per step
 %     AutoActivated - Let resting bodies fall asleep
+%     LengthScale   - Typical size of the parts in contact, as an order of magnitude, in metres
 %     Margin        - Collision margin, in metres
+%     MarginMode    - Margin from LengthScale ("auto") or as set ("manual")
 %
 %   See also phx.Simulation
 
@@ -39,10 +51,28 @@ classdef BulletSettings
         % (false); a sleeping body is woken only by a direct interaction
         AutoActivated (1, 1) logical = false
 
+        % Typical size, in metres, of the parts that touch each other, as an
+        % order of magnitude: 1 for parts of about a metre, 0.1 for
+        % decimetres, 0.01 for centimetres. When the parts differ much, take
+        % the smaller of those whose contacts matter. The tolerances in
+        % automatic mode follow from it; the default 1 gives the values for
+        % metre-sized scenes.
+        LengthScale (1, 1) double {mustBePositive, mustBeFinite} = 1
+
+        % Margin from LengthScale ("auto") or the value set ("manual");
+        % setting Margin switches it to "manual"
+        MarginMode (1, 1) string {mustBeMember(MarginMode, ["auto", "manual"])} = "auto"
+    end
+
+    properties (Dependent)
         % Collision margin, in metres, added around convex hull, concave mesh
         % and cone collision shapes; boxes, spheres, cylinders and capsules
-        % keep their exact size
-        Margin (1, 1) double = 0.04
+        % keep their exact size. In automatic mode 4 % of LengthScale.
+        Margin (1, 1) double
+    end
+
+    properties (Access = private)
+        ManualMargin = 0.04
     end
 
     methods
@@ -53,6 +83,19 @@ classdef BulletSettings
 
             % Process input arguments
             obj = phx.internal.applyArguments(Options, obj);
+        end
+
+        function value = get.Margin(obj)
+            if obj.MarginMode == "auto"
+                value = 0.04*obj.LengthScale;
+            else
+                value = obj.ManualMargin;
+            end
+        end
+
+        function obj = set.Margin(obj, value)
+            obj.ManualMargin = value;
+            obj.MarginMode = "manual";
         end
 
         function apply(obj, objectHandle)

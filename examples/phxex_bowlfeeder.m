@@ -40,11 +40,6 @@ function phxex_bowlfeeder(Options)
     f = Options.Frequency;
     Az = Options.Gamma*9.81/(2*pi*f)^2;             % lift amplitude for this Gamma
 
-    fprintf("bowl radius %.0f mm, track %.0f mm wide, pitch %.0f mm over %.1f turns\n", ...
-        1000*b.R, 1000*b.Width, 1000*b.Pitch, b.Turns);
-    fprintf("drive %g Hz, Gamma %.1f -> lift %.2f mm, twist %.2f mm at the track\n", ...
-        f, Options.Gamma, 1000*Az, 1000*Az/tand(b.Beta));
-
     rng(Options.Seed);
     figure(1);
     [viewer, ax] = phx.extra.Viewer("clear", "Texture", "gradient", "DefaultCameraPosition", [-0.4 0.8 0.9], "DefaultCameraTarget", [0 0 0.1]);
@@ -52,13 +47,14 @@ function phxex_bowlfeeder(Options)
     ground = phx.Body(ax, "Type", "static", "Position", [0 0 b.Base], "Shape", {"Box", "Size", [2 2 0.02], "Texture", "tiles"});
     phx.Body(ax, "Type", "static", "Position", [0 0 -0.20], "Shape", {"Cylinder", "Diameter", 0.34, "Height", 0.16, "Color", [0.30 0.33 0.37]});
 
-    [~, outlet] = buildFeeder(ax, b, f, Az, Options.Parts, ground);
+    settle = 0.3;                                   % let the charge settle before shaking
+    outlet = buildFeeder(ax, b, f, Az, settle, Options.Parts, ground);
 
-    sim = phx.Simulation(ax, "EngineSettings", phx.engine.BulletSettings("Margin", 0.0005));
+    sim = phx.Simulation(ax, "EngineSettings", phx.engine.BulletSettings("LengthScale", 0.01));
 
     dt = 1/(f*100);                                 % 100 substeps per drive period
     window = 0.2;
-    sim.step(0.3, round(0.3/dt), -1);               % settle the charge before shaking
+    sim.step(settle, round(settle/dt), -1);
 
     % The flap sends every part that reaches the top back to the floor, so the
     % zone keeps counting passes for as long as the machine runs.
@@ -67,9 +63,6 @@ function phxex_bowlfeeder(Options)
         viewer.displayText(sprintf("Gamma = %.1f   |   %d parts through the outlet   |   %.0f/min", ...
             Options.Gamma, outlet.EnteredCount, 60*outlet.EnteredCount/time));
     end
-
-    fprintf("%d parts through the outlet in %g s = %.0f/min\n", ...
-        outlet.EnteredCount, Options.Duration, 60*outlet.EnteredCount/Options.Duration);
     delete(sim);
 end
 
@@ -91,7 +84,7 @@ function b = bowlDimensions
     b.Base = -0.30;         % height of the floor the machine stands on
 end
 
-function [parts, outlet] = buildFeeder(ax, b, f, Az, nParts, ground)
+function outlet = buildFeeder(ax, b, f, Az, settle, nParts, ground)
 % Floor cone, wall and track are three kinematic bodies shaken by one
 % phx.Function. The charge is tipped onto the floor at random.
 
@@ -116,13 +109,10 @@ function [parts, outlet] = buildFeeder(ax, b, f, Az, nParts, ground)
 
     bowl = [floorCone bowlWall track];
 
-    inertia = b.Mass/12*[b.Part(2)^2 + b.Part(3)^2, b.Part(1)^2 + b.Part(3)^2, ...
-        b.Part(1)^2 + b.Part(2)^2];
     parts = phx.Body.empty;
     for i = 1:nParts
-        parts(i) = phx.Body(ax, "Position", poolPose(b), "EulerAngles", 2*pi*rand(1, 3), ...
-            "Mass", b.Mass, "Inertia", inertia, "Friction", 0.5, ...
-            "Shape", {"Box", "Size", b.Part, "Color", [0.85 0.5 0.15]});
+        parts(i) = phx.Body(ax, "Position", poolPose(b), "EulerAngles", 2*pi*rand(1, 3), "Friction", 0.5, ...
+            "Shape", {"Box", "Size", b.Part, "Density", b.Mass/prod(b.Part), "Color", [0.85 0.5 0.15]});
     end
 
     % Counting zone
@@ -132,11 +122,11 @@ function [parts, outlet] = buildFeeder(ax, b, f, Az, nParts, ground)
 
     % Deflection flap
     ang = 2*pi*(b.Turns + 0.01);
-    phx.Body("Type", "static", "Position", [rc*cos(ang) rc*sin(ang) b.Pitch*ang/(2*pi) + 0.02], "EulerAngles", [0 0 1], "Shape", {"Box", "Size", [0.09 0.005 0.03], "Color", [0.9 0.2 0.2]});
+    phx.Body(ax, "Type", "static", "Position", [rc*cos(ang) rc*sin(ang) b.Pitch*ang/(2*pi) + 0.02], "EulerAngles", [0 0 1], "Shape", {"Box", "Size", [0.09 0.005 0.03], "Color", [0.9 0.2 0.2]});
 
     drive = phx.Function(num2cell(bowl), @shake);
     drive.UserData = struct("Az", Az, "Aphi", Az/tand(b.Beta)/b.R, "Omega", 2*pi*f, ...
-        "Start", 0.3, "Rest", {arrayfun(@(o) o.Transform, bowl, "UniformOutput", false)});
+        "Start", settle, "Rest", {arrayfun(@(o) o.Transform, bowl, "UniformOutput", false)});
 end
 
 function shake(obj, parents, ~, time)

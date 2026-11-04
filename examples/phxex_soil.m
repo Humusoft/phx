@@ -40,8 +40,8 @@ function phxex_soil
     % Camera following the bucket
     phx.Camera(ground, exc, "PointA", [-3, 6.6, 3]);
 
-    % Simulation; a margin of a few millimetres suits the rocks
-    sim = phx.Simulation("EngineSettings", phx.engine.BulletSettings("Margin", 0.004)); % Initialize the simulation
+    % Simulation; contact tolerances for rocks of a few decimetres
+    sim = phx.Simulation("EngineSettings", phx.engine.BulletSettings("LengthScale", 0.1)); % Initialize the simulation
     sim.step(25.6, 2560, 10); % Run the simulation and draw each 10th step
     delete(sim); % Clean up the simulation object
 

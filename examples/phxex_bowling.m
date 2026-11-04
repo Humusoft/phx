@@ -52,7 +52,7 @@ function out = phxex_bowling(Options)
     [viewer, ax] = phx.extra.Viewer("clear", "DefaultCameraPosition", [21 0 1], "DefaultCameraTarget", [-100 0 -42], "Texture", "tiles");
 
     scene = makeScene(ax, L);
-    sim = phx.Simulation(ax, "EngineSettings", phx.engine.BulletSettings("Margin", 0.001));
+    sim = phx.Simulation(ax, "EngineSettings", phx.engine.BulletSettings("LengthScale", 0.1));
 
     cmap = turbo(11);
 
@@ -96,8 +96,6 @@ function out = phxex_bowling(Options)
             drawnow;
         end
     end
-    fprintf("%d headless throws in %.1f s (%.0f ms each), %d strikes.\n", ...
-        n*n, toc(tStart), 1000*toc(tStart)/(n*n), nnz(out.Pins == 10));
 
     % Stand the pins up again and refresh the view under the fan of paths
     resetScene(scene, L, mean(aims), 0, Options.Speed);
@@ -150,12 +148,11 @@ function scene = makeScene(ax, L)
 % Lane segments, ball and pins. The pin profile is shifted so that the body
 % origin (which is the centre of mass) sits low, as it does in a real pin.
 
-    lane = phx.Body.empty;
     for k = 1:numel(L.mu)
         len = L.edges(k+1) - L.edges(k);
-        lane(k) = phx.Body(ax, "Type", "static", "Position", [L.edges(k) + len/2, 0, -0.05], ...
+        phx.Body(ax, "Type", "static", "Position", [L.edges(k) + len/2, 0, -0.05], ...
             "Shape", {"Box", "Size", [len L.width 0.1], "Color", [0.78 0.62 0.38] + 0.06*(k - 2)}, ...
-            "Friction", [L.mu(k) 0 0], "Restitution", 0.1); %#ok<AGROW>
+            "Friction", [L.mu(k) 0 0], "Restitution", 0.1);
     end
 
     % Gutters, so a missed throw leaves the lane instead of sliding along it
@@ -165,7 +162,7 @@ function scene = makeScene(ax, L)
     end
 
     ball = phx.Body(ax, "Position", [0.3 0 L.ballR + 0.001], ...
-        "Shape", {"Sphere", "Radius", L.ballR, "Color", [0.15 0.2 0.45], "Texture", "checker", "TextureBlend", 0.3}, ...
+        "Shape", {"Sphere", "Radius", L.ballR, "Color", [0.15 0.2 0.45], "Texture", "stone", "TextureBlend", 0.3}, ...
         "Friction", [1.0 0.002 0.001], "Restitution", 0.6);
     ball.Mass = L.ballM;
     ball.Inertia = 2/5*L.ballM*L.ballR^2*[1 1 1];
@@ -182,13 +179,13 @@ function scene = makeScene(ax, L)
     shp = phx.shape.Revolution("Profile", prof, "Segments", 24, "Envelope", "convex", "Color", 1);
     for k = 1:10
         pins(k) = phx.Body(ax, "Position", [L.xHead + layout(k, 1), layout(k, 2), cg + 0.002], ...
-            "Shape", shp, "Friction", [0.08 0.001 0.001], "Restitution", 0.7, "Mass", L.pinM, "Inertia", [0.0095 0.0095 0.0018]); %#ok<AGROW>
+            "Shape", shp, "Friction", [0.08 0.001 0.001], "Restitution", 0.7, "Mass", L.pinM, "Inertia", [0.0095 0.0095 0.0018]);
     end
 
     % The full rack: every throw starts by restoring this state
     storeState([pins ball], "rack");
 
-    scene = struct("lane", lane, "ball", ball, "pins", pins, "pin0", vertcat(pins.Position));
+    scene = struct("ball", ball, "pins", pins, "pin0", vertcat(pins.Position));
 end
 
 % ========================================================================
@@ -205,7 +202,6 @@ function r = renderedThrow(sim, scene, L, ax, cmap, aim, sideRoll, speed, viewer
         "Color", cmap(r.pins + 1, :), "LineWidth", 4);
 
     viewer.displayText(sprintf("Pins down: %d", r.pins));
-    fprintf("Rendered throw (aim %.3f m, side roll %.1f rad/s): %d pins down.\n", aim, sideRoll, r.pins);
     pause(1);
 end
 
