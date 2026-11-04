@@ -13,6 +13,10 @@ classdef Shape
 %   bottom, so (0, 0) is the top-left corner of the image. The shapes lay
 %   the image out unmirrored, seen from outside; phx.shape.Terrain aligns
 %   it with its Height matrix instead (row 1 at the lowest y).
+%   TextureTransform rotates, mirrors or recolors the image before it is
+%   blended with Color and laid out. The built-in textures are the default
+%   outputs of static functions such as phx.base.Shape.wood, which can be
+%   called with other parameters.
 %
 %   See also phx.Body
 
@@ -23,6 +27,12 @@ classdef Shape
 
     properties (Access = protected, Transient)
         TextureData
+    end
+
+    properties (Constant, Hidden)
+        % Names of the built-in textures, each a static generator method
+        BuiltinTextures = ["arrows" "cells" "checker" "circles" "scratches" ...
+            "stone" "stripes" "tiles" "wood" "xor"]
     end
 
     properties
@@ -40,11 +50,25 @@ classdef Shape
     end
 
     properties (Transient)
-        % Texture file
-        Texture (1, 1) string
+        % Texture: an image file, the name of a built-in texture, or an
+        % image matrix - MxNx3 RGB (uint8, or 0-1) or MxN gray levels
+        % mapped through TextureColormap: uint8 as they are (0-255), other
+        % classes scaled to their full range; "" removes the texture
+        Texture = ""
+
+        % Colormap of an MxN texture matrix (Nx3), empty for grayscale;
+        % uint8 0-255 and the range of other data span the whole colormap
+        TextureColormap (:, 3) double {mustBeInRange(TextureColormap, 0, 1)} = zeros(0, 3)
 
         % Texture blending ratio (0-1)
         TextureBlend (1, 1) double {mustBeInRange(TextureBlend, 0, 1)} = 1
+
+        % Texture image operations, applied from left to right before
+        % TextureBlend: "rot90", "rot180" and "rot270" rotate the image
+        % counterclockwise like rot90, "fliplr" and "flipud" mirror it,
+        % "grayscale" keeps its luma (as rgb2gray), "invert" makes a
+        % negative of the colors and "opaque" drops the alpha channel
+        TextureTransform (1, :) string {mustBeMember(TextureTransform, ["rot90", "rot180", "rot270", "fliplr", "flipud", "grayscale", "invert", "opaque"])} = strings(1, 0)
     end
 
     methods (Abstract)
@@ -62,64 +86,46 @@ classdef Shape
     end
 
     methods
-        function obj = set.Texture(obj, fileName)
+        function obj = set.Texture(obj, texture)
+            if isnumeric(texture) || islogical(texture)
+                obj.TextureData = phx.base.Shape.matrixTexture(texture, obj.TextureColormap);
+                obj.Texture = texture;
+                return
+            end
+
             % An empty name removes the texture
+            mustBeTextScalar(texture);
+            fileName = string(texture);
             obj.Texture = fileName;
             if fileName == ""
                 obj.TextureData = [];
                 return
             end
 
-            % Resolve texture file
-            if ~isfile(fileName)
-                % Redirect to default textures
-                testName = fullfile(fileparts(mfilename("fullpath")), "assets", lower(fileName)+".*");
-                defTexture = dir(testName);
-                if ~isempty(defTexture)
-                    fileName = fullfile(defTexture(1).folder, defTexture(1).name);
-                else
-                    error("phx:Shape:fileNotFound", "File '%s' is not an existing file or name of a default texture.", fileName);
-                end
+            name = lower(fileName);
+            if name == "metal" && ~isfile(fileName)
+                % Renamed built-in texture, accepted for a transition period
+                warning("phx:Shape:renamedTexture", "The built-in texture ""metal"" was renamed to ""scratches"". The name ""metal"" will be removed in a future release.");
+                name = "scratches";
             end
 
-            obj.TextureData = phx.base.Shape.loadTexture(fileName);
+            if isfile(fileName)
+                obj.TextureData = phx.base.Shape.loadTexture(fileName);
+            elseif any(name == phx.base.Shape.BuiltinTextures)
+                % A built-in texture is the default output of its generator
+                obj.TextureData = phx.base.Shape.matrixTexture(feval("phx.base.Shape." + name), []);
+            else
+                error("phx:Shape:fileNotFound", "File '%s' is not an existing file or the name of a built-in texture (%s).", ...
+                    fileName, join(phx.base.Shape.BuiltinTextures, ", "));
+            end
         end
 
-        function obj = colormapTexture(obj, cdata, cmap)
-        %colormapTexture Generates a surface texture from scalar data.
-        %
-        %   obj = colormapTexture(obj, cdata) maps the scalar values in cdata
-        %   to colors and stores the result as the surface texture of the
-        %   shape. The default colormap is used. The matrix is mapped like
-        %   an image file: its columns run along the texture coordinate u and
-        %   its rows along v, row 1 at v = 0.
-        %
-        %   obj = colormapTexture(obj, cdata, cmap) uses the given colormap,
-        %   an Nx3 matrix of RGB rows. The values in cdata are normalized to
-        %   the full range of the colormap.
-        %
-        % See also phx.base.Shape.Texture
-
-            arguments
-                obj
-                cdata (:, :) double
-                cmap (:, 3) double = parula(10)
+        function obj = set.TextureColormap(obj, cmap)
+            % Remap a scalar texture matrix, whichever of the two was set first
+            obj.TextureColormap = cmap;
+            if ~isstring(obj.Texture) && ismatrix(obj.Texture)
+                obj.TextureData = phx.base.Shape.matrixTexture(obj.Texture, cmap);
             end
-
-            [a, b] = bounds(cdata(:));
-            cdata = (cdata - a)./(b - a);
-
-            indices = round(cdata*(size(cmap, 1) - 1)) + 1;
-            [M, N] = size(cdata);
-            rgb_double = zeros(M, N, 3);
-            rgb_double(:, :, 1) = reshape(cmap(indices, 1), M, N);
-            rgb_double(:, :, 2) = reshape(cmap(indices, 2), M, N);
-            rgb_double(:, :, 3) = reshape(cmap(indices, 3), M, N);
-            img = uint8(round(rgb_double*255));
-            img(:, :, 4) = 255; % opaque RGBA, see loadTexture
-
-            obj.Texture = ""; % the generated texture has no file
-            obj.TextureData = permute(img, [3 2 1]);
         end
 
         function obj = nextColor(obj)
@@ -243,10 +249,46 @@ classdef Shape
         end
 
         function textureData = getTexture(obj)
-            % Tint the color channels towards the surface color, keeping alpha
             textureData = obj.TextureData;
+            if isempty(textureData)
+                return
+            end
+
+            % Image operations on data laid out channel x columns x rows
+            % (see loadTexture); the color operations leave alpha alone
+            for op = obj.TextureTransform
+                switch op
+                    case "rot90"
+                        textureData = flip(permute(textureData, [1 3 2]), 3);
+                    case "rot180"
+                        textureData = flip(flip(textureData, 2), 3);
+                    case "rot270"
+                        textureData = flip(permute(textureData, [1 3 2]), 2);
+                    case "fliplr"
+                        textureData = flip(textureData, 2);
+                    case "flipud"
+                        textureData = flip(textureData, 3);
+                    case "grayscale"
+                        % ITU-R BT.601 luma, the weights of rgb2gray
+                        luma = 0.298936021293775*double(textureData(1, :, :)) + ...
+                            0.587043074451121*double(textureData(2, :, :)) + ...
+                            0.114020904255103*double(textureData(3, :, :));
+                        luma = uint8(luma);
+                        for c = 1:3
+                            textureData(c, :, :) = luma;
+                        end
+                    case "invert"
+                        for c = 1:3
+                            textureData(c, :, :) = 255 - textureData(c, :, :);
+                        end
+                    case "opaque"
+                        textureData(4, :, :) = 255;
+                end
+            end
+
+            % Tint the color channels towards the surface color, keeping alpha
             b = obj.TextureBlend;
-            if b < 1 && ~isempty(textureData)
+            if b < 1
                 clr = uint8(obj.Color*255*(1 - b));
                 % One channel at a time: a scalar first index is a strided
                 % loop, while (1:3, :, :) copies 3-byte blocks (4x slower)
@@ -269,9 +311,359 @@ classdef Shape
 
             phx.base.Shape.newColor(1);
         end
+
+        function pattern = xor(resolution)
+        %xor Generates a pattern of nested squares.
+        %
+        %   pattern = phx.base.Shape.xor() returns a 512-by-512 uint8 grayscale
+        %   image of squares nested at all scales, like a recursive checkerboard
+        %   (the bitwise XOR of the column and row indices). It is the built-in
+        %   texture "xor".
+        %
+        %   pattern = phx.base.Shape.xor(resolution) sets the image size as
+        %   [width height] in pixels.
+        %
+        % See also phx.base.Shape.Texture, phx.base.Shape.checker
+
+            arguments
+                resolution (1, 2) double = [512 512]
+            end
+
+            pattern = bitxor(uint16(0:resolution(1)-1), uint16((0:resolution(2)-1)'));
+            pattern = uint8(double(pattern)*(255/double(max(pattern, [], "all"))));
+        end
+
+        function pattern = checker(resolution, count)
+        %checker Generates a checkerboard.
+        %
+        %   pattern = phx.base.Shape.checker() returns a 512-by-512 uint8 image of
+        %   a black and white checkerboard of 2-by-2 squares. It is the built-in
+        %   texture "checker".
+        %
+        %   pattern = phx.base.Shape.checker(resolution) sets the image size as
+        %   [width height] in pixels.
+        %
+        %   pattern = phx.base.Shape.checker(resolution, count) sets the number of
+        %   squares as [across down].
+        %
+        % See also phx.base.Shape.Texture, phx.base.Shape.tiles
+
+            arguments
+                resolution (1, 2) double = [512 512]
+                count (1, 2) double = [2 2]
+            end
+
+            cx = mod(floor(count(1)*(0:resolution(1)-1)/resolution(1)), 2);
+            cy = mod(floor(count(2)*(0:resolution(2)-1)'/resolution(2)), 2);
+            pattern = uint8(255*xor(cx, cy));
+        end
+
+        function pattern = stripes(resolution, width)
+        %stripes Generates vertical stripes.
+        %
+        %   pattern = phx.base.Shape.stripes() returns a 512-by-512 uint8 image of
+        %   black and white vertical stripes, each 128 pixels wide. It is the
+        %   built-in texture "stripes".
+        %
+        %   pattern = phx.base.Shape.stripes(resolution) sets the image size as
+        %   [width height] in pixels.
+        %
+        %   pattern = phx.base.Shape.stripes(resolution, width) sets the width of
+        %   one stripe in pixels.
+        %
+        % See also phx.base.Shape.Texture, phx.base.Shape.arrows
+
+            arguments
+                resolution (1, 2) double = [512 512]
+                width (1, 1) double = 128
+            end
+
+            pattern = repmat(uint8(255*mod(floor((0:resolution(1)-1)/width), 2)), resolution(2), 1);
+        end
+
+        function pattern = circles(resolution, width)
+        %circles Generates concentric rings.
+        %
+        %   pattern = phx.base.Shape.circles() returns a 512-by-512 uint8 image of
+        %   black and white concentric rings with smooth edges, centered in the
+        %   image. It is the built-in texture "circles".
+        %
+        %   pattern = phx.base.Shape.circles(resolution) sets the image size as
+        %   [width height] in pixels.
+        %
+        %   pattern = phx.base.Shape.circles(resolution, width) sets the width of
+        %   one ring in pixels (default 32).
+        %
+        % See also phx.base.Shape.Texture, phx.base.Shape.wood
+
+            arguments
+                resolution (1, 2) double = [512 512]
+                width (1, 1) double = 32
+            end
+
+            rx = resolution(1);
+            ry = resolution(2);
+            r = hypot((0:rx-1) - rx/2 + 0.5, (0:ry-1)' - ry/2 + 0.5);
+            % Distance to the nearest ring edge, smoothed over one pixel
+            e = width/2 - abs(mod(r, 2*width) - width);
+            pattern = uint8(255*min(max(0.5 + e, 0), 1));
+        end
+
+        function pattern = stone(resolution, smoothness, seed)
+        %stone Generates a cloudy stone-like noise.
+        %
+        %   pattern = phx.base.Shape.stone() returns a 512-by-512 uint8 image of
+        %   soft cloudy noise that tiles seamlessly in both directions. It is the
+        %   built-in texture "stone".
+        %
+        %   pattern = phx.base.Shape.stone(resolution) sets the image size as
+        %   [width height] in pixels.
+        %
+        %   pattern = phx.base.Shape.stone(resolution, smoothness) sets how smooth
+        %   the noise is: higher values give larger, softer blotches, lower values
+        %   a finer grain (default 1.8).
+        %
+        %   pattern = phx.base.Shape.stone(resolution, smoothness, seed) selects
+        %   another variant of the noise (default 0). The global random number
+        %   generator is left untouched.
+        %
+        % See also phx.base.Shape.Texture, phx.base.Shape.scratches
+
+            arguments
+                resolution (1, 2) double = [512 512]
+                smoothness (1, 1) double = 1.8
+                seed (1, 1) double = 0
+            end
+
+            s = rng(seed);
+            noise = randn(resolution(2), resolution(1));
+            rng(s);
+            pattern = uint8(rescale(phx.base.Shape.fractalNoise(noise, smoothness), 0, 255));
+        end
+
+        function pattern = tiles(resolution, count, base, seed)
+        %tiles Generates square tiles.
+        %
+        %   pattern = phx.base.Shape.tiles() returns a 512-by-512 uint8 image of
+        %   8-by-8 light square tiles, each in a slightly different shade and
+        %   with a fine grain, separated by lighter joints. It is the built-in
+        %   texture "tiles".
+        %
+        %   pattern = phx.base.Shape.tiles(resolution) sets the image size as
+        %   [width height] in pixels.
+        %
+        %   pattern = phx.base.Shape.tiles(resolution, count) sets the number of
+        %   tiles as [across down]. The image size must be divisible by it.
+        %
+        %   pattern = phx.base.Shape.tiles(resolution, count, base) sets the
+        %   lightness of the joints from 0 to 1 (default 0.8); the tiles are a
+        %   little darker.
+        %
+        %   pattern = phx.base.Shape.tiles(resolution, count, base, seed) selects
+        %   another variant of the shades and grain (default 0). The global
+        %   random number generator is left untouched.
+        %
+        % See also phx.base.Shape.Texture, phx.base.Shape.checker
+
+            arguments
+                resolution (1, 2) double = [512 512]
+                count (1, 2) double = [8 8]
+                base (1, 1) double = 0.8
+                seed (1, 1) double = 0
+            end
+
+            tw = resolution(1)/count(1);
+            th = resolution(2)/count(2);
+            tile = zeros(th, tw) + base;
+            s = rng(seed);
+            tile(2:end-1, 2:end-1) = base - 0.2 + rand(th-2, tw-2)*0.1;
+            m = rand(count(2), count(1));
+            rng(s);
+
+            % Light tiles with lighter joints, each tile in its own shade
+            pattern = zeros(resolution(2), resolution(1), "uint8");
+            for i = 1:count(2)
+                for j = 1:count(1)
+                    r = (i - 1)*th + 1;
+                    c = (j - 1)*tw + 1;
+                    pattern(r:r+th-1, c:c+tw-1) = uint8(255*(tile + 0.2*m(i, j)));
+                end
+            end
+        end
+
+        function pattern = scratches(resolution, seed)
+        %scratches Generates fine crossed scratches.
+        %
+        %   pattern = phx.base.Shape.scratches() returns a 512-by-512 uint8 image
+        %   of fine scratches running along both image axes, which tiles
+        %   seamlessly in both directions. It is the built-in texture
+        %   "scratches".
+        %
+        %   pattern = phx.base.Shape.scratches(resolution) sets the image size as
+        %   [width height] in pixels.
+        %
+        %   pattern = phx.base.Shape.scratches(resolution, seed) selects another
+        %   variant of the scratches (default 0). The global random number
+        %   generator is left untouched.
+        %
+        % See also phx.base.Shape.Texture, phx.base.Shape.stone
+
+            arguments
+                resolution (1, 2) double = [512 512]
+                seed (1, 1) double = 0
+            end
+
+            rx = resolution(1);
+            ry = resolution(2);
+            s = rng(seed);
+            noise = rand(ry, rx);
+            rng(s);
+
+            % Gaussian blur (sigma 20, 63 px) along x and along y over
+            % circularly padded noise, so the streaks continue across the seams
+            k = 31;
+            g = exp(-(-k:k).^2/(2*20^2));
+            g = g/sum(g);
+            px = conv2([noise(:, end-k+1:end), noise, noise(:, 1:k)], g, "valid");
+            py = conv2([noise(end-k+1:end, :); noise; noise(1:k, :)], g', "valid");
+            pattern = uint8(rescale(px + py, 0, 255));
+        end
+
+        function pattern = arrows(resolution, width)
+        %arrows Generates chevrons pointing right.
+        %
+        %   pattern = phx.base.Shape.arrows() returns a 512-by-512 uint8 image of
+        %   black and white chevrons pointing to the right, along the image rows.
+        %   It is the built-in texture "arrows".
+        %
+        %   pattern = phx.base.Shape.arrows(resolution) sets the image size as
+        %   [width height] in pixels. The height must be even.
+        %
+        %   pattern = phx.base.Shape.arrows(resolution, width) sets the width of
+        %   one chevron band in pixels (default 64).
+        %
+        % See also phx.base.Shape.Texture, phx.base.Shape.TextureTransform
+
+            arguments
+                resolution (1, 2) double = [512 512]
+                width (1, 1) double = 64
+            end
+
+            pattern = uint8(255*mod(floor(((0:resolution(1)-1) + (0:resolution(2)/2-1)')/width), 2));
+            pattern = [flipud(pattern); pattern];
+        end
+
+        function pattern = cells(resolution, density, seed)
+        %cells Generates rounded cells.
+        %
+        %   pattern = phx.base.Shape.cells() returns a 512-by-512 uint8 image of
+        %   40 irregular cells, light in their centers and darkening towards the
+        %   borders with their neighbors. It is the built-in texture "cells".
+        %
+        %   pattern = phx.base.Shape.cells(resolution) sets the image size as
+        %   [width height] in pixels.
+        %
+        %   pattern = phx.base.Shape.cells(resolution, density) sets the number of
+        %   cells.
+        %
+        %   pattern = phx.base.Shape.cells(resolution, density, seed) selects
+        %   another layout of the cells (default 0). The global random number
+        %   generator is left untouched.
+        %
+        % See also phx.base.Shape.Texture, phx.base.Shape.stone
+
+            arguments
+                resolution (1, 2) double = [512 512]
+                density (1, 1) double = 40
+                seed (1, 1) double = 0
+            end
+
+            rx = resolution(1);
+            ry = resolution(2);
+            s = rng(seed);
+            P = rand(density, 2).*[rx ry];
+            rng(s);
+
+            % Squared distance to the nearest point, one point at a time
+            x = 0:rx-1;
+            y = (0:ry-1)';
+            d2 = inf(ry, rx);
+            for i = 1:density
+                d2 = min(d2, (x - P(i, 1)).^2 + (y - P(i, 2)).^2);
+            end
+            pattern = uint8(rescale(-sqrt(d2), 0, 255));
+        end
+
+        function pattern = wood(resolution, rings, seed)
+        %wood Generates a wood grain.
+        %
+        %   pattern = phx.base.Shape.wood() returns a 512-by-512 uint8 image of
+        %   wood grain: soft growth rings curving around the pith off one corner
+        %   and bending around a knot near the opposite one, with slightly
+        %   darker edges that outline the faces of a box. It is the built-in
+        %   texture "wood".
+        %
+        %   pattern = phx.base.Shape.wood(resolution) sets the image size as
+        %   [width height] in pixels.
+        %
+        %   pattern = phx.base.Shape.wood(resolution, rings) sets the number of
+        %   growth rings (default 7).
+        %
+        %   pattern = phx.base.Shape.wood(resolution, rings, seed) selects another
+        %   variant, with the rings and the knot slightly moved (default 0). The
+        %   global random number generator is left untouched.
+        %
+        % See also phx.base.Shape.Texture, phx.base.Shape.stone
+
+            arguments
+                resolution (1, 2) double = [512 512]
+                rings (1, 1) double = 7
+                seed (1, 1) double = 0
+            end
+
+            rx = resolution(1);
+            ry = resolution(2);
+            s = rng(seed);
+            a = rand(1, 4);
+            noise = randn(ry, rx);
+            rng(s);
+            n = phx.base.Shape.fractalNoise(noise, 2.5);
+            n = n/max(abs(n), [], "all");
+
+            % Coordinates scaled by the longer side, the image spans w x h
+            sz = max(rx, ry);
+            w = rx/sz;
+            h = ry/sz;
+            u = ((0:rx-1) + 0.5)/sz;
+            v = ((0:ry-1)' + 0.5)/sz;
+
+            % Rings around two piths past opposite corners (Cassini ovals),
+            % meeting in a saddle like the grain around a knot
+            c1 = [-0.35 - 0.15*a(1), -0.15 - 0.15*a(2)];
+            c2 = [w + 0.05 + 0.08*a(3), h - 0.15 + 0.08*a(4)];
+            r = hypot(u - c1(1), v - c1(2)).*sqrt(sqrt(hypot(u - c2(1), v - c2(2)) + 0.02));
+            r = rescale(r) + 0.02*n;
+
+            % Broad light early wood, narrow darker late wood, lighter towards
+            % the pith and darker edges that frame each face of a box
+            bands = (0.5 + 0.5*cos(2*pi*rings*r)).^0.6;
+            frame = 1 - 0.35*max(exp(-min(u, w - u)/0.012), exp(-min(v, h - v)/0.012));
+            pattern = uint8(rescale((0.3 + 0.25*bands + 0.45*(1 - r)).*frame, 0, 255));
+        end
     end
 
     methods (Static, Hidden)
+        function noise = fractalNoise(noise, factor)
+        %fractalNoise Shape white noise into periodic 1/f^factor noise.
+            [ry, rx] = size(noise);
+            sz = max(rx, ry);
+            fx = min(0:rx-1, rx:-1:1)*sz/rx;
+            fy = min((0:ry-1)', (ry:-1:1)')*sz/ry;
+            f2 = fx.^2 + fy.^2;
+            f2(1) = 1;
+            noise = ifft2(fft2(noise)./f2.^(factor/2), "symmetric");
+        end
+
         function data = loadTexture(fileName)
         %loadTexture Read an image file into TriangleStrip texture data.
             % Always RGBA: the alpha plane is appended before permute, where
@@ -284,6 +676,40 @@ classdef Shape
             end
             % Texture coordinate u runs along the image columns and v along
             % the rows, so CData is channel x columns x rows
+            data = permute(img, [3 2 1]);
+        end
+
+        function data = matrixTexture(texture, cmap)
+        %matrixTexture Convert an image matrix into TriangleStrip texture data.
+            if ismatrix(texture)
+                % uint8 data are gray levels 0-255, other data span the full
+                % range of gray levels or colormap
+                if isempty(cmap)
+                    if ~isa(texture, "uint8")
+                        texture = uint8(255*rescale(texture));
+                    end
+                    img = repmat(texture, 1, 1, 3);
+                else
+                    if isa(texture, "uint8")
+                        v = double(texture)/255;
+                    else
+                        v = rescale(texture);
+                    end
+                    img = uint8(255*ind2rgb(round(v*(size(cmap, 1) - 1)) + 1, cmap));
+                end
+            elseif ndims(texture) == 3 && size(texture, 3) == 3
+                % RGB in uint8, or 0-1 with out-of-range values saturating
+                if isa(texture, "uint8")
+                    img = texture;
+                elseif isfloat(texture) || islogical(texture)
+                    img = uint8(255*texture);
+                else
+                    error("phx:Shape:invalidTexture", "An RGB texture must be uint8, or floating-point or logical with values from 0 to 1.");
+                end
+            else
+                error("phx:Shape:invalidTexture", "Texture must be a file name, the name of a built-in texture, an MxN matrix or an MxNx3 RGB image.");
+            end
+            img(:, :, 4) = 255; % opaque RGBA, see loadTexture
             data = permute(img, [3 2 1]);
         end
 

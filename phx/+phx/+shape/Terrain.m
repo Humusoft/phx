@@ -5,8 +5,8 @@ classdef Terrain < phx.base.Shape
 %   over a rectangle of the given Size, optionally textured. The columns of
 %   Height run along x and its rows along y, Height(1, 1) at the lowest x
 %   and y. A texture is laid out the same way, image row 1 along the lowest
-%   y, so an image of the same grid (or colormapTexture of Height) lines up
-%   with the heights.
+%   y, so an image of the same grid (or the Height matrix itself set as
+%   Texture) lines up with the heights.
 %
 %   The collision shape is a heightfield built in the engine from the same
 %   data. A terrain is typically used as a static body.

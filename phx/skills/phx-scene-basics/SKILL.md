@@ -127,8 +127,10 @@ b = phx.Body(ax, ...
   ```
 
   - The vector is in the **body frame**, so a turned or tilted belt drives along its own
-    x axis. Build belts along local `+x` and rotate the body; the `arrows.png` texture in
-    `examples/res` also points along local `+x`, so it then matches the drive for free.
+    x axis. Build belts along local `+x` and rotate the body; the built-in `"arrows"`
+    texture points along local `+x` on the top face, so it then matches the drive for
+    free. For any other drive direction turn the arrows with `TextureTransform`:
+    `"rot90"` points them along `+y`, `"rot180"` along `-x` and `"rot270"` along `-y`.
   - It is an ordinary contact constraint, so it is **friction-limited**: both bodies need
     a nonzero `Friction(1)`, a frictionless belt transmits nothing however fast it runs.
     Cargo converges to exactly the commanded speed, and the reaction pushes back on the
@@ -197,22 +199,121 @@ carries data (group, state, a mapped value) rather than shape: it renders the au
 `Color` exactly and ignores the lights, so nothing shades the encoding away. `Style` is
 independent of it: `"smooth"` (default), `"edged"`, `"flat"` or `"wireframe"`.
 
-**Textures.** `Texture` takes an image file path *or* the name of a built-in texture
-bundled with the toolbox — **`"checker"`, `"wood"`, `"tiles"`, `"metal"`, `"stone"`, `"stripes"`** (matched
-case-insensitively). `TextureBlend` (0–1, default 1) mixes the texture with `Color`, so
-a light blend keeps the body's own color while giving it surface detail:
+**Textures.** `Texture` takes the name of a built-in texture, an image file path, or an
+image matrix. The ten built-in textures are grayscale patterns (matched
+case-insensitively):
+
+| Patterns | Surfaces |
+|---|---|
+| `"arrows"` (chevrons pointing right), `"cells"`, `"checker"` (2×2 squares), `"circles"` (concentric rings), `"scratches"`, `"stripes"` (vertical), `"tiles"` (8×8 light tiles), `"xor"` (nested squares) | `"wood"`, `"stone"` (cloudy noise) |
+
+`TextureBlend` (0–1, default 1) mixes the texture with `Color`, so a light blend keeps
+the body's own color while giving it surface detail:
 
 ```matlab
-crate = phx.shape.Box("Size", 0.4, "Texture", "wood", "TextureBlend", 0.5);
+crate = phx.shape.Box("Size", 0.4, "Color", [0.75 0.5 0.3], "Texture", "wood", "TextureBlend", 0.6);
 ball  = phx.shape.Sphere("Diameter", 1, "Color", [0.9 0.3 0.3], ...
                          "Texture", "checker", "TextureBlend", 0.3);
 ```
 
-`"checker"` at a low blend is the standard trick for making a spinning or rolling body
-read as a solid object — without it, a uniformly colored sphere looks static. An unknown
-name errors (`phx:Shape:fileNotFound`) instead of falling back, and the shape names
-are a *different* set from the viewer's sky textures (`"nebula"` is not a shape texture),
-so use only the five above.
+An unknown name errors (`phx:Shape:fileNotFound`) instead of falling back, and the shape
+names are a *different* set from the viewer's sky textures (`"nebula"` is not a shape
+texture). `"metal"` is the old name of `"scratches"`: it still works but warns
+(`phx:Shape:renamedTexture`), so write `"scratches"`.
+
+Where textures help — use them deliberately, not on everything:
+- **Floors and platforms:** `"tiles"` on the ground box gives the scene scale and makes
+  sliding and rolling bodies readable against it (it is light, so no blend is needed).
+- **Rotating parts:** wheels, rotors, shafts, rollers and balls look static when
+  uniformly colored. A low blend (0.2–0.5) of `"stripes"` or `"checker"` makes the
+  rotation visible; `"stripes"` suits cylinders and wheels, `"checker"` spheres.
+- **A few featured objects:** `"wood"` on crates and planks, `"stone"` on boulders and
+  rocks, `"scratches"` on machine parts, `"arrows"` on conveyor belts.
+- **Not on large groups.** Leave bulk material, granular piles, debris, scattered rocks
+  and similar crowds of bodies plain colored (vary `Color` instead): a texture per body
+  costs memory and draw time and adds only visual noise at that scale.
+
+**Texture generators.** Each built-in texture is a static function that returns its
+image as `uint8`, `pattern = phx.base.Shape.name(resolution, ...)` with `resolution`
+as `[width height]` in pixels (default `[512 512]`). Prefer the plain name; call the
+function only when the default does not fit:
+- the pattern scale must match the object — more `tiles` on a large floor, wider
+  `stripes`, more `wood` rings on a long plank;
+- the face is far from square — a `resolution` with its aspect ratio keeps the pattern
+  undistorted;
+- a few objects should differ — another `seed` of `cells`, `scratches`, `stone`,
+  `tiles` or `wood`.
+
+| Function | Further arguments (default) |
+|---|---|
+| `arrows`, `stripes`, `circles` | `width` of one band/ring in pixels (64, 128, 32) |
+| `checker` | `count` [across down] ([2 2]) |
+| `tiles` | `count` ([8 8], must divide `resolution`), `base` joint lightness (0.8), `seed` |
+| `cells` | `density` number of cells (40), `seed` |
+| `stone` | `smoothness` (1.8, higher = larger, softer blotches), `seed` |
+| `scratches` | `seed` |
+| `wood` | `rings` (7), `seed` |
+| `xor` | — |
+
+```matlab
+floor = phx.shape.Box("Size", [20 20 0.2], "Texture", phx.base.Shape.tiles([512 512], [16 16]));
+plank = phx.shape.Box("Size", [2 0.3 0.05], "Color", [0.75 0.5 0.3], "TextureBlend", 0.6, ...
+                      "Texture", phx.base.Shape.wood([1024 256], 12));
+```
+
+Generating costs up to ~15 ms (`"wood"`), and a name or generator call inside a
+per-body `{"Box", ..., "Texture", ...}` spec generates the image again for every body.
+When many bodies share a textured shape, create the shape object once and pass that.
+
+`Texture` also takes an image matrix: M×N×3 RGB (`uint8`, or 0–1) or M×N gray levels.
+`uint8` gray levels are used as they are (0 black, 255 white); data of any other class
+are scaled to their full range, so `peaks(200)` works directly. `TextureColormap` (N×3,
+default empty = gray) maps an M×N matrix to colors instead. Name-value order does not
+matter:
+
+```matlab
+slab = phx.shape.Box("Size", [2 2 0.5], "Color", [0.9 0.5 0.2], ...
+                     "Texture", peaks(200), "TextureBlend", 0.6);   % tinted gray pattern
+trn  = phx.shape.Terrain("Height", H, "Texture", H, "TextureColormap", parula(256));
+```
+
+**Own patterns.** When neither a built-in texture nor its parameters give the pattern
+needed (markings, a grid of a given pitch, a logo, data), build the matrix yourself or
+load an image file. A row and a column vector with implicit expansion are enough for
+most patterns. Make it `uint8` when its gray levels matter (a light, low-contrast
+pattern); a `double` result is stretched to the full range anyway. Combine generator
+outputs in `double`, since `uint8` arithmetic rounds and saturates every step. A
+texture never repeats — one image spans the whole face — so the number of repetitions
+is part of the matrix:
+
+```matlab
+x = 0:511; y = (0:511)';
+pitch = uint8(255 - 60*(mod(x, 64) < 4 | mod(y, 64) < 4));   % light plate, darker grid every 64 px
+mix   = 0.7*double(phx.base.Shape.stone) + 0.3*double(phx.base.Shape.cells);
+plate = phx.shape.Box("Size", [4 4 0.1], "Texture", pitch);
+rock  = phx.shape.Sphere("Diameter", 1, "Color", [0.5 0.45 0.4], "TextureBlend", 0.6, "Texture", mix);
+```
+
+**Resolution.** 512×512, the generator default, suits most objects. Small or numerous
+objects do with 128–256 pixels; a large single object seen up close, typically the
+floor, may want 1024–2048. Every textured body gets its own copy of the image on the GPU
+at 4 bytes per pixel (1 MB at 512×512, 16 MB at 2048×2048), so do not go beyond what
+the object needs.
+
+`TextureTransform` edits the image before the blend: a string array of operations applied
+left to right — `"rot90"`/`"rot180"`/`"rot270"` (counterclockwise, like `rot90`),
+`"fliplr"`, `"flipud"`, `"grayscale"` (luma, like `rgb2gray`), `"invert"` and `"opaque"`
+(drops the alpha channel). Use it to turn or mirror a texture on all faces at once, and
+`"grayscale"` before a blend to tint a colored photo with `Color` (the built-in textures
+are already grayscale). An image with any transparent pixel switches the draw path to
+transparency, which turns antialiasing off; `"opaque"` brings it back when the alpha is
+unwanted. On a `Mesh`, `TextureBlend` and `TextureTransform` affect only the shape's own
+`Texture`, never textures from OBJ materials.
+
+```matlab
+panel = phx.shape.Box("Size", 1, "Texture", "photo.jpg", "Color", [0.2 0.4 0.9], ...
+                      "TextureTransform", ["grayscale" "fliplr"], "TextureBlend", 0.6);
+```
 
 > **Textures render only in `phx.extra.Viewer` axes.** Only the viewer's axes take the
 > fast world-primitive draw path that carries texture data; in plain axes (and whenever
@@ -227,8 +328,9 @@ towards +z), the top face with the image top towards +y. Revolved shapes put the
 top at the end of the profile, `Extrusion` at the end of the spine. `Rock` projects the
 image onto each face along the axis closest to its normal (the whole image spans the
 `Diameter`), so a noise-like texture such as the built-in `"stone"` suits it best. `Terrain` instead
-follows its `Height` matrix (image row 1 along the lowest y), like `colormapTexture`,
-whose matrix columns run along u and rows along v. `Mesh` `UV` data: u along the image
+follows its `Height` matrix (image row 1 along the lowest y), so `Height` itself set as
+`Texture` lines up with the heights; a texture matrix, like an image, runs its columns
+along u and rows along v. `Mesh` `UV` data: u along the image
 columns, v *down* the rows ((0,0) = top-left); OBJ/PLY files (v up) are converted on load.
 A `Mesh` without UVs (any STL, or OBJ/PLY/data without them) box-projects `Texture` like
 `Rock`: the whole image spans the largest extent of the mesh, with no repeat and visible

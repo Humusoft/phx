@@ -39,10 +39,19 @@ and are settable as <code class="phx-inline">Name,Value</code> pairs in any shap
 <td>Surface style: <code class="phx-inline">"smooth"</code>, <code class="phx-inline">"edged"</code>, <code class="phx-inline">"flat"</code> or <code class="phx-inline">"wireframe"</code>.</td></tr>
 <tr><td class="name">ForcePatch</td><td class="dflt">false</td>
 <td>Force the use of a <code class="phx-inline">patch</code> object for drawing instead of the fast world primitive.</td></tr>
-<tr><td class="name">Texture</td><td class="type">string</td>
-<td>Texture image. Setting it loads the image (with alpha, if present) as the surface texture. Accepts either a path to an image file or the name of a built-in texture: <code class="phx-inline">"checker"</code>, <code class="phx-inline">"metal"</code>, <code class="phx-inline">"stone"</code>, <code class="phx-inline">"stripes"</code>, <code class="phx-inline">"tiles"</code> or <code class="phx-inline">"wood"</code> (matched case-insensitively). An empty string removes the texture.</td></tr>
+<tr><td class="name">Texture</td><td class="type">string | matrix</td>
+<td>Texture image. Accepts a path to an image file (loaded with its alpha, if present), the name of a <a href="#builtin">built-in texture</a> (matched case-insensitively), or an image matrix laid out like an image file. An M&times;N&times;3 matrix is an RGB image, <code class="phx-inline">uint8</code> or floating-point with values 0&ndash;1. An M&times;N matrix holds gray levels mapped through <code class="phx-inline">TextureColormap</code>: <code class="phx-inline">uint8</code> values are used as they are (0 black, 255 white), data of any other class are scaled to their full range. An empty string removes the texture.</td></tr>
+<tr><td class="name">TextureColormap</td><td class="type">N&times;3 matrix</td>
+<td>Colormap of an M&times;N texture matrix: <code class="phx-inline">uint8</code> values 0&ndash;255, or the range of other data, span the whole colormap. The default empty colormap gives shades of gray, ready to be tinted with <code class="phx-inline">Color</code> through <code class="phx-inline">TextureBlend</code>. It has no effect on RGB images, image files and built-in textures.</td></tr>
 <tr><td class="name">TextureBlend</td><td class="dflt">1</td>
 <td>Texture blending ratio (0&ndash;1) between the texture and the surface color: 1 shows the texture as it is, 0 the plain color. The alpha channel of the texture is kept.</td></tr>
+<tr><td class="name">TextureTransform</td><td class="type">string array</td>
+<td>Operations on the texture image, applied from left to right before <code class="phx-inline">TextureBlend</code>:
+<code class="phx-inline">"rot90"</code>, <code class="phx-inline">"rot180"</code> and <code class="phx-inline">"rot270"</code> rotate it counterclockwise, as <code class="phx-inline">rot90</code> does;
+<code class="phx-inline">"fliplr"</code> and <code class="phx-inline">"flipud"</code> mirror it left to right and upside down;
+<code class="phx-inline">"grayscale"</code> keeps only its luma, as <code class="phx-inline">rgb2gray</code> does;
+<code class="phx-inline">"invert"</code> makes a negative of its colors; and <code class="phx-inline">"opaque"</code> drops its alpha channel.
+The rotations and mirrors apply to the whole image, so all faces of a shape turn together. An empty array (the default) leaves the image as it is.</td></tr>
 </table>
 
 <div class="phx-note">
@@ -76,21 +85,44 @@ coordinates project the image onto each face along the axis closest to its norma
 <h2 class="phx-h2">Object Functions</h2>
 <table class="phx-tbl">
 <tr><th>Function</th><th>Description</th></tr>
-<tr><td class="name">colormapTexture</td><td>Generate a surface texture from a matrix of scalar data and a colormap.</td></tr>
 <tr><td class="name">nextColor</td><td>Assign the next color from the cyclic color order to the shape.</td></tr>
 <tr><td class="name">resetColorOrder</td><td><b>Static.</b> Reset the counter so <code class="phx-inline">nextColor</code> starts again from the first color.</td></tr>
 </table>
 
-<h3 class="phx-h3">colormapTexture</h3>
-<span class="phx-syntax">shape = colormapTexture(shape,cdata)</span>
-<span class="phx-syntax">shape = colormapTexture(shape,cdata,cmap)</span>
-<div class="phx-desc">
-<p>Maps the scalar values in <code class="phx-inline">cdata</code> to colors and stores the result as
-the surface texture of the shape. <code class="phx-inline">cmap</code> is an N&times;3 matrix of RGB
-rows (default <code class="phx-inline">parula(10)</code>); <code class="phx-inline">cdata</code> is
-normalized to the full range of the colormap. The matrix is laid out like an image file: its
-columns run along <code class="phx-inline">u</code> and its rows along <code class="phx-inline">v</code>,
-row 1 at the top.</p>
+<h3 class="phx-h3" id="builtin">Built-in textures</h3>
+<p>Each built-in texture is a static function of the class that generates a <code class="phx-inline">uint8</code>
+grayscale image. Setting <code class="phx-inline">Texture</code> to its name uses the default output; calling the
+function directly sets the size and look of the image, and its output can be passed as
+<code class="phx-inline">Texture</code> as it is:</p>
+<span class="phx-syntax">pattern = phx.base.Shape.name()</span>
+<span class="phx-syntax">pattern = phx.base.Shape.name(resolution,...)</span>
+<p><code class="phx-inline">resolution</code> is the image size as <code class="phx-inline">[width height]</code> in pixels
+(default <code class="phx-inline">[512 512]</code>). The further arguments are optional too; a
+<code class="phx-inline">seed</code> selects another variant of a random pattern and leaves the global random number
+generator untouched.</p>
+<table class="phx-tbl">
+<tr><th>Function</th><th>Further arguments (default)</th><th>Image</th></tr>
+<tr><td class="name">arrows</td><td><code class="phx-inline">width</code> (64)</td><td>Black and white chevrons pointing right, each band <code class="phx-inline">width</code> pixels wide. The height must be even.</td></tr>
+<tr><td class="name">cells</td><td><code class="phx-inline">density</code> (40), <code class="phx-inline">seed</code> (0)</td><td><code class="phx-inline">density</code> irregular cells, light in their centers and darkening towards their borders.</td></tr>
+<tr><td class="name">checker</td><td><code class="phx-inline">count</code> ([2 2])</td><td>Black and white checkerboard of <code class="phx-inline">count</code> squares, [across down].</td></tr>
+<tr><td class="name">circles</td><td><code class="phx-inline">width</code> (32)</td><td>Black and white concentric rings with smooth edges, each <code class="phx-inline">width</code> pixels wide.</td></tr>
+<tr><td class="name">scratches</td><td><code class="phx-inline">seed</code> (0)</td><td>Fine scratches along both image axes; tiles seamlessly.</td></tr>
+<tr><td class="name">stone</td><td><code class="phx-inline">smoothness</code> (1.8), <code class="phx-inline">seed</code> (0)</td><td>Soft cloudy noise; higher <code class="phx-inline">smoothness</code> gives larger, softer blotches. Tiles seamlessly.</td></tr>
+<tr><td class="name">stripes</td><td><code class="phx-inline">width</code> (128)</td><td>Black and white vertical stripes, each <code class="phx-inline">width</code> pixels wide.</td></tr>
+<tr><td class="name">tiles</td><td><code class="phx-inline">count</code> ([8 8]), <code class="phx-inline">base</code> (0.8), <code class="phx-inline">seed</code> (0)</td><td>Light square tiles in slightly different shades, <code class="phx-inline">count</code> as [across down], separated by joints of lightness <code class="phx-inline">base</code> (0&ndash;1). The image size must be divisible by <code class="phx-inline">count</code>.</td></tr>
+<tr><td class="name">wood</td><td><code class="phx-inline">rings</code> (7), <code class="phx-inline">seed</code> (0)</td><td>Wood grain of <code class="phx-inline">rings</code> growth rings bending around a knot, with slightly darker edges that outline the faces of a box.</td></tr>
+<tr><td class="name">xor</td><td>&ndash;</td><td>Squares nested at all scales, like a recursive checkerboard.</td></tr>
+</table>
+
+<figure class="phx-fig">
+<img src="img/textures.jpg" alt="The built-in textures">
+<figcaption>The built-in textures, the default outputs of their functions.</figcaption>
+</figure>
+
+<div class="phx-note">
+<span class="lbl">Note.</span> The built-in texture <code class="phx-inline">"metal"</code> was renamed to
+<code class="phx-inline">"scratches"</code>. The old name still works with a warning and will be removed in a
+future release.
 </div>
 
 <h2 class="phx-h2">Abstract Methods</h2>
@@ -146,6 +178,47 @@ phx.Body(ax, <span class="str">"Position"</span>, [ 2 0 0], <span class="str">"S
 <code class="phx-inline">Color</code> of the shape &ndash; a blend of 0.2&ndash;0.5 over
 <code class="phx-inline">"checker"</code> is a cheap way to make a colored body read as a solid
 object while it rotates.</p>
+
+<h4 class="phx-h4">Texture from data</h4>
+<p>A matrix of scalar data becomes a grayscale texture, which <code class="phx-inline">TextureBlend</code>
+tints with the color of the shape; with <code class="phx-inline">TextureColormap</code> the data are
+mapped to colors instead:</p>
+<pre class="phx-code">[~, ax] = phx.extra.Viewer(<span class="str">"clear"</span>);
+
+slab = phx.shape.Box(<span class="str">"Size"</span>, [2 2 0.5], <span class="str">"Color"</span>, [0.9 0.5 0.2], ...
+    <span class="str">"Texture"</span>, peaks(200), <span class="str">"TextureBlend"</span>, 0.6);        <span class="cmt">% gray pattern, tinted</span>
+ball = phx.shape.Sphere(<span class="str">"Diameter"</span>, 1, <span class="str">"Texture"</span>, [1; 0], ...
+    <span class="str">"TextureColormap"</span>, [0.35 0.45 1; 1 0.35 0.3]);         <span class="cmt">% red top, blue bottom</span>
+
+phx.Body(ax, <span class="str">"Position"</span>, [-2 0 0], <span class="str">"Shape"</span>, slab);
+phx.Body(ax, <span class="str">"Position"</span>, [ 2 0 0], <span class="str">"Shape"</span>, ball);</pre>
+
+<p>Pass <code class="phx-inline">uint8</code> data to keep its gray levels instead of stretching them to the full
+range &ndash; <code class="phx-inline">uint8(200 + 40*rand(64))</code> gives a light, low-contrast grain.</p>
+
+<h4 class="phx-h4">Adjust a built-in texture</h4>
+<p>Call the function of a built-in texture to change its parameters &ndash; here a floor of smaller tiles and a
+smoother, wider stone pattern for a long slab:</p>
+<pre class="phx-code">[~, ax] = phx.extra.Viewer(<span class="str">"clear"</span>);
+
+floor = phx.shape.Box(<span class="str">"Size"</span>, [8 8 0.2], <span class="str">"Texture"</span>, phx.base.Shape.tiles([512 512], [16 16]));
+slab  = phx.shape.Box(<span class="str">"Size"</span>, [4 1 0.5], <span class="str">"Color"</span>, [0.6 0.6 0.65], <span class="str">"TextureBlend"</span>, 0.5, ...
+    <span class="str">"Texture"</span>, phx.base.Shape.stone([1024 256], 2.5));
+
+phx.Body(ax, <span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Shape"</span>, floor);
+phx.Body(ax, <span class="str">"Position"</span>, [0 0 0.35], <span class="str">"Shape"</span>, slab);</pre>
+
+<h4 class="phx-h4">Reorient and recolor a texture</h4>
+<p><code class="phx-inline">TextureTransform</code> turns the image a quarter turn on every face of the first box, and on
+the second one makes a mirrored grayscale image of a colored photo, so that the blend tints it with the shape's own
+color:</p>
+<pre class="phx-code">plank = phx.shape.Box(<span class="str">"Size"</span>, [2 0.3 0.1], <span class="str">"Texture"</span>, <span class="str">"wood"</span>, <span class="str">"TextureTransform"</span>, <span class="str">"rot90"</span>);
+panel = phx.shape.Box(<span class="str">"Size"</span>, 1, <span class="str">"Texture"</span>, <span class="str">"photo.jpg"</span>, <span class="str">"Color"</span>, [0.2 0.4 0.9], ...
+    <span class="str">"TextureTransform"</span>, [<span class="str">"grayscale"</span> <span class="str">"fliplr"</span>], <span class="str">"TextureBlend"</span>, 0.6);</pre>
+
+<p>A PNG image with an alpha channel switches the drawing to transparency, which turns antialiasing
+off. Add <code class="phx-inline">"opaque"</code> when the image carries an alpha channel it does not
+need.</p>
 
 <div class="phx-seealso">
 <span class="lbl">See also</span>
