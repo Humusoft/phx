@@ -23,7 +23,7 @@ function phxex_sorter(nBalls, fieldStrength, seed)
 %
 % Example:
 %     phxex_sorter            % default sorter
-%     phxex_sorter(45, 0.5)   % weaker field -> deflection may not suffice
+%     phxex_sorter(45, 0.5)   % weaker field
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 
@@ -126,10 +126,7 @@ function phxex_sorter(nBalls, fieldStrength, seed)
     settleTimeout = sim.Time + 10;
     while sim.Time < settleTimeout
         sim.step(0.1, 10, 10);
-        vMax = 0;
-        for i = 1:nBalls
-            vMax = max(vMax, norm(balls(i).LinearVelocity));
-        end
+        vMax = max(vecnorm(vertcat(balls.LinearVelocity), 2, 2));
         viewer.displayText(sprintf("Settling...   max speed: %.2f", vMax));
         if vMax < 0.1
             break
@@ -138,11 +135,8 @@ function phxex_sorter(nBalls, fieldStrength, seed)
     delete(sim);
 
     % Classify every ball by its landing bin and compare with the charge
-    xFinal = zeros(1, nBalls);
-    for i = 1:nBalls
-        p = balls(i).Position;
-        xFinal(i) = p(1);
-    end
+    P = vertcat(balls.Position);
+    xFinal = P(:, 1)';
     % A positive ball is pulled toward the negative plate (left), so the
     % expected bin index is the negative of the charge class
     binCls = max(-1, min(1, round(xFinal/binW)));

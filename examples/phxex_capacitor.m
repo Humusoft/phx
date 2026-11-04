@@ -9,19 +9,15 @@ function phxex_capacitor(nBalls, rampTime, seed)
 % attract and repel each other; the structure that forms is the result of
 % the competition between these mutual bonds and the external field.
 %
-% The plate charge is ramped up from zero, so the whole transition can be
-% watched: at a weak field the mixed clusters formed by the mutual
-% attraction survive, and only once the plate pull grows to about the
-% strength of one contact bond does the mixture unmix itself. Positive
-% balls then migrate to the negative plate and negative balls to the
-% positive one, where like charges spread out along the plate into a
-% closely packed layer. The neutral balls feel no force at all - they only
-% get stirred by collisions, so they stay scattered over the whole gap
-% instead of forming a band of their own.
+% The plate charge is ramped up from zero, so the plate pull grows against
+% the bonds of the mixed clusters formed by the mutual attraction. Positive
+% balls are pulled to the negative plate and negative balls to the positive
+% one; the neutral balls feel no force at all and are only stirred by
+% collisions.
 %
-% Once the layers are formed the polarity of the plates is reversed, and
-% the two counter-flowing streams swap sides in a few seconds - the same
-% trick that releases a collected layer from an electrode in practice.
+% Some time after the ramp the polarity of the plates is reversed, so the
+% charged balls are pulled to the opposite sides - the same trick that
+% releases a collected layer from an electrode in practice.
 %
 % The pellet rows sit at the height of the centres of the resting balls, so
 % the pull stays horizontal and the balls do not climb over each other.
@@ -36,7 +32,7 @@ function phxex_capacitor(nBalls, rampTime, seed)
 %
 % Example:
 %     phxex_capacitor            % default run
-%     phxex_capacitor(90, 2)     % fast ramp -> clusters are torn apart
+%     phxex_capacitor(90, 2)     % fast ramp
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 
@@ -77,7 +73,7 @@ function phxex_capacitor(nBalls, rampTime, seed)
     for sgn = [-1 1]
         for y = yPellets
             pellets(end + 1) = phx.Body(ax, "Type", "static", "Position", [sgn*arena(1)/2, y, d/2], ...
-                "Shape", {"Sphere", "Diameter", 0.4 "Color", [0.7 0.7 0.75], "Material", "metal"}); %#ok<AGROW> small fixed size
+                "Shape", {"Sphere", "Diameter", 0.4, "Color", [0.7 0.7 0.75], "Material", "metal"}); %#ok<AGROW> small fixed size
         end
     end
     nPellets = numel(yPellets);
@@ -141,13 +137,12 @@ function phxex_capacitor(nBalls, rampTime, seed)
 
     % Force scales: the bond between two touching balls, and the pull of
     % both plates on a ball in the middle of the gap at full field
-    p = reshape([pellets.Position], 3, [])';
+    p = vertcat(pellets.Position);
     r = vecnorm(p, 2, 2);
     fBond = qBall^2/d^2;
     fPull = qBall*qPlate*sum(abs(p(:, 1))./r.^3);
 
-    % The field level at which the charged balls got half way to their
-    % plate - the point where the field starts to win over the bonds
+    % The field level at which the charged balls got half way to their plate
     iFlip = find(hist.level < 0, 1);
     xCharged = mean(abs(hist.meanX([1 3], :)), 1);
     iCrit = find(xCharged > 0.5*xCharged(iFlip - 1), 1);
@@ -160,8 +155,8 @@ function phxex_capacitor(nBalls, rampTime, seed)
     nWrong = round((1 - share)*nnz(cls ~= 0));
     fprintf("Separation at full field: %.0f %% of the charged balls on the correct side.\n", ...
         100*hist.share(iFlip - 1));
-    fprintf("Half of the separation is reached at %.0f %% field, where the plate pull " + ...
-        "(%.1f N) is about the strength of one contact bond (%.1f N).\n", ...
+    fprintf("Half of the separation is reached at %.0f %% field, with a plate pull " + ...
+        "of %.1f N against %.1f N of one contact bond.\n", ...
         100*hist.level(iCrit), fPull*hist.level(iCrit), fBond);
     fprintf("After the polarity is reversed the layers swap sides in %.1f s, " + ...
         "ending at %.0f %% correct (%d wrong).\n", ...
@@ -197,9 +192,9 @@ function phxex_capacitor(nBalls, rampTime, seed)
     subplot(2, 1, 2);
     ramp = 1:find(hist.level == 1, 1);
     plot(100*hist.level(ramp), 100*hist.share(ramp), "LineWidth", 1.5);
-    xline(100*hist.level(iCrit), "--", "bonds give way");
+    xline(100*hist.level(iCrit), "--", "half way");
     grid on; xlabel("field [%]"); ylabel("correct side [%]");
-    title("The mixture unmixes only above a threshold field");
+    title("Separation during the field ramp");
 
     function [meanX, share] = separation(balls, cls, pol)
     % Mean position of each charge class and the share of the charged balls
@@ -212,11 +207,8 @@ function phxex_capacitor(nBalls, rampTime, seed)
 
     function x = ballsX(balls)
     % Positions of the given balls along the field direction
-        x = zeros(1, numel(balls));
-        for i = 1:numel(balls)
-            q = balls(i).Position;
-            x(i) = q(1);
-        end
+        P = vertcat(balls.Position);
+        x = P(:, 1)';
     end
 
 end

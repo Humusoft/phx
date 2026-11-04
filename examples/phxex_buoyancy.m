@@ -65,7 +65,6 @@ function phxex_buoyancy(duration, waves)
         "Color", [1 1 1]}, "Friction", [0.6 0.1 0.1]);
 
     bodies = [crate buoy timber anchor cat];
-    names = ["crate" "buoy" "timber" "anchor" "cat"];
 
     % Add planar shadows
     phx.PlanarShadow(bodies, "Position", [0 0 -poolDepth]);
@@ -82,20 +81,14 @@ function phxex_buoyancy(duration, waves)
         "SurfaceSize", [poolSize poolSize], "SurfaceStep", 0.25);
 
     % Simulation - dt = 5 ms keeps the contacts and the bobbing stable
-    sim = phx.Simulation(ax);
-    subSteps = 10;
-    dt = 0.005;
+    sim = phx.Simulation;
+    subSteps = 4;
+    dt = 0.01;
     while sim.Time < duration
-        sim.step(dt*subSteps, subSteps, 5);
+        sim.step(dt*subSteps, subSteps, subSteps);
         viewer.displayText(sprintf("t = %4.1f s   crate z = %+.2f   anchor z = %+.2f", ...
             sim.Time, crate.Position(3), anchor.Position(3)));
     end
     delete(sim);
-
-    % Report the final drafts against the calm water level
-    fprintf("Final heights of the body centers above the calm water level:\n");
-    for i = 1:numel(bodies)
-        fprintf("  %-6s  z = %+5.2f m\n", names(i), bodies(i).Position(3));
-    end
 
 end

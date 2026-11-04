@@ -11,11 +11,9 @@ function phxex_antisway
 % swing period, so the swing excited by the first copy is cancelled by
 % the second.
 %
-% The direct move sets the whole hanging assembly swinging; the platform
-% tilts with the swing and sheds its cargo. The shaped move arrives only
-% half a swing period later, yet the load barely stirs. The report
-% prints the residual sway and the number of rocks still on board, and
-% the plots compare the sway and platform tilt histories.
+% The shaped move arrives half a swing period later. The report prints the
+% residual sway and the number of rocks still on board, and the plots
+% compare the sway and platform tilt histories.
 %
 % See also phx.Rope, phx.Script, phx.Simulation
 
@@ -99,7 +97,7 @@ function phxex_antisway
     plot(log.t, log.offA, log.t, log.offB, "LineWidth", 1.5);
     grid on; ylabel("hook sway [m]");
     legend("direct", "input-shaped");
-    title(sprintf("ZV input shaping: the same move, %.1f s later, without the swing", tHalf));
+    title(sprintf("ZV input shaping: the same move, %.1f s later", tHalf));
     subplot(2, 1, 2);
     plot(log.t, log.tiltA, log.t, log.tiltB, "LineWidth", 1.5);
     grid on; xlabel("time [s]"); ylabel("platform tilt [deg]");

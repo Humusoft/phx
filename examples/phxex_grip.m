@@ -58,10 +58,6 @@ function phxex_grip(mu, squeeze)
         "Shape", {"Box", "Size", [jawW objW*1.5 objH*0.8], "Color", [0.9 0.5 0.3]}, ...
         "Friction", [mu 0 0]);
 
-    % Measure the object's height relative to the left jaw. If the grip holds
-    % this stays roughly constant during the lift; on slip the object drops.
-    slip = phx.Measure(jawL, obj, "PointA", [0 0 0], "PointB", [0 0 0], "Overlay", true);
-
     % Log jaw height and object height to compare them afterwards.
     logJaw = phx.Logger(jawL, "Frequency", 50, "Parameters", "Position");
     logObj = phx.Logger(obj,  "Frequency", 50, "Parameters", "Position");
@@ -103,19 +99,7 @@ function phxex_grip(mu, squeeze)
     % Phase 4 - hold and see whether the object stays in the grip
     viewer.displayText("Phase: hold");
     sim.step(0.6, 30, 1);
-
     delete(sim);
-
-    % Verdict: compare final object height with the jaws.
-    jawZ = jawL.Position(3);
-    objZ = obj.Position(3);
-    if objZ > jawZ - objH      % object roughly level with the jaws
-        fprintf("Grip held: object lifted to z = %.2f (mu = %.2f, squeeze = %.3f).\n", ...
-            objZ, mu, squeeze);
-    else
-        fprintf("Grip slipped: object fell to z = %.2f while jaws reached %.2f (mu = %.2f, squeeze = %.3f).\n", ...
-            objZ, jawZ, mu, squeeze);
-    end
 
     % Plot jaw vs object height to visualise any slip
     clf(figure(2));

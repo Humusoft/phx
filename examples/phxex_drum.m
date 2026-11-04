@@ -1,4 +1,4 @@
-function out = phxex_drum(Options)
+function phxex_drum(Options)
 % PHXEX_DRUM Size segregation of a granular charge in a rotating drum
 %
 % A drum is filled with a well mixed charge of balls of three sizes and turned
@@ -30,7 +30,7 @@ function out = phxex_drum(Options)
 %   Copyright 2026 HUMUSOFT s.r.o.
 
     arguments
-        Options.Diameters (1, :) double {mustBePositive} = [0.27 0.405 0.6075]
+        Options.Diameters (1, :) double {mustBePositive} = [0.27 0.41 0.61]
         Options.Counts (1, :) double {mustBePositive, mustBeInteger} = [360 120 40]
         Options.DrumRadius (1, 1) double {mustBePositive} = 3.4
         Options.Froude (1, 1) double {mustBePositive} = 0.10
@@ -76,39 +76,32 @@ function out = phxex_drum(Options)
     phx.Script(drum, {"EulerAngles", [0 settle settle+turning]', ...
         [0 0 0; 0 0 0; 0 omega*turning 0]});
 
+    % Ball positions every tenth of a second
+    logger = phx.Logger(balls, "Parameters", "Position", "Frequency", 10);
+
     sim = phx.Simulation([drum balls]);
-    redraw = 10;
-    sim.step(settle, settle/dt, redraw);
+    sim.step(settle, settle/dt, 10);
+    nTurn = round(turning/dt);
+    sim.step(nTurn*dt, nTurn, 10);
 
-    % Sample the mean radius of every class every tenth of a second
-    interval = 0.1;
-    nSamples = round(turning/interval);
-    out.Revolutions = zeros(nSamples + 1, 1);
-    out.Radius = zeros(nSamples + 1, nClass);
-    out.Radius(1, :) = orbits(balls, class, reach, nClass);
-
-    for k = 1:nSamples
-        sim.step(interval, interval/dt, redraw);
-        out.Revolutions(k + 1) = k*interval/period;
-        out.Radius(k + 1, :) = orbits(balls, class, reach, nClass);
+    % Mean orbit radius of every class from the start of the rotation on
+    keep = logger.Time > settle - dt/2;
+    P = logger.Data(keep, :);
+    r = hypot(P(:, 1:3:end), P(:, 3:3:end))./reach';
+    revs = (logger.Time(keep) - settle)/period;
+    radius = zeros(nnz(keep), nClass);
+    for c = 1:nClass
+        radius(:, c) = mean(r(:, class == c), 2);
     end
 
-    out.Diameters = d;
-    out.Spread = out.Radius(:, end) - out.Radius(:, 1);
     delete(sim);
 
-    last = out.Revolutions > out.Revolutions(end) - 2;
-    fprintf("mean radius, mixed:  %s\n", num2str(out.Radius(1, :), "%8.3f"));
-    fprintf("mean radius, sorted: %s\n", num2str(mean(out.Radius(last, :), 1), "%8.3f"));
-    fprintf("spread coarsest - finest: %+.3f mixed -> %+.3f sorted\n", ...
-        out.Spread(1), mean(out.Spread(last)));
-
     % Plot the history of the class radii
-    figure;
+    clf(figure(2));
     colors = classColors(nClass);
     hold on
     for c = 1:nClass
-        plot(out.Revolutions, out.Radius(:, c), "LineWidth", 1.5, "Color", colors(c, :), ...
+        plot(revs, radius(:, c), "LineWidth", 1.5, "Color", colors(c, :), ...
             "DisplayName", sprintf("d = %.2f", d(c)));
     end
     grid on; xlabel("drum revolutions"); ylabel("mean orbit radius / reachable radius");
@@ -131,7 +124,7 @@ function parts = makeDrum(ax, R, L)
     barrel = phx.Body(ax, "Type", "kinematic", "Friction", [0.9 0 0], ...
         "Shape", phx.shape.Revolution("Axis", "y", "Profile", profile, ...
             "Segments", 72, "Envelope", "concave", ...
-            "Color", 0.3, "Style", "flat", "Texture", "checker", "TextureBlend", 0.2));
+            "Color", 0.3, "Style", "flat", "Texture", "xor", "TextureBlend", 0.2));
 
     cover = phx.Body(ax, "Type", "kinematic", "Position", [0 a+t/2 0], ...
         "Friction", [0.9 0 0], "Visible", false, ...
@@ -192,7 +185,7 @@ function [balls, class] = fillDrum(ax, R, L, d, counts)
     balls = phx.Body.empty;
     for i = 1:n
         balls(i) = phx.Body(ax, "Position", P(i, :), "Friction", [0.3 0.01 0.005], ...
-            "Color", colors(class(i), :), "Shape", {"Sphere", "Diameter", dBall(i), "Segments", 20});
+            "Color", colors(class(i), :), "Shape", {"Sphere", "Diameter", dBall(i), "Segments", 16});
     end
 end
 
@@ -204,10 +197,4 @@ function colors = classColors(nClass)
     else
         colors = interp1(linspace(0, 1, 3), stops, linspace(0, 1, nClass));
     end
-end
-
-function r = orbits(balls, class, reach, nClass)
-    P = reshape([balls.Position], 3, [])';
-    normalised = hypot(P(:, 1), P(:, 3))./reach;
-    r = arrayfun(@(c) mean(normalised(class == c)), 1:nClass);
 end

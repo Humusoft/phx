@@ -11,12 +11,12 @@ function phxex_terrain
     
     % Generate terrain using the peaks function
     h = peaks(64);
-    trn = phx.shape.Terrain("Size", [50 40], "Height", h, "Material", "matte");
 
-    % Compute colormap data and apply as texture
-    colormap = (parula(256) + repmat(1-gray(16), [16 1])*0.5 + 0.5)/2;
-    trn = trn.colormapTexture(peaks(1024), colormap);
-    
+    % Texture from finer peaks data, mapped through a striped colormap
+    cmap = (parula(256) + repmat(1-gray(16), [16 1])*0.5 + 0.5)/2;
+    trn = phx.shape.Terrain("Size", [50 40], "Height", h, "Material", "matte", ...
+        "Texture", peaks(1024), "TextureColormap", cmap);
+
     % Create a static body representing the terrain
     phx.Body(ax, "Type", "static", "Position", [0 0 0], "Shape", trn);
     

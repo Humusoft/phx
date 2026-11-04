@@ -37,7 +37,7 @@ function phxex_balance(Kp, Kd)
 
     % Kinematic plate - we drive its tilt; the ball only feels it via contact
     plate = phx.Body(ax, "Type", "kinematic", "Position", [0 0 0], ...
-        "Shape", {"Box", "Size", plateSize, "Color", 1, "Texture", "checker", "TextureBlend", 0.3});
+        "Shape", {"Box", "Size", plateSize, "Color", 1, "Texture", "xor", "TextureBlend", 0.5});
 
     % Ball dropped from a position above the plate
     p0 = [1.5 1.5];
@@ -77,10 +77,6 @@ function phxex_balance(Kp, Kd)
         end
     end
     delete(sim);
-
-    % Report final settling error
-    finalErr = norm(ball.Position(1:2));
-    fprintf("Final distance from centre: %.3f m (Kp = %.1f, Kd = %.1f).\n", finalErr, Kp, Kd);
 
     % Plot ball position error and plate tilt over time
     clf(figure(2));

@@ -24,7 +24,7 @@ function phxex_crystal(nBalls, annealTime, seed)
 %
 % Example:
 %     phxex_crystal            % default run
-%     phxex_crystal(40, 1)     % fast quench -> more fragments and defects
+%     phxex_crystal(40, 1)     % fast quench
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 
@@ -56,24 +56,14 @@ function phxex_crystal(nBalls, annealTime, seed)
     % Static arena: floor and low walls
     phx.assembly.arena("Size", [arena, arena, 0.8], "Thickness", 0.2, "Color", [1 1 1], "Friction", mu);
 
-    % Charged balls: half positive (red), half negative (blue), spawned on
-    % a jittered grid above the arena
+    % Charged balls: half positive (red), half negative (blue), scattered
+    % above the arena
     chg = q*[ones(1, nBalls/2), -ones(1, nBalls/2)];
     chg = chg(randperm(nBalls));
-    cols = ceil(sqrt(nBalls));
-    pitch = (arena - 2)/(cols - 1);
-    for i = 1:nBalls
-        gx = mod(i - 1, cols); gy = floor((i - 1)/cols);
-        p = [gx*pitch - (arena - 2)/2, gy*pitch - (arena - 2)/2] + (rand(1, 2) - 0.5)*0.4;
-        if chg(i) > 0
-            clr = [1 0.4 0.35];
-        else
-            clr = [0.4 0.55 1];
-        end
-        balls(i) = phx.Body(ax, "Position", [p, 1.5 + rand], ...
-            "Shape", {"Sphere", "Diameter", d, "Density", rho, ...
-            "Color", clr}, "Friction", mu); %#ok<AGROW> small fixed size
-    end
+    pal = [0.4 0.55 1; 1 0.4 0.35];
+    balls = phx.assembly.scatter(ax, {"Sphere", "Diameter", d, "Density", rho}, nBalls, ...
+        "Region", [arena - 2, arena - 2, 1], "Position", [0 0 1.5], "Spacing", 1.1*d, ...
+        "Color", pal((chg > 0) + 1, :), "Friction", mu);
 
     % One interaction group for all balls: opposite charges attract
     phx.Monopole(balls, "Charge", chg', "Attractivity", -1, ...
@@ -117,14 +107,9 @@ function phxex_crystal(nBalls, annealTime, seed)
     end
 
     % Phase 3 - cold settle
-    settleTimeout = 5;
-    while settleTimeout > 0
+    for k = 1:50                            % at most 5 s
         sim.step(0.1, 20, 20);
-        settleTimeout = settleTimeout - 0.1;
-        vMax = 0;
-        for i = 1:nBalls
-            vMax = max(vMax, norm(balls(i).LinearVelocity));
-        end
+        vMax = max(vecnorm(vertcat(balls.LinearVelocity), 2, 2));
         viewer.displayText(sprintf("Settling...   max speed: %.2f", vMax));
         if vMax < 0.05
             break
@@ -145,7 +130,7 @@ function phxex_crystal(nBalls, annealTime, seed)
         nnz(sizes > 1), max(sizes), nnz(sizes == 1));
 
     % Crystallization curve and the cluster size histogram
-    figure(2);
+    clf(figure(2));
     subplot(2, 1, 1);
     yyaxis left
     plot(hist.t, hist.bonds, "LineWidth", 1.5); hold on
@@ -155,7 +140,7 @@ function phxex_crystal(nBalls, annealTime, seed)
     plot(hist.t, 100*hist.T, "--", "LineWidth", 1.5); ylabel("temperature [%]");
     grid on; xlabel("annealing time [s]");
     legend("bonds", "opposite-charge bonds", "temperature", "Location", "west");
-    title(sprintf("Crystallization: bonds form as the system cools (%d balls)", nBalls));
+    title(sprintf("Crystallization during annealing (%d balls)", nBalls));
     subplot(2, 1, 2);
     histogram(sizes, 0.5:1:max(sizes) + 0.5);
     grid on; xlabel("cluster size [balls]"); ylabel("count");
@@ -164,11 +149,7 @@ function phxex_crystal(nBalls, annealTime, seed)
     function [order, nBonds, adj] = bondOrder(balls, chg, d)
     % Bonds are pairs of (nearly) touching balls; the ionic order is the
     % fraction of bonds connecting opposite charges
-        n = numel(balls);
-        P = zeros(n, 3);
-        for b = 1:n
-            P(b, :) = balls(b).Position;
-        end
+        P = vertcat(balls.Position);
         D = sqrt(sum((permute(P, [1 3 2]) - permute(P, [3 1 2])).^2, 3));
         adj = D > 0 & D < 1.25*d;
         [bi, bj] = find(triu(adj));

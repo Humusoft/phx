@@ -373,7 +373,7 @@ function phxex_swingover
     end
 
     function p = brickPositions
-        p = cell2mat(arrayfun(@(br) br.Position, bricks, "UniformOutput", false)');
+        p = vertcat(bricks.Position);
     end
 
     function tf = displaced(p0, p)

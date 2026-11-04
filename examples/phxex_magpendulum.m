@@ -83,10 +83,6 @@ function phxex_magpendulum(nGrid, tMaxRun)
         viewer.displayText(sprintf("Twin pendulums:  t = %.1f s   tip distance = %.4f", ...
             tVec(f), dist(f)));
     end
-    [m1, d1] = nearestMagnet(rod1);
-    [m2, d2] = nearestMagnet(rod2);
-    fprintf("Twin A ended near magnet %d (%.2f away), twin B near magnet %d (%.2f away).\n", ...
-        m1, d1, m2, d2);
 
     % Part 2 - basin of attraction map ---------------------------------------
     % Remove the second pendulum; the simulation rebuilds itself
@@ -136,10 +132,6 @@ function phxex_magpendulum(nGrid, tMaxRun)
     end
     delete(sim);
     viewer.displayText("Done.");
-
-    shares = arrayfun(@(k) nnz(basin == k), 1:4)/nnz(basin);
-    fprintf("Basin shares: %.0f %% / %.0f %% / %.0f %% magnets, %.0f %% center (%d settled, %.0f s).\n", ...
-        100*shares, nnz(basin), toc(tStart));
 
     % Plot the butterfly effect and the fractal basin map
     figure(2);

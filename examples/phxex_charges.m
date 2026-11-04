@@ -20,10 +20,10 @@ function phxex_charges(drawSteps)
     set(parts.walls, "Color", [0.8 0.8 0.8]);
 
     % Create dynamic objects
-    cubes(1) = phx.Body(ax, "Position", [-6 -6 3], "Shape", {"Box", "Size", 5, "Color", [0.5 0.5 1], "Texture", "metal", "TextureBlend", 0.5});
-    cubes(2) = phx.Body(ax, "Position", [18 18 3], "Shape", {"Box", "Size", 5, "Color", [0.5 0.5 1], "Texture", "metal", "TextureBlend", 0.5});
-    cubes(3) = phx.Body(ax, "Position", [-14 14 3], "Shape", {"Box", "Size", 5, "Color", [1 0.5 0.5], "Texture", "metal", "TextureBlend", 0.5});
-    cubes(4) = phx.Body(ax, "Position", [22 -22 3], "Shape", {"Box", "Size", 5, "Color", [1 0.5 0.5], "Texture", "metal", "TextureBlend", 0.5});
+    cubes(1) = phx.Body(ax, "Position", [-6 -6 3], "Shape", {"Box", "Size", 5, "Color", [0.5 0.5 1], "Texture", "scratches", "TextureBlend", 0.5});
+    cubes(2) = phx.Body(ax, "Position", [18 18 3], "Shape", {"Box", "Size", 5, "Color", [0.5 0.5 1], "Texture", "scratches", "TextureBlend", 0.5});
+    cubes(3) = phx.Body(ax, "Position", [-14 14 3], "Shape", {"Box", "Size", 5, "Color", [1 0.5 0.5], "Texture", "scratches", "TextureBlend", 0.5});
+    cubes(4) = phx.Body(ax, "Position", [22 -22 3], "Shape", {"Box", "Size", 5, "Color", [1 0.5 0.5], "Texture", "scratches", "TextureBlend", 0.5});
     phx.Body(ax, "Position", [0 0 3], "Shape", {"Sphere", "Diameter", 5, "Color", 0.6, "Material", "metal"});
 
     % Add monopole interaction

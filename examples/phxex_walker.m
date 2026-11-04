@@ -12,18 +12,17 @@ function phxex_walker(freq, duty)
 %
 % Nothing in the loop ever looks at the body: the walk is entirely
 % feedforward, only the joints themselves are servoed. A loose plank with
-% a ball on it lies in the way to show what that costs - the crawl keeps
-% playing unchanged while the robot pitches up onto the plank and over it,
-% and it gets across on the stability of its stance alone.
+% a ball on it lies in the way, and the crawl plays on unchanged when the
+% robot reaches it.
 %
 % Input Arguments:
 %     freq - gait frequency in Hz
 %     duty - fraction of the cycle each leg spends on the ground
 %
 % Example:
-%     phxex_walker            % 0.3 m per step on the flat
+%     phxex_walker            % default crawl
 %     phxex_walker(1.5)       % faster cadence
-%     phxex_walker(1, 0.6)    % two feet down at a time, the step collapses
+%     phxex_walker(1, 0.6)    % shorter stance, fewer feet on the ground
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 
@@ -62,14 +61,15 @@ function phxex_walker(freq, duty)
     figure(1);
     viewer = phx.extra.Viewer("clear", "Texture", "sky");
 
-    ground = phx.Body("Type", "static", "Position", [5 0 -0.1], ...
-        "Shape", {"Box", "Size", [12 12 0.2], "Color", 0.8, "Texture", "tiles"}, ...
+    tex = phx.base.Shape.tiles(1024, 16);
+    phx.Body("Type", "static", "Position", [5 0 -0.1], ...
+        "Shape", {"Box", "Size", [12 12 0.2], "Color", 0.8, "Texture", tex}, ...
         "Friction", [10 0 0]);
     chassis = phx.Body("Position", [0 0 H+bx(3)/2], "Mass", 4, ...
         "Shape", {"Box", "Size", bx, "Color", [0.30 0.45 0.70]});
 
     % Obstacles
-    phx.Body("Position", [2 0 0.1], "Shape", {"Box", "Size", [1 1 0.1], "Color", [1 1 0.5], "Texture", "stripes", "TextureBlend", 0.3});
+    phx.Body("Position", [2 0 0.1], "Shape", {"Box", "Size", [1 1 0.1], "Color", [1 1 0.5], "Texture", "circles", "TextureBlend", 0.3});
     phx.Body("Position", [2 0 0.4], "Shape", {"Sphere", "Diameter", 0.5, "Color", [1 0 0], "Texture", "checker", "TextureBlend", 0.3});
 
     % Every leg starts in the pose its own gait phase asks for
@@ -79,18 +79,18 @@ function phxex_walker(freq, duty)
         d1 = [-sin(qh) 0 -cos(qh)];
         d2 = [-sin(qh+qk) 0 -cos(qh+qk)];
 
-        thigh(k) = phx.Body("Position", hp + (L/2)*d1, "EulerAngles", [0 qh 0], ...
+        thigh = phx.Body("Position", hp + (L/2)*d1, "EulerAngles", [0 qh 0], ...
             "Mass", 0.25, "Shape", {"Capsule", "Radius", Rl, "Height", L, "Color", [0.75 0.75 0.78]});
-        shank(k) = phx.Body("Position", hp + L*d1 + (L/2)*d2, "EulerAngles", [0 qh+qk 0], ...
+        shank = phx.Body("Position", hp + L*d1 + (L/2)*d2, "EulerAngles", [0 qh+qk 0], ...
             "Mass", 0.2, "Friction", [10 0 0], ...
             "Shape", {"Capsule", "Radius", Rl, "Height", L, "Color", [0.55 0.55 0.60]});
 
-        hipj(k) = phx.RevoluteJoint(chassis, thigh(k), ...
+        hipj(k) = phx.RevoluteJoint(chassis, thigh, ...
             "PointA", [hip(k, :) -bx(3)/2], "PointB", [0 0 L/2], ...
-            "AxisA", [0 1 0], "AxisB", [0 1 0], "MaxTorque", Tmax, "Visible", false);
-        kneej(k) = phx.RevoluteJoint(thigh(k), shank(k), ...
+            "AxisA", [0 1 0], "AxisB", [0 1 0], "MaxTorque", Tmax, "Visible", false); %#ok<AGROW> four legs
+        kneej(k) = phx.RevoluteJoint(thigh, shank, ...
             "PointA", [0 0 -L/2], "PointB", [0 0 L/2], ...
-            "AxisA", [0 1 0], "AxisB", [0 1 0], "MaxTorque", Tmax, "Visible", false);
+            "AxisA", [0 1 0], "AxisB", [0 1 0], "MaxTorque", Tmax, "Visible", false); %#ok<AGROW> four legs
     end
 
     phx.Function([hipj kneej], @(o, p, ~, time) walkStep(p, time, gait));
@@ -100,7 +100,7 @@ function phxex_walker(freq, duty)
     % --- Run ------------------------------------------------------------
     sim = phx.Simulation;
     x0 = chassis.Position(1);
-    for t = dt:dt:duration
+    for frame = 1:round(duration/dt)
         sim.step(dt, 10, 10);       % 2 ms substeps, one redraw per frame
         travel = chassis.Position(1) - x0;
         viewer.displayText(sprintf("%4.1f s   %+.2f m   %+.2f m/s", ...
