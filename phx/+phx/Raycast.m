@@ -74,7 +74,7 @@ classdef Raycast < phx.base.Object
         Dst = zeros(1, 0)
     end
 
-    properties (Dependent)
+    properties (Dependent, SetAccess = private)
         % Hit points in the global frame (3-by-N), NaN where nothing was hit
         Points
 

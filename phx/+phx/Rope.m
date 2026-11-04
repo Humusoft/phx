@@ -72,7 +72,7 @@ classdef Rope < phx.base.Object
         ColorRange (1, 2) double = [0 100]
     end
 
-    properties (Dependent)
+    properties (Dependent, SetAccess = private)
         % Free length of the rope (InitialLength + Displacement)
         FreeLength
 

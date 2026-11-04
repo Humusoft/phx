@@ -31,7 +31,7 @@ classdef Measure < phx.base.Object
         Vab
     end
 
-    properties (Dependent)
+    properties (Dependent, SetAccess = private)
         % Scalar distance between both measuring points
         Distance
 

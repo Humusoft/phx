@@ -71,7 +71,10 @@ classdef Joint < phx.base.Object
         
         % Rotation of the connecting point of the second body (axis and angle)
         AxisAngleB (1, 4) double
+    end
 
+    % Read-only joint state
+    properties (Dependent, SetAccess = private)
         % Angle of the second joint coordinate system about the joint axis
         % The part of the relative rotation that turns about the axis, measured
         % from the first coordinate system, positive by the right-hand rule and

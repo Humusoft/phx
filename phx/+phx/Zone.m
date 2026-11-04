@@ -47,7 +47,7 @@ classdef Zone < phx.base.Object
         hEdges
     end
 
-    properties (Dependent)
+    properties (Dependent, SetAccess = private)
         % Array of phx.Body objects currently inside the zone
         Contents
 

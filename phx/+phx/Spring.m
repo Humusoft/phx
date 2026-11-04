@@ -31,11 +31,15 @@ classdef Spring < phx.base.Object
     end
 
     properties (SetAccess = private)
+        % Force acting on the first body (N); the second body gets its opposite
         Force = [0 0 0]
+
+        % Current length of the spring, the distance between both connecting
+        % points (m); the extension is Length - FreeLength
         Length = 0
     end
 
-    properties (Dependent)
+    properties (Dependent, SetAccess = private)
         % Elastic energy stored in the spring (J)
         Energy (1, 1) double
     end
@@ -184,15 +188,15 @@ classdef Spring < phx.base.Object
                 dp = (pb - pa)';
                 nrm = sqrt(dp(1)*dp(1) + dp(2)*dp(2) + dp(3)*dp(3));
                 dp = dp/nrm;
-                len = nrm - obj.FreeLength;
+                stretch = nrm - obj.FreeLength;
                 if isnan(obj.LastLength)
                     vel = 0;
                 else
-                    vel = (len - obj.LastLength)/dt;
+                    vel = (nrm - obj.LastLength)/dt;
                 end
-                obj.LastLength = len;
+                obj.LastLength = nrm;
                 if nrm ~= 0
-                    Force = (obj.Stiffness*len + obj.Damping*vel)*dp;
+                    Force = (obj.Stiffness*stretch + obj.Damping*vel)*dp;
                 else
                     Force = [0 0 0];
                 end
@@ -216,7 +220,7 @@ classdef Spring < phx.base.Object
                 allPoints(i6 - 1) = ptB(2);
                 allPoints(i6) = ptB(3);
 
-                obj.Length = len;
+                obj.Length = nrm;
                 obj.Force = Force;
             end
 
