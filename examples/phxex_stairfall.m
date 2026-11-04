@@ -31,7 +31,7 @@ function phxex_stairfall(pushSpeed, duration)
         duration (1, 1) double {mustBePositive} = 6
     end
 
-    % Staircase parameters (a common residential stair: 170 mm rise, 280 mm run)
+    % Staircase parameters
     rise = 0.20;
     run = 0.28;
     nSteps = 8;
@@ -65,7 +65,7 @@ function phxex_stairfall(pushSpeed, duration)
     phx.Body(ax, "Position", [-0.2 0 H+0.2], "Shape", {"Mesh", "Source", resdir+"cat.stl", "Scale", 0.01, "Envelope", "box", "Color", 1});
 
     % Import the humanoid right at the edge of the landing, leaning over it
-    lean = 0.529; %randi(1000)/1000
+    lean = 0.529;
     [bodies, joints] = phx.assembly.import(resdir + "human.urdf", ...
         "Position", [-0.16 0 H + 1.01], "EulerAngles", [0 lean 0]);
 
@@ -73,16 +73,11 @@ function phxex_stairfall(pushSpeed, duration)
     % convention); let the head and feet knock against their counterparts.
     set([joints.neck joints.ankle_l joints.ankle_r], "MutualCollisions", true);
 
-    names = fieldnames(bodies);
-    human = phx.Body.empty;
-    for i = 1:numel(names)
-        human(i) = bodies.(names{i});   % pelvis first (the root link)
-    end
+    human = struct2cell(bodies);
+    human = [human{:}];                 % pelvis first (the root link)
 
     % Give the whole body a forward push
-    for b = human
-        b.LinearVelocity = [pushSpeed 0 0];
-    end
+    set(human, "LinearVelocity", [pushSpeed 0 0]);
 
     phx.Camera(ground, bodies.torso, "PointA", [4.6 -5.2 2.7], "TrackingLag", 0.2);
 
@@ -93,8 +88,7 @@ function phxex_stairfall(pushSpeed, duration)
     % Trajectory of the head and its velocity record
     head = bodies.head;
     phx.Trace(head, "TracePoints", 600, "Color", [1 0.35 0.2], "Overlay", true);
-    logVel = phx.Logger(head, "Frequency", 400, "Parameters", "LinearVelocity");
-    logPos = phx.Logger(head, "Frequency", 400, "Parameters", "Position");
+    logHead = phx.Logger(head, "Frequency", 400, "Parameters", ["LinearVelocity" "Position"]);
 
     % Simulation - dt = 2.5 ms for the joint chain and the step contacts
     sim = phx.Simulation(ax);
@@ -105,10 +99,7 @@ function phxex_stairfall(pushSpeed, duration)
         sim.step(frame, subSteps, 4);
 
         % Stop once the whole body has come to rest
-        vmax = 0;
-        for b = human
-            vmax = max(vmax, norm(b.LinearVelocity));
-        end
+        vmax = max(vecnorm(vertcat(human.LinearVelocity), 2, 2));
         if vmax < 0.25
             calm = calm + 1;
             if calm > 50      % a second of stillness
@@ -125,9 +116,8 @@ function phxex_stairfall(pushSpeed, duration)
     delete(sim);
 
     % Ride statistics from the head velocity record
-    t = logVel.Time;
-    v = logVel.getChannel(1);
-    speed = sqrt(sum(v.^2, 2));
+    t = logHead.Time;
+    speed = vecnorm(logHead.getChannel(1), 2, 2);
     [vPeak, iPeak] = max(speed);
     decel = max(0, -diff(speed)./diff(t(:)));
     [aPeak, iDecel] = max(decel);
@@ -138,9 +128,9 @@ function phxex_stairfall(pushSpeed, duration)
 
     % Head height and speed during the fall
     clf(figure(2));
-    p = logPos.getChannel(1);
+    p = logHead.getChannel(2);
     yyaxis left
-    plot(logPos.Time, p(:, 3), "LineWidth", 1.2);
+    plot(t, p(:, 3), "LineWidth", 1.2);
     ylabel("head height [m]");
     yyaxis right
     plot(t, speed, "--", "LineWidth", 1.2);

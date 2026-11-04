@@ -17,9 +17,6 @@ function phxex_beltmaze
     nParcels = 12;
     beltFriction = [1.0 0 0];
 
-    % Resources directory
-    resdir = fullfile(fileparts(mfilename("fullpath")), "res") + filesep;
-
     % Belt segments, each built along its own +x axis so that the drive, the
     % arrows and the length all follow the same direction.
     %       centre x    y    yaw   length  width  speed  sweep
@@ -43,11 +40,12 @@ function phxex_beltmaze
     for i = 1:size(segs, 1)
         s = segs(i, :);
         shade = round(1 + 255*(s(6) - min(speed))/(max(speed) - min(speed)));
+        texture = phx.base.Shape.arrows([round(256*s(4)/s(5)) 256], 128);
         phx.Body("Type", "static", "Position", [s(1) s(2) -0.1], ...
             "EulerAngles", [0 0 s(3)*pi/180], "Friction", beltFriction, ...
             "SurfaceVelocity", [s(6) 0 0], ...
             "Shape", {"Box", "Size", [s(4) s(5) 0.2], "Color", cmap(shade, :), ...
-            "Texture", resdir+"arrows.png", "TextureBlend", 0.5});
+            "Texture", texture, "TextureBlend", 0.15});
     end
 
     % Parcels, dropped onto the feeder in a repeatable pseudo-random spread.
@@ -57,7 +55,7 @@ function phxex_beltmaze
     lane = sign(rand(nParcels, 1) - 0.5);
     for i = 1:nParcels
         phx.Body("Position", [-6.6 + 4.8*rand, lane(i)*(0.45 + 0.85*rand), 0.5], ...
-            "Shape", {"Box", "Size", rand(1, 3) + 0.2, "Color", colors(i, :), "Texture", "wood", "TextureBlend", 0.5});
+            "Shape", {"Box", "Size", rand(1, 3) + 0.2, "Color", colors(i, :), "Texture", "wood", "TextureBlend", 0.4});
     end
 
     % Speed legend

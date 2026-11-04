@@ -16,10 +16,8 @@ function phxex_segway(Kp, Kd, push)
 % on both sides and the robot holds its original heading.
 %
 % Two walls stand in the way. The tall one is angled across the course, so
-% the rays hit its near half while they still run past its far end - the
-% asymmetry tells the robot which side is open and it swerves around it.
-% The low wall is below the fan: the rays fly clean over it, the robot never
-% sees it and drives straight through, which is the blind spot every
+% the rays hit its near half while they still run past its far end. The low
+% wall is below the fan, so the rays fly over it - the blind spot every
 % single-plane scanner has.
 %
 % The wheels propel the robot only through their friction contact with the
@@ -28,7 +26,7 @@ function phxex_segway(Kp, Kd, push)
 % saturated, so it delivers exactly MaxTorque. Because the motor is part of
 % the joint, the chassis feels the equal and opposite reaction - the term a
 % real segway leans on. On the straight between the two walls an external
-% push shoves the body to show the controller recovering from a kick.
+% push shoves the body to test the controller against a kick.
 %
 % Input Arguments:
 %     Kp   - proportional gain on body pitch angle
@@ -36,7 +34,7 @@ function phxex_segway(Kp, Kd, push)
 %     push - magnitude of the disturbance impulse force
 %
 % Example:
-%     phxex_segway                     % dodges the tall wall, breaks the low one
+%     phxex_segway                     % default run
 %     phxex_segway(20, 2)              % low gains -> topples over
 %     phxex_segway(6000, 1800, -120000) % strong shove to test recovery
 
@@ -56,7 +54,7 @@ function phxex_segway(Kp, Kd, push)
     % Ground
     phx.Body(ax, "Type", "static", "Position", [-15 0 -0.1], ...
         "Shape", {"Box", "Size", [40 30 0.2], "Color", 1, "Material", "matte", ...
-                  "Texture", "checker", "TextureBlend", 0.3}, "Friction", [0.9 0 0]);
+                  "Texture", "xor", "TextureBlend", 0.4}, "Friction", [0.9 0 0]);
 
     % Dimensions
     wheelRad = 0.35;          % wheel radius
@@ -72,7 +70,7 @@ function phxex_segway(Kp, Kd, push)
 
     % Obstacle
     phx.Body(ax, "Position", [-4 0 1], ...
-        "Shape", {"Cylinder", "Axis", "y" "Diameter", 0.2, "Height", 2, "Color", [0.9 0.9 0]}, "Friction", 1);
+        "Shape", {"Cylinder", "Axis", "y", "Diameter", 0.2, "Height", 2, "Color", [0.9 0.9 0]}, "Friction", 1);
     phx.Body(ax, "Position", [-3.8 0 2], ...
         "Shape", {"Box", "Size", [3 2 0.05], "Color", [0.9 0.5 0.5], "Density", 100}, "Friction", 1);
 
@@ -82,14 +80,13 @@ function phxex_segway(Kp, Kd, push)
         "Shape", {"Box", "Size", [7 0.3 3], "Color", [0.6 0.6 0.65], "Texture", "tiles"});
 
     % Low wall of loose bricks, standing below the ray fan
-    bricks = phx.assembly.wall(ax, "Size", [3 0.2 1.0], "Rows", 5, "Columns", 5, ...
+    phx.assembly.wall(ax, "Size", [3 0.2 1.0], "Rows", 5, "Columns", 5, ...
         "Position", [-28 -3.4 0], "EulerAngles", [0 0 pi/2], ...
         "Color", [0.8 0.45 0.35], "Density", 900);
-    brickPos = reshape([bricks.Position], 3, [])';
 
     % Two wheels as cylinders, axis along Y (the track direction)
     wheelShape = {"Cylinder", "Diameter", 2*wheelRad, "Height", wheelW, ...
-                  "Color", [0.2 0.2 0.2], "Texture", "checker", "TextureBlend", 0.5};
+                  "Color", 0.2, "Texture", "stripes", "TextureBlend", 0.2};
     wheelL = phx.Body(ax, "Position", [0  track/2 axleZ], "EulerAngles", [pi/2 0 0], ...
         "Shape", wheelShape, "Friction", 1);
     wheelR = phx.Body(ax, "Position", [0 -track/2 axleZ], "EulerAngles", [pi/2 0 0], ...
@@ -134,8 +131,9 @@ function phxex_segway(Kp, Kd, push)
     seen = false;
     for k = 1:nSteps
         % --- sensing: pose, forward speed, pitch rate and the ray fan ---
-        yaw = body.EulerAngles(3);
-        pitch = body.EulerAngles(2);
+        e = body.EulerAngles;
+        yaw = e(3);
+        pitch = e(2);
         heading = [-cos(yaw) -sin(yaw) 0];      % where the robot points
         pitchAxis = [-sin(yaw) cos(yaw) 0];     % what it pitches about
         speed = body.LinearVelocity*heading';
@@ -146,8 +144,7 @@ function phxex_segway(Kp, Kd, push)
 
         % --- control law: PD on the pitch plus a speed term, output is the
         % common wheel drive torque. Driving the wheels forward pulls the
-        % base under the body and corrects a forward lean (sign tuned for
-        % this convention).
+        % base under the body and corrects a forward lean.
         tau = Kp*pitch + Kd*pitchRate + Kv*(vRef - speed);
 
         % --- steering: turn towards the side with more free space, and back
@@ -190,11 +187,6 @@ function phxex_segway(Kp, Kd, push)
         end
     end
     delete(sim);
-
-    % Report
-    moved = vecnorm(reshape([bricks.Position], 3, [])' - brickPos, 2, 2) > 0.2;
-    fprintf("Travelled %.1f m and knocked %d of %d bricks out of the low wall.\n", ...
-        -body.Position(1), nnz(moved), numel(bricks));
 
     % Plot the body pitch and what the sensor saw
     clf(figure(2));

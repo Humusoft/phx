@@ -50,7 +50,7 @@ function phxex_vengine(opts)
     % --- Scene ----------------------------------------------------------
     [viewer, ax] = phx.extra.Viewer("clear", "DefaultCameraPosition", [0.9 0.6 0.3], "Texture", "Checker");
 
-    [crank, block, mount, cat, cyl, drive] = buildScene(ax, nPair, halfV, r, L, bore, zc, throwSpc, rodOff);
+    [crank, block, mount, cat, drive] = buildScene(ax, nPair, halfV, r, L, bore, zc, throwSpc, rodOff);
 
     reach = L + r;
     xL = (nPair-1)/2*throwSpc + rodOff + 1.5*bore;
@@ -60,9 +60,8 @@ function phxex_vengine(opts)
     % Loggers record the run at 500 Hz (the 10 Hz default is far too coarse for
     % the ~10 Hz engine orders and their harmonics).
     Lspeed = phx.Logger(crank, "Parameters", "AngularVelocity", "Frequency", 500);
-    Lblock = phx.Logger(block, "Parameters", "Position", "Frequency", 500);
+    Lpos   = phx.Logger(block, "Parameters", "Position", "Frequency", 500);
     Lreact = phx.Logger(mount, "Parameters", "ForceA", "Frequency", 500);
-    Lcat   = phx.Logger(cat,   "Parameters", "Position", "Frequency", 500);
 
     % Centimetre-scale parts -> zero the default collision margin, as in
     % phxex_camvalve (the jointed parts pass through each other anyway).
@@ -71,46 +70,31 @@ function phxex_vengine(opts)
     % --- Run: the bearing motor holds the crankshaft at the target rpm -----
     dt = 1e-3; subFrame = 10;
     tEnd = 3.0;                              % spin-up + steady running
-    nStep = round(tEnd/dt);
 
-    % Set once; the motor is on target from about 1 s on, so the steady window
-    % (second half of the record) sees no spin-up.
+    % Set once; the steady window (second half of the record) takes the
+    % spin-up to be over by then.
     drive.TargetVelocity = 2*pi*opts.Rpm/60; % target spin rate (rad/s)
     drive.MaxTorque = 3;                     % what the motor may deliver (N*m)
 
-    for i = 1:nStep
-        sim.step(dt, 1, mod(i, subFrame) == 0);
-        if mod(i, subFrame) == 0
-            viewer.displayText(sprintf("V%d   bank %.0f%c   %.0f / %.0f rpm", ...
-                opts.NumCylinders, opts.BankAngle, char(176), ...
-                crank.AngularVelocity(1)*60/(2*pi), opts.Rpm), ...
-                "replace", 1, 16, [0.8 0.4 0]);
-        end
+    for i = 1:round(tEnd/(dt*subFrame))
+        sim.step(dt*subFrame, subFrame, subFrame);
+        viewer.displayText(sprintf("V%d   bank %.0f%c   %.0f / %.0f rpm", ...
+            opts.NumCylinders, opts.BankAngle, char(176), ...
+            crank.AngularVelocity(1)*60/(2*pi), opts.Rpm), ...
+            "replace", 1, 16, [0.8 0.4 0]);
     end
 
     % Pull the recorded channels from the loggers, then tear the engine down.
-    tL  = Lblock.Time;
+    tL  = Lpos.Time;
     avc = Lspeed.getChannel(1);  rpm = avc(:, 1)*60/(2*pi);   % shaft speed (rpm)
-    blk = Lblock.getChannel(1);                               % block position (m)
+    blk = Lpos.getChannel(1);                                 % block position (m)
     rec = Lreact.getChannel(1);                               % joint reaction (N)
-    ktp = Lcat.getChannel(1);                                 % cat position (m)
     delete(sim);
 
     % Vibration read two ways, each about its own steady-state mean (spin-up out)
     steady = tL > tEnd/2;
     vib = (blk - mean(blk(steady, :)))*1e3;        % block motion, mm
     frc = rec - mean(rec(steady, :));              % dynamic mount reaction, N
-    pkV = max(abs(vib(steady, :)), [], 1);
-    pkF = max(abs(frc(steady, :)), [], 1);
-    fprintf("V%d, bank %.0f deg: reached %.0f rpm; block motion +-[%.3f %.3f %.3f] mm, mount reaction +-[%.1f %.1f %.1f] N (XYZ).\n", ...
-        opts.NumCylinders, opts.BankAngle, rpm(end), pkV(1), pkV(2), pkV(3), pkF(1), pkF(2), pkF(3));
-
-    % Did the vibration move the cat? Measure its drift over steady running.
-    catS = ktp(steady, :);
-    catDrift = catS(end, :) - catS(1, :);          % net move while running
-    catPP = max(catS, [], 1) - min(catS, [], 1);   % peak-to-peak
-    fprintf("cat on plate corner: net drift [%.2f %.2f %.2f] mm, peak-to-peak [%.2f %.2f %.2f] mm.\n", ...
-        catDrift*1e3, catPP*1e3);
 
     % --- Spin-up, the two vibration readouts, and a reaction spectrogram -
     clf(figure(2));
@@ -148,7 +132,7 @@ function phxex_vengine(opts)
 end
 
 % ---------------------------------------------------------------------------
-function [crank, block, mount, cat, cyl, drive] = buildScene(ax, nPair, halfV, r, L, bore, zc, throwSpc, rodOff)
+function [crank, block, mount, cat, drive] = buildScene(ax, nPair, halfV, r, L, bore, zc, throwSpc, rodOff)
 % Build the crankshaft, the block plate on its mount, and every slider-crank loop
 
     crankR = r*0.25;
@@ -185,7 +169,7 @@ function [crank, block, mount, cat, cyl, drive] = buildScene(ax, nPair, halfV, r
     end
     spine = [spine; crankLen/2, 0, 0];       % right main-journal end (on the axis)
     crankShape = phx.shape.Extrusion("Spine", spine, "Profile", profile, ...
-        "Material", "metal", "Color", 1, "Texture", "checker", "TextureBlend", 0.5);
+        "Material", "metal", "Color", 1, "Texture", "stripes", "TextureBlend", 0.25);
     crank = phx.Body(ax, "Type", "dynamic", "Position", [0 0 zc], "Shape", crankShape);
     crank.Collisions = false;               % visual-only shape; joints do the constraining
     crank.Mass    = 3;                       % lumped shaft + flywheel
@@ -245,8 +229,6 @@ function [crank, block, mount, cat, cyl, drive] = buildScene(ax, nPair, halfV, r
                     pistH/2-pd-ptw, Rp-pw
                    -pistH/2,        Rp-pw];
 
-    cyl = struct("piston", {}, "O", {}, "u", {});
-
     for k = 1:nPair
         xThrow = (k - (nPair+1)/2)*throwSpc;
         phase  = (k-1)*2*pi/nPair;                 % crank-throw phasing
@@ -269,7 +251,7 @@ function [crank, block, mount, cat, cyl, drive] = buildScene(ax, nPair, halfV, r
                 "Shape", {"Box", "Size", [rodTX L rodTZ], "Material", "metal", "Color", rodColor});
             piston = phx.Body(ax, "Position", W0, "EulerAngles", [gamma 0 0], ...
                 "Shape", phx.shape.Revolution("Axis", "z", "Profile", pistProfile, ...
-                         "Material", "metal", "Color", pistColor, "Density", 2700, "Texture", "metal", "TextureBlend", 0.2));
+                         "Material", "metal", "Color", pistColor, "Density", 2700, "Texture", "scratches", "TextureBlend", 0.2));
 
             % Crank pin: revolute between the crankshaft and the rod, axis = X.
             phx.RevoluteJoint(crank, rod, "PointA", P0 - [0 0 zc], "PointB", [0 -L/2 0], ...
@@ -284,8 +266,6 @@ function [crank, block, mount, cat, cyl, drive] = buildScene(ax, nPair, halfV, r
             % along the bore, so on its side the default axis already fits.
             phx.PrismaticJoint(block, piston, "PointA", O - blkPos, "AxisA", u, ...
                 "PointB", [0 0 0], "Visible", false);
-
-            cyl(end+1) = struct("piston", piston, "O", O, "u", u); %#ok<AGROW>
         end
     end
 end

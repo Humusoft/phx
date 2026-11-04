@@ -60,7 +60,7 @@ function phxex_tackle(mCrate)
     % The winch drum (kinematic, so it can visually rotate while reeling)
     drum = phx.Body(ax, "Type", "kinematic", "Position", [2.6 0 0.8], ...
         "Shape", {"Cylinder", "Diameter", 2*rDrum, "Height", 0.4, "Axis", "y", ...
-        "Color", [0.4 0.4 0.45], "Material", "metal", "Texture", "checker", "TextureBlend", 0.5});
+        "Color", [0.4 0.4 0.45], "Material", "metal", "Texture", "stripes", "TextureBlend", 0.5});
 
     % The rope: beam anchor -> moving block -> fixed sheave -> moving
     % block -> fixed sheave -> winch; the crate appears twice in the
@@ -73,7 +73,7 @@ function phxex_tackle(mCrate)
     viewer.displayText("Settling...");
 
     sim = phx.Simulation(ax);
-    dt = 0.005;
+    dt = 0.01;
     subSteps = 10;
 
     % Winch profile: settle, hoist 4 m of rope, hold, lower 3 m back
@@ -104,13 +104,9 @@ function phxex_tackle(mCrate)
     id1 = find(log.t > 3, 1);
     id2 = find(log.t > 11.5, 1);
     ratio = (log.disp(id1) - log.disp(id2))/(log.z(id2) - log.z(id1));
-    idHold = log.t > 12.2 & log.t < 13.4;
-    fprintf("Rope tension while holding: %.0f N = weight/%.2f (weight %.0f N).\n", ...
-        mean(log.F(idHold)), mCrate*grav/mean(log.F(idHold)), mCrate*grav);
-    fprintf("Winched %.2f m of rope per meter of lift (theory 4).\n", ratio);
 
     % Hoist kinematics and rope tension plots
-    figure(2);
+    clf(figure(2));
     subplot(2, 1, 1);
     yyaxis left
     plot(log.t, log.z, "LineWidth", 1.5); ylabel("crate height [m]");

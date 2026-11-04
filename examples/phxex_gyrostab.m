@@ -15,9 +15,8 @@ function phxex_gyrostab(duration, spinRate, maxAmplitude)
 % dynamics alone, without a single line of control code.
 %
 % The sea builds up: the wave amplitude ramps from calm to maxAmplitude
-% over the run. Once the roll of the bare platform exceeds the friction
-% angle of its crates they slide overboard one after another, while the
-% stabilized platform keeps rolling gently and keeps its cargo.
+% over the run. A crate slides once the roll of its platform exceeds its
+% friction angle.
 %
 % Input Arguments:
 %     duration     - simulated time in seconds (default 30)
@@ -26,7 +25,7 @@ function phxex_gyrostab(duration, spinRate, maxAmplitude)
 %
 % Example:
 %     phxex_gyrostab            % default run
-%     phxex_gyrostab(30, 0)     % disk parked -> both platforms lose cargo
+%     phxex_gyrostab(30, 0)     % disk parked, no stabilization
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 
@@ -62,7 +61,7 @@ function phxex_gyrostab(duration, spinRate, maxAmplitude)
 
     crates = phx.Body.empty;
     crateShape = phx.shape.Box("Size", crateSize*[1 1 1], "Density", 400, ...
-        "Color", [0.85 0.7 0.5], "Texture", "wood", "TextureBlend", 0.5);
+        "Color", [0.85 0.7 0.5], "Texture", "wood", "TextureBlend", 0.3);
     for p = 1:2
         for i = 1:4
             crates(p, i) = phx.Body(ax, "Position", plats(p).Position + [cratePos(i, :), platSize(3)/2 + crateSize/2], "Shape", crateShape, "Friction", [crateMu 0 0]);
@@ -71,9 +70,9 @@ function phxex_gyrostab(duration, spinRate, maxAmplitude)
 
     % Gyro stabilizer on platform B: shaft hinged to the platform about
     % the transverse y axis (gimbal), spinning disk hinged to the shaft
-    % about its z axis; neither part collides with anything
+    % about its z axis
     shaft = phx.Body(ax, "Position", [offset 0 gyroZ], "Shape", {"Cylinder", "Radius", 0.04, "Height", 0.55, "Density", 2000, "Color", 0.4});
-    disk = phx.Body(ax, "Position", [offset 0 gyroZ], "Shape", {"Cylinder", "Radius", diskR, "Height", 0.06, "Density", 7800, "Color", [0.95 0.55 0.5], "Texture", "checker", "TextureBlend", 0.5});
+    disk = phx.Body(ax, "Position", [offset 0 gyroZ], "Shape", {"Cylinder", "Radius", diskR, "Height", 0.06, "Density", 7800, "Color", [0.95 0.55 0.5], "Texture", "stripes", "TextureBlend", 0.5});
     line(shaft.Graphics, [0 0], [-0.6 0.6], [0 0], "LineWidth", 2, "Color", [0.4 0.4 0.4]);
 
     gimbal = phx.RevoluteJoint(platB, shaft, "PointA", [0 0 gyroZ], "PointB", [0 0 0], "AxisA", [0 1 0], "AxisB", [0 1 0]);
@@ -93,58 +92,37 @@ function phxex_gyrostab(duration, spinRate, maxAmplitude)
         "LinearDamping", 400, "AngularDamping", 20, ...
         "SurfaceSize", [8 8], "SurfaceStep", 0.25);
 
-    sim = phx.Simulation(ax);
-
     % Fine time step: the fast-spinning disk inside a joint chain needs it
     dt = 0.002;
     subSteps = 25;
 
-    fallen = false(2, 4);
-    fallTime = nan(2, 4);
-    hist = struct("t", [], "rollA", [], "rollB", [], "gimbal", []);
+    % Platform attitudes and the gimbal angle, once per frame
+    logRoll = phx.Logger(plats, "Parameters", "EulerAngles", "Frequency", 1/(dt*subSteps));
+    logGimbal = phx.Logger(gimbal, "Parameters", "Angle", "Frequency", 1/(dt*subSteps));
+
+    sim = phx.Simulation(ax);
 
     while sim.Time < duration
         sim.step(dt*subSteps, subSteps, subSteps);
         t = sim.Time;
-
-        ea = platA.EulerAngles;
-        eb = platB.EulerAngles;
-        hist.t(end + 1) = t;
-        hist.rollA(end + 1) = ea(1);
-        hist.rollB(end + 1) = eb(1);
-        hist.gimbal(end + 1) = gimbal.Angle;
-
         viewer.displayText(sprintf(...
-            "t = %4.1f s   amplitude %.2f m   roll: bare %+5.1f deg / gyro %+5.1f deg   cargo: %d/4 vs %d/4", ...
-            t, amp(t), rad2deg(ea(1)), rad2deg(eb(1)), ...
-            4 - nnz(fallen(1, :)), 4 - nnz(fallen(2, :))));
+            "t = %4.1f s   amplitude %.2f m   roll: bare %+5.1f deg / gyro %+5.1f deg", ...
+            t, amp(t), rad2deg(platA.EulerAngles(1)), rad2deg(platB.EulerAngles(1))));
     end
     delete(sim);
 
-    % Summary: cargo kept and the roll comparison
-    fprintf("\nCargo kept: bare platform %d/4, gyro platform %d/4.\n", ...
-        4 - nnz(fallen(1, :)), 4 - nnz(fallen(2, :)));
-    rmsA = rms(hist.rollA);
-    rmsB = rms(hist.rollB);
-    fprintf("Roll over the whole run: bare %.2f deg RMS, gyro %.2f deg RMS (%.0f %% reduction).\n", ...
-        rad2deg(rmsA), rad2deg(rmsB), 100*(1 - rmsB/rmsA));
+    % Roll is the first Euler angle; the log holds those of platA, then platB
+    roll = logRoll.Data(:, [1 4]);
 
     % Roll history of both platforms and the gimbal precession
     clf(figure(2));
     subplot(2, 1, 1);
-    plot(hist.t, rad2deg(hist.rollA), hist.t, rad2deg(hist.rollB), "LineWidth", 1.2);
-    hold on
-    for i = find(fallen(1, :))
-        xline(fallTime(1, i), "-k", "lost", "LabelVerticalAlignment", "bottom");
-    end
-    for i = find(fallen(2, :))
-        xline(fallTime(2, i), ":k", "lost (gyro)", "LabelVerticalAlignment", "bottom");
-    end
+    plot(logRoll.Time, rad2deg(roll), "LineWidth", 1.2);
     grid on; ylabel("roll [deg]");
     legend("bare platform", "gyro platform");
-    title(sprintf("Growing seas: bare platform loses its cargo (spin %.0f rad/s)", spinRate));
+    title(sprintf("Platform roll in growing seas (spin %.0f rad/s)", spinRate));
     subplot(2, 1, 2);
-    plot(hist.t, rad2deg(hist.gimbal), "LineWidth", 1.2);
+    plot(logGimbal.Time, rad2deg(logGimbal.Data), "LineWidth", 1.2);
     grid on; xlabel("time [s]"); ylabel("gimbal angle [deg]");
     title("Gimbal precession absorbing the wave roll moment");
 

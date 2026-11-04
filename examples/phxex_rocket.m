@@ -13,11 +13,11 @@ function phxex_rocket(hopHeight)
 % into a desired acceleration, which defines the required thrust and the
 % desired tilt of the airframe; an attitude PD loop converts the tilt
 % error into body torques; and the gimbal deflection that produces these
-% torques is computed from the engine lever arm, saturated at +-10 deg.
+% torques is computed from the engine lever arm, saturated at +-15 deg.
 %
 % The rocket performs a hop between two neighbouring platforms: it lifts
-% off, translates sideways and descends to a soft touchdown on the other
-% pad, where the engine cuts off. The report and plots show the touchdown
+% off, translates sideways and descends onto the other pad, where the
+% engine cuts off at touchdown. The report and plots show the touchdown
 % speed, the tilt, the landing offset, and the throttle and gimbal
 % histories.
 %
@@ -41,7 +41,7 @@ function phxex_rocket(hopHeight)
     iRocket = [40 40 10];  % inertia (kg*m^2)
     maxThrust = 800;       % N, thrust-to-weight ~1.6
     engineLag = 0.2;       % engine time constant
-    gimbalMax = tand(15);  % gimbal deflection limit (degrees)
+    gimbalMax = tand(15);  % gimbal deflection limit (tangent of the angle)
     grav = 9.81;           % gravitational acceleration
     padBx = 5;             % landing pad center x
     padBtilt = 5;          % landing pad tilt (degrees)
@@ -61,16 +61,16 @@ function phxex_rocket(hopHeight)
 
     % Ground and the two neighbouring platforms
     phx.Body(ax, "Type", "static", "Position", [padBx/2 0 -0.5], ...
-        "Shape", {"Box", "Size", [4*padBx, 2*padBx, 1], "Color", [1 1 1]});
+        "Shape", {"Box", "Size", [4*padBx, 2*padBx, 1], "Color", [1 1 1], "Texture", "stone", "TextureBlend", 0.5});
     padA = phx.Body(ax, "Type", "static", "Position", [0 0 0.2], ...
-        "Shape", {"Box", "Size", [3 3 0.4], "Color", [0.35 0.35 0.4]});
+        "Shape", {"Box", "Size", [3 3 0.1], "Color", [0.35 0.35 0.4], "Texture", "circles", "TextureBlend", 0.2});
     padB = phx.Body(ax, "Type", "static", "Position", [padBx 0 0.2], "EulerAngles", [padBtilt*pi/180 0 0], ...
-        "Shape", {"Box", "Size", [3 3 0.4], "Color", [0.3 0.45 0.3]});
+        "Shape", {"Box", "Size", [3 3 0.1], "Color", [0.3 0.45 0.3], "Texture", "circles", "TextureBlend", 0.2});
 
     % The rocket; mass properties are set explicitly
     rocket = phx.Body(ax, "Position", [0 0 0.4 + hBase + 0.01], ...
-        "Shape", {resdir+"rocket.stl", "Scale", scl*[1 1 1], "Envelope", "box", "Color", [1 1 1], ...
-        "Material", "glossy"});
+        "Shape", {resdir+"rocket.stl", "Scale", scl*[1 1 1], "Envelope", "box", "Color", 1, ...
+        "Material", "glossy", "Texture", "xor", "TextureBlend", 0.5});
     rocket.Mass = mRocket;
     rocket.Inertia = iRocket;
 
@@ -98,8 +98,7 @@ function phxex_rocket(hopHeight)
     vTouch = NaN;
     while t < tMax && (isnan(tLand) || t < tLand + 2)
         for s = 1:subSteps
-            M = rocket.Transform;
-            R = M(1:3, 1:3);
+            R = rocket.Orientation;
             p = rocket.Position;
             v = rocket.LinearVelocity;
             w = rocket.AngularVelocity;
@@ -121,7 +120,6 @@ function phxex_rocket(hopHeight)
             if isnan(tLand) && wpIdx == size(wp, 1) && p(3) < 0.4 + hBase + 0.4
                 tLand = t;
                 vTouch = v(3);
-                tilt = acosd(R(3, 3));
             end
 
             if ~isnan(tLand)
@@ -147,7 +145,7 @@ function phxex_rocket(hopHeight)
                 eng.Direction = [gim(1) gim(2) 1];
             end
 
-            sim.step(dt, 1, 1); %2*(s == subSteps) - 1);
+            sim.step(dt, 1, 1);
             t = t + dt;
         end
 
@@ -161,17 +159,12 @@ function phxex_rocket(hopHeight)
     delete(sim);
 
     pEnd = rocket.Position;
-    Mend = rocket.Transform;
     if isnan(tLand)
-        fprintf("The hop timed out at waypoint %d.\n", wpIdx);
+        viewer.displayText(sprintf("Timed out at waypoint %d", wpIdx));
     else
-        fprintf("Touchdown at t = %.1f s: vertical speed %.2f m/s, tilt %.1f deg.\n", ...
-            tLand, vTouch, tilt);
-        fprintf("Final position: %.2f m from the pad B center, standing tilt %.1f deg.\n", ...
-            norm(pEnd(1:2) - [padBx 0]), acosd(Mend(3, 3)));
+        viewer.displayText(sprintf("Landed:  offset %.2f m,  touchdown %.2f m/s", ...
+            norm(pEnd(1:2) - [padBx 0]), vTouch));
     end
-    viewer.displayText(sprintf("Landed:  offset %.2f m,  touchdown %.2f m/s", ...
-        norm(pEnd(1:2) - [padBx 0]), vTouch));
 
     % Flight profile plots
     clf(figure(2));

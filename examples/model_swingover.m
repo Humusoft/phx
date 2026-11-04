@@ -1,8 +1,6 @@
 function model_swingover
 % MODEL_SWINGOVER  Scene for the "swing the load over a wall" Simulink demo.
 %
-%   EXPERIMENTAL - not part of the documented example set.
-%
 %   The same mechanism as phxex_swingover: a trolley on a rail carries a
 %   rigid arm with a heavy ball, and a wall of dry-stacked bricks stands in
 %   the middle of the travel, higher than the hanging ball. Here the trolley
@@ -12,11 +10,12 @@ function model_swingover
 %   is therefore left out. The swing angle (Arm.EulerAngles(2)) and the ball
 %   pose (Ball.Position) go back to Simulink as outputs.
 %
-%   Two numbers differ from phxex_swingover, both because a kinematic
-%   trolley has no force limit: the travel is shorter (the trolley parks
-%   1.4 m from the wall instead of 2.2 m) and the wall is 0.85 m instead of
-%   0.90 m high. With the long travel of the MATLAB demo the prescribed run
-%   across pumps the pendulum right over the top of its hinge.
+%   The scene is simpler than that of phxex_swingover, which walls the load
+%   into chambers: a single 0.85 m wall stands in the middle of the rail
+%   and the trolley parks 1.4 m in front of it. The travel is kept short
+%   because a kinematic trolley has no force limit; with a long prescribed
+%   run across, the pumping swings the pendulum right over the top of its
+%   hinge.
 %
 %   Builds the bodies and saves them to saved_swingover.mat.
 %

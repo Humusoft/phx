@@ -29,7 +29,7 @@ function phxex_magnets(nBalls, annealTime, seed)
 %   Copyright 2026 HUMUSOFT s.r.o.
 
     arguments
-        nBalls (1, 1) double {mustBeInteger, mustBePositive} = 24
+        nBalls (1, 1) double {mustBeInteger, mustBePositive} = 30
         annealTime (1, 1) double {mustBePositive} = 10
         seed (1, 1) double = 0
     end
@@ -57,19 +57,9 @@ function phxex_magnets(nBalls, annealTime, seed)
 
     % Spherical magnets: spheres with the north half painted red and
     % the south half blue; the dipole axis runs through the texture poles
-    shp = phx.shape.Sphere("Diameter", d, "Density", rho);
-    shp = shp.colormapTexture([1; 0], [0.35 0.45 1; 1 0.35 0.3]);
-    cols = ceil(sqrt(nBalls));
-    pitch = (arena - 2)/(cols - 1);
-    for i = 1:nBalls
-        gx = mod(i - 1, cols); gy = floor((i - 1)/cols);
-        p = [gx*pitch - (arena - 2)/2, gy*pitch - (arena - 2)/2] + (rand(1, 2) - 0.5)*0.4;
-        balls(i) = phx.Body(ax, "Position", [p, 1 + rand], ...
-            "Shape", shp, "Friction", mu); %#ok<AGROW> small fixed size
-        % Random initial orientation
-        [R, ~] = qr(randn(3));
-        balls(i).Orientation = R*diag([det(R) 1 1]);
-    end
+    shp = phx.shape.Sphere("Diameter", d, "Density", rho, "Texture", [1; 0], "TextureColormap", [0.35 0.45 1; 1 0.35 0.3]);
+    balls = phx.assembly.scatter(ax, shp, nBalls, "Region", [arena - 2, arena - 2, 1], ...
+        "Position", [0 0 1], "Spacing", 1.1*d, "RandomOrientation", true, "Friction", mu);
 
     % One dipole group for all magnets; the poles sit on the local Z axis
     phx.Dipole(balls, "Charge", q*ones(nBalls, 1), "Attractivity", -1, ...
@@ -119,14 +109,9 @@ function phxex_magnets(nBalls, annealTime, seed)
     end
 
     % Phase 3 - cold settle
-    settleTimeout = 5;
-    while settleTimeout > 0
+    for k = 1:50                            % at most 5 s
         sim.step(0.1, 20, 20);
-        settleTimeout = settleTimeout - 0.1;
-        vMax = 0;
-        for i = 1:nBalls
-            vMax = max(vMax, norm(balls(i).LinearVelocity));
-        end
+        vMax = max(vecnorm(vertcat(balls.LinearVelocity), 2, 2));
         viewer.displayText(sprintf("Settling...   max speed: %.2f", vMax));
         if vMax < 0.05
             break
@@ -137,27 +122,16 @@ function phxex_magnets(nBalls, annealTime, seed)
     % Final structure analysis: chains, rings and bond alignment
     [adj, alignment] = bondAlignment(balls, d);
     clusterId = conncomp(graph(adj));       % touching magnets form one chain
-    nClusters = max(clusterId);
     sizes = accumarray(clusterId', 1);
-    deg = sum(adj, 2)';
-    nRings = 0;
-    for c = 1:nClusters
-        id = clusterId == c;
-        if sizes(c) >= 3 && all(deg(id) == 2)
-            nRings = nRings + 1;
-        end
-    end
+    % A ring is a cluster of three or more in which every magnet has two bonds
+    nRings = nnz(sizes >= 3 & accumarray(clusterId', sum(adj, 2) ~= 2) == 0);
     meanAlign = sum(alignment(adj(:)))/max(nnz(adj), 1);
 
     viewer.displayText(sprintf("Done:  longest chain %d, mean alignment %.0f %%", ...
         max(sizes), 100*meanAlign));
-    fprintf("Bonds: %d, mean head-to-tail alignment %.0f %%.\n", ...
-        nnz(triu(adj)), 100*meanAlign);
-    fprintf("Chains of 2+ magnets: %d (longest %d), rings: %d, singles: %d.\n", ...
-        nnz(sizes > 1), max(sizes), nRings, nnz(sizes == 1));
 
     % Assembly curve and the chain length histogram
-    figure(2);
+    clf(figure(2));
     subplot(2, 1, 1);
     yyaxis left
     plot(hist.t, hist.bonds, "LineWidth", 1.5); hold on
@@ -167,7 +141,7 @@ function phxex_magnets(nBalls, annealTime, seed)
     plot(hist.t, 100*hist.T, "--", "LineWidth", 1.5); ylabel("temperature [%]");
     grid on; xlabel("annealing time [s]");
     legend("bonds", "aligned head-to-tail", "temperature", "Location", "west");
-    title(sprintf("Magnet chains grow as the system cools (%d magnets)", nBalls));
+    title(sprintf("Magnet chains during annealing (%d magnets)", nBalls));
     subplot(2, 1, 2);
     histogram(sizes, 0.5:1:max(sizes) + 0.5);
     grid on; xlabel("chain length [magnets]"); ylabel("count");
@@ -181,13 +155,9 @@ function [adj, alignment] = bondAlignment(balls, d)
 % (moments parallel to each other and to the bond direction)
 
     n = numel(balls);
-    P = zeros(n, 3);
-    M = zeros(n, 3);
-    for b = 1:n
-        T = balls(b).Transform;
-        P(b, :) = T(13:15);
-        M(b, :) = T(9:11);            % local Z axis = dipole direction
-    end
+    T = reshape([balls.Transform], 16, [])';  % one 4x4 transform per row
+    P = T(:, 13:15);
+    M = T(:, 9:11);                           % local Z axis = dipole direction
     D = sqrt(sum((permute(P, [1 3 2]) - permute(P, [3 1 2])).^2, 3));
     adj = D > 0 & D < 1.25*d;
     alignment = zeros(n);

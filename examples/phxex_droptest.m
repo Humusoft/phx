@@ -51,14 +51,15 @@ function phxex_droptest(dropH, stiffness, damping)
     % with the shell or floor - it is held only by the cushioning spring, so
     % the only way a load reaches it is through that spring after the impact.
     prodSize = [0.4 0.4 0.4];
-    prodZ = shellZ + 0.5;          % sits above, spring pre-stretched a little
+    freeLen = 0.5;                 % free length of the cushioning spring
+    prodZ = shellZ + shellSize(3)/2 + freeLen + prodSize(3)/2;   % spring starts relaxed
     product = phx.Body(ax, "Position", [0 0 prodZ], ...
         "Shape", {"Box", "Size", prodSize, "Color", [0.4 0.6 1]}, ...
         "Mass", 1, "Collisions", false);
 
     % Cushioning element between shell and product (spring + damper).
     cushion = phx.Spring(shell, product, "Stiffness", stiffness, "Damping", damping, ...
-        "FreeLength", 0.5, "PointA", [0 0 shellSize(3)/2], "PointB", [0 0 -prodSize(3)/2], ...
+        "FreeLength", freeLen, "PointA", [0 0 shellSize(3)/2], "PointB", [0 0 -prodSize(3)/2], ...
         "Visible", true, "Colormap", "jet", "ColorRange", [0 2e3]);
 
     % Data logging: force in the cushioning spring and heights of both bodies

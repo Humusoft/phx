@@ -59,9 +59,9 @@ function phxex_drone(wpScale)
 
     % Ground and the landing pad
     phx.Body(ax, "Type", "static", "Position", [wpScale/2 wpScale/2 -0.5], ...
-        "Shape", {"Box", "Size", [4*wpScale, 4*wpScale, 1], "Color", [1 1 1]}, "Restitution", 0.5);
+        "Shape", {"Box", "Size", [4*wpScale, 4*wpScale, 1], "Color", [1 1 1], "Texture", "cells", "TextureBlend", 0.4}, "Restitution", 0.5);
     phx.Body(ax, "Type", "static", "Position", [0 0 0.05], ...
-        "Shape", {"Box", "Size", [1.6 1.6 0.1], "Color", [0.2 0.8 0.9]});
+        "Shape", {"Box", "Size", [1.6 1.6 0.1], "Color", [0.2 0.8 0.9], "Texture", "circles", "TextureBlend", 0.2});
 
     % A shallow hill under the second leg
     phx.Body(ax, "Type", "static", "Position", [wpScale wpScale*0.6 -2.0], ...
@@ -69,12 +69,13 @@ function phxex_drone(wpScale)
 
     % A ball on a slim column right in the path of the first flight leg
     zBall = 2.0;
-    phx.Body(ax, "Position", [wpScale/2, -0.5, (zBall - 0.18)/2], ...
+    xyBall = [wpScale/2, -0.5];
+    phx.Body(ax, "Type", "static", "Position", [xyBall, (zBall - 0.18)/2], ...
         "Shape", {"Cylinder", "Diameter", 0.15, "Height", zBall - 0.18, ...
         "Color", [0.6 0.6 0.65]});
-    ball = phx.Body(ax, "Position", [wpScale/2, -0.5, zBall], ...
+    ball = phx.Body(ax, "Position", [xyBall, zBall], ...
         "Shape", {"Sphere", "Diameter", 0.36, "Density", 20, ...
-        "Color", [0.7 0.2 0.5], "Texture", "stripes", "TextureBlend", 0.5}, "Friction", [0.5 0.05 0.05], "Restitution", 1);
+        "Color", [0.7 0.2 0.5], "Texture", "xor", "TextureBlend", 0.5}, "Friction", [0.5 0.05 0.05], "Restitution", 1);
 
     % The quadcopter frame; mass properties are set explicitly
     drone = phx.Body(ax, "Position", [0 0 0.36], ...
@@ -148,24 +149,7 @@ function phxex_drone(wpScale)
             ctrl.UserData.wpIdx, size(wp, 1), drone.Position(3), ctrl.UserData.agl, ...
             100*mean([th.Throttle])));
     end
-    landed = ctrl.UserData.landed;
-    tLand  = ctrl.UserData.tLand;
-    wpIdx  = ctrl.UserData.wpIdx;
     delete(sim);
-
-    pEnd = drone.Position;
-    if landed
-        fprintf("Landed %.2f m from the pad center after %.1f s of flight.\n", ...
-            norm(pEnd(1:2)), tLand);
-    else
-        fprintf("Flight timed out at waypoint %d.\n", wpIdx);
-    end
-    fprintf("Lowest clearance on the leg over the hill was %.2f m of the %.2f m held.\n", ...
-        min(log.agl(log.wp == 3)), wp(3, 3));
-    pb = ball.Position;
-    fprintf("The ball was knocked %.2f m away from its column.\n", ...
-        norm(pb(1:2) - [wpScale/2, 0]));
-    viewer.displayText(sprintf("Landed:  offset %.2f m,  flight time %.1f s", norm(pEnd(1:2)), tLand));
 
     % Trajectory and flight history plots
     clf(figure(2));
