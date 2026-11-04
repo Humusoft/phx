@@ -38,9 +38,9 @@ function phxex_buggy(showGraphs)
     phx.Body("Position", [-5 -0.7 0], "Shape", shpCone, "Mass", 1, "Inertia", 0.1);
     phx.Body("Type", "static", "Position", [-5 0.65 0], "Shape", {"Cylinder", "Diameter", 0.3, "Height", 1.4, "Color", [1 0.8 0.6], "Texture", "stone", "TextureBlend", 0.6});
 
-    % Simulation loop; a margin of a few millimetres keeps the wheels clear
-    % of the body in Bullet
-    sim = phx.Simulation("EngineSettings", phx.engine.BulletSettings("Margin", 0.004));
+    % Simulation loop; contact tolerances for gaps of about 10 cm keep the
+    % wheels clear of the body
+    sim = phx.Simulation("EngineSettings", phx.engine.BulletSettings("LengthScale", 0.1));
     for i = 1:120
         sim.step(0.05, 50, 50);
         speed.Value = abs(buggy.wheelFR.AngularVelocity(2));

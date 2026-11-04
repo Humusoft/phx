@@ -1,4 +1,4 @@
-function out = phxex_magcrane(Options)
+function phxex_magcrane(Options)
 % PHXEX_MAGCRANE Overhead crane moving a rotor casting on a lifting magnet
 %
 % A bridge crane picks a rotor casting off the floor with a lifting
@@ -9,10 +9,6 @@ function out = phxex_magcrane(Options)
 % face, tilt on it, or be left behind if the pull is too weak.
 %
 % The rotor stands on one of its flanks, so the magnet meets its apex.
-% The pull aims at the centre of the rotor and a flank lies closer to
-% it than the apex, so on the way up the rotor rolls round on the pole
-% face until a flank faces the magnet - it arrives turned and topples
-% when it is set down.
 %
 % The charge is sized from the wanted holding force at contact, where
 % the collision keeps the pole distance fixed; HoldFactor says how many
@@ -20,21 +16,18 @@ function out = phxex_magcrane(Options)
 % travel, lower, release - is played from the rope payout (a winch,
 % through phx.Rope.Displacement) and the kinematic bridge and trolley.
 %
-% The report gives the moment the rotor broke free of the floor, the sway
-% it carried into the set-down and the resulting placement error.
-%
 % Options:
 %     HoldFactor - holding force at contact, in load weights; the magnet
 %                  is energized across an air gap, so a factor of 1 is
 %                  not enough to break the rotor free of the floor
 %     TravelTime - duration of the diagonal travel; short times swing the
-%                  load and slide it off the pole face
+%                  load
 %     Settle     - pause between the travel and the set-down, for the sway
 %                  to decay
 %
 % Example:
 %     phxex_magcrane(HoldFactor = 1)   % too weak, the rotor stays down
-%     phxex_magcrane(TravelTime = 2)   % the rotor slides off in mid-air
+%     phxex_magcrane(TravelTime = 2)   % fast travel, the load swings hard
 %
 % See also phx.Monopole, phx.Rope, phxex_antisway, phxex_maglev
 
@@ -78,14 +71,14 @@ function out = phxex_magcrane(Options)
         "Shape", {"Box", "Size", [20 14 1], "Texture", "tiles"});
     for c = [-1 -1; -1 1; 1 1; 1 -1]'
         parts(end + 1) = phx.Body(ax, "Type", "static", "Position", [7*c(1) 5*c(2) 3.9], ...
-            "Shape", {"Box", "Size", [0.4 0.4 7.8], "Color", [0.55 0.55 0.6], "Texture", "metal"}); %#ok<AGROW>
+            "Shape", {"Box", "Size", [0.4 0.4 7.8], "Color", [0.55 0.55 0.6], "Texture", "scratches"}); %#ok<AGROW>
     end
     for y = [-5 5]
         parts(end + 1) = phx.Body(ax, "Type", "static", "Position", [0 y zBridge], ...
-            "Shape", {"Box", "Size", [14.4 0.35 0.6], "Color", [0.55 0.55 0.6], "Texture", "metal"}); %#ok<AGROW>
+            "Shape", {"Box", "Size", [14.4 0.35 0.6], "Color", [0.55 0.55 0.6], "Texture", "scratches"}); %#ok<AGROW>
     end
     parts(end + 1) = phx.Body(ax, "Type", "static", "Position", [drop padHeight/2], ...
-        "Shape", {"Box", "Size", [3.4 3 padHeight], "Color", [0.85 0.7 0.2], "Texture", "wood", "TextureBlend", 0.3});
+        "Shape", {"Box", "Size", [3.4 3 padHeight], "Color", [0.85 0.7 0.2], "Texture", "circles", "TextureBlend", 0.3});
 
     % The crane: a bridge travelling along the runway, a trolley along the
     % bridge, both kinematic, and the magnet hanging on the hoist rope
@@ -97,11 +90,9 @@ function out = phxex_magcrane(Options)
         "Shape", {"Cylinder", "Diameter", dMag, "Height", hMag, "Density", 800, ...
         "Color", 0.3, "Material", "metal"});
     rotor = phx.Body(ax, "Position", [pick zStand], "AxisAngle", [1 0 0 pi/2], "Shape", rotorShape);
-    R0 = rotor.Orientation;      % the standing pose, for the tilt at the end
 
     rope = phx.Rope([trolley magnet], "Points", [0 0 -0.2; 0 0 hMag/2], ...
-        "Stiffness", 6e5, "Damping", 6e3, ...
-        "Colormap", "heat", "ColorRange", [0 12000]);
+        "Stiffness", 6e5, "Damping", 6e3, "Colormap", "heat", "ColorRange", [0 12000]);
 
     % Tracking camera
     phx.Camera(parts(1), rotor, "PointA", [-3 -22 11], "TrackingLag", 1);
@@ -111,28 +102,38 @@ function out = phxex_magcrane(Options)
     mLoad = rotor.Mass;
     rHold = hMag/2 + hTop;
     qMag = Options.HoldFactor*mLoad*grav*rHold^2;
-    % Its field arrows fill a small window that travels with the magnet
     coil = phx.Monopole([magnet rotor], "Charge", [0 -1]', "Attractivity", -1, ...
         "VectorFieldCenter", [pick zHoist], "VectorFieldSize", [3 0 2.5], ...
         "VectorFieldStep", 0.5, "VectorLength", 0.4, "VectorSegments", 3, "Color", 1);
-    fprintf("Rotor %.0f kg, holding force %.1f kN at contact - %.1f times its weight.\n", ...
-        mLoad, Options.HoldFactor*mLoad*grav/1000, Options.HoldFactor);
 
     % The cycle as timed segments, with the magnet height at their ends
     gap = 0.08;                                 % air gap the coil bridges
     zPick = zStand + hTop + hMag/2 + gap;       % just over the resting rotor
     zDrop = padHeight + zStand + rHold + gap;   % rotor just over the pad
-    tSeg = [1 2.5 1.5 3 Options.TravelTime Options.Settle 2.5 2];
+    tSeg = [1 2.5 1.5 3 Options.TravelTime Options.Settle 2.5 3];
     zSeg = [zHoist zHoist zPick zPick zTravel zTravel zTravel zDrop zDrop];
     label = ["settle", "lower to the rotor", "magnet on", "hoist", ...
         "travel", "let the sway decay", "lower onto the pad", "magnet off"];
     tEnd = cumsum(tSeg);
     pay = zHoist - zSeg;                        % the same heights as payout
 
-    % A thin collision margin, or the standing rotor would hover visibly
-    % above the floor on the default 4 cm one
+    % The winch plays the payout through the segments; pchip has zero slope
+    % at every knot here, so each move is a smooth step between two pauses
+    phx.Script(rope, {"Displacement", [0 tEnd]', pay', "pchip"});
+
+    % The magnet is live from the grip segment to the release
+    phx.Script(coil, {"Charge", [0 tEnd([2 7])]', [0 -1; qMag -1; 0 -1], "previous", "previous"});
+
+    % The bridge and the trolley travel diagonally, waiting at pick and
+    % stopping at drop
+    tTravel = [0 tEnd(4) tEnd(5) tEnd(end)]';
+    phx.Script(bridge, {"Position", tTravel, [pick(1) 0 zBridge; pick(1) 0 zBridge; drop(1) 0 zBridge; drop(1) 0 zBridge], "pchip"});
+    phx.Script(trolley, {"Position", tTravel, [pick zTrolley; pick zTrolley; drop zTrolley; drop zTrolley], "pchip"});
+
+    % Contact tolerances for decimetre parts, or the standing rotor would
+    % hover visibly above the floor on the default 4 cm margin
     sim = phx.Simulation([parts bridge trolley magnet rotor], ...
-        "EngineSettings", phx.engine.BulletSettings("Margin", 0.005));
+        "EngineSettings", phx.engine.BulletSettings("LengthScale", 0.1)); %, "RedrawMode", "full");
 
     % Hidden only now: an object that is invisible when the pipelines are
     % built stays out of the redraw (ExcludeInvisible) for the whole run
@@ -141,43 +142,14 @@ function out = phxex_magcrane(Options)
     dt = 0.004;
     subSteps = 5;
     log = struct("t", [], "z", [], "sway", [], "force", []);
-    t = 0;
-    zRest = NaN;
-    tLift = NaN;
-    while t < tEnd(end)
-        for s = 1:subSteps
-            % The winch interpolates the payout over the running segment
-            k = min(sum(t >= tEnd) + 1, numel(tSeg));
-            u = smooth((t - tEnd(k) + tSeg(k))/tSeg(k));
-            rope.Displacement = pay(k) + (pay(k + 1) - pay(k))*u;
+    while sim.Time < tEnd(end)
+        % The field window follows the magnet, and shows only while live
+        coil.VectorFieldCenter = magnet.Position - [0 0 0.3];
+        coil.Visible = coil.Charge(1) > 0;
 
-            % The magnet is live from the grip segment to the release
-            live = t >= tEnd(2) && t < tEnd(7);
-            coil.Charge = [qMag*live -1]';
-
-            % The bridge and the trolley travel diagonally; smooth clamps
-            % the progress, so they wait at pick and stop at drop
-            travel = pick + (drop - pick)*smooth((t - tEnd(4))/tSeg(5));
-            bridge.Position = [travel(1) 0 zBridge];
-            trolley.Position = [travel zTrolley];
-
-            % The field window follows the magnet, and shows only while live
-            redraw = mod(s, subSteps) == 0;
-            if redraw
-                coil.VectorFieldCenter = magnet.Position - [0 0 0.3];
-                coil.Visible = live;
-            end
-
-            sim.step(dt, 1, redraw);
-            t = t + dt;
-        end
-
-        % Where the rotor rests, and when the magnet breaks it free
-        if t >= tEnd(1) && isnan(zRest)
-            zRest = rotor.Position(3);
-        elseif isnan(tLift) && rotor.Position(3) > zRest + 0.1
-            tLift = t;
-        end
+        sim.step(dt*subSteps, subSteps, subSteps);
+        t = sim.Time;
+        k = min(sum(t >= tEnd) + 1, numel(tSeg));
 
         log.t(end + 1) = t;
         log.z(end + 1) = rotor.Position(3);
@@ -185,21 +157,6 @@ function out = phxex_magcrane(Options)
         log.force(end + 1) = rope.Force;
         viewer.displayText(sprintf("%s   hoist %.2f m   sway %.2f m   rope %.1f kN", ...
             label(k), rotor.Position(3), log.sway(end), rope.Force/1000));
-    end
-
-    % The pick-up, the sway carried into the set-down and the result
-    p = rotor.Position;
-    idSway = log.t > tEnd(4) & log.t < tEnd(6);
-    out = struct("Lifted", ~isnan(tLift), "Position", p, ...
-        "Error", norm(p(1:2) - drop), "Tilt", acosd(min(rotor.Orientation(3, :)*R0(3, :)', 1)), ...
-        "MaxSway", max(log.sway(idSway)));
-    if out.Lifted
-        fprintf("Broke free at t = %.1f s, peak rope tension %.1f kN.\n", ...
-            tLift, max(log.force)/1000);
-        fprintf("Sway up to %.2f m, set down %.2f m off the mark, tilted %.1f deg.\n", ...
-            out.MaxSway, out.Error, out.Tilt);
-    else
-        fprintf("The rotor never left the floor - the grip is too weak.\n");
     end
     delete(sim);
 
@@ -215,10 +172,4 @@ function out = phxex_magcrane(Options)
     yline(mLoad*grav/1000, "--", "load weight");
     xline(tEnd([2 7]), ":", ["magnet on", "magnet off"]);
     grid on; xlabel("time [s]"); ylabel("rope tension [kN]");
-end
-
-function y = smooth(x)
-% Smooth step from 0 to 1 over the unit interval
-    x = min(max(x, 0), 1);
-    y = x*x*(3 - 2*x);
 end

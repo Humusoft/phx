@@ -24,10 +24,10 @@ function phxex_kinova(sweepTime, Tmax, smooth)
 %                 constant rate between waypoints
 %
 % Example:
-%     phxex_kinova            % a brisk sweep, the tower goes over the edge
-%     phxex_kinova(4)         % slow push, the blocks are shoved aside
-%     phxex_kinova(1, 4)      % weak motors, the tower stops the arm
-%     phxex_kinova(1.2, 60, false)  % the arm jolts at every waypoint and rings
+%     phxex_kinova            % brisk sweep
+%     phxex_kinova(4)         % slow push
+%     phxex_kinova(1, 4)      % weak motors
+%     phxex_kinova(1.2, 60, false)  % no easing at the waypoints
 %
 % Requires Robotics System Toolbox.
 %
@@ -102,14 +102,12 @@ function phxex_kinova(sweepTime, Tmax, smooth)
     phx.Body(ax, "Type", "static", "Position", [tableAt tableTop/2], ...
         "Shape", {"Box", "Size", [0.34 0.45 tableTop], "Color", [0.75 0.53 0.3], "Texture", "wood", "TextureBlend", 0.5});
 
-    resdir = fullfile(fileparts(mfilename("fullpath")), "res") + filesep;
-
     % Nothing about the belt moves, its SurfaceVelocity only makes contacts
     % solve as if the surface were sliding, along the local x the arrows show
     phx.Body(ax, "Type", "static", "Position", belt, "EulerAngles", [0 0 pi/2], ...
         "Friction", [0.8 0 0], "SurfaceVelocity", [beltSpeed 0 0], ...
         "Shape", {"Box", "Size", beltSize, "Color", [0.8 0.2 0.6], ...
-        "Texture", resdir+"arrows.png", "TextureBlend", 0.5});
+        "Texture", "arrows", "TextureBlend", 0.2});
 
     % The rack: a stand and two guides that hold the blade upright, with a few
     % millimetres of clearance so it lifts out freely
@@ -135,9 +133,7 @@ function phxex_kinova(sweepTime, Tmax, smooth)
 
     motor = [joints.Actuator1 joints.Actuator2 joints.Actuator3 joints.Actuator4 ...
              joints.Actuator5 joints.Actuator6 joints.Actuator7];
-    for j = motor
-        j.MaxTorque = Tmax;
-    end
+    [motor.MaxTorque] = deal(Tmax);
 
     % The tool point sits beyond the last body of the tree, so it is carried as
     % a fixed offset in the frame of the wrist
@@ -159,9 +155,9 @@ function phxex_kinova(sweepTime, Tmax, smooth)
         "Smooth", smooth);
     phx.Function(motor, @(o, p, ~, time) armStep(p, time, plan));
 
-    % A 40 mm collision margin, the default, would inflate the links of a robot
-    % this size into a permanent interpenetration and push its joints apart
-    sim = phx.Simulation(ax, "EngineSettings", phx.engine.BulletSettings("Margin", 0.002));
+    % Contact tolerances for decimetre parts: the default 40 mm margin would
+    % inflate the links of a robot this size into a permanent interpenetration
+    sim = phx.Simulation(ax, "EngineSettings", phx.engine.BulletSettings("LengthScale", 0.1));
 
     % The coupler opens while the arm is already pulling away, so the blade
     % leaves with the motion it had and topples instead of landing on its end
@@ -184,15 +180,6 @@ function phxex_kinova(sweepTime, Tmax, smooth)
             sim.Time, trackingError(motor, plan, sim.Time), stage(seg)));
     end
     delete(sim);
-
-    % --- Result ----------------------------------------------------------
-    if picked == 0
-        warning("phx:kinova:noPickup", "The arm never reached the paddle, so it swept nothing.");
-    end
-    z = vertcat(block.Position)*[0; 0; 1];
-    fprintf("Picked the paddle up at t = %.2f s, swept %d of %d blocks off the table " + ...
-        "and held the plan to %.3f rad.\n", picked, sum(z < tableTop), nBlocks, ...
-        trackingError(motor, plan, duration));
 
 end
 
