@@ -42,6 +42,13 @@ classdef PrimitiveHelper < handle
                     else
                         value = [0 0 0];
                     end
+                case 'marker'
+                    % A marker shading each point (phx.Particles) keeps its
+                    % base color aside
+                    value = getappdata(obj.Primitive, 'phxBaseColor');
+                    if isempty(value)
+                        value = double(obj.Primitive.EdgeColorData(1:3, 1)')/255;
+                    end
             end
         end
 
@@ -59,6 +66,14 @@ classdef PrimitiveHelper < handle
                             obj.Primitive.ColorData = [uint8(value'*255); alpha];
                         otherwise
                             obj.Primitive.ColorData = uint8([value*255 255])';
+                    end
+                case 'marker'
+                    shade = getappdata(obj.Primitive, 'phxPointShade');
+                    if isempty(shade)
+                        obj.Primitive.EdgeColorData = uint8([value*255 255])';
+                    else
+                        setappdata(obj.Primitive, 'phxBaseColor', value);
+                        obj.Primitive.EdgeColorData = [uint8(value'*shade*255); repmat(uint8(255), 1, numel(shade))];
                     end
             end
         end

@@ -1,8 +1,8 @@
 classdef Spring < phx.base.Object
 %phx.Spring Linear spring-damper between two bodies
 %
-%   Spring is a combined element that consists of an ideal spring and an ideal
-%   damper in parallel.
+%   Spring is a combined element that consists of an ideal spring, an ideal
+%   damper and, with a nonzero Inertance, an ideal inerter in parallel.
 %
 %   phx.Spring(bodyA, bodyB) creates a spring between two bodies A and B
 %   attached to their points of origin.
@@ -10,6 +10,11 @@ classdef Spring < phx.base.Object
 %
 %   phx.Spring(___, name, value, ...) creates a spring and sets properties values
 %   according to given name-value pairs.
+%
+%   The engine solves the spring together with the joints and contacts, by
+%   a step that keeps its energy and is stable at any stiffness and damping.
+%   Force is the force applied over the last step; Length is read from the
+%   current poses.
 %
 %   See also phx.Rope, phx.BushingJoint, phx.SphericalJoint
 
@@ -21,25 +26,19 @@ classdef Spring < phx.base.Object
 %#ok<*MCSUP> OK to access other properties in setters
 %#ok<*INUSD> OK to see the full list of arguments for callbacks
 
-% TODO inertia, hysteresis and progressiveness exponents
-% TODO implementation of the spring calculation directly in the engine
-
     properties (Access = private)
         hL
         CMap
-        LastLength = NaN
-    end
-
-    properties (SetAccess = private)
-        % Force acting on the first body (N); the second body gets its opposite
-        Force = [0 0 0]
-
-        % Current length of the spring, the distance between both connecting
-        % points (m); the extension is Length - FreeLength
-        Length = 0
     end
 
     properties (Dependent, SetAccess = private)
+        % Force acting on the first body (N); the second body gets its opposite
+        Force (1, 3) double
+
+        % Current length of the spring, the distance between both connecting
+        % points (m); the extension is Length - FreeLength
+        Length (1, 1) double
+
         % Elastic energy stored in the spring (J)
         Energy (1, 1) double
     end
@@ -52,13 +51,17 @@ classdef Spring < phx.base.Object
         PointB (1, 3) double = [0 0 0]
 
         % Free length of the spring
-        FreeLength (1, 1) double = 0
+        FreeLength (1, 1) double {mustBeNonnegative, mustBeFinite} = 0
 
         % Stiffness coefficient of the spring (N/m)
-        Stiffness (1, 1) double = 20
+        Stiffness (1, 1) double {mustBeNonnegative, mustBeFinite} = 20
 
         % Damping coefficient of the damper (N*s/m)
-        Damping (1, 1) double = 0
+        Damping (1, 1) double {mustBeNonnegative, mustBeFinite} = 0
+
+        % Inertance of an inerter in parallel (kg): a force proportional to
+        % the relative acceleration of the connecting points along the line
+        Inertance (1, 1) double {mustBeNonnegative, mustBeFinite} = 0
 
         % Name of the used colormap
         Colormap (1, 1) string = "none"
@@ -75,8 +78,8 @@ classdef Spring < phx.base.Object
                 Options.?phx.Spring
             end
 
-            % Set default values
-            obj.SimulationOrder = "before";
+            % Set default values; the engine does the work of the steps
+            obj.SimulationOrder = "none";
             obj.RedrawOrder = "after";
             obj.ParentAxes = ParentA.ParentAxes;
 
@@ -95,10 +98,51 @@ classdef Spring < phx.base.Object
             phx.Spring.updateView({obj});
         end
 
+        function value = get.Force(obj)
+            value = [0 0 0];
+            if ~isempty(obj.ObjectHandle)
+                f = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'spring');
+                [pa, pb] = obj.ends;
+                d = pb - pa;
+                n = norm(d);
+                if n > 0
+                    value = f*d/n;
+                end
+            end
+        end
+
+        function value = get.Length(obj)
+            [pa, pb] = obj.ends;
+            value = norm(pb - pa);
+        end
+
         function value = get.Energy(obj)
-            pa = phx.internal.transformPoint(obj.Parents{1}.Matrix, obj.PointA);
-            pb = phx.internal.transformPoint(obj.Parents{2}.Matrix, obj.PointB);
+            [pa, pb] = obj.ends;
             value = obj.Stiffness*(norm(pb - pa) - obj.FreeLength)^2/2;
+        end
+
+        function set.FreeLength(obj, value)
+            obj.FreeLength = value;
+            if ~isempty(obj.ObjectHandle)
+                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'lengths', value);
+            end
+        end
+
+        function set.Stiffness(obj, value)
+            obj.Stiffness = value;
+            obj.pushSpring;
+        end
+
+        function set.Damping(obj, value)
+            obj.Damping = value;
+            obj.pushSpring;
+        end
+
+        function set.Inertance(obj, value)
+            obj.Inertance = value;
+            if ~isempty(obj.ObjectHandle)
+                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'inertance', value);
+            end
         end
 
         function set.Colormap(obj, map)
@@ -130,7 +174,7 @@ classdef Spring < phx.base.Object
         % See also phx.Spring
 
             arguments
-                obj 
+                obj
                 x (1, :) double = 1
                 vmul (1, :) double = [0 1 10]
             end
@@ -143,7 +187,7 @@ classdef Spring < phx.base.Object
             grid(ax, 'on');
             v = gradient(x);
             v = v./max(abs(v));
-            
+
             for vk = vmul
                 F = x*obj.Stiffness + vk*v*obj.Damping;
                 plot(ax, x, F, 'DisplayName', "v * "+vk);
@@ -154,6 +198,19 @@ classdef Spring < phx.base.Object
         end
     end
 
+    methods (Access = private)
+        function [pa, pb] = ends(obj)
+            pa = phx.internal.transformPoint(obj.Parents{1}.Matrix, obj.PointA);
+            pb = phx.internal.transformPoint(obj.Parents{2}.Matrix, obj.PointB);
+        end
+
+        function pushSpring(obj)
+            if ~isempty(obj.ObjectHandle)
+                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'spring', obj.Stiffness, obj.Damping);
+            end
+        end
+    end
+
     methods (Access = protected)
         function valid = checkObject(obj)
             % A spring pulls two bodies together, so it needs both of them.
@@ -161,78 +218,37 @@ classdef Spring < phx.base.Object
         end
 
         function valid = initObject(obj, world)
-            obj.LastLength = NaN; % reset the damping memory on (re)builds
             valid = obj.checkObject;
+            if valid && isempty(obj.ObjectHandle)
+                % Built once and kept across pipeline rebuilds; the setters
+                % update it
+                obj.WorldHandle = world;
+                obj.ObjectHandle = phx.engine.io('add', world, 'springconstraint', ...
+                    obj.Parents{1}.ObjectHandle, obj.Parents{2}.ObjectHandle, obj.PointA, obj.PointB, ...
+                    obj.FreeLength, obj.Stiffness, obj.Damping, false);
+                if obj.Inertance > 0
+                    phx.engine.io('set', world, obj.ObjectHandle, 'inertance', obj.Inertance);
+                end
+            end
         end
 
-        function destroyObject(obj) %#ok<MANU> function prototype
+        function destroyObject(obj)
+            if ~isempty(obj.ObjectHandle)
+                phx.engine.io('remove', obj.WorldHandle, obj.ObjectHandle);
+                obj.ObjectHandle = [];
+            end
         end
     end
 
     methods (Static, Access = protected)
         function resolveState(cellObjs, dt, time, world)
-            nO = numel(cellObjs);
-            allHandles = zeros(1, nO*2, 'uint64');
-            allForces = zeros(1, nO*6);
-            allPoints = zeros(1, nO*6);
-            for i = 1:nO
-                obj = cellObjs{i}; % much faster than obj = objs(i)
-
-                A = obj.Parents{1};
-                B = obj.Parents{2};
-    
-                ptA = obj.PointA;
-                ptB = obj.PointB;
-                pa = phx.internal.transformPoint(A.Matrix, ptA);
-                pb = phx.internal.transformPoint(B.Matrix, ptB);
-                dp = (pb - pa)';
-                nrm = sqrt(dp(1)*dp(1) + dp(2)*dp(2) + dp(3)*dp(3));
-                dp = dp/nrm;
-                stretch = nrm - obj.FreeLength;
-                if isnan(obj.LastLength)
-                    vel = 0;
-                else
-                    vel = (nrm - obj.LastLength)/dt;
-                end
-                obj.LastLength = nrm;
-                if nrm ~= 0
-                    Force = (obj.Stiffness*stretch + obj.Damping*vel)*dp;
-                else
-                    Force = [0 0 0];
-                end
-
-                i2 = i*2;
-                i6 = i*6;
-                allHandles(i2 - 1) = A.ObjectHandle;
-                allHandles(i2) = B.ObjectHandle;
-                % Scalar writes: a range target with a concatenated source
-                % costs about 1 us per spring, the scalars a tenth of it
-                allForces(i6 - 5) = Force(1);
-                allForces(i6 - 4) = Force(2);
-                allForces(i6 - 3) = Force(3);
-                allForces(i6 - 2) = -Force(1);
-                allForces(i6 - 1) = -Force(2);
-                allForces(i6) = -Force(3);
-                allPoints(i6 - 5) = ptA(1);
-                allPoints(i6 - 4) = ptA(2);
-                allPoints(i6 - 3) = ptA(3);
-                allPoints(i6 - 2) = ptB(1);
-                allPoints(i6 - 1) = ptB(2);
-                allPoints(i6) = ptB(3);
-
-                obj.Length = nrm;
-                obj.Force = Force;
-            end
-
-            [~] = phx.engine.io('apply', world, allHandles, 'forces', allForces, allPoints, false, true);
         end
 
         function updateView(cellObjs, dt, time, world)
             for i = 1:numel(cellObjs)
                 obj = cellObjs{i};
 
-                pa = phx.internal.transformPoint(obj.Parents{1}.Matrix, obj.PointA);
-                pb = phx.internal.transformPoint(obj.Parents{2}.Matrix, obj.PointB);
+                [pa, pb] = obj.ends;
 
                 hL = obj.hL;
                 hL.VertexData = single([pa', pb']);

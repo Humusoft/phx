@@ -24,6 +24,12 @@ classdef Rope < phx.base.Object
 %   phx.Rope(___, name, value, ...) creates a rope and sets properties
 %   values according to given name-value pairs.
 %
+%   The engine holds the rope over its pulleys and solves it together with
+%   the joints and contacts, by a step that keeps its energy and is stable
+%   at any stiffness and damping. It needs at least two different bodies.
+%   Force is the tension applied over the last step; Length is read from
+%   the current poses.
+%
 %   See also phx.Spring, phx.Script, phx.Logger
 
 %   Copyright 2026 HUMUSOFT s.r.o.
@@ -38,15 +44,14 @@ classdef Rope < phx.base.Object
         hL
         hM
         CMap
-        LastLength = NaN
     end
 
-    properties (SetAccess = private)
+    properties (Dependent, SetAccess = private)
         % Current tension in the rope (N)
-        Force = 0
+        Force (1, 1) double
 
         % Current total length of the rope (m)
-        Length = 0
+        Length (1, 1) double
     end
 
     properties
@@ -60,10 +65,10 @@ classdef Rope < phx.base.Object
         Displacement (1, 1) double = 0
 
         % Stiffness of the stretched rope (N/m)
-        Stiffness (1, 1) double = 1000
+        Stiffness (1, 1) double {mustBeNonnegative, mustBeFinite} = 1000
 
         % Damping of the stretched rope (N*s/m)
-        Damping (1, 1) double = 10
+        Damping (1, 1) double {mustBeNonnegative, mustBeFinite} = 10
 
         % Name of the used colormap (tension coloring)
         Colormap (1, 1) string = "none"
@@ -91,8 +96,8 @@ classdef Rope < phx.base.Object
                 error("phx:Rope:tooFewBodies", "Rope requires at least two bodies.");
             end
 
-            % Set default values
-            obj.SimulationOrder = "before";
+            % Set default values; the engine does the work of the steps
+            obj.SimulationOrder = "none";
             obj.RedrawOrder = "after";
             obj.ParentAxes = Parents(1).ParentAxes;
 
@@ -142,6 +147,37 @@ classdef Rope < phx.base.Object
             value = obj.Stiffness*max(stretch, 0)^2/2;
         end
 
+        function value = get.Force(obj)
+            value = 0;
+            if ~isempty(obj.ObjectHandle)
+                value = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'spring');
+            end
+        end
+
+        function value = get.Length(obj)
+            value = phx.Rope.totalLength(obj);
+        end
+
+        function set.InitialLength(obj, value)
+            obj.InitialLength = value;
+            obj.pushLength;
+        end
+
+        function set.Displacement(obj, value)
+            obj.Displacement = value;
+            obj.pushLength;
+        end
+
+        function set.Stiffness(obj, value)
+            obj.Stiffness = value;
+            obj.pushSpring;
+        end
+
+        function set.Damping(obj, value)
+            obj.Damping = value;
+            obj.pushSpring;
+        end
+
         function set.Colormap(obj, map)
             try
                 cmap = feval(map, 100);
@@ -155,6 +191,25 @@ classdef Rope < phx.base.Object
         end
     end
 
+    methods (Access = private)
+        function value = engineLength(obj)
+            % A rope winched in past zero length pulls from zero
+            value = max(obj.FreeLength, 0);
+        end
+
+        function pushLength(obj)
+            if ~isempty(obj.ObjectHandle)
+                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'lengths', obj.engineLength);
+            end
+        end
+
+        function pushSpring(obj)
+            if ~isempty(obj.ObjectHandle)
+                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'spring', obj.Stiffness, obj.Damping);
+            end
+        end
+    end
+
     methods (Access = protected)
         function valid = checkObject(obj)
             % A rope is strung through at least two bodies.
@@ -162,64 +217,27 @@ classdef Rope < phx.base.Object
         end
 
         function valid = initObject(obj, world)
-            obj.LastLength = NaN; % reset the damping memory on (re)builds
             valid = obj.checkObject;
+            if valid && isempty(obj.ObjectHandle)
+                % Built once and kept across pipeline rebuilds; the setters
+                % update it
+                obj.WorldHandle = world;
+                handles = cellfun(@(p) p.ObjectHandle, obj.Parents);
+                obj.ObjectHandle = phx.engine.io('add', world, 'ropeconstraint', handles, obj.Points', ...
+                    obj.engineLength, obj.Stiffness, obj.Damping);
+            end
         end
 
-        function destroyObject(obj) %#ok<MANU> function prototype
+        function destroyObject(obj)
+            if ~isempty(obj.ObjectHandle)
+                phx.engine.io('remove', obj.WorldHandle, obj.ObjectHandle);
+                obj.ObjectHandle = [];
+            end
         end
     end
 
     methods (Static, Access = protected)
         function resolveState(cellObjs, dt, time, world)
-            for i = 1:numel(cellObjs)
-                obj = cellObjs{i};
-
-                P = obj.Parents;
-                n = numel(P);
-                handles = zeros(1, n, 'uint64');
-                pts = zeros(n, 3);
-                for a = 1:n
-                    handles(a) = P{a}.ObjectHandle;
-                    pts(a, :) = phx.internal.transformPoint(P{a}.Matrix, obj.Points(a, :));
-                end
-
-                % Total length and unit directions of the rope segments
-                seg = diff(pts, 1, 1);
-                lens = sqrt(sum(seg.^2, 2));
-                dirs = seg./max(lens, 1e-9);
-                len = sum(lens);
-
-                % Single tension from the total stretch (frictionless pulleys)
-                stretch = len - obj.InitialLength - obj.Displacement;
-                if isnan(obj.LastLength)
-                    rate = 0;
-                else
-                    rate = (len - obj.LastLength)/dt;
-                end
-                obj.LastLength = len;
-                tension = obj.Stiffness*stretch + obj.Damping*rate;
-                if stretch <= 0 || tension < 0
-                    tension = 0;    % the rope cannot push
-                end
-                obj.Length = len;
-                obj.Force = tension;
-
-                if tension > 0
-                    % Rope ends are pulled inward, every pulley feels the
-                    % resultant of its two adjacent segments
-                    F = zeros(n, 3);
-                    F(1, :) = tension*dirs(1, :);
-                    F(n, :) = -tension*dirs(n - 1, :);
-                    for a = 2:n-1
-                        F(a, :) = tension*(dirs(a, :) - dirs(a - 1, :));
-                    end
-
-                    F = F';
-                    pl = obj.Points';
-                    [~] = phx.engine.io('apply', world, handles, 'forces', F(:)', pl(:)', false, true);
-                end
-            end
         end
 
         function updateView(cellObjs, dt, time, world)
