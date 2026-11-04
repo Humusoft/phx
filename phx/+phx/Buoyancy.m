@@ -237,7 +237,7 @@ classdef Buoyancy < phx.base.Object
                     % Global buoyant forces applied at the local centers of
                     % buoyancy (centroids of the submerged sampling points)
                     Fb = obj.Density*gmag*Vsub(wet).*up;
-                    [~] = phx.engine.io('apply', world, obj.ehs(wet), 'forces', Fb, cb(:, wet), false, true);
+                    phx.engine.io('apply', world, obj.ehs(wet), 'forces', Fb, cb(:, wet), false, true);
                 end
 
                 % Hydrodynamic damping scaled by the submerged fraction; one
@@ -251,7 +251,7 @@ classdef Buoyancy < phx.base.Object
                         for j = 1:m
                             v(:, j) = P{idx(j)}.LinearVelocity;
                         end
-                        [~] = phx.engine.io('apply', world, obj.ehs(idx), 'centralforces', ...
+                        phx.engine.io('apply', world, obj.ehs(idx), 'centralforces', ...
                             -obj.LinearDamping*frac(idx).*v, false);
                     end
                     if m > 0 && obj.AngularDamping > 0
@@ -259,7 +259,7 @@ classdef Buoyancy < phx.base.Object
                         for j = 1:m
                             omega(:, j) = P{idx(j)}.AngularVelocity;
                         end
-                        [~] = phx.engine.io('apply', world, obj.ehs(idx), 'torques', ...
+                        phx.engine.io('apply', world, obj.ehs(idx), 'torques', ...
                             -obj.AngularDamping*frac(idx).*omega, false);
                     end
                 end

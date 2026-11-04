@@ -175,7 +175,7 @@ classdef Settings
         end
 
         function apply(obj, objectHandle)
-            phx.engine.io('set', objectHandle, uint64(0), 'numIterations', obj.Iterations);
+            phx.engine.io('set', objectHandle, uint64(0), 'numiterations', obj.Iterations);
             phx.engine.io('set', objectHandle, uint64(0), 'jointiterations', obj.JointIterations);
             phx.engine.io('set', objectHandle, uint64(0), 'positioniterations', obj.PositionIterations);
             phx.engine.io('set', objectHandle, uint64(0), 'margin', obj.Margin);

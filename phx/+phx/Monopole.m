@@ -207,7 +207,7 @@ classdef Monopole < phx.base.Object
 
                 pos = bodyPositions(obj);
                 Fp = phx.internal.computeMonopoleForces(pos, obj.Charge, obj.Attractivity);
-                [~] = phx.engine.io('apply', world, obj.ehs, 'centralforces', Fp, false);
+                phx.engine.io('apply', world, obj.ehs, 'centralforces', Fp, false);
             end
         end
         

@@ -345,7 +345,7 @@ classdef Body < phx.base.Object
 
         function value = get.TotalForce(obj)
             if ~isempty(obj.ObjectHandle)
-                value = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'totalforce')';
+                value = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'totalforce');
             else
                 value = [0 0 0];
             end
@@ -353,7 +353,7 @@ classdef Body < phx.base.Object
 
         function value = get.TotalTorque(obj)
             if ~isempty(obj.ObjectHandle)
-                value = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'totaltorque')';
+                value = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'totaltorque');
             else
                 value = [0 0 0];
             end
@@ -428,14 +428,14 @@ classdef Body < phx.base.Object
         function set.AppliedForce(obj, value)
             obj.AppliedForce = value;
             if any(value) && ~isempty(obj.ObjectHandle)
-                [~] = phx.engine.io('apply', obj.WorldHandle, obj.ObjectHandle, 'centralforce', value, true);
+                phx.engine.io('apply', obj.WorldHandle, obj.ObjectHandle, 'centralforce', value, true);
             end
         end
 
         function set.AppliedTorque(obj, value)
             obj.AppliedTorque = value;
             if any(value) && ~isempty(obj.ObjectHandle)
-                [~] = phx.engine.io('apply', obj.WorldHandle, obj.ObjectHandle, 'torque', value, true);
+                phx.engine.io('apply', obj.WorldHandle, obj.ObjectHandle, 'torque', value, true);
             end
         end
 
@@ -448,7 +448,7 @@ classdef Body < phx.base.Object
 
         function value = get.AngularVelocity(obj)
             if ~isempty(obj.ObjectHandle)
-                value = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'angvel')';
+                value = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'angvel');
             else
                 value = obj.AngularVelocity;
             end    
@@ -463,7 +463,7 @@ classdef Body < phx.base.Object
 
         function value = get.LinearVelocity(obj)
             if ~isempty(obj.ObjectHandle)
-                value = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'linvel')';
+                value = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'linvel');
             else
                 value = obj.LinearVelocity;
             end    
@@ -494,9 +494,9 @@ classdef Body < phx.base.Object
             end
 
             if isempty(Point)
-                [~] = phx.engine.io('apply', obj.WorldHandle, obj.ObjectHandle, 'centralforce', Force, IsLocalForce);
+                phx.engine.io('apply', obj.WorldHandle, obj.ObjectHandle, 'centralforce', Force, IsLocalForce);
             else
-                [~] = phx.engine.io('apply', obj.WorldHandle, obj.ObjectHandle, 'force', Force, Point, IsLocalForce, IsLocalPoint);
+                phx.engine.io('apply', obj.WorldHandle, obj.ObjectHandle, 'force', Force, Point, IsLocalForce, IsLocalPoint);
             end
         end
 
@@ -517,7 +517,7 @@ classdef Body < phx.base.Object
                 IsLocalTorque (:, 1) logical = true
             end
 
-            [~] = phx.engine.io('apply', obj.WorldHandle, obj.ObjectHandle, 'torque', Torque, IsLocalTorque);
+            phx.engine.io('apply', obj.WorldHandle, obj.ObjectHandle, 'torque', Torque, IsLocalTorque);
         end
 
         function groupTransform(objs, transforms)

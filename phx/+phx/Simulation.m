@@ -409,7 +409,7 @@ classdef Simulation < phx.base.Object
     methods (Access = protected)
         function valid = initObject(obj, world)
             if isempty(obj.ObjectHandle)
-                obj.ObjectHandle = phx.engine.io('setup', 2);
+                obj.ObjectHandle = phx.engine.io('setup');
                 phx.engine.io('set', obj.ObjectHandle, uint64(0), 'gravity', obj.Gravity);
                 phx.engine.io('set', obj.ObjectHandle, uint64(0), 'autoactivated', false);
 
@@ -448,7 +448,7 @@ classdef Simulation < phx.base.Object
         function resolveState(cellObjs, dt, time, world)
             obj = cellObjs{1};
             [bid, mtx] = phx.engine.io('step', world, dt);
-            if ~islogical(bid)
+            if ~isempty(bid)
                 BID = obj.SortedBodiesID;
                 [~, locb] = matlab.internal.math.ismemberhelper(bid, BID(:, 2), true);
                 for i = 1:numel(bid)

@@ -63,12 +63,32 @@ classdef tEngineProtocol < PhxTestCase
             tc.verifyNotEqual(w1, w2);
         end
 
-        function stepWithoutMovingBodiesReturnsFalse(tc)
+        function failuresAreErrorsWithEngineIds(tc)
+            w = tc.newWorld;
+            h = tc.addBox(w, 2, [0 0 0], [1 1 1]);
+            tc.verifyError(@() phx.engine.io('setup', 2), "phx:engine:badArgument");
+            tc.verifyError(@() phx.engine.io('nosuchverb', w), "phx:engine:unsupported");
+            tc.verifyError(@() phx.engine.io('set', w, h, 'nosuchfield', 1), "phx:engine:unsupported");
+            tc.verifyError(@() phx.engine.io('get', w, h, 'nosuchfield'), "phx:engine:unsupported");
+            tc.verifyError(@() phx.engine.io('set', w, uint64(12345), 'linvel', [0 0 0]), "phx:engine:badHandle");
+        end
+
+        function actingVerbsReturnNothing(tc)
+            w = tc.newWorld;
+            h = tc.addBox(w, 2, [0 0 0], [1 1 1]);
+            tc.verifyError(@() tEngineProtocol.oneOutput(@() phx.engine.io('set', w, h, 'linvel', [1 0 0])), ...
+                "MATLAB:unassignedOutputs");
+            tc.verifyError(@() tEngineProtocol.oneOutput(@() phx.engine.io('apply', w, h, 'centralforce', [1 0 0], false)), ...
+                "MATLAB:unassignedOutputs");
+            tc.verifySize(phx.engine.io('get', w, h, 'linvel'), [1 3], "A vector comes out as a row.");
+        end
+
+        function stepWithoutMovingBodiesReturnsEmpties(tc)
             w = tc.newWorld;
             tc.addBox(w, 0, [0 0 0], [1 1 1]);
             [ids, T] = phx.engine.io('step', w, tc.Dt);
-            tc.verifyEqual(ids, false);
-            tc.verifyEqual(T, false);
+            tc.verifyEqual(ids, zeros(1, 0, "uint64"));
+            tc.verifyEqual(T, zeros(4, 4, 0));
         end
 
         function stepReportsMovedBodiesWithTheirPoses(tc)
@@ -96,14 +116,14 @@ classdef tEngineProtocol < PhxTestCase
             end
             % v(k) = -g*k*dt, z(n) = z0 + dt*sum(v(1..n))
             tc.verifyEqual(T(3, 4), 10 - tc.G*tc.Dt^2*n*(n + 1)/2, "AbsTol", 1e-5);
-            tc.verifyEqual(phx.engine.io('get', w, h, 'linvel'), [0; 0; -tc.G*n*tc.Dt], "AbsTol", 1e-5);
+            tc.verifyEqual(phx.engine.io('get', w, h, 'linvel'), [0, 0, -tc.G*n*tc.Dt], "AbsTol", 1e-5);
         end
 
         function gravityIsTheWorldAcceleration(tc)
             w = tc.newWorld([1 -2 0.5]);
             h = tc.addBox(w, 2, [0 0 0], 0.2*[1 1 1]);
             [~] = phx.engine.io('step', w, 0.01);
-            tc.verifyEqual(phx.engine.io('get', w, h, 'linvel'), 0.01*[1; -2; 0.5], "AbsTol", 1e-6);
+            tc.verifyEqual(phx.engine.io('get', w, h, 'linvel'), 0.01*[1, -2, 0.5], "AbsTol", 1e-6);
         end
 
         function worldsAreIndependent(tc)
@@ -115,8 +135,8 @@ classdef tEngineProtocol < PhxTestCase
             for k = 1:10
                 [~] = phx.engine.io('step', wA, tc.Dt);
             end
-            tc.verifyEqual(phx.engine.io('get', wB, hB, 'linvel'), [0; 0; 0]);
-            tc.verifyLessThan(phx.engine.io('get', wA, hA, 'linvel'), [1; 1; 0]);
+            tc.verifyEqual(phx.engine.io('get', wB, hB, 'linvel'), [0, 0, 0]);
+            tc.verifyLessThan(phx.engine.io('get', wA, hA, 'linvel'), [1, 1, 0]);
         end
     end
 
@@ -150,7 +170,7 @@ classdef tEngineProtocol < PhxTestCase
             speed = 0;
             for k = 1:200
                 [ids, P] = phx.engine.io('step', w, tc.Dt);
-                if ~islogical(ids) && any(ids == h)
+                if any(ids == h)
                     T = P(:, :, ids == h);
                 end
                 speed = max([speed, norm(phx.engine.io('get', w, h, 'linvel')), ...
@@ -244,7 +264,7 @@ classdef tEngineProtocol < PhxTestCase
             w = tc.newWorld;
             h = tc.addBox(w, 0, [0 0 5], 0.2*[1 1 1], 1);
             [~] = phx.engine.io('step', w, tc.Dt);
-            tc.verifyEqual(phx.engine.io('get', w, h, 'linvel'), [0; 0; 0], "A static body does not fall.");
+            tc.verifyEqual(phx.engine.io('get', w, h, 'linvel'), [0, 0, 0], "A static body does not fall.");
 
             phx.engine.io('set', w, h, 'state', 2);
             [ids, T] = phx.engine.io('step', w, tc.Dt);
@@ -256,7 +276,7 @@ classdef tEngineProtocol < PhxTestCase
             for k = 1:10
                 [~] = phx.engine.io('step', w, tc.Dt);
             end
-            tc.verifyEqual(phx.engine.io('get', w, h, 'linvel'), [0; 0; 0], "AbsTol", 1e-9, ...
+            tc.verifyEqual(phx.engine.io('get', w, h, 'linvel'), [0, 0, 0], "AbsTol", 1e-9, ...
                 "A kinematic body does not fall.");
         end
 
@@ -268,11 +288,11 @@ classdef tEngineProtocol < PhxTestCase
             % Bullet takes a changed inertia into its world tensor only in
             % the next step (see PROTOCOL.md)
             [~] = phx.engine.io('step', w, 0.01);
-            [~] = phx.engine.io('apply', w, h, 'centralforce', [4 0 0], false);
-            [~] = phx.engine.io('apply', w, h, 'torque', [1 1 1], false);
+            phx.engine.io('apply', w, h, 'centralforce', [4 0 0], false);
+            phx.engine.io('apply', w, h, 'torque', [1 1 1], false);
             [~] = phx.engine.io('step', w, 0.01);
-            tc.verifyEqual(phx.engine.io('get', w, h, 'linvel'), [0.02; 0; 0], "AbsTol", 1e-6);
-            tc.verifyEqual(phx.engine.io('get', w, h, 'angvel'), 0.01*[1; 1/2; 1/4], "AbsTol", 1e-5);
+            tc.verifyEqual(phx.engine.io('get', w, h, 'linvel'), [0.02, 0, 0], "AbsTol", 1e-6);
+            tc.verifyEqual(phx.engine.io('get', w, h, 'angvel'), 0.01*[1, 1/2, 1/4], "AbsTol", 1e-5);
         end
 
         function freeBodyTumblesAboutItsMiddleAxis(tc)
@@ -292,19 +312,19 @@ classdef tEngineProtocol < PhxTestCase
         function zeroMassFreezesTheBody(tc)
             w = tc.newWorld;
             h = tc.addBox(w, 2, [0 0 0], 0.2*[1 1 1], 0, [1 1 1]);
-            [~] = phx.engine.io('apply', w, h, 'centralforce', [1 0 0], false);
-            [~] = phx.engine.io('apply', w, h, 'torque', [1 1 1], false);
+            phx.engine.io('apply', w, h, 'centralforce', [1 0 0], false);
+            phx.engine.io('apply', w, h, 'torque', [1 1 1], false);
             [~] = phx.engine.io('step', w, 0.01);
-            tc.verifyEqual(phx.engine.io('get', w, h, 'linvel'), [0; 0; 0], "AbsTol", 1e-9);
-            tc.verifyEqual(phx.engine.io('get', w, h, 'angvel'), [0; 0; 0], "AbsTol", 1e-9);
+            tc.verifyEqual(phx.engine.io('get', w, h, 'linvel'), [0, 0, 0], "AbsTol", 1e-9);
+            tc.verifyEqual(phx.engine.io('get', w, h, 'angvel'), [0, 0, 0], "AbsTol", 1e-9);
         end
 
         function zeroInertiaFreezesThatRotation(tc)
             w = tc.newWorld([0 0 0]);
             h = tc.addBox(w, 2, [0 0 0], 0.2*[1 1 1], 1, [0 0 1]);
-            [~] = phx.engine.io('apply', w, h, 'torque', [1 1 1], false);
+            phx.engine.io('apply', w, h, 'torque', [1 1 1], false);
             [~] = phx.engine.io('step', w, 0.01);
-            tc.verifyEqual(phx.engine.io('get', w, h, 'angvel'), [0; 0; 0.01], "AbsTol", 1e-6);
+            tc.verifyEqual(phx.engine.io('get', w, h, 'angvel'), [0, 0, 0.01], "AbsTol", 1e-6);
         end
 
         function velocitiesRoundTrip(tc)
@@ -314,10 +334,10 @@ classdef tEngineProtocol < PhxTestCase
             phx.engine.io('set', w, h, 'angvel', [-0.5 0.25 2]);
             v = phx.engine.io('get', w, h, 'linvel');
             omega = phx.engine.io('get', w, h, 'angvel');
-            tc.verifySize(v, [3 1]);
-            tc.verifySize(omega, [3 1]);
-            tc.verifyEqual(v, [1; -2; 3], "AbsTol", 1e-6);
-            tc.verifyEqual(omega, [-0.5; 0.25; 2], "AbsTol", 1e-6);
+            tc.verifySize(v, [1 3]);
+            tc.verifySize(omega, [1 3]);
+            tc.verifyEqual(v, [1, -2, 3], "AbsTol", 1e-6);
+            tc.verifyEqual(omega, [-0.5, 0.25, 2], "AbsTol", 1e-6);
         end
 
         function frictionOfTheTwoBodiesMultiplies(tc)
@@ -347,7 +367,7 @@ classdef tEngineProtocol < PhxTestCase
                     [~, T] = phx.engine.io('step', w, tc.Dt);
                     v = phx.engine.io('get', w, h, 'linvel');
                     bounced = bounced || v(3) > 0;
-                    if bounced && ~islogical(T)
+                    if bounced && ~isempty(T)
                         peak(i) = max(peak(i), T(3, 4));
                     end
                 end
@@ -400,7 +420,7 @@ classdef tEngineProtocol < PhxTestCase
             z = nan(1, round(2/tc.Dt));
             for k = 1:numel(z)
                 [ids, T] = phx.engine.io('step', w, tc.Dt);
-                if ~islogical(ids) && any(ids == h)
+                if any(ids == h)
                     z(k) = T(3, 4, ids == h) - r;
                 end
             end
@@ -427,7 +447,7 @@ classdef tEngineProtocol < PhxTestCase
             lift = 0;
             for k = 1:round(0.8/dt)
                 [ids, T] = phx.engine.io('step', w, dt);
-                if ~islogical(ids) && any(ids == h)
+                if any(ids == h)
                     lift = max(lift, T(3, 4, ids == h) - r);
                 end
             end
@@ -455,7 +475,7 @@ classdef tEngineProtocol < PhxTestCase
                 lift = 0;
                 for k = 1:round(0.8/dt)
                     [ids, T] = phx.engine.io('step', w, dt);
-                    if ~islogical(ids) && any(ids == h)
+                    if any(ids == h)
                         lift = max(lift, T(3, 4, ids == h) - r);
                     end
                 end
@@ -486,8 +506,8 @@ classdef tEngineProtocol < PhxTestCase
             end
             n = [sqrt(4*r^2 - b^2); b; 0]/(2*r);
             vn = 3*n(1);
-            tc.verifyEqual(phx.engine.io('get', w, h1, 'linvel'), [3; 0; 0] - vn*n, "AbsTol", 0.1, "Velocity of the hitting sphere (m/s)");
-            tc.verifyEqual(phx.engine.io('get', w, h2, 'linvel'), vn*n, "AbsTol", 0.1, "Velocity of the hit sphere (m/s)");
+            tc.verifyEqual(phx.engine.io('get', w, h1, 'linvel'), [3, 0, 0] - vn*n', "AbsTol", 0.1, "Velocity of the hitting sphere (m/s)");
+            tc.verifyEqual(phx.engine.io('get', w, h2, 'linvel'), vn*n', "AbsTol", 0.1, "Velocity of the hit sphere (m/s)");
         end
 
         function slowlyRollingBallKeepsItsSpeed(tc)
@@ -505,7 +525,7 @@ classdef tEngineProtocol < PhxTestCase
             lowest = r;
             for k = 1:round(10/tc.Dt)
                 [ids, T] = phx.engine.io('step', w, tc.Dt);
-                if ~islogical(ids) && any(ids == h)
+                if any(ids == h)
                     lowest = min(lowest, T(3, 4, ids == h));
                 end
             end
@@ -531,7 +551,7 @@ classdef tEngineProtocol < PhxTestCase
                 depth = 0;
                 for k = 1:20
                     [ids, T] = phx.engine.io('step', w, tc.Dt);
-                    if ~islogical(ids) && any(ids == h)
+                    if any(ids == h)
                         M = T(:, :, ids == h);
                         depth = max(depth, -min(M(3, 1:3)*rim + M(3, 4)));
                     end
@@ -564,7 +584,7 @@ classdef tEngineProtocol < PhxTestCase
                 phx.engine.io('set', w, plate, 'transform', tEngineProtocol.pose([v*k*tc.Dt 0 -0.1]));
                 [ids, T] = phx.engine.io('step', w, tc.Dt);
             end
-            tc.verifyEqual(phx.engine.io('get', w, h, 'linvel'), [v; 0; 0], "AbsTol", 0.02);
+            tc.verifyEqual(phx.engine.io('get', w, h, 'linvel'), [v, 0, 0], "AbsTol", 0.02);
             tc.verifyEqual(T(1, 4, ids == h), v*n*tc.Dt, "AbsTol", 0.02, "The box rides along.");
         end
 
@@ -594,7 +614,7 @@ classdef tEngineProtocol < PhxTestCase
                 for i = 1:6
                     om = phx.engine.io('get', w, boxes(i), 'angvel');
                     up = makehgtform("xrotate", tilt)*[0; 0; 1; 0];
-                    twist = max(twist, abs(om'*up(1:3)));
+                    twist = max(twist, abs(om*up(1:3)));
                 end
             end
             tc.verifyLessThan(twist, 0.5, "Largest turning rate of a box about the pallet normal (rad/s)");
@@ -648,7 +668,7 @@ classdef tEngineProtocol < PhxTestCase
             T = tc.lastPose(w, k, 1);
             tc.verifyEqual(T(1:3, 4), [1; 0; 0], "AbsTol", 1e-4);
             tc.verifyEqual(atan2(T(2, 1), T(1, 1)), 0.5, "AbsTol", 1e-4);
-            tc.verifyEqual(phx.engine.io('get', w, k, 'linvel'), [1; 0; 0], "AbsTol", 1e-6);
+            tc.verifyEqual(phx.engine.io('get', w, k, 'linvel'), [1, 0, 0], "AbsTol", 1e-6);
         end
 
         function latestKinematicCommandHolds(tc)
@@ -665,7 +685,7 @@ classdef tEngineProtocol < PhxTestCase
             phx.engine.io('set', w, k, 'transform', tEngineProtocol.pose([1 0 0]));
             T = tc.lastPose(w, k, 0.5);
             tc.verifyEqual(T(1:3, 4), [1; 0; 0], "AbsTol", 1e-4, "The body stands at the pose.");
-            tc.verifyEqual(phx.engine.io('get', w, k, 'linvel'), [0; 0; 0], "AbsTol", 1e-9);
+            tc.verifyEqual(phx.engine.io('get', w, k, 'linvel'), [0, 0, 0], "AbsTol", 1e-9);
 
             % A pose, then a velocity before the step: the pose, then the velocity
             phx.engine.io('set', w, k, 'transform', tEngineProtocol.pose([2 0 0]));
@@ -692,7 +712,7 @@ classdef tEngineProtocol < PhxTestCase
             h = tc.addBox(w, 2, [0 0 0.2], 0.4*[1 1 1]);
             phx.engine.io('set', w, h, 'friction', 1);
             tc.settle(w, 1);
-            tc.verifyEqual(phx.engine.io('get', w, h, 'linvel'), [0; 1; 0], "AbsTol", 0.05);
+            tc.verifyEqual(phx.engine.io('get', w, h, 'linvel'), [0, 1, 0], "AbsTol", 0.05);
         end
 
         function rollingAndSpinningFrictionAreAccepted(tc)
@@ -710,24 +730,24 @@ classdef tEngineProtocol < PhxTestCase
             % Falling freely: the weight plus what was applied
             w = tc.newWorld;
             h = tc.addBox(w, 2, [0 0 5], 0.2*[1 1 1], m);
-            [~] = phx.engine.io('apply', w, h, 'centralforce', [3 0 0], false);
+            phx.engine.io('apply', w, h, 'centralforce', [3 0 0], false);
             [~] = phx.engine.io('step', w, tc.Dt);
-            tc.verifyEqual(phx.engine.io('get', w, h, 'totalforce'), [3; 0; -m*tc.G], "AbsTol", 1e-4);
+            tc.verifyEqual(phx.engine.io('get', w, h, 'totalforce'), [3, 0, -m*tc.G], "AbsTol", 1e-4);
 
             % At rest on a floor: the contact cancels the weight
             w = tc.newWorld;
             tc.addFloor(w);
             h = tc.addBox(w, 2, [0 0 0.2], 0.4*[1 1 1], m);
             tc.settle(w, 0.5);
-            tc.verifyEqual(phx.engine.io('get', w, h, 'totalforce'), [0; 0; 0], "AbsTol", 0.02*m*tc.G);
+            tc.verifyEqual(phx.engine.io('get', w, h, 'totalforce'), [0, 0, 0], "AbsTol", 0.02*m*tc.G);
         end
 
         function totalTorqueIsTheResultantTorque(tc)
             w = tc.newWorld([0 0 0]);
             h = tc.addBox(w, 2, [0 0 0], 0.2*[1 1 1]);
-            [~] = phx.engine.io('apply', w, h, 'torque', [0.1 -0.2 0.3], false);
+            phx.engine.io('apply', w, h, 'torque', [0.1 -0.2 0.3], false);
             [~] = phx.engine.io('step', w, tc.Dt);
-            tc.verifyEqual(phx.engine.io('get', w, h, 'totaltorque'), [0.1; -0.2; 0.3], "AbsTol", 1e-6);
+            tc.verifyEqual(phx.engine.io('get', w, h, 'totaltorque'), [0.1, -0.2, 0.3], "AbsTol", 1e-6);
         end
 
         function totalTorqueOfAFreeTumblingBodyIsZero(tc)
@@ -739,7 +759,7 @@ classdef tEngineProtocol < PhxTestCase
             phx.engine.io('set', w, h, 'angvel', [0.2 3 0.2]);
             for k = 1:20
                 [~] = phx.engine.io('step', w, tc.Dt);
-                tc.verifyEqual(phx.engine.io('get', w, h, 'totaltorque'), [0; 0; 0], "AbsTol", 1e-5);
+                tc.verifyEqual(phx.engine.io('get', w, h, 'totaltorque'), [0, 0, 0], "AbsTol", 1e-5);
             end
         end
     end
@@ -755,8 +775,8 @@ classdef tEngineProtocol < PhxTestCase
             tc.addBox(w, 2, [0.3 0 0.2], [0.2 0.2 0.2], 2);
             tc.settle(w, 1);
             W = 2*tEngineProtocol.G;
-            tc.verifyEqual(phx.engine.io('get', w, support, 'totalforce'), [0; 0; -W], "AbsTol", 0.01*W);
-            tc.verifyEqual(phx.engine.io('get', w, support, 'totaltorque'), [0; 0.3*W; 0], "AbsTol", 0.01*W);
+            tc.verifyEqual(phx.engine.io('get', w, support, 'totalforce'), [0, 0, -W], "AbsTol", 0.01*W);
+            tc.verifyEqual(phx.engine.io('get', w, support, 'totaltorque'), [0, 0.3*W, 0], "AbsTol", 0.01*W);
         end
 
         function staticFloorReadsTheWeight(tc)
@@ -768,8 +788,8 @@ classdef tEngineProtocol < PhxTestCase
             tc.addBox(w, 2, [0.3 0 0.2], [0.2 0.2 0.2], 2);
             tc.settle(w, 1);
             W = 2*tEngineProtocol.G;
-            tc.verifyEqual(phx.engine.io('get', w, floor, 'totalforce'), [0; 0; -W], "AbsTol", 0.01*W);
-            tc.verifyEqual(phx.engine.io('get', w, floor, 'totaltorque'), [0; 0.3*W; 0], "AbsTol", 0.01*W);
+            tc.verifyEqual(phx.engine.io('get', w, floor, 'totalforce'), [0, 0, -W], "AbsTol", 0.01*W);
+            tc.verifyEqual(phx.engine.io('get', w, floor, 'totaltorque'), [0, 0.3*W, 0], "AbsTol", 0.01*W);
         end
 
         function staticAnchorReadsTheHangingWeight(tc)
@@ -782,16 +802,16 @@ classdef tEngineProtocol < PhxTestCase
             phx.engine.io('add', w, 'pointtopointconstraint', anchor, box, [0 0 0], [0 0 0.5], true);
             tc.settle(w, 1);
             W = 3*tEngineProtocol.G;
-            tc.verifyEqual(phx.engine.io('get', w, anchor, 'totalforce'), [0; 0; -W], "AbsTol", 0.01*W);
+            tc.verifyEqual(phx.engine.io('get', w, anchor, 'totalforce'), [0, 0, -W], "AbsTol", 0.01*W);
         end
 
         function appliedForcesActForOneStep(tc)
             w = tc.newWorld([0 0 0]);
             h = tc.addBox(w, 2, [0 0 0], 0.2*[1 1 1]);
-            [~] = phx.engine.io('apply', w, h, 'centralforce', [1 0 0], false);
+            phx.engine.io('apply', w, h, 'centralforce', [1 0 0], false);
             [~] = phx.engine.io('step', w, 0.01);
             [~] = phx.engine.io('step', w, 0.01);
-            tc.verifyEqual(phx.engine.io('get', w, h, 'linvel'), [0.01; 0; 0], "AbsTol", 1e-6);
+            tc.verifyEqual(phx.engine.io('get', w, h, 'linvel'), [0.01, 0, 0], "AbsTol", 1e-6);
         end
 
         function singleBodyForcesUseTheirFrames(tc)
@@ -802,14 +822,14 @@ classdef tEngineProtocol < PhxTestCase
             h = phx.engine.io('add', w, 'box', 2, 0.1*[1 1 1], P, 1, [1 1 1]);
             io = @(varargin) phx.engine.io('apply', w, h, varargin{:});
 
-            [~] = io('centralforce', [1 0 0], true);          % local x = world y
-            [~] = io('force', [0 0 1], [1 0 0], false, true); % at local x: lever along world y
-            [~] = io('force', [0 0 1], [10 -1 0], false, false); % at world point, lever along -y
-            [~] = io('torque', [1 0 0], true);                % about local x = world y
+            io('centralforce', [1 0 0], true);              % local x = world y
+            io('force', [0 0 1], [1 0 0], false, true);     % at local x: lever along world y
+            io('force', [0 0 1], [10 -1 0], false, false);  % at world point, lever along -y
+            io('torque', [1 0 0], true);                    % about local x = world y
             [~] = phx.engine.io('step', w, 0.01);
             % Linear: (0,1,0) + (0,0,1) + (0,0,1); angular: (1,0,0) + (-1,0,0) + (0,1,0)
-            tc.verifyEqual(phx.engine.io('get', w, h, 'linvel'), 0.01*[0; 1; 2], "AbsTol", 1e-6);
-            tc.verifyEqual(phx.engine.io('get', w, h, 'angvel'), 0.01*[0; 1; 0], "AbsTol", 1e-6);
+            tc.verifyEqual(phx.engine.io('get', w, h, 'linvel'), 0.01*[0, 1, 2], "AbsTol", 1e-6);
+            tc.verifyEqual(phx.engine.io('get', w, h, 'angvel'), 0.01*[0, 1, 0], "AbsTol", 1e-6);
         end
 
         function batchVerbsApplyPerBody(tc)
@@ -818,15 +838,15 @@ classdef tEngineProtocol < PhxTestCase
             h1 = phx.engine.io('add', w, 'box', 2, 0.1*[1 1 1], tEngineProtocol.pose([0 0 0]), 1, [1 1 1]);
             h2 = phx.engine.io('add', w, 'box', 2, 0.1*[1 1 1], tEngineProtocol.pose([2 0 0]), 1, [1 1 1]);
             hs = [h1 s h2];  % a static body in a batch is harmless
-            [~] = phx.engine.io('apply', w, hs, 'centralforces', [1 0 0, 5 5 5, 0 2 0], false);
-            [~] = phx.engine.io('apply', w, hs, 'forces', [0 0 1, 5 5 5, 0 0 1], [1 0 0, 0 0 0, 0 1 0], false, true);
-            [~] = phx.engine.io('apply', w, hs, 'torques', [0 0 1, 5 5 5, 0 0 -1], false);
+            phx.engine.io('apply', w, hs, 'centralforces', [1 0 0, 5 5 5, 0 2 0], false);
+            phx.engine.io('apply', w, hs, 'forces', [0 0 1, 5 5 5, 0 0 1], [1 0 0, 0 0 0, 0 1 0], false, true);
+            phx.engine.io('apply', w, hs, 'torques', [0 0 1, 5 5 5, 0 0 -1], false);
             [~] = phx.engine.io('step', w, 0.01);
-            tc.verifyEqual(phx.engine.io('get', w, h1, 'linvel'), 0.01*[1; 0; 1], "AbsTol", 1e-6);
-            tc.verifyEqual(phx.engine.io('get', w, h2, 'linvel'), 0.01*[0; 2; 1], "AbsTol", 1e-6);
+            tc.verifyEqual(phx.engine.io('get', w, h1, 'linvel'), 0.01*[1, 0, 1], "AbsTol", 1e-6);
+            tc.verifyEqual(phx.engine.io('get', w, h2, 'linvel'), 0.01*[0, 2, 1], "AbsTol", 1e-6);
             % h1: lever (1,0,0) x (0,0,1) = (0,-1,0); h2: (0,1,0) x (0,0,1) = (1,0,0)
-            tc.verifyEqual(phx.engine.io('get', w, h1, 'angvel'), 0.01*[0; -1; 1], "AbsTol", 1e-6);
-            tc.verifyEqual(phx.engine.io('get', w, h2, 'angvel'), 0.01*[1; 0; -1], "AbsTol", 1e-6);
+            tc.verifyEqual(phx.engine.io('get', w, h1, 'angvel'), 0.01*[0, -1, 1], "AbsTol", 1e-6);
+            tc.verifyEqual(phx.engine.io('get', w, h2, 'angvel'), 0.01*[1, 0, -1], "AbsTol", 1e-6);
         end
 
         function raycastReportsTheClosestHit(tc)
@@ -862,10 +882,10 @@ classdef tEngineProtocol < PhxTestCase
             T = tc.settle(w, 1);
             tc.verifyEqual(T(1:3, 4), [0; 0; 1], "AbsTol", 1e-3);
             [fA, tA, fB, tB] = phx.engine.io('get', w, j, 'feedback');
-            tc.verifySize(fA, [3 1]);
-            tc.verifySize(tA, [3 1]);
-            tc.verifySize(tB, [3 1]);
-            tc.verifyEqual(fB, [0; 0; m*tc.G], "AbsTol", 0.01*m*tc.G, "The joint holds body B up.");
+            tc.verifySize(fA, [1 3]);
+            tc.verifySize(tA, [1 3]);
+            tc.verifySize(tB, [1 3]);
+            tc.verifyEqual(fB, [0, 0, m*tc.G], "AbsTol", 0.01*m*tc.G, "The joint holds body B up.");
             tc.verifyEqual(fA, -fB, "AbsTol", 0.01*m*tc.G, "Body A feels the opposite reaction.");
         end
 
@@ -876,7 +896,7 @@ classdef tEngineProtocol < PhxTestCase
             j = phx.engine.io('add', w, 'hingeconstraint', a, b, [0 0 1], [0 0 0], [1 0 0], [1 0 0], true, true);
             phx.engine.io('set', w, j, 'motor', true, 2, 100);
             tc.settle(w, 0.5);
-            tc.verifyEqual(phx.engine.io('get', w, b, 'angvel'), [2; 0; 0], "AbsTol", 1e-3);
+            tc.verifyEqual(phx.engine.io('get', w, b, 'angvel'), [2, 0, 0], "AbsTol", 1e-3);
         end
 
         function lowDropBouncesToRestitutionSquared(tc)
@@ -894,7 +914,7 @@ classdef tEngineProtocol < PhxTestCase
             top = -inf;
             for k = 1:round(0.2/tc.Dt)   % the first bounce peaks at about 0.13 s
                 [ids, P] = phx.engine.io('step', w, tc.Dt);
-                if k*tc.Dt > 0.08 && ~islogical(ids) && any(ids == h)
+                if k*tc.Dt > 0.08 && any(ids == h)
                     top = max(top, P(3, 4, ids == h) - r);
                 end
             end
@@ -940,7 +960,7 @@ classdef tEngineProtocol < PhxTestCase
             phx.engine.io('add', w, 'hingeconstraint', anchor, h, [0 0 0], [0 0 0], [0 0 1], (R0'*[0; 0; 1])', true, true);
             phx.engine.io('set', w, h, 'angvel', [0 0 20]);
             tc.settle(w, 2);
-            tc.verifyEqual(phx.engine.io('get', w, h, 'angvel'), [0; 0; 20], "AbsTol", 0.2, "Angular velocity after 2 s (rad/s)");
+            tc.verifyEqual(phx.engine.io('get', w, h, 'angvel'), [0, 0, 20], "AbsTol", 0.2, "Angular velocity after 2 s (rad/s)");
         end
 
         function topKeepsItsPrecession(tc)
@@ -969,7 +989,7 @@ classdef tEngineProtocol < PhxTestCase
             tilt = 0;
             for k = 1:round(5/tc.Dt)
                 [ids, P] = phx.engine.io('step', w, tc.Dt);
-                if ~islogical(ids) && any(ids == h)
+                if any(ids == h)
                     tilt = max(tilt, abs(acosd(P(3, 3, ids == h)) - th));
                 end
             end
@@ -1063,7 +1083,7 @@ classdef tEngineProtocol < PhxTestCase
             tc.verifyLessThan(T(3, 4), 1.8);
             phx.engine.io('set', w, j, 'linearmotor', true, 0.5, 1000);
             tc.settle(w, 0.3);
-            tc.verifyEqual(phx.engine.io('get', w, b, 'linvel'), [0; 0; -0.5], "AbsTol", 1e-3);
+            tc.verifyEqual(phx.engine.io('get', w, b, 'linvel'), [0, 0, -0.5], "AbsTol", 1e-3);
         end
 
         function fixedJointHoldsThePose(tc)
@@ -1094,7 +1114,7 @@ classdef tEngineProtocol < PhxTestCase
                 T = P(:, :, ids == b);
                 v = phx.engine.io('get', w, b, 'linvel');
                 om = phx.engine.io('get', w, b, 'angvel');
-                E(k) = 0.5*m*(v'*v) + 0.5*om'*diag(I)*om + m*g*T(3, 4);
+                E(k) = 0.5*m*(v*v') + 0.5*om*diag(I)*om' + m*g*T(3, 4);
             end
             window = round(3/tc.Dt);
             tc.verifyEqual(mean(E(end-window+1:end)), mean(E(1:window)), "RelTol", 0.01);
@@ -1176,13 +1196,13 @@ classdef tEngineProtocol < PhxTestCase
                 b = tc.addBox(w, 2, [1 0 0], 0.2*[1 1 1], 1, [1 1 IB]);
                 phx.engine.io('add', w, 'gearconstraint', a, b, [0 0 1], [0 0 1], ratio, true);
                 for k = 1:n
-                    [~] = phx.engine.io('apply', w, a, 'torque', [0 0 torque], false);
+                    phx.engine.io('apply', w, a, 'torque', [0 0 torque], false);
                     [~] = phx.engine.io('step', w, tc.Dt);
                 end
                 wa = torque/(IA + IB/ratio^2)*n*tc.Dt;
-                tc.verifyEqual(phx.engine.io('get', w, a, 'angvel'), [0; 0; wa], "AbsTol", 0.01*wa, ...
+                tc.verifyEqual(phx.engine.io('get', w, a, 'angvel'), [0, 0, wa], "AbsTol", 0.01*wa, ...
                     "Body A, ratio " + ratio);
-                tc.verifyEqual(phx.engine.io('get', w, b, 'angvel'), [0; 0; -wa/ratio], "AbsTol", 0.01*wa, ...
+                tc.verifyEqual(phx.engine.io('get', w, b, 'angvel'), [0, 0, -wa/ratio], "AbsTol", 0.01*wa, ...
                     "Body B, ratio " + ratio);
             end
         end
@@ -1226,7 +1246,7 @@ classdef tEngineProtocol < PhxTestCase
             for k = 1:round(2/tc.Dt)
                 ids = phx.engine.io('step', w, tc.Dt);
             end
-            tc.verifyEqual(ids, false, "The soft body is not among the moved bodies.");
+            tc.verifyEmpty(ids, "The soft body is not among the moved bodies.");
             X = phx.engine.io('get', w, h, 'vertices');
             tc.verifySize(X, [3 8]);
             tc.verifyEqual(min(X(3, :)), 0, "AbsTol", 2e-3, "The cube rests on the floor.");
@@ -1377,7 +1397,7 @@ classdef tEngineProtocol < PhxTestCase
             tc.verifyEqual(L, 0.5 + W/k, "AbsTol", 1e-4);
             tc.verifyEqual(f, W, "RelTol", 1e-3, "A stretched spring reads a positive tension.");
             [fA, ~, fB] = phx.engine.io('get', w, s, 'feedback');
-            tc.verifyEqual(fB, [0; 0; W], "AbsTol", 1e-3*W);
+            tc.verifyEqual(fB, [0, 0, W], "AbsTol", 1e-3*W);
             tc.verifyEqual(fA, -fB, "AbsTol", 1e-3*W);
 
             % New free length and spring at run time
@@ -1465,11 +1485,11 @@ classdef tEngineProtocol < PhxTestCase
             hB = phx.engine.io('add', w, 'box', 2, 0.1*[1 1 1], tEngineProtocol.pose([1 0 0]), 3, [1 1 1]);
             s = phx.engine.io('add', w, 'springconstraint', hA, hB, [0 0 0], [0 0 0], 1, 0, 0, true);
             phx.engine.io('set', w, s, 'inertance', 2);
-            [~] = phx.engine.io('apply', w, hA, 'centralforce', [-10 0 0], false);
+            phx.engine.io('apply', w, hA, 'centralforce', [-10 0 0], false);
             [~] = phx.engine.io('step', w, tc.Dt);
             f = 2*10/(1 + 2 + 2/3);
-            tc.verifyEqual(phx.engine.io('get', w, hA, 'linvel'), [-(10 - f)*tc.Dt; 0; 0], "RelTol", 1e-4);
-            tc.verifyEqual(phx.engine.io('get', w, hB, 'linvel'), [-f/3*tc.Dt; 0; 0], "RelTol", 1e-4);
+            tc.verifyEqual(phx.engine.io('get', w, hA, 'linvel'), [-(10 - f)*tc.Dt, 0, 0], "RelTol", 1e-4);
+            tc.verifyEqual(phx.engine.io('get', w, hB, 'linvel'), [-f/3*tc.Dt, 0, 0], "RelTol", 1e-4);
         end
 
         function inerterFarAboveTheMassIsStable(tc)
@@ -1498,16 +1518,16 @@ classdef tEngineProtocol < PhxTestCase
             tc.requireProtocol(1.5);
             [w, a, b, s] = tc.torsionPair(1, 0, 10, 5);
             for i = 1:round(5/tc.Dt)
-                [~] = phx.engine.io('apply', w, b, 'torque', [0 0 2], false);
+                phx.engine.io('apply', w, b, 'torque', [0 0 2], false);
                 [~] = phx.engine.io('step', w, tc.Dt);
             end
             [M, angle] = phx.engine.io('get', w, s, 'spring');
             tc.verifyEqual(angle, 0.2, "AbsTol", 1e-4);
             tc.verifyEqual(M, -2, "RelTol", 1e-3);
             [~, tA, ~, tB] = phx.engine.io('get', w, s, 'feedback');
-            tc.verifyEqual(tB, [0; 0; -2], "AbsTol", 2e-3);
-            tc.verifyEqual(tA, [0; 0; 2], "AbsTol", 2e-3);
-            tc.verifyEqual(phx.engine.io('get', w, a, 'totaltorque'), [0; 0; 2], "AbsTol", 2e-3);
+            tc.verifyEqual(tB, [0, 0, -2], "AbsTol", 2e-3);
+            tc.verifyEqual(tA, [0, 0, 2], "AbsTol", 2e-3);
+            tc.verifyEqual(phx.engine.io('get', w, a, 'totaltorque'), [0, 0, 2], "AbsTol", 2e-3);
         end
 
         function torsionSpringOscillatesAtSqrtKOverI(tc)
@@ -1594,7 +1614,7 @@ classdef tEngineProtocol < PhxTestCase
             tc.verifyEqual(L, 4.2 + T/k, "AbsTol", 1e-5);
             p = tEngineProtocol.positionOf(w, h.block);
             tc.verifyEqual(p(3), 2 - T/k/2, "AbsTol", 1e-5);
-            tc.verifyEqual(phx.engine.io('get', w, h.drum, 'totalforce'), [-T; 0; 0], "AbsTol", 1e-3*T);
+            tc.verifyEqual(phx.engine.io('get', w, h.drum, 'totalforce'), [-T, 0, 0], "AbsTol", 1e-3*T);
         end
 
         function ropeIsSlackBelowItsLength(tc)
@@ -1604,7 +1624,7 @@ classdef tEngineProtocol < PhxTestCase
             [w, h] = tc.tackle(4.5);
             [~] = phx.engine.io('step', w, tc.Dt);
             tc.verifyEqual(phx.engine.io('get', w, h.rope, 'spring'), 0);
-            tc.verifyEqual(phx.engine.io('get', w, h.block, 'linvel'), [0; 0; -tc.G*tc.Dt], "AbsTol", 1e-6);
+            tc.verifyEqual(phx.engine.io('get', w, h.block, 'linvel'), [0, 0, -tc.G*tc.Dt], "AbsTol", 1e-6);
         end
 
         function ropeGoesWithAnyOfItsBodies(tc)
@@ -1639,7 +1659,7 @@ classdef tEngineProtocol < PhxTestCase
             s = phx.engine.io('add', w, 'springconstraint', a, b, [0 0 0], [0 0 0], 1, 0, 2, true);
             phx.engine.io('set', w, b, 'linvel', [1 0 0]);
             tc.settle(w, 0.5);
-            tc.verifyEqual(phx.engine.io('get', w, b, 'linvel'), [exp(-1); 0; 0], "RelTol", 0.02);
+            tc.verifyEqual(phx.engine.io('get', w, b, 'linvel'), [exp(-1), 0, 0], "RelTol", 0.02);
             [~, L] = phx.engine.io('get', w, s, 'spring');
             tc.verifyEqual(L, 1 + (1 - exp(-1))/2, "RelTol", 0.01);
 
@@ -1697,7 +1717,7 @@ classdef tEngineProtocol < PhxTestCase
                 tc
                 gravity (1, 3) double = [0 0 -tEngineProtocol.G]
             end
-            w = phx.engine.io('setup', 2);
+            w = phx.engine.io('setup');
             tc.addTeardown(@() phx.engine.io('clear', w));
             phx.engine.io('set', w, uint64(0), 'gravity', gravity);
             phx.engine.io('set', w, uint64(0), 'autoactivated', false);
@@ -1765,7 +1785,7 @@ classdef tEngineProtocol < PhxTestCase
             T = [];
             for k = 1:round(duration/tc.Dt)
                 [ids, P] = phx.engine.io('step', w, tc.Dt);
-                if ~islogical(ids) && any(ids == h)
+                if any(ids == h)
                     T = P(:, :, ids == h);
                 end
             end
@@ -1782,6 +1802,11 @@ classdef tEngineProtocol < PhxTestCase
     end
 
     methods (Static, Access = private)
+        function out = oneOutput(f)
+            % Calls f asking for one output
+            out = f();
+        end
+
         function P = pose(position)
             P = [eye(3) position(:); 0 0 0 1];
         end

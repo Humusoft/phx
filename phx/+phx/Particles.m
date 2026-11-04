@@ -195,7 +195,7 @@ classdef Particles < phx.base.Object
             if ~obj.isLive
                 error("phx:Particles:notSimulated", "Forces act only on particles in a running simulation.");
             end
-            [~] = phx.engine.io('apply', obj.WorldHandle, obj.ObjectHandle, 'centralforces', forces', false);
+            phx.engine.io('apply', obj.WorldHandle, obj.ObjectHandle, 'centralforces', forces', false);
         end
 
         function bbox = boundingBox(objs)

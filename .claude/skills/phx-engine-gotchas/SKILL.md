@@ -25,7 +25,7 @@ implementing a new object.
 world = phx.engine.io('step', world, dt);                                    % advance the world
 h = phx.engine.io('add', world, 'sphere', typeID, radius, T, mass, inertia); % create body/shape
 phx.engine.io('set', world, h, 'linvel', v);                                 % mutate a field
-v = phx.engine.io('get', world, h, 'linvel')';                               % read a field
+v = phx.engine.io('get', world, h, 'linvel');                                % read a field (1x3 row)
 phx.engine.io('apply', world, h, 'centralforce', F, isLocal);                % apply force/torque
 phx.engine.io('remove', world, h);                                           % destroy
 ```
@@ -33,8 +33,10 @@ phx.engine.io('remove', world, h);                                           % d
 Verbs: `add` / `set` / `get` / `apply` / `remove` / `step`. Bodies map to engine
 shapes in each `phx.shape.*` class's `initObject` (`'box'`, `'cylinder'`,
 `'sphere'`, `'convexhull'`, `'rigidbody'`, …); joints map to `'*constraint'` verbs
-in the joint classes. Enum-like inputs (`Type`→`TypeID`, axes, solver) **are**
-validated MATLAB-side; field names and payloads are not.
+in the joint classes. Every failure is a MATLAB error with a `phx:engine:*` identifier
+(`badWorld`, `badHandle`, `badArgument`, `unsupported` for an unknown verb, kind or
+field); verbs that only act (`set`, `apply`, `remove`, `clear`) return nothing, and
+vectors come out as 1x3 rows (batches as 3xN).
 
 **All `'*constraint'` add verbs require a trailing `disableCollisions` logical**
 — without it the call fails with "ArgumentList index out of range". The joint
@@ -49,14 +51,12 @@ bounciness combined from both bodies) alongside the existing `'friction'`/`'coll
 phx.engine.io('set', w, h, 'motor', on, targetVel, maxTorque);        % hingeconstraint
 phx.engine.io('set', w, h, 'linearmotor', on, targetVel, maxForce);   % sliderconstraint
 phx.engine.io('set', w, h, 'angularmotor', on, targetVel, maxForce);  % sliderconstraint
-ad = phx.engine.io('get', w, h, 'angledist');   % sliderconstraint -> [angle; distance]
 ```
 
-Three traps measured on these: the limit is taken **signed**, so a negative
+Two traps measured on these: the limit is taken **signed**, so a negative
 `maxTorque`/`maxForce` inverts the solver's clamp interval and the motor then fights its
-own target — always pass a magnitude. `'angledist'` **lags one step** (it reports the
-frames as the solver last saw them), which is why `phx.base.Joint` works `Angle` and
-`Distance` out in MATLAB instead — that is also ~4x faster than the `get`. And the
+own target — always pass a magnitude. `phx.base.Joint` works `Angle` and `Distance` out in
+MATLAB from the poses, with no engine call. And the
 slider's `'angularmotor'` does nothing on a `phx.PrismaticJoint`, whose rotation is
 locked by the slider's angular limits; there is no gateway field to unlock them,
 which is why `phx.CylindricalJoint` is built on `'generic6dofconstraint'` instead.
