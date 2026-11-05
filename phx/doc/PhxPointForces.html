@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PhxPointForces</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; PhxPointForces</div>
+
+<h1 class="phx-title">PhxPointForces</h1>
+<p class="phx-purpose">PHX Point Forces block: total force and moment of forces acting at given points</p>
+<p class="phx-classref">Simulink&nbsp;block &nbsp;|&nbsp; Library: <code class="phx-inline">PhxLibrary.slx</code></p>
+
+<h2 class="phx-h2">Description</h2>
+<p>The <strong>PHX Point Forces</strong> block sums forces that act at fixed points into one force
+and one moment about a reference point. With <em>N</em> force inputs
+<code class="phx-inline">F1</code>&hellip;<code class="phx-inline">FN</code>, each acting at the
+corresponding row <code class="phx-inline">Pk</code> of <strong>Points</strong>, the outputs are</p>
+<pre class="phx-code">F = F1 + F2 + ... + FN
+M = (P1 - Origin) x F1 + ... + (PN - Origin) x FN  (+ T)</pre>
+<p>where <code class="phx-inline">T</code> is the optional pure torque input. The forces, the points and
+the results are all expressed in one frame; the block does no rotation.</p>
+
+<p>Its use with PHX is to drive a body by several forces at once, such as the rotors of a drone or the
+legs of a walking robot. A <a href="phx.Body.html">phx.Body</a> takes a force at its centre of mass and
+a torque, both in its own frame, through the properties <code class="phx-inline">AppliedForce</code> and
+<code class="phx-inline">AppliedTorque</code>. Express the forces and points in the body frame, set
+<strong>Origin</strong> to the centre of mass, and connect <code class="phx-inline">F</code> and
+<code class="phx-inline">M</code> to the input ports <code class="phx-inline">Name.AppliedForce</code> and
+<code class="phx-inline">Name.AppliedTorque</code> of a <a href="PhxModel.html">PhxModel</a> block. The
+forces then turn with the body, as forces fixed to it should.</p>
+
+<p>The block is a masked subsystem of plain Simulink blocks (a Mux and two matrix Gains), so it also
+works in models without PHX. Its mask initialization,
+<code class="phx-inline">phx.simulink.pointForces</code>, computes the gain matrices from the
+parameters and sets up the input ports.</p>
+
+<h2 class="phx-h2">Parameters</h2>
+<table class="phx-tbl">
+<tr><th>Parameter</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">Points</td><td class="dflt">[0 0 0]</td>
+<td>Points where the forces act, an <em>N</em>-by-3 matrix with one row <code class="phx-inline">[x y z]</code>
+per force. The number of rows sets the number of force inputs.</td></tr>
+<tr><td class="name">Origin</td><td class="dflt">[0 0 0]</td>
+<td>Reference point of the moment <code class="phx-inline">M</code>, a 1-by-3 vector.</td></tr>
+<tr><td class="name">TorqueInput</td><td class="dflt">off</td>
+<td>Adds the input <code class="phx-inline">T</code>, a pure torque that is added to the moment.</td></tr>
+</table>
+
+<h2 class="phx-h2">Ports</h2>
+<p><strong>Inputs&nbsp;1&hellip;N</strong>, labelled <code class="phx-inline">F1</code>&hellip;<code class="phx-inline">FN</code>,
+are the forces, one 3-element vector each. With <strong>TorqueInput</strong> on, <strong>input&nbsp;N+1</strong>,
+labelled <code class="phx-inline">T</code>, is a 3-element torque. <strong>Output&nbsp;1</strong>,
+<code class="phx-inline">F</code>, is the total force and <strong>output&nbsp;2</strong>,
+<code class="phx-inline">M</code>, the moment about <strong>Origin</strong>, both 3-element vectors. The
+block is a direct feedthrough.</p>
+<p>When you change the number of points, the input ports that remain keep their connections.</p>
+
+<h2 class="phx-h2">Examples</h2>
+
+<h4 class="phx-h4">Four rotors of a quadcopter</h4>
+<div class="phx-desc">
+<p>Build the scene with a body named <code class="phx-inline">Drone</code> whose motor mounts sit in its
+own frame at <code class="phx-inline">[&plusmn;0.3 &plusmn;0.3 0]</code>. Give the block these mounts as
+<strong>Points</strong> and <code class="phx-inline">[0 0 0]</code>, the centre of mass, as
+<strong>Origin</strong>. Each rotor input is its thrust along the body Z axis,
+<code class="phx-inline">[0 0 fk]</code>; the reaction torques of the propellers enter through
+<code class="phx-inline">T</code> as <code class="phx-inline">[0 0 kQ*(f1 - f2 + f3 - f4)]</code>.</p>
+<pre class="phx-code"><span class="cmt">% PHX Point Forces parameters</span>
+Points      = [0.3 0.3 0; -0.3 0.3 0; -0.3 -0.3 0; 0.3 -0.3 0]
+Origin      = [0 0 0]
+TorqueInput = on
+
+<span class="cmt">% PHX Model input ports, connected to the outputs F and M</span>
+Drone.AppliedForce
+Drone.AppliedTorque</pre>
+</div>
+
+<div class="phx-note">
+<span class="lbl">Centre of mass.</span> PHX takes the origin of a body as its centre of mass, so
+<strong>Origin</strong> is <code class="phx-inline">[0 0 0]</code> for points given relative to the body
+origin. The one exception is a body with a <a href="phx.shape.Cone.html">phx.shape.Cone</a>: its origin is
+in the middle of the height, its centre of mass a quarter of the height above the base.
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="PhxModel.html">PhxModel</a>,
+<a href="phx.Body.html">phx.Body</a>,
+<a href="phx.Thruster.html">phx.Thruster</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_simulink.html">Simulink co-simulation</a>,
+<a href="phx_ug_forces.html">Forces, actuators and fields</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

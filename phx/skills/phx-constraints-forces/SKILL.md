@@ -2,8 +2,9 @@
 name: phx-constraints-forces
 description: >
   Connect and actuate PHX bodies — joints (Fixed/Bushing/Revolute/Prismatic/
-  Cylindrical/Spherical/Gear/Generic), springs and ropes (Spring/Rope/TorsionSpring), force/field elements
-  (Thruster, Buoyancy, Resistance, Dipole, Monopole) and ad-hoc
+  Cylindrical/Spherical/Gear/Generic), springs and ropes (Spring/Rope/TorsionSpring), the
+  persistent body loads AppliedForce/AppliedTorque, force/field elements
+  (Thruster, Buoyancy, Resistance, Dipole, Monopole) and one-step
   applyForce/applyTorque. Also covers driving parameters over time with phx.Script,
   per-step control laws with phx.Function, and the read-state / set-actuator / step
   control loop. Whole jointed chains/pendulums come prefabricated from
@@ -168,6 +169,34 @@ spring; it lives with the joints above.
 
 ## Force & field elements
 
+### Body loads — `Body.AppliedForce` / `AppliedTorque` (start here)
+
+The plain way to push a body: a force at its **centre of mass** and a torque, both in
+the **body frame**. The engine keeps them and adds them in **every step, turning with
+the body, until changed** — no MATLAB work per step.
+
+```matlab
+body.AppliedForce  = [0 0 900];   % N at the centre of mass, along the body z axis
+body.AppliedTorque = [0 0 2];     % N*m about the body z axis
+body.AppliedForce  = [0 0 0];     % off again
+```
+
+- **Force at a point off the centre:** force `F` at body-frame point `r` = `AppliedForce`
+  `F` plus `AppliedTorque` `cross(r, F)`; several such forces simply add up. PHX takes the
+  body origin as the centre of mass (a cone body is the exception: its centre of mass is
+  a quarter of the height above the base, its origin mid-height).
+- **World-fixed direction** (e.g. wind): rotate into the body frame yourself, or use
+  `applyForce(F, p, false, ...)` every step.
+- **Varying in time:** write the properties from a `phx.Function`, from your control
+  loop or from a Simulink input port (`Body.AppliedForce(3)`); in Simulink the **PHX Point
+  Forces** block sums forces at several points into the two inputs (see phx-simulink).
+- A static or kinematic body takes no load.
+
+Reach for `phx.Thruster` (below) only when you need what it adds on top: one `Throttle`
+scaled by `MaxThrust`, a response lag, the propeller reaction torque, the drawn exhaust,
+`Thrust` for a `phx.Logger`. A thruster is computed in MATLAB at every substep (several
+µs each), the body loads cost nothing.
+
 ### Thruster — body-fixed thrust (rocket engine / propeller / fan)
 
 ```matlab
@@ -185,7 +214,8 @@ eng.Thrust              % read actual thrust after the lag (settable=private)
 ```
 
 Thrust = `MaxThrust * Throttle`. `Point`/`Direction` are body-local, so the thrust
-follows the body's orientation.
+follows the body's orientation. Several thrusters on one body add up (`phxex_drone`
+has four, `phxex_rocket` one with a gimballed `Direction`).
 
 ### Buoyancy — floating in a liquid
 
@@ -219,11 +249,11 @@ discrete equilibria — raise `Resolution` for them. Demos: `phxex_buoyancy`,
   roller tracks, a self-propelled vehicle), give a body the `SurfaceVelocity` property
   rather than scripting its pose — see phx-scene-basics and `phxex_beltmaze`.
 
-### Ad-hoc forces — `Body.applyForce` / `applyTorque`
+### One-step forces — `Body.applyForce` / `applyTorque`
 
-For actuation that isn't a standing element, push straight on the body. Both act
-during **one subsequent step only** and are reset afterwards, so call them every step
-(from a `phx.Function` or your control loop):
+For a kick, or a force that needs a world-frame direction or point, push straight on
+the body. Both act during **one subsequent step only** and are reset afterwards, so
+call them every step (from a `phx.Function` or your control loop) to keep them acting:
 
 ```matlab
 body.applyForce(F);                              % at the body origin, F in LOCAL space
@@ -233,9 +263,7 @@ body.applyTorque(T);                             % T in local space
 body.applyTorque(T, false);                      % ... or in world space
 ```
 
-For a load that should stay, set `body.AppliedForce` (N, at the centre of mass) and
-`body.AppliedTorque` (N·m), both in the body frame: they act in **every step, turning
-with the body, until changed** — set `[0 0 0]` to stop them.
+For a load that should stay, set the body loads above instead.
 
 Mind the two independent frame flags: `isLocalForce` rotates the vector with the body,
 `isLocalPoint` interprets the point of application in body coordinates. Passing a world
@@ -336,7 +364,7 @@ Signature `fcn(obj, parents, dt, time)`: `obj` is the `phx.Function` itself (kee
 integrator state / previous samples in its `UserData`), `parents` the bound objects
 (cell array, same as `obj.Parents`), `dt` the **substep** size and `time` the
 simulation time. There is no return value — the callback acts by writing to the bound
-objects (set `Throttle`, call `applyTorque`, move a kinematic body, …).
+objects (set `AppliedForce` or `Throttle`, call `applyTorque`, move a kinematic body, …).
 
 **Prefer this over a hand-rolled `while` loop** when the logic must run at the physics
 rate: it fires on every substep, so you can keep `sim.step(interval, substeps, …)` with

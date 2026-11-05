@@ -71,6 +71,7 @@
 % Simulink
 %   PhxModel                  - PHX Model block: co-simulate a PHX scene from Simulink
 %   PhxAction                 - PHX Action block: run MATLAB code against a running PHX scene
+%   PhxPointForces            - PHX Point Forces block: total force and moment of point forces
 %
 % Visualization
 %   phx.extra.Viewer          - Interactive scene viewer

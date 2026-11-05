@@ -27,7 +27,15 @@ reaction torque about the thrust axis (<code class="phx-inline">ReactionFactor</
 counter-torque of a spinning propeller. <code class="phx-inline">Throttle</code> can be changed while
 the simulation runs, driven by a <code class="phx-inline">phx.Script</code> or set from Simulink; the
 resulting <code class="phx-inline">Thrust</code> can be recorded with a
-<code class="phx-inline">phx.Logger</code>.</p>
+<code class="phx-inline">phx.Logger</code>. Several thrusters on one body add up.</p>
+
+<div class="phx-note">
+<span class="lbl">Plain loads.</span> A force or torque that needs none of these features is simpler as
+the body's own <code class="phx-inline">AppliedForce</code> and <code class="phx-inline">AppliedTorque</code>
+(see <a href="phx.Body.html">phx.Body</a>): the engine keeps them and adds them in every step, while a
+thruster is computed in MATLAB at every substep. A force at a point off the centre of mass is the same
+as that force at the centre plus the torque of its arm.
+</div>
 
 <h2 class="phx-h2">Creation</h2>
 <h3 class="phx-h3">Syntax</h3>
@@ -80,9 +88,10 @@ lg = phx.Logger(th, <span class="str">"Frequency"</span>, 100, <span class="str"
 
 <div class="phx-seealso">
 <span class="lbl">See also</span>
+<a href="phx.Body.html">phx.Body</a>,
 <a href="phx.Resistance.html">phx.Resistance</a>,
 <a href="phx.Spring.html">phx.Spring</a>,
-<a href="phx.Body.html">phx.Body</a>
+<a href="PhxPointForces.html">PhxPointForces</a>
 </div>
 
 <div class="phx-seealso">

@@ -1,8 +1,9 @@
 ---
 name: phx-simulink
 description: >
-  Drive a PHX physics scene from Simulink through the single PhxModel block
-  (PhxLibrary.slx). Use when wiring Simulink signals to phx.* object properties
+  Drive a PHX physics scene from Simulink through the PhxModel block
+  (PhxLibrary.slx), with its helpers PHX Action (events) and PHX Point Forces
+  (forces at several points of a body). Use when wiring Simulink signals to phx.* object properties
   (input/output port references like Body.Position(1:3)), setting the block's
   scene Source / sample time / viewer, building or debugging a PHX co-simulation
   model, or doing closed-loop control of a PHX scene from Simulink.
@@ -17,7 +18,8 @@ the boundary. The control philosophy is **property-driven**: input/output ports 
 bound to *public properties* of named scene objects.
 
 - Block library: **`phx/PhxLibrary.slx`** → block **"PHX Model"** (a Level-2
-  MATLAB S-function, `phx/PhxModel.m`, backed by `phx.simulink.BlockBackend`).
+  MATLAB S-function, `phx/PhxModel.m`, backed by `phx.simulink.BlockBackend`); next to
+  it **"PHX Action"** and **"PHX Point Forces"** (both below).
 - Worked examples in `examples/`: **`phxex_sim_stand.slx`** (open-loop, sine-driven
   suspension stand), **`phxex_sim_ballplate2.slx`** (closed-loop centroid control of two
   balls in a tilting bowl), **`phxex_sim_sorter.slx`** (vision-in-the-loop color
@@ -91,8 +93,12 @@ validating the vision estimate.
 Because ports are properties, choose them semantically:
 
 - **Inputs** = *settable* properties. The actuators are properties already:
-  - **Force / torque**: a `phx.Thruster` on the body, driven through its `Throttle`
-    (−1…1, scaled by `MaxThrust`).
+  - **Force / torque on a body**: its `AppliedForce` (N, at the centre of mass) and
+    `AppliedTorque` (N·m), both in the body frame, held until the next sample — e.g.
+    `Drone.AppliedForce`, or `Bob.AppliedForce(3)` for a push along the body z axis.
+    Forces at several points go through the **PHX Point Forces** block (below). A
+    `phx.Thruster`'s `Throttle` (−1…1, scaled by `MaxThrust`) only when you want its
+    lag, reaction torque or drawn exhaust.
   - **Joint motors**: `TargetVelocity` of a `RevoluteJoint` / `PrismaticJoint`, with
     `MaxTorque` / `MaxForce` as the motor's strength (also settable from a port).
   - **Joint torque / force**: `AppliedTorque` of a `RevoluteJoint`, `AppliedForce` of a
@@ -160,6 +166,27 @@ scene handle can't be wired (signals are numeric) — hence the SID reference. K
 *events*; continuous actuation belongs on the property bus. Example: `phxex_sim_sorter`
 uses it to spawn coloured cubes onto the carousel at regular angular steps during the run.
 
+## PHX Point Forces block (forces at several points)
+
+A body takes one force at its centre of mass and one torque. The **PHX Point Forces**
+block (`PhxLibrary`) turns N forces at fixed points into exactly that:
+`F = ΣFk`, `M = Σ(Pk − Origin) × Fk (+ T)`. Mask params: `Points` (N×3, one row per
+force; sets the number of inputs), `Origin` (the reference point of `M`), `TorqueInput`
+(adds a pure torque input `T`). Inputs `F1..FN` (3-vectors), outputs `F`, `M`. It does
+no rotation: give forces and points in the **body frame**, `Origin` = centre of mass
+(`[0 0 0]`, the body origin), and wire `F` → `Name.AppliedForce`, `M` →
+`Name.AppliedTorque` of the PHX Model block. Plain Simulink inside (Mux + two matrix
+Gains, set up by `phx.simulink.pointForces` in the mask init), so it is a direct
+feedthrough and works without PHX too.
+
+```matlab
+add_block('PhxLibrary/PHX Point Forces', [M '/Rotors']);
+set_param([M '/Rotors'], 'Points', '[0.3 0.3 0; -0.3 0.3 0; -0.3 -0.3 0; 0.3 -0.3 0]', ...
+    'Origin', '[0 0 0]', 'TorqueInput', 'on');   % T = propeller reaction torques
+% PHX Model InputRefs: sprintf('Drone.AppliedForce\nDrone.AppliedTorque')
+add_line(M, 'Rotors/1', 'PHX/1');  add_line(M, 'Rotors/2', 'PHX/2');
+```
+
 ## Building a PHX co-simulation model programmatically
 
 ```matlab
@@ -212,5 +239,5 @@ divide the block's `SimulationStep` (equal, or e.g. 0.005 for a 0.01 block step 
 
 - **phx-scene-basics** — build the scene (`phx.Body`, shapes, `Name`, `Type`) the block loads,
   and save it to the `.mat` the `ModelSource` points at.
-- **phx-constraints-forces** — joints/springs/thrusters and the in-MATLAB control-loop analogue.
+- **phx-constraints-forces** — body loads, joints/springs/thrusters and the in-MATLAB control-loop analogue.
 - **phx-engine-gotchas** — `phx.engine.io`, pipeline rebuilds, `dt` stability, error IDs, tests.

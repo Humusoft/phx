@@ -13,14 +13,39 @@
 <div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; User Guide &rsaquo; Forces, actuators and fields</div>
 
 <h1 class="phx-title">Forces, Actuators and Fields</h1>
-<p class="phx-purpose">Ready-made force elements beyond gravity and contacts</p>
+<p class="phx-purpose">Loads on a body and ready-made force elements beyond gravity and contacts</p>
 
-<p>Beyond gravity and contacts, PHX offers ready-made elements for common types of interaction.</p>
+<h2 class="phx-h2">Loads on a body &mdash; AppliedForce, AppliedTorque</h2>
+<p>The plain way to push a body is to set a load on the body itself. A
+<a href="phx.Body.html">phx.Body</a> has a force at its centre of mass,
+<code class="phx-inline">AppliedForce</code>, and a torque, <code class="phx-inline">AppliedTorque</code>,
+both in the body frame. The engine keeps them and adds them in every step, turned with the body,
+until you change them; they cost nothing in MATLAB while the simulation runs.</p>
+
+<pre class="phx-code">body.AppliedForce  = [0 0 900];   <span class="cmt">% N at the centre of mass, along the body z axis</span>
+body.AppliedTorque = [0 0 2];     <span class="cmt">% N*m about the body z axis</span>
+sim.step(2, 400);
+body.AppliedForce  = [0 0 0];     <span class="cmt">% off again</span></pre>
+
+<p>A force <code class="phx-inline">F</code> that acts at a point <code class="phx-inline">r</code> off
+the centre of mass (both in the body frame) is the same as the force <code class="phx-inline">F</code>
+at the centre plus the torque <code class="phx-inline">cross(r, F)</code>, and several such forces add
+up. Set the properties from a <a href="phx.Function.html">phx.Function</a> or a
+<a href="phx.Script.html">phx.Script</a> to vary them during the run, or connect them to the inputs of a
+<a href="PhxModel.html">PHX Model</a> block in Simulink, where the
+<a href="PhxPointForces.html">PHX Point Forces</a> block sums forces at several points. For a short
+push, <code class="phx-inline">applyForce</code> and <code class="phx-inline">applyTorque</code> act for
+the next step only.</p>
+
+<h2 class="phx-h2">Force elements</h2>
+<p>Beyond gravity, contacts and the body loads, PHX offers ready-made elements for common types of
+interaction.</p>
 
 <table class="phx-tbl">
 <tr><th>Element</th><th>What it does</th><th>Key options</th></tr>
 <tr><td class="name"><a href="phx.Thruster.html">Thruster</a></td>
-    <td>An actuator rigidly attached to a body (rocket, propeller).</td>
+    <td>An actuator rigidly attached to a body (rocket, propeller): a force at a point, with a
+    throttle, a response lag, a reaction torque and a drawn exhaust.</td>
     <td><code class="phx-inline">Direction</code>, <code class="phx-inline">MaxThrust</code>,
     <code class="phx-inline">Throttle</code> (&minus;1&hellip;1)</td></tr>
 <tr><td class="name"><a href="phx.Resistance.html">Resistance</a></td>
@@ -40,6 +65,10 @@
 </table>
 
 <h2 class="phx-h2">Actuator &mdash; Thruster</h2>
+<p>A thruster is a force at a point of the body with the features of an engine: one <code class="phx-inline">Throttle</code>
+from &minus;1 to 1 scaled by <code class="phx-inline">MaxThrust</code>, a first-order lag, the reaction
+torque of a propeller, and the exhaust drawn in the scene. Several thrusters on one body add up. It is
+computed in MATLAB at every substep, so for a plain force the body loads above are cheaper.</p>
 <pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
 
 body = phx.Body(<span class="str">"Position"</span>, [0 0 1], <span class="str">"Shape"</span>, {<span class="str">"Capsule"</span>, <span class="str">"Axis"</span>, <span class="str">"z"</span>, <span class="str">"Density"</span>, 80});
@@ -73,6 +102,7 @@ for magnets
 
 <div class="phx-seealso">
 <span class="lbl">See also</span>
+<a href="phx.Body.html">phx.Body</a>,
 <a href="phx.Thruster.html">phx.Thruster</a>,
 <a href="phx.Resistance.html">phx.Resistance</a>,
 <a href="phx.Buoyancy.html">phx.Buoyancy</a>,

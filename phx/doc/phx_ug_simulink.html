@@ -19,7 +19,7 @@
 The scene is built in MATLAB exactly as in the rest of this guide; the
 <a href="PhxModel.html">PHX Model</a> block loads it, steps its
 <a href="phx.Simulation.html">phx.Simulation</a> once per sample time and exchanges signals with
-the rest of the model. Both blocks of the toolbox are in the library
+the rest of the model. The blocks of the toolbox are in the library
 <code class="phx-inline">PhxLibrary</code>, which appears in the Simulink Library Browser as PHX Toolbox.</p>
 
 <h2 class="phx-h2">Preparing the scene</h2>
@@ -35,7 +35,6 @@ want to connect a unique name:</p>
     anchor = phx.Body(ax, <span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Name"</span>, <span class="str">"Anchor"</span>);
     bob    = phx.Body(ax, <span class="str">"Position"</span>, [1 0 0], <span class="str">"Name"</span>, <span class="str">"Bob"</span>);
     phx.RevoluteJoint(anchor, bob, <span class="str">"PointB"</span>, [-1 0 0], <span class="str">"AxisA"</span>, [0 1 0]);
-    phx.Thruster(bob, <span class="str">"Direction"</span>, [0 0 1], <span class="str">"MaxThrust"</span>, 5e3, <span class="str">"Name"</span>, <span class="str">"Drive"</span>);
     bodies = [anchor bob];
 <span class="kw">end</span></pre>
 
@@ -48,14 +47,26 @@ so <code class="phx-inline">Bob.Position</code> is a 3-element signal and
 the mask lists the objects of the scene and their properties to pick from.</p>
 <ul>
 <li><b>Inputs</b> write the property at every step, so they must name a settable property: the
-pose or velocity of a kinematic body, a <code class="phx-inline">Throttle</code> of a thruster,
-the <code class="phx-inline">TargetVelocity</code> of a joint motor.</li>
+<code class="phx-inline">AppliedForce</code> or <code class="phx-inline">AppliedTorque</code> of a
+body (<code class="phx-inline">Bob.AppliedForce(3)</code> pushes the bob along its own z axis), the
+pose or velocity of a kinematic body, the <code class="phx-inline">TargetVelocity</code> of a joint
+motor, the <code class="phx-inline">Throttle</code> of a thruster.</li>
 <li><b>Outputs</b> read any property, read-only ones included:
 <code class="phx-inline">Position</code>, <code class="phx-inline">LinearVelocity</code>,
 <code class="phx-inline">TotalForce</code>, the <code class="phx-inline">Angle</code> of a joint.</li>
 </ul>
 <p>Methods such as <code class="phx-inline">applyForce</code> cannot be ports. Drive the scene
-through properties, or call methods from a PHX Action block, see below.</p>
+through properties, a force through <code class="phx-inline">AppliedForce</code>, or call methods
+from a PHX Action block, see below.</p>
+
+<h2 class="phx-h2">Forces at several points: PHX Point Forces</h2>
+<p>A body takes a force at its centre of mass and a torque, both in its own frame, through
+<code class="phx-inline">AppliedForce</code> and <code class="phx-inline">AppliedTorque</code>. When
+the forces act at several points, such as the rotors of a drone, the
+<a href="PhxPointForces.html">PHX Point Forces</a> block sums them into that one force and the
+moment about the centre of mass. Give it the points in the body frame and connect its outputs
+<code class="phx-inline">F</code> and <code class="phx-inline">M</code> to the inputs
+<code class="phx-inline">Drone.AppliedForce</code> and <code class="phx-inline">Drone.AppliedTorque</code>.</p>
 
 <h2 class="phx-h2">Timing and solver</h2>
 <p>The block has a discrete sample time, the <b>Simulation step</b>, and each sample advances the
@@ -126,6 +137,7 @@ files the blocks load.</p>
 <span class="lbl">See also</span>
 <a href="PhxModel.html">PhxModel</a>,
 <a href="PhxAction.html">PhxAction</a>,
+<a href="PhxPointForces.html">PhxPointForces</a>,
 <a href="phx.Simulation.html">phx.Simulation</a>
 </div>
 
