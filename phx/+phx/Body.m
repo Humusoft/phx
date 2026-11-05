@@ -481,6 +481,9 @@ classdef Body < phx.base.Object
         %   specifies if the point and force are in the local (true, default)
         %   or global (false) space.
         %
+        %   Several forces at once come as the rows of force and point (N-by-3),
+        %   with the flags given once for all or once per row.
+        %
         % See also phx.Body.applyTorque
 
             arguments
@@ -491,10 +494,12 @@ classdef Body < phx.base.Object
                 IsLocalPoint (:, 1) logical = true 
             end
 
+            % One engine batch of the same body, a force per row
+            hs = repmat(obj.ObjectHandle, 1, size(Force, 1));
             if isempty(Point)
-                phx.engine.io('apply', obj.WorldHandle, obj.ObjectHandle, 'centralforce', Force, IsLocalForce);
+                phx.engine.io('apply', obj.WorldHandle, hs, 'centralforce', Force', IsLocalForce);
             else
-                phx.engine.io('apply', obj.WorldHandle, obj.ObjectHandle, 'force', Force, Point, IsLocalForce, IsLocalPoint);
+                phx.engine.io('apply', obj.WorldHandle, hs, 'force', Force', Point', IsLocalForce, IsLocalPoint);
             end
         end
 
@@ -515,7 +520,8 @@ classdef Body < phx.base.Object
                 IsLocalTorque (:, 1) logical = true
             end
 
-            phx.engine.io('apply', obj.WorldHandle, obj.ObjectHandle, 'torque', Torque, IsLocalTorque);
+            hs = repmat(obj.ObjectHandle, 1, size(Torque, 1));
+            phx.engine.io('apply', obj.WorldHandle, hs, 'torque', Torque', IsLocalTorque);
         end
 
         function groupTransform(objs, transforms)

@@ -226,22 +226,8 @@ classdef Raycast < phx.base.Object
             end
 
             [Ow, Ew] = obj.worldRays;
-            [p, nr, dst, ids] = phx.engine.io('apply', obj.WorldHandle, uint64(0), 'raycast', Ow, Ew);
-
-            % The engine reports a rejected ray set by returning a logical
-            % rather than the four result matrices.
-            if ~isa(ids, "uint64") || numel(ids) ~= n || ~isequal(size(p), [3 n])
-                error("phx:Raycast:rejectedRays", "The engine rejected the ray set. Check that Origins and Ends are finite 3-by-N matrices.");
-            end
-
-            % The engine zero-fills the columns of rays that hit nothing and
-            % marks them with objectID 0. Translate the zeros to NaN so the
-            % results plot correctly instead of collapsing to the origin.
-            hit = reshape(ids, 1, []) ~= 0;
-            obj.IDs = reshape(ids, 1, []);
-            obj.P(:, hit) = p(:, hit);
-            obj.Nrm(:, hit) = nr(:, hit);
-            obj.Dst(hit) = dst(hit);
+            % Misses come back as NaN with objectID 0
+            [obj.P, obj.Nrm, obj.Dst, obj.IDs] = phx.engine.io('raycast', obj.WorldHandle, Ow, Ew);
         end
 
         function tf = raysConsistent(obj)

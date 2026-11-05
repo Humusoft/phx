@@ -226,7 +226,7 @@ classdef Dipole < phx.base.Object
 
                 pos = polePositions(obj);
                 Fp = phx.internal.computeDipoleForces(pos, obj.Charge, obj.Attractivity);
-                phx.engine.io('apply', world, [obj.ehs obj.ehs], 'forces', Fp, [obj.Axis; -obj.Axis]', false, true);
+                phx.engine.io('apply', world, [obj.ehs obj.ehs], 'force', Fp, [obj.Axis; -obj.Axis]', false, true);
             end
         end
         

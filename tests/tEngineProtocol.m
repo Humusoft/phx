@@ -910,15 +910,20 @@ classdef tEngineProtocol < PhxTestCase
             h1 = phx.engine.io('add', w, 'box', 2, 0.1*[1 1 1], tEngineProtocol.pose([0 0 0]), 1, [1 1 1]);
             h2 = phx.engine.io('add', w, 'box', 2, 0.1*[1 1 1], tEngineProtocol.pose([2 0 0]), 1, [1 1 1]);
             hs = [h1 s h2];  % a static body in a batch is harmless
-            phx.engine.io('apply', w, hs, 'centralforces', [1 0 0, 5 5 5, 0 2 0], false);
-            phx.engine.io('apply', w, hs, 'forces', [0 0 1, 5 5 5, 0 0 1], [1 0 0, 0 0 0, 0 1 0], false, true);
-            phx.engine.io('apply', w, hs, 'torques', [0 0 1, 5 5 5, 0 0 -1], false);
+            phx.engine.io('apply', w, hs, 'centralforce', [1 0 0, 5 5 5, 0 2 0], false);
+            phx.engine.io('apply', w, hs, 'force', [0 0 1, 5 5 5, 0 0 1], [1 0 0, 0 0 0, 0 1 0], false, true);
+            phx.engine.io('apply', w, hs, 'torque', [0 0 1, 5 5 5, 0 0 -1], false);
             [~] = phx.engine.io('step', w, 0.01);
             tc.verifyEqual(phx.engine.io('get', w, h1, 'linvel'), 0.01*[1, 0, 1], "AbsTol", 1e-6);
             tc.verifyEqual(phx.engine.io('get', w, h2, 'linvel'), 0.01*[0, 2, 1], "AbsTol", 1e-6);
             % h1: lever (1,0,0) x (0,0,1) = (0,-1,0); h2: (0,1,0) x (0,0,1) = (1,0,0)
             tc.verifyEqual(phx.engine.io('get', w, h1, 'angvel'), 0.01*[0, -1, 1], "AbsTol", 1e-6);
             tc.verifyEqual(phx.engine.io('get', w, h2, 'angvel'), 0.01*[1, 0, -1], "AbsTol", 1e-6);
+            % One vector per body, exactly; the bodies a row; the plural kinds
+            % of protocol 1 are gone
+            tc.verifyError(@() phx.engine.io('apply', w, hs, 'centralforce', [1 0 0, 5 5 5], false), "phx:engine:badArgument");
+            tc.verifyError(@() phx.engine.io('apply', w, hs', 'centralforce', [1 0 0, 5 5 5, 0 2 0], false), "phx:engine:badArgument");
+            tc.verifyError(@() phx.engine.io('apply', w, hs, 'centralforces', [1 0 0, 5 5 5, 0 2 0], false), "phx:engine:unsupported");
         end
 
         function raycastReportsTheClosestHit(tc)
@@ -927,7 +932,7 @@ classdef tEngineProtocol < PhxTestCase
             tc.addBox(w, 0, [0 0 -3], [1 1 1]);
             O = [0 0 5; 3 0 5]';
             E = [0 0 -5; 3 0 -5]';
-            [p, n, d, ids] = phx.engine.io('apply', w, uint64(0), 'raycast', O, E);
+            [p, n, d, ids] = phx.engine.io('raycast', w, O, E);
             tc.verifySize(p, [3 2]);
             tc.verifySize(n, [3 2]);
             tc.verifySize(d, [1 2]);
@@ -938,7 +943,8 @@ classdef tEngineProtocol < PhxTestCase
             tc.verifyEqual(n(:, 1), [0; 0; 1], "AbsTol", 1e-5);
             tc.verifyEqual(d(1), 4.5, "AbsTol", 1e-5);
             tc.verifyEqual(ids(2), uint64(0), "A miss reports handle 0.");
-            tc.verifyEqual([p(:, 2); n(:, 2); d(2)], zeros(7, 1), "A miss is zero-filled.");
+            tc.verifyEqual([p(:, 2); n(:, 2); d(2)], nan(7, 1), "A miss is NaN.");
+            tc.verifyError(@() phx.engine.io('apply', w, uint64(0), 'raycast', O, E), "phx:engine:unsupported");
         end
     end
 
@@ -1512,10 +1518,10 @@ classdef tEngineProtocol < PhxTestCase
             w = tc.newWorld([0 0 0]);
             m = 0.5;
             g = phx.engine.io('add', w, 'particles', [0 1; 0 0; 0 0], 0.1, m, false);
-            phx.engine.io('apply', w, g, 'centralforces', [2; 0; 0], false);
+            phx.engine.io('apply', w, g, 'centralforce', [2; 0; 0], false);
             phx.engine.io('step', w, tc.Dt);
             tc.verifyEqual(phx.engine.io('get', w, g, 'velocities'), [1 1; 0 0; 0 0]*2/m*tc.Dt, "AbsTol", 1e-6);
-            phx.engine.io('apply', w, g, 'centralforces', [0 0; 1 -1; 0 0], false);
+            phx.engine.io('apply', w, g, 'centralforce', [0 0; 1 -1; 0 0], false);
             phx.engine.io('step', w, tc.Dt);
             phx.engine.io('step', w, tc.Dt);
             V = phx.engine.io('get', w, g, 'velocities');

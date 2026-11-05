@@ -102,6 +102,22 @@ classdef tForceApplication < PhxTestCase
             tc.verifyEqual(b.LinearVelocity, v, "AbsTol", 1e-9, "A zero force stops the load.");
             tc.verifyEqual(b.AngularVelocity, w, "AbsTol", 1e-9);
         end
+
+        function rowsAreSeveralForcesAtOnce(tc)
+            % applyForce and applyTorque take one force (torque) per row:
+            % two opposite forces at opposite points make a pure couple,
+            % two torques add up.
+            b = tc.spawnBody([0 0 0], "Shape", {"Box", "Size", [0.2 0.2 0.2], "Density", 125});
+            I = b.Inertia;
+            sim = phx.Simulation(b, "Gravity", [0 0 0]);
+            tc.addTeardown(@() delete(sim));
+
+            b.applyForce([0 1 0; 0 -1 0], [1 0 0; -1 0 0]);
+            b.applyTorque([0 0 0.5; 0 0 0.5]);
+            sim.step(tc.Dt, 1, -1);
+            tc.verifyEqual(b.LinearVelocity, [0 0 0], "AbsTol", 1e-9, "The forces cancel.");
+            tc.verifyEqual(b.AngularVelocity, [0 0 (2 + 1)/I(3)*tc.Dt], "AbsTol", 1e-6);
+        end
     end
 
     methods (Static, Access = private)

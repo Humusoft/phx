@@ -80,10 +80,11 @@ getting it wrong silently applies a force in the wrong frame (this caused real b
 `Thruster`/`Dipole`, now locked in by `tForceApplication`):
 
 ```matlab
-io('apply', w, h,  'centralforce', F, isLocalForce)              % at the COM
-io('apply', w, h,  'force',        F, P, isLocalForce, isLocalPoint)
-io('apply', w, hs, 'forces',       F, P, isLocalForce, isLocalPoint)  % batched, hs/F/P columns
-io('apply', w, h,  'torque',       T, isLocalTorque)
+io('apply', w, hs, 'centralforce', F, isLocalForce)              % at the COM
+io('apply', w, hs, 'force',        F, P, isLocalForce, isLocalPoint)
+io('apply', w, hs, 'torque',       T, isLocalTorque)
+% hs a 1xN row of body handles (one body: N = 1), F, P, T 3xN (one column
+% per body), the flags one for all or one per body
 ```
 
 Prefer passing the **local** force/torque and a **local** point and letting the engine
