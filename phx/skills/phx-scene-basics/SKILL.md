@@ -622,10 +622,10 @@ building a scene from scratch:
   region overlap-free (`Spacing`) in one call.
 - **Friction `[drag roll spin]`, each `>= 0` (no upper bound).** `drag` is the sliding/contact
   friction (≈0.5–0.8 for grippy contact, 0 for near-frictionless; values above 1 are allowed for
-  very grippy contact). `roll`/`spin` resist rolling
-  and spinning of rounded shapes; leave them at 0 and a ball or sphere will roll/spin
-  forever. Give them a small value (≈0.05–0.2) when you need rolling or spin energy to
-  dissipate (e.g. bodies that should come to rest instead of ringing).
+  very grippy contact). `roll`/`spin` are reserved: the engine does not act on them yet,
+  so a ball keeps rolling and a top keeps spinning whatever they are. `phx.Resistance`
+  damps the linear velocity, which brings a rolling ball to rest through its contact
+  friction; nothing damps a spin in place yet.
 - **Tuning a launch / lever / impact.** Nothing predicts the outcome for you. For a
   seesaw-style launch, make the dropped mass clearly heavier than the launched body
   and give it a real drop height, then **verify by logging the launched body's apex**

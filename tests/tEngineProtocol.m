@@ -147,7 +147,7 @@ classdef tEngineProtocol < PhxTestCase
             % rest with its origin at the height its geometry gives. The
             % margin is zeroed so that the shapes collide as they are.
             w = tc.newWorld;
-            phx.engine.io('set', w, uint64(0), 'margin', 0);
+            phx.engine.io('set', w, uint64(0), 'settings', struct('margin', 0));
             tc.addFloor(w);
             h = Shape.Add(w, tEngineProtocol.pose([0 0 1.5]));
             tc.verifyClass(h, "uint64");
@@ -163,7 +163,7 @@ classdef tEngineProtocol < PhxTestCase
             % it by up to 26 deg and hopped it 0.13 m for ever.)
             [V, F] = tEngineProtocol.cubeMesh(0.2);
             w = tc.newWorld;
-            phx.engine.io('set', w, uint64(0), 'margin', 0);
+            phx.engine.io('set', w, uint64(0), 'settings', struct('margin', 0));
             tc.addFloor(w);
             h = tEngineProtocol.addTrimesh(w, V, F, tEngineProtocol.pose([0 0 1]));
             T = tc.lastPose(w, h, 3);
@@ -195,7 +195,7 @@ classdef tEngineProtocol < PhxTestCase
             V = [0 0 0; cos(a') sin(a') zeros(n, 1)]';   % centre, then the rim
             F = [ones(1, n); 2:n + 1; [3:n + 1 2]];
             w = tc.newWorld;
-            phx.engine.io('set', w, uint64(0), 'margin', 0);
+            phx.engine.io('set', w, uint64(0), 'settings', struct('margin', 0));
             disc = tEngineProtocol.addTrimesh(w, V, F, tEngineProtocol.pose([0 0 0]), 0);
             box = tc.addBox(w, 2, [0.05 -0.3 0.1], [0.2 0.2 0.2], 2);
             tc.settle(w, 0.2);
@@ -289,12 +289,12 @@ classdef tEngineProtocol < PhxTestCase
             [~] = phx.engine.io('step', w, tc.Dt);
             tc.verifyEqual(phx.engine.io('get', w, h, 'linvel'), [0, 0, 0], "A static body does not fall.");
 
-            phx.engine.io('set', w, h, 'state', 2);
+            phx.engine.io('set', w, h, 'type', 2);
             [ids, T] = phx.engine.io('step', w, tc.Dt);
             tc.verifyEqual(ids, h);
             tc.verifyLessThan(T(3, 4), 5, "A body switched to dynamic falls.");
 
-            phx.engine.io('set', w, h, 'state', 1);
+            phx.engine.io('set', w, h, 'type', 1);
             phx.engine.io('set', w, h, 'linvel', [0 0 0]);
             for k = 1:10
                 [~] = phx.engine.io('step', w, tc.Dt);
@@ -306,11 +306,9 @@ classdef tEngineProtocol < PhxTestCase
         function massAndInertiaScaleTheResponse(tc)
             w = tc.newWorld([0 0 0]);
             h = tc.addBox(w, 2, [0 0 0], 0.2*[1 1 1]);
-            phx.engine.io('set', w, h, 'mass', 2);
-            phx.engine.io('set', w, h, 'inertia', [1 2 4]);
-            % Bullet takes a changed inertia into its world tensor only in
-            % the next step (see PROTOCOL.md)
-            [~] = phx.engine.io('step', w, 0.01);
+            % Mass and inertia act from the next step on (Bullet took a new
+            % inertia into its world tensor a step later)
+            phx.engine.io('set', w, h, 'massprops', 2, [1 2 4]);
             phx.engine.io('apply', w, h, 'centralforce', [4 0 0], false);
             phx.engine.io('apply', w, h, 'torque', [1 1 1], false);
             [~] = phx.engine.io('step', w, 0.01);
@@ -738,14 +736,34 @@ classdef tEngineProtocol < PhxTestCase
             tc.verifyEqual(phx.engine.io('get', w, h, 'linvel'), [0, 1, 0], "AbsTol", 0.05);
         end
 
-        function rollingAndSpinningFrictionAreAccepted(tc)
-            % Their meaning is engine-specific (see PROTOCOL.md); the
-            % contract is only that PHX can set them.
+        function frictionTakesSlideRollSpin(tc)
+            % The friction is [slide roll spin] as PHX stores it, or the
+            % sliding friction alone. Rolling and spinning friction have no
+            % engine-neutral meaning yet (see PROTOCOL.md); the contract is
+            % only that PHX can set them.
             w = tc.newWorld;
             h = tc.addBox(w, 2, [0 0 0], 0.2*[1 1 1]);
-            phx.engine.io('set', w, h, 'rollfriction', 0.1);
-            phx.engine.io('set', w, h, 'spinfriction', 0.1);
+            phx.engine.io('set', w, h, 'friction', [0.5 0.1 0.1]);
+            phx.engine.io('set', w, h, 'friction', 0.4);
             [~] = phx.engine.io('step', w, tc.Dt);
+            tc.verifyError(@() phx.engine.io('set', w, h, 'friction', [0.5 0.1]), "phx:engine:badArgument");
+        end
+
+        function settingsAreOneStructOwnedByTheEngine(tc)
+            % The engine settings go in one struct of any of their fields
+            % and come back all together; an unknown one is refused.
+            w = tc.newWorld;
+            phx.engine.io('set', w, uint64(0), 'settings', struct('iterations', 7, 'margin', 0.003, 'contactcache', true));
+            s = phx.engine.io('get', w, uint64(0), 'settings');
+            tc.verifyEqual(s.iterations, 7);
+            tc.verifyEqual(s.margin, 0.003, "AbsTol", 1e-9);
+            tc.verifyTrue(s.contactcache);
+            tc.verifyFalse(s.sleeping, "newWorld switches sleeping off.");
+            tc.verifyEqual(sort(string(fieldnames(s)))', sort(["iterations" "positioniterations" "jointiterations" ...
+                "springiterations" "margin" "penetrationslop" "speculativedistance" "contactcache" "threads" "sleeping"]));
+            tc.verifyError(@() phx.engine.io('set', w, uint64(0), 'settings', struct('nosuchsetting', 1)), ...
+                "phx:engine:unsupported");
+            tc.verifyError(@() phx.engine.io('set', w, uint64(0), 'numiterations', 7), "phx:engine:unsupported");
         end
 
         function totalForceIsTheResultantOfAllForces(tc)
@@ -1087,7 +1105,7 @@ classdef tEngineProtocol < PhxTestCase
             w = tc.newWorld;
             try
                 % Jolt only: the iterations of jointed islands
-                phx.engine.io('set', w, uint64(0), 'jointiterations', 10);
+                phx.engine.io('set', w, uint64(0), 'settings', struct('jointiterations', 10));
             catch
             end
             anchor = tc.addBox(w, 0, [0 0 0], 0.1*[1 1 1]);
@@ -1908,7 +1926,7 @@ classdef tEngineProtocol < PhxTestCase
             w = phx.engine.io('setup');
             tc.addTeardown(@() phx.engine.io('clear', w));
             phx.engine.io('set', w, uint64(0), 'gravity', gravity);
-            phx.engine.io('set', w, uint64(0), 'autoactivated', false);
+            phx.engine.io('set', w, uint64(0), 'settings', struct('sleeping', false));
         end
 
         function h = addBox(~, w, type, position, size, mass, inertia)

@@ -69,7 +69,9 @@ the default is that of the default shape, a 1&nbsp;m cube of density 1000.</td><
 <code class="phx-inline">Mass</code> when a <code class="phx-inline">Shape</code> is assigned, but not when
 <code class="phx-inline">Mass</code> alone is set.</td></tr>
 <tr><td class="name">Friction</td><td class="dflt">[0.5 0 0]</td>
-<td>Friction coefficients (&ge;&nbsp;0) as <code class="phx-inline">[drag roll spin]</code>.</td></tr>
+<td>Friction coefficients (&ge;&nbsp;0) as <code class="phx-inline">[drag roll spin]</code>.
+The engine acts on the sliding (drag) coefficient only; rolling and spinning friction are
+reserved for a later release.</td></tr>
 <tr><td class="name">Restitution</td><td class="dflt">0</td>
 <td>Restitution (bounciness) coefficient (&ge;&nbsp;0); 0&nbsp;=&nbsp;no bounce. The resulting
 bounce of a contact combines the values of <em>both</em> colliding bodies, so both must be

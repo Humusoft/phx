@@ -175,14 +175,15 @@ classdef Settings
         end
 
         function apply(obj, objectHandle)
-            phx.engine.io('set', objectHandle, uint64(0), 'numiterations', obj.Iterations);
-            phx.engine.io('set', objectHandle, uint64(0), 'jointiterations', obj.JointIterations);
-            phx.engine.io('set', objectHandle, uint64(0), 'positioniterations', obj.PositionIterations);
-            phx.engine.io('set', objectHandle, uint64(0), 'margin', obj.Margin);
-            phx.engine.io('set', objectHandle, uint64(0), 'penetrationslop', obj.PenetrationSlop);
-            phx.engine.io('set', objectHandle, uint64(0), 'speculativedistance', obj.SpeculativeDistance);
-            phx.engine.io('set', objectHandle, uint64(0), 'threads', obj.Threads);
-            phx.engine.io('set', objectHandle, uint64(0), 'contactcache', obj.ContactCache);
+            s.iterations = obj.Iterations;
+            s.jointiterations = obj.JointIterations;
+            s.positioniterations = obj.PositionIterations;
+            s.margin = obj.Margin;
+            s.penetrationslop = obj.PenetrationSlop;
+            s.speculativedistance = obj.SpeculativeDistance;
+            s.threads = obj.Threads;
+            s.contactcache = obj.ContactCache;
+            phx.engine.io('set', objectHandle, uint64(0), 'settings', s);
         end
     end
 

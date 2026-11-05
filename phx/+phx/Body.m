@@ -97,7 +97,8 @@ classdef Body < phx.base.Object
         % Body inertia tensor (kg*m^2)
         Inertia (1, 3) double = [0 0 0]
 
-        % Friction coefficients [drag roll spin]
+        % Friction coefficients [drag roll spin]; the engine acts on the
+        % drag (sliding) coefficient only, roll and spin are reserved
         Friction (1, 3) double {mustBeGreaterThanOrEqual(Friction, 0)} = [0.5 0 0]
 
         % Restitution (bounciness) coefficient, 0 = no bounce; the resulting
@@ -372,7 +373,7 @@ classdef Body < phx.base.Object
                 obj.RedrawOrder = "after";
             end
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'state', obj.TypeID);
+                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'type', obj.TypeID);
             end
         end
 
@@ -383,23 +384,21 @@ classdef Body < phx.base.Object
         function set.Mass(obj, value)
             obj.Mass = value;
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'mass', value);
+                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'massprops', value, obj.Inertia);
             end
         end
 
         function set.Inertia(obj, value)
             obj.Inertia = value;
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'inertia', value);
+                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'massprops', obj.Mass, value);
             end            
         end
 
         function set.Friction(obj, coeffs)
             obj.Friction = coeffs;
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'friction', coeffs(1));
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'rollfriction', coeffs(2));
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'spinfriction', coeffs(3));
+                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'friction', coeffs);
             end
         end
 
