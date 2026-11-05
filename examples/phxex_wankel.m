@@ -47,18 +47,13 @@ function phxex_wankel(showGraphs)
     log1 = phx.Logger(bearing1, "Frequency", 1000, "Parameters", "ForceA");
     log2 = phx.Logger([bearing1 bearing2], "Frequency", 1000, "Parameters", "Angle");
 
-    % Initialize the simulation
+    % A constant torque spins the shaft
+    s.AppliedTorque = [0 0 0.1];
+
+    % Simulate 3 s in 1 ms steps, redrawing every 10 steps
     sim = phx.Simulation;
-    
-    % Run the simulation for a specified number of steps
-    for i = 1:3000
-        % Apply torque to the shaft body
-        s.applyTorque([0 0 0.1]);
-        
-        % Step the simulation and update the display every 10 iterations
-        sim.step(0.001, 1, mod(i, 10));
-    end
-    
+    sim.step(3, 3000, 10);
+
     % Clean up the simulation object
     delete(sim);
 
