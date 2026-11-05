@@ -57,6 +57,7 @@ Prefer headless bodies (`[]` axes) unless the test is about the drawing.
 | `tAssembly` | graphics (three `Engine` cases) | `Graphics` / `Engine` | what each builder lays out: arena dimensions, chain link poses and joint types, scatter placement, the running bond of a wall; plus a ball kept inside the arena, a swinging chain and a collapsing wall |
 | `tImport` | graphics (two `Engine` cases) | — / `Graphics` / `Engine` | the URDF importer: file/XML errors, object structure, name sanitization, link world poses against an independent rpy implementation, mesh path resolution, joint substitution |
 | `tPhxSimulinkRefs` | nothing | — | `ParameterReference` parsing and the `BlockBackend` port-reference helpers |
+| `tPhxModelSource` | nothing (run cases engine and Simulink) | — / `Engine` | the scene source of the PHX Model block: a scene function by name or by path and a MAT file give the same scene, other files are rejected, and every kind runs in the block |
 | `tSkillsPackaged` | nothing (source checkout only) | — | the AI agent skills in `phx/skills` (shipped in the `.mltbx`) stay identical to the working ones in `.claude/skills`, front-matter names match their folders, and `package.ignore` does not exclude them |
 | `tExampleGallery` | nothing (source checkout only) | — | the generated Examples gallery, its thumbnails and the toc stay in sync with `examples/` |
 | `tDocLinks` | nothing (source checkout only) | — | no HTML help page links to or shows a file that is not there; Contents.m, the reference toc and the product page group the classes alike |
