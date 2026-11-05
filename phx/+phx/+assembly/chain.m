@@ -37,7 +37,7 @@ function parts = chain(varargin)
 %   - Density: density of the link material (kg/m^3), default 1000; the
 %     link masses and inertias follow from the geometry.
 %   - Color: common color of all parts, default [1 1 1].
-%   - Friction: friction coefficients of all links, default [0.5 0 0].
+%   - Friction: friction coefficient of all links, default 0.5.
 %   - Position, Orientation, EulerAngles: pose of the chain frame (in
 %     which the points and axes are expressed) in the world, default at
 %     the world origin. Same conventions as phx.Body.
@@ -74,7 +74,7 @@ function parts = build(ax, points, Options)
         Options.Anchor (1, 1) string {mustBeMember(Options.Anchor, ["none", "start", "end", "both"])} = "none"
         Options.Density (1, 1) double {mustBePositive} = 1000
         Options.Color (1, 3) double = [1 1 1]
-        Options.Friction (1, 3) double {mustBeGreaterThanOrEqual(Options.Friction, 0)} = [0.5 0 0]
+        Options.Friction (1, :) double {mustBeNonnegative} = 0.5
         Options.Position (1, 3) double = [0 0 0]
         Options.Orientation (3, 3) double = eye(3)
         Options.EulerAngles (1, 3) double = [0 0 0]

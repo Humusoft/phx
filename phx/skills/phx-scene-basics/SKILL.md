@@ -95,7 +95,7 @@ b = phx.Body(ax, ...
     "Position", [0 0 2], ...
     "EulerAngles", [0 0 pi/3], ...           % z->y->x order; or Quaternion / AxisAngle / Orientation
     "Mass", 50, "Inertia", [40 40 10], ...   % set explicitly, or let the shape's density compute it
-    "Friction", [0.5 0 0], ...               % [drag roll spin], each >= 0 (no upper bound)
+    "Friction", 0.5, ...                     % Coulomb coefficient >= 0 (no upper bound)
     "Shape", {"Box", "Size", [4 3 0.1], "Color", [1 1 1]});
 ```
 
@@ -123,7 +123,7 @@ b = phx.Body(ax, ...
 
   ```matlab
   belt = phx.Body(ax, "Type", "static", "Position", [0 0 -0.1], ...
-      "Friction", [0.9 0 0], "SurfaceVelocity", [1.2 0 0], ...
+      "Friction", 0.9, "SurfaceVelocity", [1.2 0 0], ...
       "Shape", {"Box", "Size", [8 2 0.2]});
   ```
 
@@ -133,7 +133,7 @@ b = phx.Body(ax, ...
     free. For any other drive direction turn the arrows with `TextureTransform`:
     `"rot90"` points them along `+y`, `"rot180"` along `-x` and `"rot270"` along `-y`.
   - It is an ordinary contact constraint, so it is **friction-limited**: both bodies need
-    a nonzero `Friction(1)`, a frictionless belt transmits nothing however fast it runs.
+    a nonzero `Friction`, a frictionless belt transmits nothing however fast it runs.
     Cargo converges to exactly the commanded speed, and the reaction pushes back on the
     belt (a belt free to move recoils, momentum is conserved).
   - Put it on the **moving** body instead and it drives that body the *opposite* way: it
@@ -620,12 +620,19 @@ building a scene from scratch:
 - **Placing many bodies at random.** Don't hand-roll `rand` loops with z-stagger
   tricks against initial overlap — `phx.assembly.scatter` places n bodies in a
   region overlap-free (`Spacing`) in one call.
-- **Friction `[drag roll spin]`, each `>= 0` (no upper bound).** `drag` is the sliding/contact
-  friction (≈0.5–0.8 for grippy contact, 0 for near-frictionless; values above 1 are allowed for
-  very grippy contact). `roll`/`spin` are reserved: the engine does not act on them yet,
-  so a ball keeps rolling and a top keeps spinning whatever they are. `phx.Resistance`
-  damps the linear velocity, which brings a rolling ball to rest through its contact
-  friction; nothing damps a spin in place yet.
+- **`Friction` is one Coulomb coefficient `>= 0` (no upper bound)**, ≈0.5–0.8 for grippy
+  contact, 0 for near-frictionless, above 1 for very grippy contact; a contact multiplies the
+  values of both bodies. The `[drag roll spin]` triplet of PHX 1.0 is gone: `[mu 0 0]` is
+  still taken as `mu`, a nonzero roll or spin value is an error.
+- **Rolling and spinning resistance are lengths in m, both 0 by default**, and a contact
+  adds the values of both bodies. `RollingResistance` b: a rolling contact meets a torque
+  of up to `b*N` (a ball slows by `b*g/(R*(1 + I/(m*R^2)))`); steel on steel 1e-5 m, wood
+  ~5e-4 m, a tyre a few mm. `SpinRadius` r: a point contact (ball on a floor) resists
+  spinning about its normal by `Friction*r*N`, about 2/3 of the real patch radius; flat
+  faces resist spinning by their own extent anyway. Without them a ball rolls and a top
+  spins on forever; set them only where the scene needs it (Euler's disk, a ball that
+  must come to rest, granular piles), and keep b small against the body size, as it also
+  resists tipping.
 - **Tuning a launch / lever / impact.** Nothing predicts the outcome for you. For a
   seesaw-style launch, make the dropped mass clearly heavier than the launched body
   and give it a real drop height, then **verify by logging the launched body's apex**

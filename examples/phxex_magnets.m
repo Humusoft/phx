@@ -43,8 +43,7 @@ function phxex_magnets(nBalls, annealTime, seed)
     q = 8;                 % pole charge: capture radius ~3 ball diameters
     fThermal = 200;        % initial thermal force amplitude (N)
     tThermal = 4;          % initial thermal torque amplitude (N*m)
-    mu = [0.2 0.15 0.15];  % rolling/spinning friction dissipates the
-                           % rotational energy released by snapping magnets
+    mu = 0.2;              % friction coefficient of balls and arena
     arena = 6;             % arena size
 
     % Figure setup

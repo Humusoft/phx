@@ -59,7 +59,7 @@ bricks without graphics.</p>
 <tr><td class="name">Density</td><td class="dflt">2000</td><td>Density of the brick material (kg/m<sup>3</sup>); the brick masses and inertias follow from the geometry.</td></tr>
 <tr><td class="name">Color</td><td class="dflt">[1 1 1]</td><td>Common color of all bricks.</td></tr>
 <tr><td class="name">RandomTint</td><td class="dflt">0.1</td><td>Random shade variation between the bricks (0..1). Every brick is darkened by its own random factor, <code class="phx-inline">brickColor&nbsp;=&nbsp;Color*(1&nbsp;&minus;&nbsp;rand*RandomTint)</code>, so the shades differ while the hue stays; 0 leaves all bricks in exactly the same color. Random numbers are drawn from the global generator (like <code class="phx-inline">rand</code>), so a wall is reproduced by seeding it first with <code class="phx-inline">rng</code>.</td></tr>
-<tr><td class="name">Friction</td><td class="dflt">[0.5 0 0]</td><td>Friction coefficients of all bricks.</td></tr>
+<tr><td class="name">Friction</td><td class="dflt">0.5</td><td>Friction coefficient of all bricks.</td></tr>
 <tr><td class="name">Position</td><td class="dflt">[0 0 0]</td><td>World position of the wall origin (the middle of its base).</td></tr>
 <tr><td class="name">Orientation</td><td class="dflt">eye(3)</td><td>World rotation of the wall as a 3&times;3 rotation matrix.</td></tr>
 <tr><td class="name">EulerAngles</td><td class="dflt">[0 0 0]</td><td>World rotation of the wall as Euler angles (z&rarr;y&rarr;x order), an alternative to <code class="phx-inline">Orientation</code>.</td></tr>

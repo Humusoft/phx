@@ -152,7 +152,7 @@ function scene = makeScene(ax, L)
         len = L.edges(k+1) - L.edges(k);
         phx.Body(ax, "Type", "static", "Position", [L.edges(k) + len/2, 0, -0.05], ...
             "Shape", {"Box", "Size", [len L.width 0.1], "Color", [0.78 0.62 0.38] + 0.06*(k - 2)}, ...
-            "Friction", [L.mu(k) 0 0], "Restitution", 0.1);
+            "Friction", L.mu(k), "Restitution", 0.1);
     end
 
     % Gutters, so a missed throw leaves the lane instead of sliding along it
@@ -163,7 +163,7 @@ function scene = makeScene(ax, L)
 
     ball = phx.Body(ax, "Position", [0.3 0 L.ballR + 0.001], ...
         "Shape", {"Sphere", "Radius", L.ballR, "Color", [0.15 0.2 0.45], "Texture", "stone", "TextureBlend", 0.3}, ...
-        "Friction", [1.0 0.002 0.001], "Restitution", 0.6);
+        "Friction", 1.0, "Restitution", 0.6);
     ball.Mass = L.ballM;
     ball.Inertia = 2/5*L.ballM*L.ballR^2*[1 1 1];
 
@@ -179,7 +179,7 @@ function scene = makeScene(ax, L)
     shp = phx.shape.Revolution("Profile", prof, "Segments", 24, "Envelope", "convex", "Color", 1);
     for k = 1:10
         pins(k) = phx.Body(ax, "Position", [L.xHead + layout(k, 1), layout(k, 2), cg + 0.002], ...
-            "Shape", shp, "Friction", [0.08 0.001 0.001], "Restitution", 0.7, "Mass", L.pinM, "Inertia", [0.0095 0.0095 0.0018]);
+            "Shape", shp, "Friction", 0.08, "Restitution", 0.7, "Mass", L.pinM, "Inertia", [0.0095 0.0095 0.0018]);
     end
 
     % The full rack: every throw starts by restoring this state

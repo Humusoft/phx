@@ -734,17 +734,82 @@ classdef tEngineProtocol < PhxTestCase
             tc.verifyEqual(phx.engine.io('get', w, h, 'linvel'), [0, 1, 0], "AbsTol", 0.05);
         end
 
-        function frictionTakesSlideRollSpin(tc)
-            % The friction is [slide roll spin] as PHX stores it, or the
-            % sliding friction alone. Rolling and spinning friction have no
-            % engine-neutral meaning yet (see PROTOCOL.md); the contract is
-            % only that PHX can set them.
+        function frictionTakesFrictionRollingSpin(tc)
+            % The friction is [friction rolling spin] (a coefficient and two
+            % lengths) or the coefficient alone; the values are finite and
+            % not negative
             w = tc.newWorld;
             h = tc.addBox(w, 2, [0 0 0], 0.2*[1 1 1]);
-            phx.engine.io('set', w, h, 'friction', [0.5 0.1 0.1]);
+            phx.engine.io('set', w, h, 'friction', [0.5 0.001 0.005]);
             phx.engine.io('set', w, h, 'friction', 0.4);
             [~] = phx.engine.io('step', w, tc.Dt);
             tc.verifyError(@() phx.engine.io('set', w, h, 'friction', [0.5 0.1]), "phx:engine:badArgument");
+            tc.verifyError(@() phx.engine.io('set', w, h, 'friction', [0.5 -0.001 0]), "phx:engine:badArgument");
+            tc.verifyError(@() phx.engine.io('set', w, h, 'friction', [0.5 0 NaN]), "phx:engine:badArgument");
+        end
+
+        function rollingResistanceSlowsABallByItsArm(tc)
+            % A ball or a cylinder rolling freely meets the torque b N of the
+            % rolling resistance b and slows by b g / (R (1 + I/(m R^2)))
+            r = 0.1;
+            b = 0.002;
+            tc.verifyEqual(tc.rollingDeceleration("sphere", [0.5 b 0]), b*tc.G/(1.4*r), ...
+                "RelTol", 0.01, "Ball");
+            tc.verifyEqual(tc.rollingDeceleration("cylinder", [0.5 b 0]), b*tc.G/(1.5*r), ...
+                "RelTol", 0.01, "Cylinder");
+            tc.verifyEqual(tc.rollingDeceleration("sphere", [0.5 0 0]), 0, ...
+                "AbsTol", 1e-3, "No rolling resistance");
+        end
+
+        function rollingResistanceIsTheSumOfBothBodies(tc)
+            % The pair's rolling resistance is the sum of the two values,
+            % whatever the friction coefficients
+            expected = 0.002*tc.G/(1.4*0.1);
+            tc.verifyEqual(tc.rollingDeceleration("sphere", [0.5 0.001 0], [1 0.001 0]), expected, ...
+                "RelTol", 0.01, "Shared by ball and floor");
+            tc.verifyEqual(tc.rollingDeceleration("sphere", [0.5 0 0], [1 0.002 0]), expected, ...
+                "RelTol", 0.01, "Floor alone");
+            tc.verifyEqual(tc.rollingDeceleration("sphere", [1 0.002 0], [0.3 0 0]), expected, ...
+                "RelTol", 0.01, "Other friction coefficients");
+        end
+
+        function rollingResistanceHoldsForAnyMassAndStep(tc)
+            % The limit follows the normal force, so a heavy ball and long
+            % or short steps slow alike
+            expected = 0.002*tc.G/(1.4*0.1);
+            tc.verifyEqual(tc.rollingDeceleration("sphere", [0.5 0.002 0], [1 0 0], 100), expected, ...
+                "RelTol", 0.01, "100 kg");
+            tc.verifyEqual(tc.rollingDeceleration("sphere", [0.5 0.002 0], [1 0 0], 1, 0.001), expected, ...
+                "RelTol", 0.01, "1 ms");
+            tc.verifyEqual(tc.rollingDeceleration("sphere", [0.5 0.002 0], [1 0 0], 1, 0.02), expected, ...
+                "RelTol", 0.01, "20 ms");
+        end
+
+        function rollingResistanceHasNoPreferredDirection(tc)
+            % A ball rolling at an angle to the world axes slows as along
+            % them and keeps its heading
+            expected = 0.002*tc.G/(1.4*0.1);
+            for azimuth = [30 45]
+                [a, sideways] = tc.rollingDeceleration("sphere", [0.5 0.002 0], [1 0 0], 1, tc.Dt, azimuth);
+                tc.verifyEqual(a, expected, "RelTol", 0.01, "Azimuth " + azimuth + " deg");
+                tc.verifyLessThan(sideways, 1e-3, "Sideways speed (m/s) at azimuth " + azimuth + " deg");
+            end
+        end
+
+        function spinRadiusStopsASpinningBall(tc)
+            % A ball spinning about the vertical on a floor meets the twist
+            % friction mu r N of the spin radius r (summed over the pair)
+            % and slows by mu r m g / I; without friction nothing resists
+            r = 0.1;
+            I = 0.4*r^2;
+            tc.verifyEqual(tc.spinDeceleration([0.5 0 0.01], [1 0 0]), 0.5*0.01*tc.G/I, ...
+                "RelTol", 0.01, "Ball alone");
+            tc.verifyEqual(tc.spinDeceleration([0.5 0 0.005], [0.5 0 0.005]), 0.25*0.01*tc.G/I, ...
+                "RelTol", 0.01, "Shared by ball and floor");
+            tc.verifyEqual(tc.spinDeceleration([0 0 0.01], [1 0 0]), 0, ...
+                "AbsTol", 1e-3, "No friction");
+            tc.verifyEqual(tc.spinDeceleration([0.5 0 0], [1 0 0]), 0, ...
+                "AbsTol", 1e-3, "No spin radius");
         end
 
         function settingsAreOneStructOwnedByTheEngine(tc)
@@ -1953,6 +2018,64 @@ classdef tEngineProtocol < PhxTestCase
                 end
             end
             tc.assertNotEmpty(T, "The body was never reported as moving.");
+        end
+
+        function [a, sideways] = rollingDeceleration(tc, shape, bodyFriction, floorFriction, mass, dt, azimuth)
+            % Launches a 1 kg ball (or a cylinder about its axis) of radius
+            % 0.1 m rolling without slip at 1 m/s on a floor along the
+            % azimuth (deg); returns its deceleration over 0.5 s after 0.1 s
+            % and its sideways speed at the end
+            arguments
+                tc
+                shape (1, 1) string
+                bodyFriction (1, 3) double
+                floorFriction (1, 3) double = [1 0 0]
+                mass (1, 1) double = 1
+                dt (1, 1) double = tc.Dt
+                azimuth (1, 1) double = 0
+            end
+            r = 0.1;
+            d = [cosd(azimuth) sind(azimuth) 0];
+            w = tc.newWorld;
+            phx.engine.io('set', w, tc.addFloor(w), 'friction', floorFriction);
+            if shape == "sphere"
+                h = phx.engine.io('add', w, 'sphere', 2, r, tEngineProtocol.pose([0 0 r]), mass, 0.4*mass*r^2*[1 1 1]);
+            else
+                Rz = makehgtform("zrotate", deg2rad(azimuth));
+                I = mass*[(3*r^2 + 0.1^2)/12, r^2/2, (3*r^2 + 0.1^2)/12];
+                h = phx.engine.io('add', w, 'cylinder', 2, r, 0.1, 'y', ...
+                    Rz*tEngineProtocol.pose([0 0 r]), mass, I);
+            end
+            phx.engine.io('set', w, h, 'friction', bodyFriction);
+            phx.engine.io('set', w, h, 'linvel', d);
+            phx.engine.io('set', w, h, 'angvel', cross([0 0 1], d)/r);
+            for k = 1:round(0.1/dt)
+                [~] = phx.engine.io('step', w, dt);
+            end
+            v1 = phx.engine.io('get', w, h, 'linvel');
+            for k = 1:round(0.5/dt)
+                [~] = phx.engine.io('step', w, dt);
+            end
+            v2 = phx.engine.io('get', w, h, 'linvel');
+            a = (dot(v1, d) - dot(v2, d))/0.5;
+            sideways = norm(v2 - dot(v2, d)*d);
+        end
+
+        function alpha = spinDeceleration(tc, ballFriction, floorFriction)
+            % Spins a 1 kg ball of radius 0.1 m at 10 rad/s about the
+            % vertical on a floor; returns its angular deceleration over
+            % 0.3 s after 0.05 s
+            r = 0.1;
+            w = tc.newWorld;
+            phx.engine.io('set', w, tc.addFloor(w), 'friction', floorFriction);
+            h = phx.engine.io('add', w, 'sphere', 2, r, tEngineProtocol.pose([0 0 r]), 1, 0.4*r^2*[1 1 1]);
+            phx.engine.io('set', w, h, 'friction', ballFriction);
+            phx.engine.io('set', w, h, 'angvel', [0 0 10]);
+            tc.settle(w, 0.05);
+            w1 = phx.engine.io('get', w, h, 'angvel');
+            tc.settle(w, 0.3);
+            w2 = phx.engine.io('get', w, h, 'angvel');
+            alpha = (w1(3) - w2(3))/0.3;
         end
 
         function T = settle(tc, w, duration)

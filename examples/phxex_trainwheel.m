@@ -18,15 +18,15 @@ function phxex_trainwheel
     phx.base.Shape.resetColorOrder;
     
     % Create two static cylinders forming rails
-    phx.Body(ax, "Type", "static", "Position", [0 +1 0], "EulerAngles", [0 pi/2.05 0], "Shape", {"Cylinder", "Diameter", 0.2, "Height", 30}, "Friction", [1 0 0]);
-    phx.Body(ax, "Type", "static", "Position", [0 -1 0], "EulerAngles", [0 pi/2.05 0], "Shape", {"Cylinder", "Diameter", 0.2, "Height", 30}, "Friction", [1 0 0]);
+    phx.Body(ax, "Type", "static", "Position", [0 +1 0], "EulerAngles", [0 pi/2.05 0], "Shape", {"Cylinder", "Diameter", 0.2, "Height", 30}, "Friction", 1);
+    phx.Body(ax, "Type", "static", "Position", [0 -1 0], "EulerAngles", [0 pi/2.05 0], "Shape", {"Cylinder", "Diameter", 0.2, "Height", 30}, "Friction", 1);
     
     % Create wheel shape by revolving profile around y-axis
     halfProfile = [-1.25 0; -1.2 0.6; -0.8 0.8; -0.7 1; -0.6 1; -0.6 0.2];
     wheelShape = phx.shape.Revolution("Axis", "y", "Profile", [halfProfile; flipud(abs(halfProfile))], "Envelope", "concave", "Style", "flat", "Segments", 180);
     
     % Create dynamic wheel body with mass and inertia
-    wheel = phx.Body(ax, "Position", [14 0.05 1.5], "Shape", wheelShape, "Friction", [1 0 0]);
+    wheel = phx.Body(ax, "Position", [14 0.05 1.5], "Shape", wheelShape, "Friction", 1);
 
     % White spoke mark makes the rotation visible
     line(wheel.Graphics, [0 0], [0.6 0.6], [0 1], "LineWidth", 2, "Color", [1 1 1]);

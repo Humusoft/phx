@@ -31,8 +31,8 @@ function phxex_conveyors
     phx.assembly.arena("Position", [2 0 -0.6], "Size", [1 1 0.5]);
     
     % Belts
-    phx.Body("Type", "static", "Position", [-1 0 0.02], "SurfaceVelocity", [vBelt1 0 0], "Shape", {"Box", "Size", [2 0.8 0.04], "Color", [0.4 0.4 0.8], "Texture", "arrows", "TextureBlend", 0.2}, "Friction", [1 0.05 0]);
-    phx.Body("Type", "static", "Position", [1 0 0.02], "SurfaceVelocity", [vBelt2 0 0], "Shape", {"Box", "Size", [2 0.8 0.03], "Color", [0.8 0.4 0.4], "Texture", "arrows", "TextureBlend", 0.2}, "Friction", [1 0.05 0]);
+    phx.Body("Type", "static", "Position", [-1 0 0.02], "SurfaceVelocity", [vBelt1 0 0], "Shape", {"Box", "Size", [2 0.8 0.04], "Color", [0.4 0.4 0.8], "Texture", "arrows", "TextureBlend", 0.2}, "Friction", 1);
+    phx.Body("Type", "static", "Position", [1 0 0.02], "SurfaceVelocity", [vBelt2 0 0], "Shape", {"Box", "Size", [2 0.8 0.03], "Color", [0.8 0.4 0.4], "Texture", "arrows", "TextureBlend", 0.2}, "Friction", 1);
     
     % Flaps
     flapAngle = flapAngle*pi/180;

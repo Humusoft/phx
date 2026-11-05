@@ -50,7 +50,7 @@ function phxex_capacitor(nBalls, rampTime, seed)
     qBall = 0.85;          % charge magnitude of a charged ball
     qPlate = 7.3;          % charge of one electrode pellet at full field
     pitch = 0.5;           % pellet spacing along the plate
-    mu = [0.05 0.01 0];    % low friction lets the balls rearrange
+    mu = 0.05;             % low friction lets the balls rearrange
     arena = [5 5 0.8];     % inner arena size
 
     % Figure setup

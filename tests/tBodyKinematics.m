@@ -81,6 +81,23 @@ classdef tBodyKinematics < PhxTestCase
             % Only the lower bound is enforced; coefficients above 1 are
             % physically meaningful (e.g. rubber) and deliberately allowed.
             tc.verifyError(@() set(tc.Body, "Friction", [-1 0 0]), ?MException);
+            tc.verifyError(@() set(tc.Body, "Friction", -1), ?MException);
+            tc.verifyError(@() set(tc.Body, "RollingResistance", -0.001), ?MException);
+            tc.verifyError(@() set(tc.Body, "SpinRadius", NaN), ?MException);
+        end
+
+        function frictionIsTheCoefficientAlone(tc)
+            % Friction is a scalar coefficient; the [drag roll spin] form of
+            % PHX 1.0 is still taken when it carries the coefficient alone,
+            % and refused with a pointer to the new properties otherwise
+            tc.Body.Friction = 0.9;
+            tc.verifyEqual(tc.Body.Friction, 0.9);
+            tc.Body.Friction = [0.7 0 0];
+            tc.verifyEqual(tc.Body.Friction, 0.7);
+            tc.verifyError(@() set(tc.Body, "Friction", [0.7 0.05 0]), "phx:Body:frictionTriplet");
+            tc.verifyEqual(tc.Body.Friction, 0.7, "A refused value leaves the friction as it was.");
+            tc.verifyEqual([tc.Body.RollingResistance tc.Body.SpinRadius], [0 0], ...
+                "Rolling resistance and spin radius default to 0.");
         end
 
         function nonFinitePoseIsRejected(tc)

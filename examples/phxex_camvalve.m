@@ -137,7 +137,7 @@ function [cam, valve] = buildScene(ax, rBase, lift, noseSpan, camThick, ...
     camShape = phx.shape.Extrusion("Spine", spine, "Profile", profile, ...
         "Envelope", "convex", "Material", "metal", "Color", [0.55 0.57 0.62]);
     cam = phx.Body(ax, "Type", "kinematic", "Position", [0.01 0 zc], ...
-        "Shape", camShape, "Friction", [0.2 0 0]);
+        "Shape", camShape, "Friction", 0.2);
 
     % Poppet valve: revolved head + stem + bucket tappet, sliding along Z.
     % The outline runs from the head face at z = 0 to the tappet top at
@@ -148,7 +148,7 @@ function [cam, valve] = buildScene(ax, rBase, lift, noseSpan, camThick, ...
     valveShape = phx.shape.Revolution("Axis", "z", "Profile", vProfile, "Envelope", "concave", ...
         "Color", [0.8 0.5 0.2], "Texture", "stripes", "TextureBlend", 0.3);
     zv = zc - rBase - Lvalve;                    % tappet just touching the base circle
-    valve = phx.Body(ax, "Position", [0 0 zv], "Shape", valveShape, "Friction", [1 0 0]);
+    valve = phx.Body(ax, "Position", [0 0 zv], "Shape", valveShape, "Friction", 1);
     valve.Mass = mValve;
     valve.Inertia = [1e-4 1e-4 1e-4];            % rotation is locked by the joint
 

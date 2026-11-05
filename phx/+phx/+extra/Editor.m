@@ -925,7 +925,7 @@ classdef Editor < handle
         end
 
         function setFriction(~, o, v)
-            o.Friction = [v o.Friction(2:3)];
+            o.Friction = v;
         end
 
         function t = designType(~, o)

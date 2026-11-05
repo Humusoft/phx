@@ -54,7 +54,7 @@ function phxex_segway(Kp, Kd, push)
     % Ground
     phx.Body(ax, "Type", "static", "Position", [-15 0 -0.1], ...
         "Shape", {"Box", "Size", [40 30 0.2], "Color", 1, "Material", "matte", ...
-                  "Texture", "xor", "TextureBlend", 0.4}, "Friction", [0.9 0 0]);
+                  "Texture", "xor", "TextureBlend", 0.4}, "Friction", 0.9);
 
     % Dimensions
     wheelRad = 0.35;          % wheel radius

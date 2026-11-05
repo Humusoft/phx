@@ -229,9 +229,6 @@ divide the block's `SimulationStep` (equal, or e.g. 0.005 for a 0.01 block step 
   feedthrough and already carries one sample of delay. A delay block adds a second one.
 - **Reference an object by `Name`** — set unique `Name`s in the scene builder; an unset/
   duplicate name can't be addressed.
-- **Scalar `Friction` broadcasts to `[drag roll spin]`** — `0.6` gives `[0.6 0.6 0.6]`;
-  roll and spin are reserved (the engine acts on the drag only), so prefer `[0.6 0 0]`
-  (see phx-scene-basics).
 - **Underactuation is real**: a 2-DOF tilt cannot independently place two balls (only
   their centroid is controllable) — pick controllable objectives. See `phxex_sim_ballplate2`.
 

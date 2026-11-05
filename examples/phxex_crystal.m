@@ -43,7 +43,7 @@ function phxex_crystal(nBalls, annealTime, seed)
     fThermal = 400;        % initial thermal force amplitude (N); above the
                            % contact binding force, so the hot phase melts
                            % any clusters formed during the drop
-    mu = [0.05 0.01 0];    % low friction lets the clusters rearrange
+    mu = 0.05;             % low friction lets the clusters rearrange
     arena = 8.5;           % arena size
 
     nBalls = 2*ceil(nBalls/2);

@@ -64,7 +64,7 @@ function phxex_gyrostab(duration, spinRate, maxAmplitude)
         "Color", [0.85 0.7 0.5], "Texture", "wood", "TextureBlend", 0.3);
     for p = 1:2
         for i = 1:4
-            crates(p, i) = phx.Body(ax, "Position", plats(p).Position + [cratePos(i, :), platSize(3)/2 + crateSize/2], "Shape", crateShape, "Friction", [crateMu 0 0]);
+            crates(p, i) = phx.Body(ax, "Position", plats(p).Position + [cratePos(i, :), platSize(3)/2 + crateSize/2], "Shape", crateShape, "Friction", crateMu);
         end
     end
 

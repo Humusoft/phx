@@ -41,7 +41,7 @@ function phxex_stack(n, mu, tiltRate)
     % to it through contact (no joints, no constraints holding them).
     pallet = phx.Body(ax, "Type", "kinematic", "Position", [0 0 0], ...
         "Shape", {"Box", "Size", [0.8 0.8 0.05], "Color", [0.6 0.4 0.2]}, ...
-        "Friction", [mu 0 0]);
+        "Friction", mu);
 
     % Build the stack. A small random horizontal offset per box makes the
     % outcome realistic rather than a perfectly balanced ideal column.
@@ -51,7 +51,7 @@ function phxex_stack(n, mu, tiltRate)
         off = (rand(1, 2) - 0.5)*0.01;         % small placement imperfection
         box(i) = phx.Body(ax, "Position", [off, z], ...
             "Shape", {"Box", "Size", s, "Color", clr(i, :), "Texture", "wood", "TextureBlend", 0.4}, ...
-            "Friction", [mu 0 0], "Mass", 1, "Inertia", [s(2)^2 + s(3)^2, s(1)^2 + s(3)^2, s(1)^2 + s(2)^2]/12);
+            "Friction", mu, "Mass", 1, "Inertia", [s(2)^2 + s(3)^2, s(1)^2 + s(3)^2, s(1)^2 + s(2)^2]/12);
     end
 
     % Measure the horizontal drift of the top box w.r.t. the pallet origin.

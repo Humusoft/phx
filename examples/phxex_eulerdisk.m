@@ -1,4 +1,4 @@
-function phxex_eulerdisk(duration, tilt, rollFriction)
+function phxex_eulerdisk(duration, tilt, rollingResistance)
 % PHXEX_EULERDISK Euler's disk - the same launch for three mass distributions
 %
 % Three steel bodies with the same rim diameter and the same thickness are
@@ -23,21 +23,23 @@ function phxex_eulerdisk(duration, tilt, rollFriction)
 % and the precession rate in the plots are computed from those afterwards.
 %
 % Input Arguments:
-%     duration     - simulated time in seconds (default 20)
-%     tilt         - initial tilt of all three bodies in degrees (default 25)
-%     rollFriction - rolling resistance of the rim on the table (default 0.001)
+%     duration          - simulated time in seconds (default 10)
+%     tilt              - initial tilt of all three bodies in degrees
+%                         (default 25)
+%     rollingResistance - rolling resistance of the rims on the table in m
+%                         (default 0.001)
 %
 % Example:
-%     phxex_eulerdisk               % all three settle flat within some 17 s
-%     phxex_eulerdisk(10, 25, 0)    % no dissipation, nothing settles
-%     phxex_eulerdisk(30, 45)       % steeper start, longer collapse
+%     phxex_eulerdisk               % all three settle flat within some 7 s
+%     phxex_eulerdisk(10, 25, 0)    % no rolling resistance, the ring rolls on
+%     phxex_eulerdisk(20, 45)       % steeper start, longer collapse
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 
     arguments
-        duration (1, 1) double {mustBePositive} = 20
+        duration (1, 1) double {mustBePositive} = 10
         tilt (1, 1) double {mustBeInRange(tilt, 5, 80)} = 25
-        rollFriction (1, 1) double {mustBeNonnegative} = 0.001
+        rollingResistance (1, 1) double {mustBeNonnegative} = 0.001
     end
 
     rimR = 0.15;
@@ -55,7 +57,7 @@ function phxex_eulerdisk(duration, tilt, rollFriction)
 
     % Table: sliding friction only, all dissipation belongs to the rims
     phx.Body(ax, "Type", "static", "Position", [0 0 -0.02], ...
-        "Shape", {"Box", "Size", [1.5 1.5 0.04], "Texture", "tiles"}, "Friction", [1 0 0]);
+        "Shape", {"Box", "Size", [1.5 1.5 0.04], "Texture", "tiles"}, "Friction", 1);
 
     % Closed annulus cross-section of the ring, rows of [axial radial]
     annulus = [-1 holeR; -1 rimR; 1 rimR; 1 holeR; -1 holeR].*[bodyH/2 1];
@@ -64,15 +66,15 @@ function phxex_eulerdisk(duration, tilt, rollFriction)
     ring = phx.Body(ax, "Position", [-spacing 0 centerZ], "EulerAngles", [a0 0 0], ...
         "Shape", {"Revolution", "Profile", annulus, "Envelope", "cylinder", ...
         "Style", "flat", "Density", 7800, "Color", [0.4 0.65 0.35], ...
-        "Texture", "stripes", "TextureBlend", 0.2}, "Friction", [1 rollFriction 0]);
+        "Texture", "stripes", "TextureBlend", 0.2}, "Friction", 1, "RollingResistance", rollingResistance);
     disk = phx.Body(ax, "Position", [0 0 centerZ], "EulerAngles", [a0 0 0], ...
         "Shape", {"Cylinder", "Radius", rimR, "Height", bodyH, ...
         "Density", 7800, "Color", [0.85 0.55 0.2], "Texture", "stripes", ...
-        "TextureBlend", 0.2}, "Friction", [1 rollFriction 0]);
+        "TextureBlend", 0.2}, "Friction", 1, "RollingResistance", rollingResistance);
     cone = phx.Body(ax, "Position", [spacing 0 centerZ], "EulerAngles", [a0 0 0], ...
         "Shape", {"Cone", "Radius", rimR, "Height", bodyH, ...
         "Density", 7800, "Color", [0.3 0.5 0.8], "Texture", "stripes", ...
-        "TextureBlend", 0.2}, "Friction", [1 rollFriction 0]);
+        "TextureBlend", 0.2}, "Friction", 1, "RollingResistance", rollingResistance);
     bodies = [ring disk cone];
     names = ["ring", "cylinder", "cone"];
     nBody = numel(bodies);

@@ -68,10 +68,27 @@ the default is that of the default shape, a 1&nbsp;m cube of density 1000.</td><
 <td>Principal moments of the inertia tensor, <span class="phx-unit">kg&middot;m&sup2;</span>. Recomputed with
 <code class="phx-inline">Mass</code> when a <code class="phx-inline">Shape</code> is assigned, but not when
 <code class="phx-inline">Mass</code> alone is set.</td></tr>
-<tr><td class="name">Friction</td><td class="dflt">[0.5 0 0]</td>
-<td>Friction coefficients (&ge;&nbsp;0) as <code class="phx-inline">[drag roll spin]</code>.
-The engine acts on the sliding (drag) coefficient only; rolling and spinning friction are
-reserved for a later release.</td></tr>
+<tr><td class="name">Friction</td><td class="dflt">0.5</td>
+<td>Coulomb friction coefficient (&ge;&nbsp;0, no upper bound). A contact resists sliding by
+this coefficient times the normal force, and a flat contact patch also resists turning about
+its normal. The contact combines the values of <em>both</em> bodies as their product. The
+<code class="phx-inline">[drag roll spin]</code> triplet of PHX 1.0 is still accepted as
+<code class="phx-inline">[mu 0 0]</code>; nonzero rolling or spinning values are an error, as
+their meaning has changed (see the next two properties).</td></tr>
+<tr><td class="name">RollingResistance</td><td class="dflt">0</td>
+<td>Rolling resistance, <span class="phx-unit">m</span> (&ge;&nbsp;0): the arm of the normal
+force <var>N</var> that resists rolling, a torque of up to <code class="phx-inline">RollingResistance*N</code>
+about any axis in the contact plane, whatever the friction. A ball of radius <var>R</var>
+rolling freely slows by <code class="phx-inline">RollingResistance</code>&middot;<var>g</var>/(<var>R</var>(1&nbsp;+&nbsp;<var>I</var>/<var>mR</var>&sup2;)).
+The contact adds the values of both bodies. Orders of magnitude: hardened steel on steel
+0.005&ndash;0.05&nbsp;mm, wood on wood 0.5&ndash;1&nbsp;mm, a tyre on asphalt a few mm.
+With 0 on both bodies (the default), a ball rolls on forever.</td></tr>
+<tr><td class="name">SpinRadius</td><td class="dflt">0</td>
+<td>Spin radius, <span class="phx-unit">m</span> (&ge;&nbsp;0): the effective radius of the
+contact patch that a point contact (a ball on a floor) stands for. The contact resists spinning
+about its normal by <code class="phx-inline">Friction*SpinRadius*N</code>, in addition to what
+a flat patch resists by its own extent; without friction nothing resists the spin. The contact
+adds the values of both bodies; about 2/3 of the radius of the real patch.</td></tr>
 <tr><td class="name">Restitution</td><td class="dflt">0</td>
 <td>Restitution (bounciness) coefficient (&ge;&nbsp;0); 0&nbsp;=&nbsp;no bounce. The resulting
 bounce of a contact combines the values of <em>both</em> colliding bodies, so both must be
@@ -83,7 +100,7 @@ nonzero for the contact to bounce.</td></tr>
 <em>body</em> frame &mdash; for conveyor belts, rollers and treadmills. The body itself does not
 move; contacts with it are solved as if its surface were sliding at this velocity, so other
 bodies are dragged along. The drag is limited by friction exactly as an ordinary contact is,
-so both bodies need a nonzero <code class="phx-inline">Friction(1)</code> for the surface to
+so both bodies need a nonzero <code class="phx-inline">Friction</code> for the surface to
 pull. Set on the moving body rather than on the belt, it drives that body the opposite way,
 because the value describes the <em>relative</em> motion of the contacting surfaces.</td></tr>
 <tr><td class="name">AppliedForce</td><td class="dflt">[0 0 0]</td>

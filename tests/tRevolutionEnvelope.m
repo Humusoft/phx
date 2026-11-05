@@ -113,7 +113,7 @@ classdef tRevolutionEnvelope < PhxTestCase
 
         function t = table(~)
             t = phx.Body([], "Type", "static", "Position", [0 0 -0.05], ...
-                "Shape", {"Box", "Size", [2 2 0.1]}, "Friction", [1 0 0]);
+                "Shape", {"Box", "Size", [2 2 0.1]}, "Friction", 1);
         end
 
         function sim = simulation(~, objs)

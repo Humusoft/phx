@@ -38,10 +38,10 @@ function phxex_airbag(withAirbag)
     sledSize = [2.4 1.2 0.15];
     z0 = sledSize(3)/2 + 0.002;
     sled = phx.Body(ax, "Position", [0 0 z0], "Shape", {"Box", "Size", sledSize, "Color", [0.3 0.3 0.35]}, ...
-        "Mass", 300, "Inertia", boxInertia(300, sledSize), "Friction", [0.02 0 0]);
+        "Mass", 300, "Inertia", boxInertia(300, sledSize), "Friction", 0.02);
     bumperSize = [0.1 1.2 0.15];
     bumper = phx.Body(ax, "Position", [1.75 0 z0], "Shape", {"Box", "Size", bumperSize, "Color", [0.8 0.2 0.2]}, ...
-        "Mass", 20, "Inertia", boxInertia(20, bumperSize), "Friction", [0.02 0 0]);
+        "Mass", 20, "Inertia", boxInertia(20, bumperSize), "Friction", 0.02);
     phx.PrismaticJoint(sled, bumper, "AxisA", [1 0 0], "AxisB", [1 0 0], "MutualCollisions", true);
     phx.Spring(sled, bumper, "PointA", [1.2 0 0], "PointB", [-0.05 0 0], "Stiffness", 0, "Damping", 6000);
 

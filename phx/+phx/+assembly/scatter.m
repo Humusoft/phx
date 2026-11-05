@@ -39,7 +39,7 @@ function bodies = scatter(varargin)
 %     factor, bodyColor = color*(1 - rand*RandomTint), where color is the
 %     one given by Color or, without it, the body's own color from the
 %     shape palette - so the shades differ while the hue stays.
-%   - Friction: friction coefficients of all bodies, default [0.5 0 0].
+%   - Friction: friction coefficient of all bodies, default 0.5.
 %   - Position, Orientation, EulerAngles: pose of the region frame in the
 %     world, default at the world origin. Same conventions as phx.Body.
 %
@@ -71,7 +71,7 @@ function bodies = build(ax, shape, n, Options)
         Options.RandomOrientation (1, 1) logical = false
         Options.Color double = double.empty
         Options.RandomTint (1, 1) double {mustBeInRange(Options.RandomTint, 0, 1)} = 0
-        Options.Friction (1, 3) double {mustBeGreaterThanOrEqual(Options.Friction, 0)} = [0.5 0 0]
+        Options.Friction (1, :) double {mustBeNonnegative} = 0.5
         Options.Position (1, 3) double = [0 0 0]
         Options.Orientation (3, 3) double = eye(3)
         Options.EulerAngles (1, 3) double = [0 0 0]

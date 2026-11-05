@@ -37,7 +37,7 @@ function phxex_droptest(dropH, stiffness, damping)
 
     % Hard static floor that the package will hit
     phx.Body(ax, "Type", "static", "Position", [0 0 -0.25], ...
-        "Shape", {"Box", "Size", [6 6 0.5], "Color", 1}, "Friction", [0.8 0 0]);
+        "Shape", {"Box", "Size", [6 6 0.5], "Color", 1}, "Friction", 0.8);
 
     % Outer shell of the package (the body that actually collides)
     shellSize = [1 1 0.6];
@@ -45,7 +45,7 @@ function phxex_droptest(dropH, stiffness, damping)
     shellZ = dropH + shellSize(3)/2;
     shell = phx.Body(ax, "Position", [0 0 shellZ], ...
         "Shape", {"Box", "Size", shellSize, "Color", [0.8 0.6 0.4]}, ...
-        "Mass", shellMass, "Friction", [0.8 0 0]);
+        "Mass", shellMass, "Friction", 0.8);
 
     % Protected product mass suspended inside the shell. It does NOT collide
     % with the shell or floor - it is held only by the cushioning spring, so

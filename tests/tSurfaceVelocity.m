@@ -68,7 +68,7 @@ classdef tSurfaceVelocity < PhxTestCase
             % frictionless belt transmits nothing however fast it runs.
             tc.requireEngine;
             [belt, cargo] = tc.conveyorParts("SurfaceVelocity", [5 0 0], ...
-                "Friction", [0 0 0]);
+                "Friction", 0);
             tc.runConveyor([belt cargo], 1);
             tc.verifyLessThan(norm(cargo.LinearVelocity), 0.01, ...
                 "A frictionless belt moved the cargo.");
@@ -81,7 +81,7 @@ classdef tSurfaceVelocity < PhxTestCase
             % take the reaction.
             tc.requireEngine;
             floor = tc.spawnBody([0 0 -1], "Type", "static", ...
-                "Shape", {"Box", "Size", [40 40 0.2]}, "Friction", [0 0 0]);
+                "Shape", {"Box", "Size", [40 40 0.2]}, "Friction", 0);
             belt = tc.spawnBody([0 0 -0.8], "Mass", 5, ...
                 "Shape", {"Box", "Size", [8 2 0.2]}, "SurfaceVelocity", [1 0 0]);
             cargo = tc.spawnBody([0 0 -0.64], "Mass", 1, ...

@@ -97,9 +97,24 @@ classdef Body < phx.base.Object
         % Body inertia tensor (kg*m^2)
         Inertia (1, 3) double = [0 0 0]
 
-        % Friction coefficients [drag roll spin]; the engine acts on the
-        % drag (sliding) coefficient only, roll and spin are reserved
-        Friction (1, 3) double {mustBeGreaterThanOrEqual(Friction, 0)} = [0.5 0 0]
+        % Friction coefficient (Coulomb): a contact resists sliding, and a
+        % contact patch turning about its normal, by this coefficient times
+        % the normal force; it combines the values of both bodies as their
+        % product. [mu 0 0] is still accepted as mu.
+        Friction (1, :) double {mustBeFrictionValue} = 0.5
+
+        % Rolling resistance (m): the arm of the normal force N that resists
+        % rolling, a torque of up to RollingResistance*N about any axis in
+        % the contact plane, whatever the friction; a contact adds the values
+        % of both bodies. With 0 on both, a ball rolls on forever.
+        RollingResistance (1, 1) double {mustBeNonnegative, mustBeFinite} = 0
+
+        % Spin radius (m): the effective radius of the contact patch that a
+        % point contact (a ball on a floor) stands for; the contact resists
+        % spinning about its normal by Friction*SpinRadius*N, in addition to
+        % what a flat patch resists by its own extent. A contact adds the
+        % values of both bodies; about 2/3 of the radius of the real patch.
+        SpinRadius (1, 1) double {mustBeNonnegative, mustBeFinite} = 0
 
         % Restitution (bounciness) coefficient, 0 = no bounce; the resulting
         % bounce of a contact combines the values of both colliding bodies
@@ -395,11 +410,30 @@ classdef Body < phx.base.Object
             end            
         end
 
-        function set.Friction(obj, coeffs)
-            obj.Friction = coeffs;
-            if ~isempty(obj.ObjectHandle)
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'friction', coeffs);
+        function set.Friction(obj, value)
+            if numel(value) == 3
+                % [drag roll spin] of PHX 1.0: the rolling and spinning values
+                % meant something else and have no equivalent
+                if any(value(2:3))
+                    error("phx:Body:frictionTriplet", ...
+                        "Friction is the friction coefficient alone. Rolling and spinning friction " + ...
+                        "are the properties RollingResistance and SpinRadius, lengths in m with a " + ...
+                        "meaning different from [drag roll spin]; set them instead.");
+                end
+                value = value(1);
             end
+            obj.Friction = value;
+            obj.pushFriction;
+        end
+
+        function set.RollingResistance(obj, value)
+            obj.RollingResistance = value;
+            obj.pushFriction;
+        end
+
+        function set.SpinRadius(obj, value)
+            obj.SpinRadius = value;
+            obj.pushFriction;
         end
 
         function set.Restitution(obj, value)
@@ -824,7 +858,7 @@ classdef Body < phx.base.Object
                 end
                 
                 obj.stateTransfer(state);
-                obj.Friction = obj.Friction;
+                obj.pushFriction;
                 obj.Restitution = obj.Restitution;
                 obj.Collisions = obj.Collisions;
                 obj.SurfaceVelocity = obj.SurfaceVelocity;
@@ -849,6 +883,16 @@ classdef Body < phx.base.Object
         end
     end
 
+    methods (Access = private)
+        function pushFriction(obj)
+            % Hands Friction, RollingResistance and SpinRadius to the engine
+            if ~isempty(obj.ObjectHandle)
+                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'friction', ...
+                    [obj.Friction obj.RollingResistance obj.SpinRadius]);
+            end
+        end
+    end
+
     methods (Static, Access = protected)
         function resolveState(cellObjs, dt, time, world)
             % implemented within the phx.Simulation.resolveState
@@ -862,4 +906,12 @@ classdef Body < phx.base.Object
         end
     end
 
+end
+
+function mustBeFrictionValue(value)
+%mustBeFrictionValue Validates Friction: a coefficient, or [mu 0 0] of PHX 1.0
+    if ~any(numel(value) == [1 3]) || any(~isfinite(value)) || any(value < 0)
+        error("phx:Body:badFriction", ...
+            "Friction must be a finite, nonnegative friction coefficient.");
+    end
 end

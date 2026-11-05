@@ -19,7 +19,7 @@ function parts = arena(varargin)
 %     x-by-y and the inner height z of the walls. Default [2 2 0.5].
 %   - Thickness: thickness of the floor and wall plates, default 0.1.
 %   - Color: common color of all parts, default [1 1 1].
-%   - Friction: friction coefficients of all parts, default [0.5 0 0].
+%   - Friction: friction coefficient of all parts, default 0.5.
 %   - Position: world position of the arena origin (the middle of the
 %     floor surface), default [0 0 0].
 %   - Orientation: world rotation of the arena as a 3x3 rotation matrix,
@@ -51,7 +51,7 @@ function parts = build(ax, Options)
         Options.Size (1, 3) double {mustBePositive} = [2 2 0.5]
         Options.Thickness (1, 1) double {mustBePositive} = 0.1
         Options.Color (1, 3) double = [1 1 1]
-        Options.Friction (1, 3) double {mustBeGreaterThanOrEqual(Options.Friction, 0)} = [0.5 0 0]
+        Options.Friction (1, :) double {mustBeNonnegative} = 0.5
         Options.Position (1, 3) double = [0 0 0]
         Options.Orientation (3, 3) double = eye(3)
         Options.EulerAngles (1, 3) double = [0 0 0]

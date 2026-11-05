@@ -15,7 +15,7 @@ function phxex_beltmaze
 %   Copyright 2026 HUMUSOFT s.r.o.
 
     nParcels = 12;
-    beltFriction = [1.0 0 0];
+    beltFriction = 1.0;
 
     % Belt segments, each built along its own +x axis so that the drive, the
     % arrows and the length all follow the same direction.

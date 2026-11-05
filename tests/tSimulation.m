@@ -82,6 +82,40 @@ classdef tSimulation < PhxTestCase
             p2 = tc.runDrop();
             tc.verifyEqual(p1, p2, "AbsTol", 1e-12);
         end
+
+        function rollingResistanceAndSpinRadiusReachTheEngine(tc)
+            % A ball rolling and spinning on a floor slows by its rolling
+            % resistance b (b g / (1.4 R)) and its spin radius r
+            % (mu r m g / I), set at construction; set to 0 while running,
+            % they stop acting
+            g = 9.81;
+            R = 0.1;
+            floor = tc.spawnBody([0 0 -0.5], "Type", "static", ...
+                "Shape", {"Box", "Size", [20 20 1]}, "Friction", 1);
+            ball = tc.spawnBody([0 0 R], "Shape", {"Sphere", "Radius", R}, ...
+                "Mass", 1, "Inertia", 0.4*R^2*[1 1 1], "Friction", 0.5, ...
+                "RollingResistance", 0.002, "SpinRadius", 0.01, ...
+                "LinearVelocity", [1 0 0], "AngularVelocity", [0 1/R 5]);
+            sim = phx.Simulation([floor ball], "Gravity", [0 0 -g]);
+            tc.addTeardown(@() delete(sim));
+            sim.step(0.05, 10, -1);
+            v1 = ball.LinearVelocity;
+            w1 = ball.AngularVelocity;
+            sim.step(0.2, 40, -1);
+            v2 = ball.LinearVelocity;
+            w2 = ball.AngularVelocity;
+            tc.verifyEqual((v1(1) - v2(1))/0.2, 0.002*g/(1.4*R), "RelTol", 0.02, "Rolling");
+            tc.verifyEqual((w1(3) - w2(3))/0.2, 0.5*0.01*g/(0.4*R^2), "RelTol", 0.02, "Spinning");
+
+            ball.RollingResistance = 0;
+            ball.SpinRadius = 0;
+            sim.step(0.05, 10, -1);
+            v3 = ball.LinearVelocity;
+            w3 = ball.AngularVelocity;
+            sim.step(0.2, 40, -1);
+            tc.verifyEqual(ball.LinearVelocity(1), v3(1), "RelTol", 1e-3, "Rolling without resistance");
+            tc.verifyEqual(ball.AngularVelocity(3), w3(3), "RelTol", 1e-3, "Spinning without spin radius");
+        end
     end
 
     methods (Test, TestTags = {'Engine', 'Graphics'})

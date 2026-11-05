@@ -41,7 +41,7 @@ function bricks = wall(varargin)
 %     the hue stays; 0 leaves all bricks in exactly the same color. The
 %     random numbers are drawn from the global generator (like rand), so a
 %     wall is reproduced by seeding the generator first with rng.
-%   - Friction: friction coefficients of all bricks, default [0.5 0 0].
+%   - Friction: friction coefficient of all bricks, default 0.5.
 %   - Position: world position of the wall origin (the middle of its base),
 %     default [0 0 0].
 %   - Orientation: world rotation of the wall as a 3x3 rotation matrix,
@@ -84,7 +84,7 @@ function bricks = build(ax, Options)
         Options.Density (1, 1) double {mustBePositive} = 2000
         Options.Color (1, 3) double = [1 1 1]
         Options.RandomTint (1, 1) double {mustBeInRange(Options.RandomTint, 0, 1)} = 0.1
-        Options.Friction (1, 3) double {mustBeGreaterThanOrEqual(Options.Friction, 0)} = [0.5 0 0]
+        Options.Friction (1, :) double {mustBeNonnegative} = 0.5
         Options.Position (1, 3) double = [0 0 0]
         Options.Orientation (3, 3) double = eye(3)
         Options.EulerAngles (1, 3) double = [0 0 0]
