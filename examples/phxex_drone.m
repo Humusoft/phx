@@ -67,7 +67,8 @@ function phxex_drone(wpScale)
     phx.Body(ax, "Type", "static", "Position", [wpScale wpScale*0.6 -2.0], ...
         "Shape", {"Sphere", "Diameter", 6, "Color", [0.55 0.65 0.45], "Material", "matte", "Texture", "stone", "TextureBlend", 0.3});
 
-    % A ball on a slim column right in the path of the first flight leg
+    % A ball on a slim column right in the path of the first flight leg; a
+    % little rolling resistance stops it before the edge of the ground
     zBall = 2.0;
     xyBall = [wpScale/2, -0.5];
     phx.Body(ax, "Type", "static", "Position", [xyBall, (zBall - 0.18)/2], ...
@@ -75,7 +76,8 @@ function phxex_drone(wpScale)
         "Color", [0.6 0.6 0.65]});
     ball = phx.Body(ax, "Position", [xyBall, zBall], ...
         "Shape", {"Sphere", "Diameter", 0.36, "Density", 20, ...
-        "Color", [0.7 0.2 0.5], "Texture", "xor", "TextureBlend", 0.5}, "Friction", 0.5, "Restitution", 1);
+        "Color", [0.7 0.2 0.5], "Texture", "xor", "TextureBlend", 0.5}, "Friction", 0.5, "Restitution", 1, ...
+        "RollingResistance", 0.01);
 
     % The quadcopter frame; mass properties are set explicitly
     drone = phx.Body(ax, "Position", [0 0 0.36], ...
