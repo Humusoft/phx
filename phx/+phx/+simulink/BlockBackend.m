@@ -27,6 +27,30 @@ classdef BlockBackend < handle
     end
 
     methods (Static)
+        % Build or load the scene of a source: the struct of a MAT file, or
+        % what a scene function (.m, or a bare name on the path) returns.
+        % The result is what phx.Simulation.addObjects takes. Used both to
+        % run the block and to introspect its interface, so the two always
+        % see the same scene.
+        function scene = loadSource(source)
+            arguments
+                source (1, 1) string
+            end
+
+            [folder, name, ext] = fileparts(source);
+            switch lower(ext)
+                case ".mat"
+                    scene = load(source);
+                case {".m", ""}
+                    if folder ~= ""
+                        addpath(folder);
+                    end
+                    scene = feval(name);
+                otherwise
+                    error("phx:PhxModel:unsupportedSource", "Unsupported model source '%s'.", source);
+            end
+        end
+
         % Introspect a scene source without creating the physics engine.
         % Returns a struct array (one entry per object) with fields
         % Name, Class, Properties and Methods. Used for edit-time validation
@@ -36,18 +60,7 @@ classdef BlockBackend < handle
                 source (1, 1) string
             end
 
-            [folder, name, ext] = fileparts(source);
-            switch lower(ext)
-                case ".mat"
-                    objs = phx.simulink.BlockBackend.collectObjects(load(source));
-                case {".m", ""}
-                    if folder ~= ""
-                        addpath(folder);
-                    end
-                    objs = phx.simulink.BlockBackend.collectObjects(feval(name));
-                otherwise
-                    error("phx:PhxModel:unsupportedSource", "Unsupported model source '%s'.", source);
-            end
+            objs = phx.simulink.BlockBackend.collectObjects(phx.simulink.BlockBackend.loadSource(source));
 
             iface = struct('Name', {}, 'Class', {}, 'Properties', {}, 'Methods', {});
             for i = 1:numel(objs)

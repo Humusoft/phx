@@ -48,13 +48,17 @@ function setup(block)
     % Resolve references against the model interface: validates object and
     % property names and sizes bracket-less references. Engine-free; based on
     % class metadata. Falls back to explicit indices if introspection fails.
-    try
-        iface = phx.simulink.BlockBackend.getModelInterface(BB.Source);
-    catch ME
-        iface = [];
-        warning("phx:PhxModel:interfaceUnavailable", ...
-            "Could not introspect model ""%s"" (%s). References must use explicit indices.", ...
-            BB.Source, ME.message);
+    % A block without a source yet (just taken from the library) has no
+    % interface and no ports to resolve, which is not worth a warning.
+    iface = [];
+    if strtrim(BB.Source) ~= ""
+        try
+            iface = phx.simulink.BlockBackend.getModelInterface(BB.Source);
+        catch ME
+            warning("phx:PhxModel:interfaceUnavailable", ...
+                "Could not introspect model ""%s"" (%s). References must use explicit indices.", ...
+                BB.Source, ME.message);
+        end
     end
     if ~isempty(iface)
         BB.InputRefs = phx.simulink.BlockBackend.resolveRefs(BB.InputRefs, iface, "input");
@@ -126,7 +130,7 @@ function Start(block, BB)
     % Create simulation object
     BB.Sim = phx.Simulation([]);
     BB.StepCount = 0;
-    BB.Sim.addObjects(BB.Source);
+    BB.Sim.addObjects(phx.simulink.BlockBackend.loadSource(BB.Source));
     BB.Sim.propagate("ParentAxes", BB.hA);
 
     % Assign objects for input ports
