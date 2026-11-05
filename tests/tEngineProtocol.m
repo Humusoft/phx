@@ -49,6 +49,14 @@ classdef tEngineProtocol < PhxTestCase
                     "phx.engine.io does not resolve to " + MexFolder + ".");
             end
             tc.requireEngine;
+            % These are the contracts of protocol 2; the protocol 1 engine
+            % (Bullet) predates the 'version' verb
+            try
+                v = phx.engine.io('version');
+            catch
+                v = 1;
+            end
+            tc.assumeGreaterThanOrEqual(v, 2, "The engine implements protocol " + v + "; these tests need protocol 2.");
         end
     end
 
@@ -189,7 +197,6 @@ classdef tEngineProtocol < PhxTestCase
             % (With the contacts of every triangle kept apart, the many
             % slivers around the fan's centre took the load and the friction
             % there, and the moment was about 0.)
-            tc.requireProtocol(1.1);
             n = 64;
             a = 2*pi*(0:n - 1)/n;
             V = [0 0 0; cos(a') sin(a') zeros(n, 1)]';   % centre, then the rim
@@ -306,8 +313,7 @@ classdef tEngineProtocol < PhxTestCase
         function massAndInertiaScaleTheResponse(tc)
             w = tc.newWorld([0 0 0]);
             h = tc.addBox(w, 2, [0 0 0], 0.2*[1 1 1]);
-            % Mass and inertia act from the next step on (Bullet took a new
-            % inertia into its world tensor a step later)
+            % Mass and inertia act from the next step on
             phx.engine.io('set', w, h, 'massprops', 2, [1 2 4]);
             phx.engine.io('apply', w, h, 'centralforce', [4 0 0], false);
             phx.engine.io('apply', w, h, 'torque', [1 1 1], false);
@@ -403,7 +409,7 @@ classdef tEngineProtocol < PhxTestCase
             % four corners couples the two (both stop at 0.33 s; the
             % sliding alone would stop at 0.20 s). (Jolt 5.6.0 limited the
             % linear and the twist friction independently: the sliding
-            % stopped at 0.205 s whatever the spin; Bullet 0.365 s.)
+            % stopped at 0.205 s whatever the spin.)
             s = [0.2 0.2 0.02];
             w = tc.newWorld;
             phx.engine.io('set', w, tc.addFloor(w), 'friction', 1);
@@ -432,7 +438,7 @@ classdef tEngineProtocol < PhxTestCase
             % A ball dropped from 1 m with restitution 0.8 (the floor 1)
             % bounces back to e^2 = 0.64 m. (Jolt 5.6.0 reached 0.115 m at
             % this step, as its speculative contact bounced the ball from
-            % where it was; Bullet 0.704 m.)
+            % where it was.)
             r = 0.1;
             w = tc.newWorld;
             phx.engine.io('set', w, tc.addFloor(w), 'restitution', 1);
@@ -453,7 +459,7 @@ classdef tEngineProtocol < PhxTestCase
             % A ball rolling fast over the seam of two coplanar static boxes
             % stays on them. (Jolt 5.6.0 bounced it off the tilted normal of
             % the second box's edge, which it predicted to hit: 121 mm with
-            % restitution 0.6, Bullet 12 mm.)
+            % restitution 0.6.)
             r = 0.1;
             dt = 0.002;
             w = tc.newWorld;
@@ -480,8 +486,6 @@ classdef tEngineProtocol < PhxTestCase
             % steps stays within 5 mm of the boxes. (It predicted a hit
             % with the second box's edge, which it only passes at zero
             % distance: 34 and 192 mm before item 21.)
-            % Protocol 1.1: the Bullet MEX lifts it 38 mm at 5 ms.
-            tc.requireProtocol(1.1);
             r = 0.1;
             for dt = [0.005 0.01]
                 w = tc.newWorld;
@@ -510,8 +514,6 @@ classdef tEngineProtocol < PhxTestCase
             % exchanged, within 0.1 m/s at 5 ms steps. (The speculative
             % contact stopped them short of touching and they parted without
             % a bounce: 1.5 m/s off before item 21.)
-            % Protocol 1.1: the Bullet MEX is 0.26 m/s off.
-            tc.requireProtocol(1.1);
             r = 0.1;
             b = 0.5*r;
             w = tc.newWorld([0 0 0]);
@@ -614,8 +616,7 @@ classdef tEngineProtocol < PhxTestCase
             % 0.1, as in phxex_stack) on a kinematic pallet tilted to 8 deg
             % stays put: nothing turns it about the vertical. (A friction
             % model letting the twist friction reverse the twist made such
-            % a stack twitch at 2 rad/s and topple at 15 instead of 23 deg;
-            % Bullet twitches at 0.3 rad/s.)
+            % a stack twitch at 2 rad/s and topple at 15 instead of 23 deg.)
             w = tc.newWorld;
             pallet = tc.addBox(w, 1, [0 0 0], [8 8 0.5]);
             phx.engine.io('set', w, pallet, 'friction', 0.5);
@@ -664,10 +665,9 @@ classdef tEngineProtocol < PhxTestCase
         end
 
         function coneTurnsAboutItsCentreOfMass(tc)
-            % Protocol 1.1: the cone's centre of mass lies a quarter of the
+            % The cone's centre of mass lies a quarter of the
             % height below its origin; half a turn about a transverse axis
             % takes the origin from above the centre of mass to below it
-            tc.requireProtocol(1.1);
             r = 0.3;
             h = 0.8;
             I = [3*h^2/80 + 3*r^2/20, 3*h^2/80 + 3*r^2/20, 3*r^2/10];
@@ -680,8 +680,7 @@ classdef tEngineProtocol < PhxTestCase
         end
 
         function kinematicBodyFollowsItsVelocity(tc)
-            % Protocol 1.1: a kinematic body moves with the velocity set to it
-            tc.requireProtocol(1.1);
+            % A kinematic body moves with the velocity set to it
             w = tc.newWorld;
             k = tc.addBox(w, 1, [0 0 0], [1 1 0.2]);
             phx.engine.io('set', w, k, 'linvel', [1 0 0]);
@@ -693,10 +692,9 @@ classdef tEngineProtocol < PhxTestCase
         end
 
         function latestKinematicCommandHolds(tc)
-            % Protocol 1.1: a pose is reached in the next step, after which
+            % A pose is reached in the next step, after which
             % the body stands still; a velocity holds until the next command;
             % a velocity set after a pose applies once the pose is reached
-            tc.requireProtocol(1.1);
             w = tc.newWorld([0 0 0]);
             k = tc.addBox(w, 1, [0 0 0], [1 1 0.2]);
             dt = tc.Dt;
@@ -821,9 +819,7 @@ classdef tEngineProtocol < PhxTestCase
         end
 
         function staticFloorReadsTheWeight(tc)
-            % The same on a static plate (protocol 1.1: the Bullet MEX
-            % divides the force on a static body by the step once more)
-            tc.requireProtocol(1.1);
+            % The same on a static plate
             w = tc.newWorld;
             floor = tc.addBox(w, 0, [0 0 0], [2 2 0.2]);
             tc.addBox(w, 2, [0.3 0 0.2], [0.2 0.2 0.2], 2);
@@ -836,7 +832,6 @@ classdef tEngineProtocol < PhxTestCase
         function staticAnchorReadsTheHangingWeight(tc)
             % A 3 kg box hanging still from a static anchor by a point joint
             % 0.5 m above it: the anchor carries its weight
-            tc.requireProtocol(1.1);
             w = tc.newWorld;
             anchor = tc.addBox(w, 0, [0 0 1], 0.1*[1 1 1]);
             box = tc.addBox(w, 2, [0 0 0.5], 0.2*[1 1 1], 3);
@@ -971,8 +966,8 @@ classdef tEngineProtocol < PhxTestCase
         end
 
         function jointKindsAreThePhxJoints(tc)
-            % Protocol 2: the kinds are named after the PHX joints, and the
-            % Bullet constraint names are gone
+            % The kinds are named after the PHX joints; the constraint names
+            % of protocol 1 are gone
             w = tc.newWorld;
             a = tc.addBox(w, 0, [0 0 2], 0.2*[1 1 1]);
             b = tc.addBox(w, 2, [0 0 1], 0.2*[1 1 1]);
@@ -1007,9 +1002,6 @@ classdef tEngineProtocol < PhxTestCase
             % A ball of restitution 0.8 dropped 2 cm onto a floor of
             % restitution 1 hits it at 0.63 m/s and bounces to e^2 h.
             % (Jolt bounces only impacts faster than 1 m/s by default.)
-            % Protocol 1.1: the Bullet MEX bounces this ball to half the
-            % height (6.1 mm).
-            tc.requireProtocol(1.1);
             w = tc.newWorld;
             phx.engine.io('set', w, tc.addFloor(w), 'restitution', 1);
             r = 0.05;
@@ -1054,8 +1046,6 @@ classdef tEngineProtocol < PhxTestCase
             % the speed stays within 1 % for 2 s. (With the gyroscopic step
             % applied before the joints' solve, which then projected the
             % angular velocity back onto the axis, it lost 2.6 %.)
-            % Protocol 1.1: the Bullet MEX slows it to 19.2 rad/s.
-            tc.requireProtocol(1.1);
             w = tc.newWorld([0 0 0]);
             s = [0.1 0.06 0.04];
             R0 = [cosd(10) 0 sind(10); 0 1 0; -sind(10) 0 cosd(10)];
@@ -1073,8 +1063,6 @@ classdef tEngineProtocol < PhxTestCase
             % the tilt stays within 0.5 deg for 5 s at 5 ms. (With the
             % gyroscopic step applied before the joint's solve the top sank
             % 17 deg.)
-            % Protocol 1.1: the Bullet MEX tilts it by 28 deg.
-            tc.requireProtocol(1.1);
             g = tEngineProtocol.G;
             m = 1; rad = 0.1; hh = 0.01; l = 0.02; w3 = 40; th = 30;
             Ic = m*[(3*rad^2 + (2*hh)^2)/12*[1 1] rad^2/2];
@@ -1137,7 +1125,7 @@ classdef tEngineProtocol < PhxTestCase
             % every 1 ms step) along a slow sine, at the default iterations:
             % the tracking error follows the reference smoothly. (Jolt at 10
             % velocity iterations, warm starting each motor with the impulse
-            % of its last target, rang by 5.6 mrad; Bullet 0.01 mrad.)
+            % of its last target, rang by 5.6 mrad.)
             dt = 0.001;
             Kp = 200;
             w = tc.newWorld;
@@ -1435,7 +1423,7 @@ classdef tEngineProtocol < PhxTestCase
         end
     end
 
-    % Soft bodies (protocol 1.2; the Bullet gateway has none)
+    % Soft bodies
     methods (Test, TestTags = {'Engine'})
         function softBodyRestsOnTheFloorKeepingItsShape(tc)
             % A closed cube mesh dropped as a soft body comes to rest on the
@@ -1443,7 +1431,6 @@ classdef tEngineProtocol < PhxTestCase
             % vertices are read back in world coordinates in the order given;
             % the step output reports rigid bodies only, and a soft body is
             % removed as a body is.
-            tc.requireProtocol(1.2);
             [V, F] = tEngineProtocol.cubeMesh(0.2);
             w = tc.newWorld;
             tc.addFloor(w);
@@ -1464,13 +1451,12 @@ classdef tEngineProtocol < PhxTestCase
         end
     end
 
-    % Particle groups (protocol 1.3; the Bullet gateway has none)
+    % Particle groups
     methods (Test, TestTags = {'Engine'})
         function particlesRestOnTheFloorUnreportedByStep(tc)
             % Particles dropped on the floor are read back as 3xN in the
             % order given and come to rest touching it; the step reports
             % only the rigid body beside them.
-            tc.requireProtocol(1.3);
             r = 0.05;
             P = [(-2:2)*0.3; zeros(1, 5); 0.5*ones(1, 5)];
             w = tc.newWorld;
@@ -1496,7 +1482,6 @@ classdef tEngineProtocol < PhxTestCase
         function particlesKeepTheirOrder(tc)
             % Removing particles keeps the order of the rest, appended ones
             % come last, and a subset is set by one-based indices.
-            tc.requireProtocol(1.3);
             w = tc.newWorld([0 0 0]);
             P = [1; 0; 0] * (1:5);
             g = phx.engine.io('add', w, 'particles', P, 0.1, 1, false);
@@ -1514,7 +1499,6 @@ classdef tEngineProtocol < PhxTestCase
         function particleForcesActForOneStep(tc)
             % A force for all (3x1) or one per particle (3xN) changes the
             % velocity by F/m dt in the next step only.
-            tc.requireProtocol(1.3);
             w = tc.newWorld([0 0 0]);
             m = 0.5;
             g = phx.engine.io('add', w, 'particles', [0 1; 0 0; 0 0], 0.1, m, false);
@@ -1531,7 +1515,6 @@ classdef tEngineProtocol < PhxTestCase
         function particleSelfCollisionsCanBeSwitchedOff(tc)
             % Two particles dropped one above the other stack; without
             % self-collisions the upper one passes through to the floor.
-            tc.requireProtocol(1.3);
             r = 0.05;
             heights = zeros(2, 2);
             for on = [true false]
@@ -1552,7 +1535,6 @@ classdef tEngineProtocol < PhxTestCase
         function particlesRollOnlyWithRotation(tc)
             % A particle sliding over the floor starts rolling (w = v/r about
             % y) only when its group rotates.
-            tc.requireProtocol(1.3);
             r = 0.05;
             w = tc.newWorld;
             tc.addFloor(w);
@@ -1571,7 +1553,6 @@ classdef tEngineProtocol < PhxTestCase
         function particlesSleepByTheirOwnSetting(tc)
             % In a world that keeps its bodies awake, a group allowed to sleep
             % falls asleep once at rest; forbidding it wakes the particles.
-            tc.requireProtocol(1.3);
             w = tc.newWorld;
             tc.addFloor(w);
             g = phx.engine.io('add', w, 'particles', [0 0.3; 0 0; 0.05 0.05], 0.05, 0.1, false);
@@ -1585,12 +1566,11 @@ classdef tEngineProtocol < PhxTestCase
         end
     end
 
-    % Spring constraint (protocol 1.5; the Bullet gateway has none)
+    % Spring constraint
     methods (Test, TestTags = {'Engine'})
         function springHoldsAMassAtItsStaticDeflection(tc)
             % 2 kg hanging from a static anchor on a spring of free length
             % 0.5 m, k = 400 N/m, damped to rest: stretched by m*g/k
-            tc.requireProtocol(1.5);
             m = 2;
             k = 400;
             w = tc.newWorld;
@@ -1624,7 +1604,6 @@ classdef tEngineProtocol < PhxTestCase
         function springOscillatesAtItsNaturalFrequency(tc)
             % 1 kg on k = 100 N/m without damping, released 0.1 m out:
             % period 2*pi/10 s, and the motion neither grows nor decays
-            tc.requireProtocol(1.5);
             w = tc.newWorld([0 0 0]);
             a = tc.addBox(w, 0, [0 0 0], 0.1*[1 1 1]);
             b = tc.addBox(w, 2, [1.1 0 0], 0.2*[1 1 1]);
@@ -1647,7 +1626,6 @@ classdef tEngineProtocol < PhxTestCase
         function springIsSlackInsideItsRange(tc)
             % Lengths [0.5 1.5]: no force inside, a pull beyond the upper
             % length, a push below the lower one
-            tc.requireProtocol(1.5);
             w = tc.newWorld([0 0 0]);
             a = tc.addBox(w, 0, [0 0 0], 0.1*[1 1 1]);
             lengths = [1 2 0.3];
@@ -1665,7 +1643,6 @@ classdef tEngineProtocol < PhxTestCase
         function inerterAddsItsInertanceToTheMass(tc)
             % 1 kg on k = 100 N/m with an inerter of 3 kg to a static anchor,
             % released 0.1 m out: period 2*pi*sqrt((m + b)/k), amplitude kept
-            tc.requireProtocol(1.5);
             w = tc.newWorld([0 0 0]);
             a = tc.addBox(w, 0, [0 0 0], 0.1*[1 1 1]);
             b = tc.addBox(w, 2, [1.1 0 0], 0.2*[1 1 1]);
@@ -1689,7 +1666,6 @@ classdef tEngineProtocol < PhxTestCase
         function inerterSharesAForceByTheInertances(tc)
             % 10 N on a 1 kg body joined to a 3 kg one by an inerter of
             % 2 kg alone: the inerter passes f = b*F/(mA + b + b*mA/mB)
-            tc.requireProtocol(1.5);
             w = tc.newWorld([0 0 0]);
             hA = phx.engine.io('add', w, 'box', 2, 0.1*[1 1 1], tEngineProtocol.pose([0 0 0]), 1, [1 1 1]);
             hB = phx.engine.io('add', w, 'box', 2, 0.1*[1 1 1], tEngineProtocol.pose([1 0 0]), 3, [1 1 1]);
@@ -1706,7 +1682,6 @@ classdef tEngineProtocol < PhxTestCase
             % 1 kg on k = 1e4 N/m with 1e4 kg of inertance, released 0.1 m
             % out: period 2*pi*sqrt(1.0001) s, the motion neither grows nor
             % decays
-            tc.requireProtocol(1.5);
             w = tc.newWorld([0 0 0]);
             a = tc.addBox(w, 0, [0 0 0], 0.1*[1 1 1]);
             b = tc.addBox(w, 2, [1.1 0 0], 0.2*[1 1 1]);
@@ -1725,7 +1700,6 @@ classdef tEngineProtocol < PhxTestCase
         function torsionSpringTwistsByTorqueOverStiffness(tc)
             % 2 N*m about z on a body held by k = 10 N*m/rad (damped): it
             % turns by M/k; the spring holds it with -M, its base feels +M
-            tc.requireProtocol(1.5);
             [w, a, b, s] = tc.torsionPair(1, 0, 10, 5);
             for i = 1:round(5/tc.Dt)
                 phx.engine.io('apply', w, b, 'torque', [0 0 2], false);
@@ -1746,7 +1720,6 @@ classdef tEngineProtocol < PhxTestCase
             % I = 0.5 kg*m^2 on k = 2 N*m/rad, rest angle 0.3 rad, released
             % at 0: period pi, swinging between 0 and 0.6 rad; with an
             % inertance of 1.5 kg*m^2 the period doubles
-            tc.requireProtocol(1.5);
             for inertance = [0 1.5]
                 [w, ~, ~, s] = tc.torsionPair(0.5, 0.3, 2, 0);
                 phx.engine.io('set', w, s, 'inertance', inertance);
@@ -1769,7 +1742,6 @@ classdef tEngineProtocol < PhxTestCase
         function torsionSpringWindsOverTurns(tc)
             % A body spun at 10 rad/s against k = 0.1 N*m/rad (I = 1) winds
             % it 10/sqrt(0.1) = 31.6 rad, five turns, before it turns back
-            tc.requireProtocol(1.5);
             [w, ~, b, s] = tc.torsionPair(1, 0, 0.1, 0);
             phx.engine.io('set', w, b, 'angvel', [0 0 10]);
             top = 0;
@@ -1782,7 +1754,6 @@ classdef tEngineProtocol < PhxTestCase
         end
 
         function torsionSpringRejectsBadSettings(tc)
-            tc.requireProtocol(1.5);
             [w, a, b, s] = tc.torsionPair(1, 0, 1, 0);
             tc.verifyError(@() phx.engine.io('add', w, 'torsionspring', [a b], eye(4), eye(4), true, NaN, 1, 0), ...
                 "phx:engine:badArgument");
@@ -1795,7 +1766,6 @@ classdef tEngineProtocol < PhxTestCase
         function ropeNeverPushes(tc)
             % Lengths [-Inf 1]: no force shorter than 1 m, even where the
             % points meet, a pull beyond it
-            tc.requireProtocol(1.5);
             w = tc.newWorld([0 0 0]);
             a = tc.addBox(w, 0, [0 0 0], 0.1*[1 1 1]);
             lengths = [0 0.3 1.5];
@@ -1816,7 +1786,6 @@ classdef tEngineProtocol < PhxTestCase
             % it), up over the beam and across to a static drum. Two
             % vertical runs carry it, T = m*g/2; the block sinks by the
             % stretch over two runs, T/k/2; the drum feels T toward the beam
-            tc.requireProtocol(1.5);
             [w, h] = tc.tackle(4.2);
             m = 2;
             k = 1e4;
@@ -1832,7 +1801,6 @@ classdef tEngineProtocol < PhxTestCase
         function ropeIsSlackBelowItsLength(tc)
             % The same tackle with 0.3 m of rope to spare: the block falls
             % freely and the rope reads no tension
-            tc.requireProtocol(1.5);
             [w, h] = tc.tackle(4.5);
             [~] = phx.engine.io('step', w, tc.Dt);
             tc.verifyEqual(phx.engine.io('get', w, h.rope, 'spring'), 0);
@@ -1840,7 +1808,6 @@ classdef tEngineProtocol < PhxTestCase
         end
 
         function ropeGoesWithAnyOfItsBodies(tc)
-            tc.requireProtocol(1.5);
             [w, h] = tc.tackle(4.2);
             tc.settle(w, 0.1);
             phx.engine.io('remove', w, h.block);
@@ -1850,7 +1817,6 @@ classdef tEngineProtocol < PhxTestCase
         end
 
         function ropeRejectsBadSettings(tc)
-            tc.requireProtocol(1.5);
             w = tc.newWorld;
             a = tc.addBox(w, 0, [0 0 0], 0.1*[1 1 1]);
             b = tc.addBox(w, 2, [1 0 0], 0.1*[1 1 1]);
@@ -1864,7 +1830,6 @@ classdef tEngineProtocol < PhxTestCase
         function damperAloneIsNotRigid(tc)
             % No stiffness, c = 2 N*s/m on 1 kg moving apart at 1 m/s: the
             % speed decays as exp(-2*t) and the bodies drift apart
-            tc.requireProtocol(1.5);
             w = tc.newWorld([0 0 0]);
             a = tc.addBox(w, 0, [0 0 0], 0.1*[1 1 1]);
             b = tc.addBox(w, 2, [1 0 0], 0.2*[1 1 1]);
@@ -1884,7 +1849,6 @@ classdef tEngineProtocol < PhxTestCase
         end
 
         function springRejectsBadSettings(tc)
-            tc.requireProtocol(1.5);
             w = tc.newWorld;
             a = tc.addBox(w, 0, [0 0 0], 0.1*[1 1 1]);
             b = tc.addBox(w, 2, [1 0 0], 0.1*[1 1 1]);
@@ -1976,19 +1940,6 @@ classdef tEngineProtocol < PhxTestCase
         function h = addFloor(tc, w)
             % Static 10 x 10 m floor with its top at z = 0
             h = tc.addBox(w, 0, [0 0 -0.5], [10 10 1], 0, [0 0 0]);
-        end
-
-        function requireProtocol(tc, version)
-            % Assume away the cases of a later protocol than the engine
-            % implements. The Bullet MEX predates the 'version' verb, which
-            % thus marks protocol 1.
-            try
-                v = phx.engine.io('version');
-            catch
-                v = 1;
-            end
-            tc.assumeGreaterThanOrEqual(v, version, ...
-                "The engine implements protocol " + v + ", the case needs " + version + ".");
         end
 
         function T = lastPose(tc, w, h, duration)
