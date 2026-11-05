@@ -94,9 +94,39 @@ classdef tEngineProtocol < PhxTestCase
         function stepWithoutMovingBodiesReturnsEmpties(tc)
             w = tc.newWorld;
             tc.addBox(w, 0, [0 0 0], [1 1 1]);
-            [ids, T] = phx.engine.io('step', w, tc.Dt);
+            [ids, T, slots] = phx.engine.io('step', w, tc.Dt);
             tc.verifyEqual(ids, zeros(1, 0, "uint64"));
             tc.verifyEqual(T, zeros(4, 4, 0));
+            tc.verifyEqual(slots, zeros(1, 0));
+        end
+
+        function stepReportsTheSlotsOfMovedBodies(tc)
+            % A body gets the slot of its place in the 'slots' row (a zero
+            % leaves a place empty); step reports each moved body's slot
+            % after its handle and pose, 0 for a body without one. Setting
+            % the slots replaces the table, and a removed body takes its
+            % slot with it, also when a new body reuses its place.
+            w = tc.newWorld([0 0 0]);
+            h1 = tc.addBox(w, 2, [0 0 0], 0.2*[1 1 1]);
+            h2 = tc.addBox(w, 2, [2 0 0], 0.2*[1 1 1]);
+            h3 = tc.addBox(w, 2, [4 0 0], 0.2*[1 1 1]);
+            phx.engine.io('set', w, uint64(0), 'slots', [uint64(0) h2 h1]);
+            [ids, ~, slots] = phx.engine.io('step', w, tc.Dt);
+            tc.verifyClass(slots, "double");
+            tc.verifySize(slots, [1 3]);
+            tc.verifyEqual([slots(ids == h1) slots(ids == h2) slots(ids == h3)], [3 2 0]);
+
+            phx.engine.io('set', w, uint64(0), 'slots', h3);
+            [ids, ~, slots] = phx.engine.io('step', w, tc.Dt);
+            tc.verifyEqual([slots(ids == h1) slots(ids == h2) slots(ids == h3)], [0 0 1]);
+
+            phx.engine.io('remove', w, h3);
+            h4 = tc.addBox(w, 2, [6 0 0], 0.2*[1 1 1]);
+            [ids, ~, slots] = phx.engine.io('step', w, tc.Dt);
+            tc.verifyEqual(slots(ids == h4), 0, "A new body has no slot.");
+
+            tc.verifyError(@() phx.engine.io('set', w, uint64(0), 'slots', [h1; h2]), "phx:engine:badArgument");
+            tc.verifyError(@() phx.engine.io('set', w, uint64(0), 'slots', h3), "phx:engine:badHandle");
         end
 
         function stepReportsMovedBodiesWithTheirPoses(tc)

@@ -27,8 +27,6 @@ classdef Simulation < phx.base.Object
         EPCompute % compute only
         EPComplete % compute and redraw
 
-        SortedBodiesID
-
         % Nesting depth of holdPipelines
         PipelineHold = 0
     end
@@ -361,13 +359,17 @@ classdef Simulation < phx.base.Object
             % Exclude invalid objects from pipelines
             simObjects(~valid) = [];
 
-            % Store bodies IDs
+            % Number the bodies by their place in Children: the engine reports
+            % a moved body by this slot, which indexes Children directly
             n = numel(obj.Children);
-            obj.SortedBodiesID = zeros(n, 2, 'uint64');
+            hs = zeros(1, n, 'uint64');
             for i = 1:n
-                obj.SortedBodiesID(i, :) = [i obj.Children{i}.ObjectHandle];
+                c = obj.Children{i};
+                if isa(c, 'phx.Body') && isscalar(c.ObjectHandle)
+                    hs(i) = c.ObjectHandle;
+                end
             end
-            obj.SortedBodiesID = sortrows(obj.SortedBodiesID, 2);
+            phx.engine.io('set', obj.ObjectHandle, uint64(0), 'slots', hs);
 
             % Read everything the grouping below needs in a single pass. The
             % properties are named literally, so these are plain static reads;
@@ -447,13 +449,11 @@ classdef Simulation < phx.base.Object
     methods (Static, Access = protected)
         function resolveState(cellObjs, dt, time, world)
             obj = cellObjs{1};
-            [bid, mtx] = phx.engine.io('step', world, dt);
-            if ~isempty(bid)
-                BID = obj.SortedBodiesID;
-                [~, locb] = matlab.internal.math.ismemberhelper(bid, BID(:, 2), true);
-                for i = 1:numel(bid)
-                    obj.Children{BID(locb(i))}.Matrix = reshape(mtx((i*16)-15:(i*16)), 4, 4);
-                end
+            [~, T, slot] = phx.engine.io('step', world, dt);
+            % Indexing the property in place and slicing T linearly is faster
+            % than a local copy of Children or T(:, :, i)
+            for i = 1:numel(slot)
+                obj.Children{slot(i)}.Matrix = reshape(T((i*16)-15:(i*16)), 4, 4);
             end
         end
 
