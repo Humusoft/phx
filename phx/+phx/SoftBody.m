@@ -230,7 +230,7 @@ classdef SoftBody < phx.base.Object
             if isempty(obj.ObjectHandle)
                 obj.WorldHandle = world;
                 T = [obj.Orientation obj.Position'; 0 0 0 1];
-                obj.ObjectHandle = phx.engine.io('add', world, 'softbody', obj.Vertices', int32(obj.Faces' - 1), ...
+                obj.ObjectHandle = phx.engine.io('add', world, 'softbody', obj.Vertices', obj.Faces', ...
                     T, obj.Mass, [obj.Compliance obj.BendCompliance]);
                 obj.Pressure = obj.Pressure;
                 obj.VertexRadius = obj.VertexRadius;

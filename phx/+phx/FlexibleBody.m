@@ -395,8 +395,8 @@ classdef FlexibleBody < phx.base.Object
                 pose = [obj.Orientation obj.Position'; 0 0 0 1];
                 [V, T] = obj.mesh;
                 obj.ObjectHandle = phx.engine.io('add', world, 'flexiblebody', V', ...
-                    int32(obj.Faces' - 1), pose, obj.Mass, [obj.YoungsModulus obj.PoissonsRatio], ...
-                    int32(T' - 1));
+                    obj.Faces', pose, obj.Mass, [obj.YoungsModulus obj.PoissonsRatio], ...
+                    T');
                 obj.WorldHandle = world;
                 obj.VertexRadius = obj.VertexRadius;
                 obj.Iterations = obj.Iterations;

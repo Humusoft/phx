@@ -8,6 +8,9 @@ classdef Terrain < phx.base.Shape
 %   y, so an image of the same grid (or the Height matrix itself set as
 %   Texture) lines up with the heights.
 %
+%   The rectangle is centred on the body origin, and height 0 of the
+%   Height data lies at the origin.
+%
 %   The collision shape is a heightfield built in the engine from the same
 %   data. A terrain is typically used as a static body.
 %
@@ -47,10 +50,7 @@ classdef Terrain < phx.base.Shape
         end
 
         function drawTo(obj, target)
-            % The surface is centred between its lowest and highest point, as
-            % the engine centres the heightfield
-            c = (max(obj.Height(:)) + min(obj.Height(:)))/2;
-            [V, N, F, T] = phx.internal.Geometry.terrain([obj.Size 1], obj.Height - c);
+            [V, N, F, T] = phx.internal.Geometry.terrain([obj.Size 1], obj.Height);
 
             primitive = obj.drawMesh(target, V, N, F, T, obj.getTexture);
             setappdata(primitive, "phxShape", obj);
@@ -66,13 +66,11 @@ classdef Terrain < phx.base.Shape
 
     methods (Access = {?phx.base.Shape, ?phx.base.Object})
         function eh = createBody(obj, body, primitive)
+            % The engine takes the samples x by y; n samples span n - 1
+            % intervals across the full Size, as the drawn surface does
             h = obj.Height';
-            nx = size(h, 1);
-            ny = size(h, 2);
-            % The scaling is the spacing between samples: n samples span
-            % n - 1 intervals across the full Size, as the drawn surface does
-            spacing = [obj.Size(1)/(nx - 1) obj.Size(2)/(ny - 1) 1];
-            eh = phx.engine.io('add', body.WorldHandle, 'terrain', body.TypeID, h(:), nx, ny, min(h(:)), max(h(:)), 'z', spacing, body.Transform, body.Mass, body.Inertia);
+            spacing = obj.Size./(size(h) - 1);
+            eh = phx.engine.io('add', body.WorldHandle, 'terrain', body.TypeID, h, spacing, body.Transform, body.Mass, body.Inertia);
         end
     end
 

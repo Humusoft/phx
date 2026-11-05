@@ -100,8 +100,7 @@ classdef Revolution < phx.base.Shape
                 case "cylinder"
                     % Bounding cylinder (centered on the shape origin)
                     ext = max(abs(obj.Profile), [], 1);
-                    bsize = phx.internal.Geometry.switchZAxis(obj.Axis, [ext(2) ext(2) ext(1)]);
-                    eh = phx.engine.io('add', body.WorldHandle, 'cylinder', body.TypeID, bsize, char(obj.Axis), body.Transform, body.Mass, body.Inertia);
+                    eh = phx.engine.io('add', body.WorldHandle, 'cylinder', body.TypeID, ext(2), 2*ext(1), char(obj.Axis), body.Transform, body.Mass, body.Inertia);
                 case "convex"
                     ph = phx.internal.PrimitiveHelper(primitive);
                     vertices = ph.Vertices';
@@ -109,8 +108,7 @@ classdef Revolution < phx.base.Shape
                 case "concave"
                     ph = phx.internal.PrimitiveHelper(primitive);
                     vertices = ph.Vertices';
-                    faces = int32(ph.LinearizedFaces - 1);
-                    eh = obj.createTrimeshBody(body, vertices(:), numel(vertices)/3, faces, numel(faces)/3);
+                    eh = obj.createTrimeshBody(body, vertices, ph.LinearizedFaces);
             end
         end
     end

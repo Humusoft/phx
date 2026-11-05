@@ -193,7 +193,7 @@ classdef tEngineProtocol < PhxTestCase
             n = 64;
             a = 2*pi*(0:n - 1)/n;
             V = [0 0 0; cos(a') sin(a') zeros(n, 1)]';   % centre, then the rim
-            F = int32([zeros(1, n); 1:n; [2:n 1]]);
+            F = [ones(1, n); 2:n + 1; [3:n + 1 2]];
             w = tc.newWorld;
             phx.engine.io('set', w, uint64(0), 'margin', 0);
             disc = tEngineProtocol.addTrimesh(w, V, F, tEngineProtocol.pose([0 0 0]), 0);
@@ -235,17 +235,40 @@ classdef tEngineProtocol < PhxTestCase
             tc.verifyLessThan(Ta(1, 4), Tb(1, 4) - 0.3, "The cubes do not pass through each other.");
         end
 
-        function terrainIsCentredBetweenItsLowestAndHighestPoint(tc)
-            % The heightfield origin lies midway between the min and max
-            % height passed in, so a surface at height 0.2 with a 1.0 peak
-            % elsewhere lies 0.4 below the terrain body's origin.
+        function terrainHasHeightZeroAtItsOrigin(tc)
+            % The heightfield lies with height 0 of its data at the body
+            % origin, whatever its lowest and highest point, and centred on
+            % it across: a ball comes to rest on a surface at height 0.2
+            % with a 1.0 peak elsewhere, 0.3 m above a terrain body at 0.1.
             w = tc.newWorld;
-            H = 0.2*ones(11);
+            H = 0.2*ones(11, 6);
             H(end, end) = 1;
-            phx.engine.io('add', w, 'terrain', 0, H(:), 11, 11, 0.2, 1.0, 'z', [1 1 1], eye(4), 0, [0 0 0]);
-            phx.engine.io('add', w, 'sphere', 2, 0.25, tEngineProtocol.pose([-2 -2 2]), 1, [0.1 0.1 0.1]);
-            T = tc.settle(w, 2);
-            tc.verifyEqual(T(3, 4), 0.2 - 0.6 + 0.25, "AbsTol", 2e-3);
+            phx.engine.io('add', w, 'terrain', 0, H, [1 2], tEngineProtocol.pose([0 0 0.1]), 0, [0 0 0]);
+            h = phx.engine.io('add', w, 'sphere', 2, 0.25, tEngineProtocol.pose([-4 -4 2]), 1, [0.1 0.1 0.1]);
+            T = tc.lastPose(w, h, 2);
+            tc.verifyEqual(T(3, 4), 0.1 + 0.2 + 0.25, "AbsTol", 2e-3);
+            % Off the 10 x 10 m grid it falls
+            h = phx.engine.io('add', w, 'sphere', 2, 0.25, tEngineProtocol.pose([5.5 0 2]), 1, [0.1 0.1 0.1]);
+            T = tc.lastPose(w, h, 1);
+            tc.verifyLessThan(T(3, 4), 0, "A ball beside the grid falls past it.");
+        end
+
+        function meshArgumentsAreChecked(tc)
+            % Vertices and faces are matrices of 3 rows; the faces hold
+            % one-based indices of existing vertices. Shapes are no longer
+            % prepared apart from their bodies.
+            [V, F] = tEngineProtocol.cubeMesh(0.2);
+            w = tc.newWorld;
+            P = tEngineProtocol.pose([0 0 0]);
+            bad = F;
+            bad(1) = 0;
+            tc.verifyError(@() phx.engine.io('add', w, 'trimesh', 2, V, bad, P, 1, [1 1 1]), "phx:engine:badArgument");
+            bad(1) = 9;
+            tc.verifyError(@() phx.engine.io('add', w, 'trimesh', 2, V, bad, P, 1, [1 1 1]), "phx:engine:badArgument");
+            tc.verifyError(@() phx.engine.io('add', w, 'trimesh', 2, V(:), F, P, 1, [1 1 1]), "phx:engine:badArgument");
+            tc.verifyError(@() phx.engine.io('add', w, 'convexhull', 2, V(:, 1:3), P, 1, [1 1 1]), "phx:engine:badArgument");
+            tc.verifyError(@() phx.engine.io('prepare', w, uint64(0), 'concaveshape', V(:), 8, int32(F(:) - 1), 12), ...
+                "phx:engine:unsupported");
         end
     end
 
@@ -547,7 +570,7 @@ classdef tEngineProtocol < PhxTestCase
                 tc.addFloor(w);
                 R = [1 0 0; 0 cosd(tilt) -sind(tilt); 0 sind(tilt) cosd(tilt)];
                 lowest = R*[0; -r; -hh];
-                h = phx.engine.io('add', w, 'cylinder', 2, [r r hh], 'z', [R [0; 0; -lowest(3)]; 0 0 0 1], 1, [0.02 0.02 0.045]);
+                h = phx.engine.io('add', w, 'cylinder', 2, r, 2*hh, 'z', [R [0; 0; -lowest(3)]; 0 0 0 1], 1, [0.02 0.02 0.045]);
                 depth = 0;
                 for k = 1:20
                     [ids, T] = phx.engine.io('step', w, tc.Dt);
@@ -1038,7 +1061,7 @@ classdef tEngineProtocol < PhxTestCase
             anchor = tc.addBox(w, 0, [0 0 0], 0.01*[1 1 1]);
             R0 = [1 0 0; 0 cosd(th) -sind(th); 0 sind(th) cosd(th)];
             e3 = R0(:, 3);
-            h = phx.engine.io('add', w, 'cylinder', 2, [rad rad hh], 'z', [R0 l*e3; 0 0 0 1], m, Ic);
+            h = phx.engine.io('add', w, 'cylinder', 2, rad, 2*hh, 'z', [R0 l*e3; 0 0 0 1], m, Ic);
             phx.engine.io('add', w, 'spherical', [anchor h], eye(4), tEngineProtocol.pose([0 0 -l]), false);
             om0 = W*[0; 0; 1] + (w3 - W*cosd(th))*e3;
             phx.engine.io('set', w, h, 'angvel', om0);
@@ -1448,20 +1471,20 @@ classdef tEngineProtocol < PhxTestCase
 
         function particlesKeepTheirOrder(tc)
             % Removing particles keeps the order of the rest, appended ones
-            % come last, and a subset is set by zero-based indices.
+            % come last, and a subset is set by one-based indices.
             tc.requireProtocol(1.3);
             w = tc.newWorld([0 0 0]);
             P = [1; 0; 0] * (1:5);
             g = phx.engine.io('add', w, 'particles', P, 0.1, 1, false);
-            phx.engine.io('remove', w, g, int32([1 3]));
+            phx.engine.io('remove', w, g, [2 4]);
             tc.verifyEqual(phx.engine.io('get', w, g, 'positions'), P(:, [1 3 5]), "AbsTol", 1e-6);
             n = phx.engine.io('add', w, g, [0 0; 2 3; 0 0], [0 0; 0 0; 1 2]);
             tc.verifyEqual(n, 5);
             tc.verifyEqual(phx.engine.io('get', w, g, 'velocities'), [zeros(3, 3), [0; 0; 1], [0; 0; 2]], "AbsTol", 1e-6);
-            phx.engine.io('set', w, g, 'positions', [0; 0; 7], int32(4));
+            phx.engine.io('set', w, g, 'positions', [0; 0; 7], 5);
             X = phx.engine.io('get', w, g, 'positions');
             tc.verifyEqual(X(:, [1 5]), [1 0; 0 0; 0 7], "AbsTol", 1e-6);
-            tc.verifyError(@() phx.engine.io('remove', w, g, int32(5)), "phx:engine:badArgument");
+            tc.verifyError(@() phx.engine.io('remove', w, g, 6), "phx:engine:badArgument");
         end
 
         function particleForcesActForOneStep(tc)
@@ -2008,11 +2031,11 @@ classdef tEngineProtocol < PhxTestCase
             row = @tEngineProtocol.shapeRow;
             s.box = row(@(w, P) phx.engine.io('add', w, 'box', 2, [0.2 0.3 0.4], P, 1, I), 0.4);
             s.sphere = row(@(w, P) phx.engine.io('add', w, 'sphere', 2, 0.3, P, 1, I), 0.3);
-            s.cylinderLying = row(@(w, P) phx.engine.io('add', w, 'cylinder', 2, [0.5 0.2 0.2], 'x', P, 1, I), 0.2);
-            s.cylinderStanding = row(@(w, P) phx.engine.io('add', w, 'cylinder', 2, [0.4 0.4 0.1], 'z', P, 1, I), 0.1);
+            s.cylinderLying = row(@(w, P) phx.engine.io('add', w, 'cylinder', 2, 0.2, 1.0, 'x', P, 1, I), 0.2);
+            s.cylinderStanding = row(@(w, P) phx.engine.io('add', w, 'cylinder', 2, 0.4, 0.2, 'z', P, 1, I), 0.1);
             s.cone = row(@(w, P) phx.engine.io('add', w, 'cone', 2, 0.3, 0.8, 'z', P, 1, I), 0.4);
             s.capsule = row(@(w, P) phx.engine.io('add', w, 'capsule', 2, 0.2, 0.6, 'z', P, 1, I), 0.5);
-            s.convexHull = row(@(w, P) phx.engine.io('add', w, 'convexhull', 2, V(:), 8, false, P, 1, I), 0.2);
+            s.convexHull = row(@(w, P) phx.engine.io('add', w, 'convexhull', 2, V, P, 1, I), 0.2);
             % The concave mesh keeps an engine-chosen collision envelope
             % whatever the margin, so only a coarse height is part of the
             % contract
@@ -2037,17 +2060,14 @@ classdef tEngineProtocol < PhxTestCase
                 P
                 type = 2
             end
-            sh = phx.engine.io('prepare', w, uint64(0), 'concaveshape', V(:), size(V, 2), F(:), size(F, 2));
-            phx.engine.io('prepare', w, sh, 'dynamictrimesh');
-            phx.engine.io('prepare', w, sh, 'validation');
-            h = phx.engine.io('add', w, 'rigidbody', type, sh, P, 1, [0.1 0.1 0.1]);
+            h = phx.engine.io('add', w, 'trimesh', type, V, F, P, 1, [0.1 0.1 0.1]);
         end
 
         function [V, F] = cubeMesh(half)
             % Closed cube of the given half size: vertices 3x8, outward
-            % zero-based int32 faces 3x12
+            % one-based faces 3x12
             V = half*[-1 -1 -1; 1 -1 -1; 1 1 -1; -1 1 -1; -1 -1 1; 1 -1 1; 1 1 1; -1 1 1]';
-            F = int32([0 2 1; 0 3 2; 4 5 6; 4 6 7; 0 1 5; 0 5 4; 1 2 6; 1 6 5; 2 3 7; 2 7 6; 3 0 4; 3 4 7]');
+            F = 1 + [0 2 1; 0 3 2; 4 5 6; 4 6 7; 0 1 5; 0 5 4; 1 2 6; 1 6 5; 2 3 7; 2 7 6; 3 0 4; 3 4 7]';
         end
     end
 

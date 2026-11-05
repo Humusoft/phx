@@ -31,8 +31,9 @@ phx.engine.io('remove', world, h);                                           % d
 ```
 
 Verbs: `add` / `set` / `get` / `apply` / `remove` / `step`. Bodies map to engine
-shapes in each `phx.shape.*` class's `initObject` (`'box'`, `'cylinder'`,
-`'sphere'`, `'convexhull'`, `'rigidbody'`, …); joints map to kinds named after their
+shapes in each `phx.shape.*` class's `createBody` (`'box'`, `'cylinder'`,
+`'sphere'`, `'convexhull'`, `'trimesh'`, `'terrain'`, …), points given as 3xN columns and
+indices (faces, tetrahedra, particles) as one-based doubles; joints map to kinds named after their
 classes in the joint classes. Every failure is a MATLAB error with a `phx:engine:*` identifier
 (`badWorld`, `badHandle`, `badArgument`, `unsupported` for an unknown verb, kind or
 field); verbs that only act (`set`, `apply`, `remove`, `clear`) return nothing, and

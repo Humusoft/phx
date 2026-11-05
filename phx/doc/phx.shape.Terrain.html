@@ -19,7 +19,8 @@
 <h2 class="phx-h2">Description</h2>
 <p><code class="phx-inline">phx.shape.Terrain</code> is a surface generated from the
 <code class="phx-inline">Height</code> matrix sampled over a rectangle of the given
-<code class="phx-inline">Size</code>, optionally textured. The collision shape is a heightfield built
+<code class="phx-inline">Size</code>, optionally textured. The rectangle is centred on the body
+origin, and height 0 of the data lies at the origin. The collision shape is a heightfield built
 in the engine from the same data. A terrain is typically used as a static body.</p>
 
 <p>The columns of <code class="phx-inline">Height</code> run along x and its rows along y, with

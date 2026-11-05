@@ -165,7 +165,9 @@ classdef Mesh < phx.base.Shape
                 case "box"
                     eh = phx.engine.io('add', body.WorldHandle, 'box', body.TypeID, bsize, body.Transform, body.Mass, body.Inertia);
                 case "cylinder"
-                    eh = phx.engine.io('add', body.WorldHandle, 'cylinder', body.TypeID, bsize, char(obj.Axis), body.Transform, body.Mass, body.Inertia);
+                    % Bounding cylinder: the larger cross extent as its radius
+                    along = obj.Axis == ["x" "y" "z"];
+                    eh = phx.engine.io('add', body.WorldHandle, 'cylinder', body.TypeID, max(bsize(~along)), 2*bsize(along), char(obj.Axis), body.Transform, body.Mass, body.Inertia);
                 case "sphere"
                     eh = phx.engine.io('add', body.WorldHandle, 'sphere', body.TypeID, max(bsize), body.Transform, body.Mass, body.Inertia);
                 case "convex"
@@ -176,9 +178,7 @@ classdef Mesh < phx.base.Shape
                     if obj.FlipFaces
                         F = fliplr(F);
                     end
-                    vertices = V';
-                    faces = int32(F') - 1;
-                    eh = obj.createTrimeshBody(body, vertices(:), size(vertices, 2), faces(:), size(faces, 2));
+                    eh = obj.createTrimeshBody(body, V', F');
             end
         end
     end

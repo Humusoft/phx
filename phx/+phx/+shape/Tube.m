@@ -149,8 +149,7 @@ classdef Tube < phx.base.Shape
             switch obj.Envelope
                 case "cylinder"
                     % Bounding cylinder (centered on the shape origin)
-                    bsize = phx.internal.Geometry.switchZAxis(obj.Axis, [obj.Radius obj.Radius obj.Height/2]);
-                    eh = phx.engine.io('add', body.WorldHandle, 'cylinder', body.TypeID, bsize, char(obj.Axis), body.Transform, body.Mass, body.Inertia);
+                    eh = phx.engine.io('add', body.WorldHandle, 'cylinder', body.TypeID, obj.Radius, obj.Height, char(obj.Axis), body.Transform, body.Mass, body.Inertia);
                 case "convex"
                     ph = phx.internal.PrimitiveHelper(primitive);
                     vertices = ph.Vertices';
@@ -158,8 +157,7 @@ classdef Tube < phx.base.Shape
                 case "concave"
                     ph = phx.internal.PrimitiveHelper(primitive);
                     vertices = ph.Vertices';
-                    faces = int32(ph.LinearizedFaces - 1);
-                    eh = obj.createTrimeshBody(body, vertices(:), numel(vertices)/3, faces, numel(faces)/3);
+                    eh = obj.createTrimeshBody(body, vertices, ph.LinearizedFaces);
             end
         end
     end

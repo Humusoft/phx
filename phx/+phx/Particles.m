@@ -170,7 +170,7 @@ classdef Particles < phx.base.Object
                 error("phx:Particles:badIndex", "Particle indices must be integers from 1 to %d.", n);
             end
             if obj.isLive
-                phx.engine.io('remove', obj.WorldHandle, obj.ObjectHandle, int32(index - 1));
+                phx.engine.io('remove', obj.WorldHandle, obj.ObjectHandle, double(index));
             else
                 obj.StoredPositions(:, index) = [];
                 obj.StoredVelocities(:, index) = [];
