@@ -709,6 +709,27 @@ classdef tEngineProtocol < PhxTestCase
             tc.verifyEqual(T(1:3, 1:3)*[0; 0; 1], [0; 0; -1], "AbsTol", 1e-3, "The apex points down.");
         end
 
+        function coneWithTwoRadiiIsTruncated(tc)
+            % A cone of radius [0.4 0.2] (negative and positive end of its
+            % axis) and height 0.6: a ray down at x = 0.3 meets the side
+            % halfway up, one at x = 0.1 the flat top. Its centre of mass
+            % lies h (R^2 + 2Rr + 3r^2)/(4 (R^2 + Rr + r^2)) above the wide
+            % end, so half a turn takes the origin twice that far below.
+            R = 0.4;
+            r = 0.2;
+            h = 0.6;
+            w = tc.newWorld([0 0 0]);
+            phx.engine.io('add', w, 'cone', 0, [R r], h, 'z', tEngineProtocol.pose([0 0 0]), 1, [1 1 1]);
+            P = phx.engine.io('raycast', w, [0.3 0.1; 0 0; 1 1], [0.3 0.1; 0 0; -1 -1]);
+            tc.verifyEqual(P(3, :), [0, h/2], "AbsTol", 1e-4, "Heights of the side and the top");
+
+            zc = h*(R^2 + 2*R*r + 3*r^2)/(4*(R^2 + R*r + r^2));
+            c = phx.engine.io('add', w, 'cone', 2, [R r], h, 'z', tEngineProtocol.pose([5 0 0]), 1, 0.01*[1 1 1]);
+            phx.engine.io('set', w, c, 'angvel', [pi 0 0]);
+            T = tc.lastPose(w, c, 1);
+            tc.verifyEqual(T(1:3, 4), [5; 0; -2*(h/2 - zc)], "AbsTol", 1e-3);
+        end
+
         function kinematicBodyFollowsItsVelocity(tc)
             % A kinematic body moves with the velocity set to it
             w = tc.newWorld;

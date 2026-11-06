@@ -51,6 +51,55 @@ classdef tShapeMass < PhxTestCase
             tc.verifyEqual(sort(Iz), sort(Ix), "RelTol", 1e-12);
             tc.verifyEqual(Ix(1), Iz(3), "RelTol", 1e-12); % symmetry axis moved to x
         end
+
+        function coneMassAndInertia(tc)
+            % A sharp cone about its centre of mass: m = rho pi r^2 h/3,
+            % 3/10 m r^2 about the axis, 3/80 m h^2 + 3/20 m r^2 across
+            s = phx.shape.Cone("Diameter", 2, "Height", 4, "Density", 1000); % r = 1, h = 4
+            [m, I] = s.computeMass;
+            tc.verifyEqual(m, 1000*pi*4/3, "RelTol", 1e-12);
+            tc.verifyEqual(I, [3/80*16 + 3/20, 3/80*16 + 3/20, 3/10]*m, "RelTol", 1e-12);
+        end
+
+        function truncatedConeMassAndInertia(tc)
+            % A frustum is a cone of height H minus its tip cone: radii 1 and
+            % 0.5 over a height of 2 cut a cone of height 4 at half its
+            % height. Mass, moments and centres of mass from the two cones.
+            % Equal diameters give the cylinder's values.
+            rho = 1000;
+            s = phx.shape.Cone("Diameter", [2 1], "Height", 2, "Density", rho);
+            [m, I] = s.computeMass;
+            mBig = rho*pi*4/3;               % r = 1, h = 4, base at z = 0
+            mTip = rho*pi*0.25*2/3;          % r = 0.5, h = 2, base at z = 2
+            zBig = 1;                        % h/4 above its base
+            zTip = 2 + 0.5;
+            tc.verifyEqual(m, mBig - mTip, "RelTol", 1e-12);
+            zc = (mBig*zBig - mTip*zTip)/m;
+            ia = 3/10*(mBig*1 - mTip*0.25);
+            io = (3/80*16 + 3/20)*mBig + mBig*(zBig - zc)^2 ...
+                - (3/80*4 + 3/20*0.25)*mTip - mTip*(zTip - zc)^2;
+            tc.verifyEqual(I, [io io ia], "RelTol", 1e-12);
+            tc.verifyEqual(s.Radius, [1 0.5]);
+
+            c = phx.shape.Cone("Diameter", [2 2], "Height", 4, "Density", rho);
+            [mc, Ic] = c.computeMass;
+            [my, Iy] = phx.shape.Cylinder("Diameter", 2, "Height", 4, "Density", rho).computeMass;
+            tc.verifyEqual([mc Ic], [my Iy], "RelTol", 1e-12);
+        end
+
+        function coneSizeExpandsToTwoValues(tc)
+            % A single diameter is a sharp cone, read back as [d 0]; the
+            % radius follows; negative, three or all-zero values are refused
+            s = phx.shape.Cone("Diameter", 0.6);
+            tc.verifyEqual(s.Diameter, [0.6 0]);
+            s.Radius = 0.2;
+            tc.verifyEqual(s.Diameter, [0.4 0]);
+            s.Radius = [0.2 0.1];
+            tc.verifyEqual(s.Diameter, [0.4 0.2]);
+            tc.verifyError(@() phx.shape.Cone("Diameter", [1 -1]), "phx:Cone:badSize");
+            tc.verifyError(@() phx.shape.Cone("Diameter", [1 1 1]), "phx:Cone:badSize");
+            tc.verifyError(@() phx.shape.Cone("Diameter", [0 0]), "phx:Cone:badSize");
+        end
     end
 
 end

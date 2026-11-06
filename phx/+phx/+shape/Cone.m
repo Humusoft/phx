@@ -1,12 +1,15 @@
 classdef Cone < phx.base.Shape
-%phx.shape.Cone Cone shape
+%phx.shape.Cone Cone or truncated cone shape
 %
-%   Visual appearance is based on a geometry of revolved profile with 
+%   Visual appearance is based on a geometry of revolved profile with
 %   an adjustable level of details.
 %
 %   Collision shape and mass properties are modeled as an ideal cone
-%   independent on visual details.
-%   
+%   independent on visual details. Diameter gives the diameters at the
+%   negative and the positive end of Axis; a single value is a sharp cone
+%   with its apex on the positive axis, two values a truncated cone (or a
+%   cylinder when they are equal).
+%
 %   phx.shape.Cone() creates a shape with default parameters.
 %
 %   phx.shape.Cone(Name, Value, ...) creates a shape and sets properties
@@ -22,8 +25,10 @@ classdef Cone < phx.base.Shape
 %#ok<*INUSD> OK to see the full list of arguments for callbacks
 
     properties
-        % Cone diameter
-        Diameter (1, 1) double = 1
+        % Diameters at the negative and the positive end of Axis
+        % A single value d is [d 0], a sharp cone with its apex on the
+        % positive axis; two values make a truncated cone.
+        Diameter (1, :) double {mustBeConeSize} = [1 0]
 
         % Cone height
         Height (1, 1) double = 1
@@ -39,8 +44,8 @@ classdef Cone < phx.base.Shape
     end
 
     properties (Dependent)
-        % Cone radius
-        Radius (1, 1) double
+        % Radii at the negative and the positive end of Axis (as Diameter)
+        Radius (1, :) double {mustBeConeSize}
     end
 
     methods
@@ -56,6 +61,21 @@ classdef Cone < phx.base.Shape
             end
         end
 
+        function obj = set.Diameter(obj, diameter)
+            if isscalar(diameter)
+                diameter = [diameter 0];
+            end
+            obj.Diameter = diameter;
+        end
+
+        function diameter = get.Diameter(obj)
+            % A cone saved by PHX 1.0 kept a single diameter
+            diameter = obj.Diameter;
+            if isscalar(diameter)
+                diameter = [diameter 0];
+            end
+        end
+
         function obj = set.Radius (obj, radius)
             obj.Diameter = radius*2;
         end
@@ -65,28 +85,49 @@ classdef Cone < phx.base.Shape
         end
 
         function drawTo(obj, target)
-            [V, N, F, T] = phx.internal.Geometry.revolution([-0.5 0.5; 0.5 0], obj.Segments, true, false);
-            V = V.*[obj.Diameter obj.Diameter obj.Height];
+            % The profile from the negative to the positive end, each end
+            % capped unless it is an apex
+            d = obj.Diameter;
+            [V, N, F, T] = phx.internal.Geometry.revolution([-0.5 d(1)/2; 0.5 d(2)/2], obj.Segments, d(1) > 0, d(2) > 0);
+            V = V.*[1 1 obj.Height];
             [V, N] = phx.internal.Geometry.switchZAxis(obj.Axis, V, N);
-            
+
             primitive = obj.drawMesh(target, V, N, F, T, obj.getTexture);
             setappdata(primitive, "phxShape", obj);
         end
 
         function [mass, inertia] = computeMass(obj)
-            rq = (obj.Diameter/2)^2;
+            % A solid of revolution of radius r(z), linear in z, integrated
+            % by the 3-point Gauss rule, exact for the polynomials of up to
+            % the fifth degree here: mass, centre of mass zc, the moment
+            % about the axis and the transverse one about zc
+            r = obj.Radius;
             h = obj.Height;
-            mass = obj.Density*pi*rq*h/3;
-            ia = mass*rq*3/10;
-            io = mass*(h^2/80 + rq/20)*3;
+            s = [-sqrt(3/5) 0 sqrt(3/5)];
+            g = [5 8 5]/18;
+            z = s*h/2;
+            rz = r(1) + (r(2) - r(1))*(z/h + 0.5);
+            dm = obj.Density*pi*rz.^2.*g*h;
+            mass = sum(dm);
+            zc = sum(dm.*z)/mass;
+            ia = sum(dm.*rz.^2/2);
+            io = sum(dm.*(rz.^2/4 + (z - zc).^2));
             inertia = phx.internal.Geometry.switchZAxis(obj.Axis, [io io ia]);
         end
     end
 
     methods (Access = {?phx.base.Shape, ?phx.base.Object})
         function eh = createBody(obj, body, primitive)
-            eh = phx.engine.io('add', body.WorldHandle, 'cone', body.TypeID, obj.Diameter/2, obj.Height, char(obj.Axis), body.Transform, body.Mass, body.Inertia);
+            eh = phx.engine.io('add', body.WorldHandle, 'cone', body.TypeID, obj.Radius, obj.Height, char(obj.Axis), body.Transform, body.Mass, body.Inertia);
         end
     end
 
+end
+
+function mustBeConeSize(value)
+%mustBeConeSize Validates Diameter and Radius: one or two values, not negative, not both zero
+    if ~any(numel(value) == [1 2]) || any(~isfinite(value)) || any(value < 0) || ~any(value > 0)
+        error("phx:Cone:badSize", ...
+            "Diameter (Radius) must be one or two finite, nonnegative values, not all zero.");
+    end
 end
