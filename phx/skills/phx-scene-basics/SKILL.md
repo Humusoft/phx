@@ -149,6 +149,13 @@ b = phx.Body(ax, ...
 - **Pose** is read/written through these *dependent* properties (they hit the engine
   live): `Position`, `Orientation` (3x3), `Quaternion`, `AxisAngle`, `EulerAngles`,
   `Transform` (4x4). Reading `b.Position` mid-simulation returns the current state.
+- **Pointing a body axis**: `XAxis`/`YAxis`/`ZAxis` read a body axis as a unit vector;
+  setting one (any nonzero length) turns the body *from its current orientation* by the
+  smallest rotation that points that axis there, without twisting about it. The easy
+  way to aim a rod, cylinder or thruster: `"ZAxis", p2 - p1`. Name-value pairs apply in
+  the order given, so in `phx.Body(ax, "EulerAngles", e, "ZAxis", d)` the axis turns
+  the orientation `e` set; a direction opposite to the axis flips the body 180° about
+  its next axis (Y for X, Z for Y, X for Z).
 - **State you can read**: `LinearVelocity`, `AngularVelocity`, `TotalForce`,
   `TotalTorque`, `Energy`, and `LinearAcceleration`/`AngularAcceleration` (mean over
   the last step, world axes; gravity included, so a falling body reads g).

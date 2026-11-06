@@ -82,6 +82,10 @@ read and written &mdash; even during the simulation (they read/write the engine 
     <td>Position [x y z] in global coordinates.</td></tr>
 <tr><td class="name">Orientation / EulerAngles / Quaternion</td>
     <td>Body orientation (rotation matrix, Euler angles or quaternion).</td></tr>
+<tr><td class="name">XAxis / YAxis / ZAxis</td>
+    <td>Direction of a body axis. Setting it turns the body by the smallest rotation that points
+    the axis there, handy for shapes with an axis such as a cylinder:
+    <code class="phx-inline">"ZAxis", [1 0 1]</code> tilts it 45&deg; without twisting it.</td></tr>
 <tr><td class="name">LinearVelocity / AngularVelocity</td>
     <td>Linear and angular velocity.</td></tr>
 <tr><td class="name">Type</td>

@@ -61,6 +61,18 @@ classdef Body < phx.base.Object
 
         % Quaternion rotation
         Quaternion (1, 4) double {mustBeFinite}
+
+        % Direction of the body X axis, it turns the body from its current
+        % orientation by the smallest rotation that points the axis there
+        XAxis (1, 3) double {mustBeFinite}
+
+        % Direction of the body Y axis, it turns the body from its current
+        % orientation by the smallest rotation that points the axis there
+        YAxis (1, 3) double {mustBeFinite}
+
+        % Direction of the body Z axis, it turns the body from its current
+        % orientation by the smallest rotation that points the axis there
+        ZAxis (1, 3) double {mustBeFinite}
     end
 
     % Read-only state computed by the engine
@@ -371,6 +383,36 @@ classdef Body < phx.base.Object
 
         function set.Quaternion(obj, value)
             obj.Matrix(1:3, 1:3) = phx.internal.Math.rotQ(value);
+            obj.matrixUpdated;
+        end
+
+        function value = get.XAxis(obj)
+            m = obj.Matrix;
+            value = [m(1) m(2) m(3)]/norm([m(1) m(2) m(3)]);
+        end
+
+        function set.XAxis(obj, value)
+            obj.Matrix(1:3, 1:3) = alignBodyAxis(obj, 1, value, "XAxis");
+            obj.matrixUpdated;
+        end
+
+        function value = get.YAxis(obj)
+            m = obj.Matrix;
+            value = [m(5) m(6) m(7)]/norm([m(5) m(6) m(7)]);
+        end
+
+        function set.YAxis(obj, value)
+            obj.Matrix(1:3, 1:3) = alignBodyAxis(obj, 2, value, "YAxis");
+            obj.matrixUpdated;
+        end
+
+        function value = get.ZAxis(obj)
+            m = obj.Matrix;
+            value = [m(9) m(10) m(11)]/norm([m(9) m(10) m(11)]);
+        end
+
+        function set.ZAxis(obj, value)
+            obj.Matrix(1:3, 1:3) = alignBodyAxis(obj, 3, value, "ZAxis");
             obj.matrixUpdated;
         end
 
@@ -945,6 +987,14 @@ classdef Body < phx.base.Object
         end
     end
 
+end
+
+function R = alignBodyAxis(body, k, value, name)
+%alignBodyAxis Orientation of a body turned so that its axis K points along VALUE
+    if ~any(value)
+        error("phx:Body:invalidAxis", "%s must be a nonzero direction vector.", name);
+    end
+    R = phx.internal.Math.alignAxis(body.Orientation, k, value);
 end
 
 function mustBeFrictionValue(value)

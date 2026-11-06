@@ -71,6 +71,83 @@ classdef tBodyKinematics < PhxTestCase
             tc.verifyEqual(tc.Body.Orientation, R, "AbsTol", 1e-9);
         end
 
+        function axesAreColumnsOfOrientation(tc)
+            R = phx.internal.Math.rotAA([0.3 -0.2 0.9], 1.1);
+            tc.Body.Orientation = R;
+            tc.verifyEqual([tc.Body.XAxis; tc.Body.YAxis; tc.Body.ZAxis], R', "AbsTol", 1e-12);
+        end
+
+        function axisTakesAnyLength(tc)
+            % The direction is normalized; reading it back gives the unit vector
+            tc.Body.YAxis = [0 3 4];
+            tc.verifyEqual(tc.Body.YAxis, [0 0.6 0.8], "AbsTol", 1e-12);
+            R = tc.Body.Orientation;
+            tc.verifyEqual(R'*R, eye(3), "AbsTol", 1e-12);
+            tc.verifyEqual(det(R), 1, "AbsTol", 1e-12);
+        end
+
+        function axisTurnsBySmallestRotation(tc)
+            % Pointing an axis turns the body about the normal of the plane of
+            % the old and new direction, by the angle between them, from its
+            % current orientation
+            names = ["XAxis" "YAxis" "ZAxis"];
+            R0 = phx.internal.Math.rotAA([0.4 0.1 -0.7], 0.9);
+            d = [1 -2 0.5];
+            for k = 1:3
+                tc.Body.Orientation = R0;
+                a = R0(:, k)';
+                tc.Body.(names(k)) = d;
+                R1 = tc.Body.Orientation;
+                n = cross(a, d)/norm(cross(a, d));
+                expected = phx.internal.Math.rotAA(n, acos(a*d'/norm(d)))*R0;
+                tc.verifyEqual(R1, expected, "AbsTol", 1e-12, names(k));
+            end
+        end
+
+        function axisFromIdentityKeepsPlane(tc)
+            % Tilting Z towards [1 1 0] turns the body about [-1 1 0]
+            tc.Body.ZAxis = [1 1 0];
+            tc.verifyEqual(tc.Body.XAxis, [0.5 -0.5 -sqrt(0.5)], "AbsTol", 1e-12);
+            tc.verifyEqual(tc.Body.YAxis, [-0.5 0.5 -sqrt(0.5)], "AbsTol", 1e-12);
+        end
+
+        function axisAlreadyThereLeavesOrientation(tc)
+            R = phx.internal.Math.rotAA([0.2 0.5 0.1], 0.6);
+            tc.Body.Orientation = R;
+            tc.Body.XAxis = 2*R(:, 1)';
+            tc.verifyEqual(tc.Body.Orientation, R, "AbsTol", 1e-12);
+        end
+
+        function oppositeAxisTurnsAboutNextAxis(tc)
+            % Reversing an axis turns the body by 180 degrees about its next
+            % axis: Y for X, Z for Y, X for Z
+            tc.Body.XAxis = [-1 0 0];
+            tc.verifyEqual(tc.Body.Orientation, diag([-1 1 -1]), "AbsTol", 1e-12);
+            tc.Body.Orientation = eye(3);
+            tc.Body.YAxis = [0 -1 0];
+            tc.verifyEqual(tc.Body.Orientation, diag([-1 -1 1]), "AbsTol", 1e-12);
+            tc.Body.Orientation = eye(3);
+            tc.Body.ZAxis = [0 0 -1];
+            tc.verifyEqual(tc.Body.Orientation, diag([1 -1 -1]), "AbsTol", 1e-12);
+        end
+
+        function axisInConstructorTurnsGivenOrientation(tc)
+            % Name-value pairs are applied in the order given, so the axis
+            % turns the orientation set before it
+            b = phx.Body(tc.Body.ParentAxes, "EulerAngles", [0.3 0 0], "ZAxis", [0 1 0]);
+            tc.addTeardown(@() delete(b));
+            tc.verifyEqual(b.Orientation, [1 0 0; 0 0 1; 0 -1 0], "AbsTol", 1e-12);
+        end
+
+        function zeroAxisIsRejected(tc)
+            R = phx.internal.Math.rotAA([0 0 1], pi/3);
+            tc.Body.Orientation = R;
+            for name = ["XAxis" "YAxis" "ZAxis"]
+                tc.verifyError(@() set(tc.Body, name, [0 0 0]), "phx:Body:invalidAxis", name);
+            end
+            tc.verifyEqual(tc.Body.Orientation, R, "AbsTol", 1e-12);
+        end
+
         % Validation itself is engine-free, but the shared setup builds a
         % body (hence a figure), so these stay under the Graphics tag too.
         function badTypeIsRejected(tc)
@@ -105,7 +182,8 @@ classdef tBodyKinematics < PhxTestCase
             % the renderer at the next redraw or hangs the whole session.
             poses = {"Position", [NaN 0 0]; "Transform", inf(4); ...
                      "Orientation", nan(3); "AxisAngle", [0 0 1 NaN]; ...
-                     "EulerAngles", [0 Inf 0]; "Quaternion", [NaN 0 0 1]};
+                     "EulerAngles", [0 Inf 0]; "Quaternion", [NaN 0 0 1]; ...
+                     "XAxis", [Inf 0 0]; "YAxis", [0 NaN 0]; "ZAxis", [0 0 -Inf]};
             for i = 1:size(poses, 1)
                 tc.verifyError(@() set(tc.Body, poses{i, 1}, poses{i, 2}), ...
                     "MATLAB:validators:mustBeFinite", poses{i, 1});

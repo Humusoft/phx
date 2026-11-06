@@ -53,6 +53,26 @@ classdef Math
             R = [x, cross(a, x), a];
         end
 
+        % Smallest rotation of a frame that points its axis K along a direction
+        function R = alignAxis(R, K, Axis)
+            % The frame turns about the normal of the plane of its axis K and
+            % the direction, by the angle between them: no rotation that
+            % brings the axis there is smaller, and the result changes
+            % continuously with the direction. A direction opposite to the
+            % axis has no such plane; the frame then turns by 180 degrees
+            % about its next axis (Y for X, Z for Y, X for Z).
+            a = R(:, K);
+            d = Axis(:)/norm(Axis);
+            v = cross(a, d);
+            s = norm(v);
+            c = a'*d;
+
+            if s < 1e-9 && c < 0
+                v = R(:, mod(K, 3) + 1);
+            end
+            R = phx.internal.Math.rotAA(v, atan2(s, c))*R;
+        end
+
         % Transformation matrix for rotations in order Z -> Y -> X
         function M = rot321(XYZ)
             c = cos(XYZ);

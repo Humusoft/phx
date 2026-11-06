@@ -135,6 +135,13 @@ acts for the next step only.) Driven from Simulink as an input of the
 <tr><td class="name">AxisAngle</td><td class="type">1&times;4 double</td><td>Axis-angle rotation <code class="phx-inline">[x y z angle]</code> (dependent).</td></tr>
 <tr><td class="name">EulerAngles</td><td class="type">1&times;3 double</td><td>Euler angles for z&rarr;y&rarr;x order (dependent).</td></tr>
 <tr><td class="name">Quaternion</td><td class="type">1&times;4 double</td><td>Quaternion rotation (dependent).</td></tr>
+<tr><td class="name">XAxis / YAxis / ZAxis</td><td class="type">1&times;3 double</td><td>Direction of a body axis, a unit vector (dependent).
+Setting it, to a nonzero vector of any length, turns the body from its current orientation by the
+smallest rotation that points the axis there: the body turns about the normal of the plane of the
+old and new direction, so it is not twisted about the new one. A direction opposite to the axis
+turns the body by 180&deg; about its next axis (Y for X, Z for Y, X for Z). Given to the
+constructor, it turns the orientation set by the arguments before it, for example
+<code class="phx-inline">phx.Body(ax, "EulerAngles", [0 0 pi/4], "ZAxis", [1 0 1])</code>.</td></tr>
 <tr><td class="name">LinearVelocity</td><td class="type">1&times;3 double</td><td>Linear velocity of the centre of mass, <span class="phx-unit">m/s</span>.</td></tr>
 <tr><td class="name">AngularVelocity</td><td class="type">1&times;3 double</td><td>Angular velocity, <span class="phx-unit">rad/s</span>.</td></tr>
 <tr><td class="name">TotalForce</td><td class="type">1&times;3 double (read-only)</td><td>Total force at the body centre, <span class="phx-unit">N</span> (dependent).</td></tr>
