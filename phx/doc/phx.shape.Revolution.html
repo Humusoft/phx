@@ -20,9 +20,11 @@
 <p><code class="phx-inline">phx.shape.Revolution</code> revolves a user-defined 2-D
 <code class="phx-inline">Profile</code> about the modeling axis to form a solid of revolution. The
 collision shape is selected by <code class="phx-inline">Envelope</code>: the convex hull of the
-revolved mesh, the exact concave triangle mesh, or a bounding cylinder about the
-revolution axis, which keeps a rolling body smooth where a faceted hull would not. The
-mass properties are always computed from the actual triangular mesh.</p>
+revolved mesh, the exact concave triangle mesh, a bounding cylinder about the revolution
+axis, or the profile revolved exactly as a stack of truncated cones. The cylinder and the
+cones are round about the axis, so a rolling body stays smooth where a faceted hull or mesh
+would not; the cones also follow the profile into grooves and waists. The mass properties
+are always computed from the actual triangular mesh.</p>
 
 <h2 class="phx-h2">Creation</h2>
 <h3 class="phx-h3">Syntax</h3>
@@ -42,7 +44,7 @@ revolution from the given <code class="phx-inline">Profile</code>.</p>
 <tr><td class="name">Profile</td><td class="type">M&times;2 double</td><td>Profile revolved about the modeling axis; each row is a 2-D point (axial, radial). The generatrix is reversed automatically when it runs the way that would turn the solid inside out, so its direction is not yours to get right. It is not closed: a generatrix reaching the axis already closes the body by revolving.</td></tr>
 <tr><td class="name">Axis</td><td class="dflt">"z"</td><td>Modeling axis: <code class="phx-inline">"x"</code>, <code class="phx-inline">"y"</code> or <code class="phx-inline">"z"</code>.</td></tr>
 <tr><td class="name">Segments</td><td class="dflt">45</td><td>Number of segments around the revolution.</td></tr>
-<tr><td class="name">Envelope</td><td class="dflt">"convex"</td><td>Collision envelope: <code class="phx-inline">"convex"</code> hull, <code class="phx-inline">"concave"</code> triangle mesh, or bounding <code class="phx-inline">"cylinder"</code> about the revolution axis. The cylinder takes its radius from the largest radius in the profile and its half height from the profile&#39;s axial reach, centred on the shape origin.</td></tr>
+<tr><td class="name">Envelope</td><td class="dflt">"convex"</td><td>Collision envelope: <code class="phx-inline">"convex"</code> hull, <code class="phx-inline">"concave"</code> triangle mesh, bounding <code class="phx-inline">"cylinder"</code> about the revolution axis, or <code class="phx-inline">"cones"</code>. The cylinder takes its radius from the largest radius in the profile and its half height from the profile&#39;s axial reach, centred on the shape origin. The cones revolve the profile exactly, one truncated cone per segment: round about the axis, as polygonal along it as the profile. They need one radius per height, so the axial coordinates of the profile must not turn back (no bore, cup or overhang; points running along the axis at its ends are fine), otherwise an error <code class="phx-inline">phx:Revolution:profileNotMonotonic</code> is raised. Tens of segments are cheap; hundreds cost about as much as the concave mesh.</td></tr>
 <tr><td class="name">Density</td><td class="dflt">1000</td><td>Volumetric density, <span class="phx-unit">kg/m&sup3;</span>.</td></tr>
 </table>
 
@@ -59,6 +61,18 @@ b = phx.Body(<span class="str">"Shape"</span>, phx.shape.Revolution(<span class=
 
 sim = phx.Simulation;
 sim.step(2, 200, 1);</pre>
+
+<h4 class="phx-h4">Roll a bottle on its side</h4>
+<pre class="phx-code">phx.extra.Viewer(<span class="str">"clear"</span>, <span class="str">"DefaultCameraPosition"</span>, [2 2 1]);
+phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Position"</span>, [0 0 -0.05], <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [4 2 0.1]});
+
+bottle = [0 0; 0 0.04; 0.15 0.04; 0.2 0.015; 0.25 0.015; 0.25 0];   <span class="cmt">% [axial, radial]</span>
+b = phx.Body(<span class="str">"Position"</span>, [-1 0 0.04], <span class="str">"Shape"</span>, phx.shape.Revolution(<span class="str">"Profile"</span>, bottle, <span class="str">"Axis"</span>, <span class="str">"y"</span>, <span class="str">"Envelope"</span>, <span class="str">"cones"</span>));
+b.LinearVelocity = [1 0 0];
+b.AngularVelocity = [0 1/0.04 0];      <span class="cmt">% rolling without slip</span>
+
+sim = phx.Simulation;
+sim.step(2, 400, 1);</pre>
 
 <div class="phx-seealso">
 <span class="lbl">See also</span>

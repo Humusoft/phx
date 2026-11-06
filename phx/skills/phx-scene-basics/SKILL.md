@@ -380,11 +380,17 @@ decides whether an imported body behaves:
 `phx.shape.Tube` defaults to `Envelope = "concave"`, unlike every other shape — a
 convex hull would seal the bore shut and nothing could be poured through it.
 
-`phx.shape.Revolution` takes `Envelope` too: `"convex"` (default), `"concave"`, or
-`"cylinder"` fitted about the revolution axis, its radius the largest radius in the
-`Profile`. That last one is how a revolved profile gets a **smooth rolling rim** (a
-wheel, a washer) instead of a faceted hull, and it is the only envelope of that shape
-that needs no graphics.
+`phx.shape.Revolution` takes `Envelope` too: `"convex"` (default), `"concave"`,
+`"cylinder"` fitted about the revolution axis (its radius the largest radius in the
+`Profile`), or `"cones"`: the profile revolved exactly, one truncated cone per segment.
+Both round envelopes give a **smooth rolling rim** instead of a faceted hull; prefer
+`"cones"` for bottles, skittles, pulleys, wheels with a tread or flange, since it keeps
+the shape (grooves, waists, tapers). It needs one radius per height: a profile whose
+axial coordinates turn back (a cup, a bore, `phx.shape.Tube`) raises
+`phx:Revolution:profileNotMonotonic`; use `"concave"` for those. Tens of profile points
+are cheap, hundreds cost like a concave mesh. Neither round envelope needs graphics.
+End the profile on the axis (radius 0): an open end draws an open surface and gives a
+wrong centre of mass, whatever the envelope.
 
 ## Deformable bodies and particles
 
