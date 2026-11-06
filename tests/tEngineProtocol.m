@@ -896,6 +896,47 @@ classdef tEngineProtocol < PhxTestCase
                 tc.verifyEqual(phx.engine.io('get', w, h, 'totaltorque'), [0, 0, 0], "AbsTol", 1e-5);
             end
         end
+
+        function fallingBodyAcceleratesAtGravity(tc)
+            % A free body reads the acceleration of gravity, no angular one;
+            % the static floor and a body before its first step read none
+            w = tc.newWorld;
+            floor = tc.addFloor(w);
+            h = tc.addBox(w, 2, [0 0 5], [0.2 0.2 0.2]);
+            tc.verifyEqual(phx.engine.io('get', w, h, 'linacc'), [0, 0, 0], "Before the first step");
+            for k = 1:3
+                [~] = phx.engine.io('step', w, tc.Dt);
+            end
+            tc.verifyEqual(phx.engine.io('get', w, h, 'linacc'), [0, 0, -tc.G], "AbsTol", 1e-4);
+            tc.verifyEqual(phx.engine.io('get', w, h, 'angacc'), [0, 0, 0], "AbsTol", 1e-6);
+            tc.verifyEqual(phx.engine.io('get', w, floor, 'linacc'), [0, 0, 0]);
+        end
+
+        function appliedTorqueGivesTheAngularAcceleration(tc)
+            % A torque of 0.5 N m about the axis of the largest moment of
+            % inertia of a box at rest: dw/dt = M / I
+            s = [0.1 0.3 0.6];
+            inertia = (sum(s.^2) - s.^2)/12;
+            w = tc.newWorld([0 0 0]);
+            h = tc.addBox(w, 2, [0 0 0], s, 1, inertia);
+            phx.engine.io('set', w, h, 'appliedtorque', [0.5 0 0]);
+            [~] = phx.engine.io('step', w, tc.Dt);
+            tc.verifyEqual(phx.engine.io('get', w, h, 'angacc'), [0.5/inertia(1), 0, 0], "RelTol", 1e-4);
+            tc.verifyEqual(phx.engine.io('get', w, h, 'linacc'), [0, 0, 0], "AbsTol", 1e-6);
+        end
+
+        function kinematicBodyAcceleratesWithItsDrive(tc)
+            % A kinematic body set to 1 m/s from rest accelerates by 1 m/s
+            % in that step and not in the next one
+            w = tc.newWorld([0 0 0]);
+            k = tc.addBox(w, 1, [0 0 0], [1 1 0.2]);
+            [~] = phx.engine.io('step', w, tc.Dt);
+            phx.engine.io('set', w, k, 'linvel', [1 0 0]);
+            [~] = phx.engine.io('step', w, tc.Dt);
+            tc.verifyEqual(phx.engine.io('get', w, k, 'linacc'), [1/tc.Dt, 0, 0], "RelTol", 1e-5);
+            [~] = phx.engine.io('step', w, tc.Dt);
+            tc.verifyEqual(phx.engine.io('get', w, k, 'linacc'), [0, 0, 0], "AbsTol", 1e-4);
+        end
     end
 
     % Forces and queries

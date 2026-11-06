@@ -27,6 +27,8 @@ classdef tForceApplication < PhxTestCase
 %
 %   A test of its own checks the persistent loads AppliedForce and
 %   AppliedTorque: they act in every step, in the body frame, until changed.
+%   Another reads the accelerations they cause (LinearAcceleration,
+%   AngularAcceleration).
 %
 %   See also phx.Body, tSimulation, tShapeMass
 
@@ -117,6 +119,24 @@ classdef tForceApplication < PhxTestCase
             sim.step(tc.Dt, 1, -1);
             tc.verifyEqual(b.LinearVelocity, [0 0 0], "AbsTol", 1e-9, "The forces cancel.");
             tc.verifyEqual(b.AngularVelocity, [0 0 (2 + 1)/I(3)*tc.Dt], "AbsTol", 1e-6);
+        end
+
+        function accelerationsFollowTheLoads(tc)
+            % LinearAcceleration and AngularAcceleration are F/m and M/I
+            % over the last step, in world axes; gravity counts, so a free
+            % body reads it. Before any step they are zero.
+            b = tc.spawnBody(tc.Far, "Shape", {"Box", "Size", [0.2 0.2 0.2], "Density", 125});
+            b.AppliedForce = [2 0 0];
+            b.AppliedTorque = [0 0 0.001];
+            m = b.Mass;
+            I = b.Inertia;
+            sim = phx.Simulation(b, "Gravity", [0 0 -9.81]);
+            tc.addTeardown(@() delete(sim));
+            tc.verifyEqual(b.LinearAcceleration, [0 0 0]);
+
+            sim.step(tc.Dt, 1, -1);
+            tc.verifyEqual(b.LinearAcceleration, [2/m 0 -9.81], "AbsTol", 1e-4);
+            tc.verifyEqual(b.AngularAcceleration, [0 0 0.001/I(3)], "RelTol", 1e-4);
         end
     end
 

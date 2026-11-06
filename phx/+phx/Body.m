@@ -22,7 +22,6 @@ classdef Body < phx.base.Object
 %#ok<*MCSUP> OK to access other properties in setters
 %#ok<*INUSD> OK to see the full list of arguments for callbacks
 
-% TODO dependent props for accelerations (computed as totalforce/mass)
 % TODO collision groups
 
     % Internal
@@ -71,6 +70,13 @@ classdef Body < phx.base.Object
 
         % Total torque in the centre of the body
         TotalTorque (1, 3) double
+
+        % Mean linear acceleration of the centre of mass over the last
+        % step (m/s^2), gravity included: a falling body reads g
+        LinearAcceleration (1, 3) double
+
+        % Mean angular acceleration over the last step (rad/s^2)
+        AngularAcceleration (1, 3) double
 
         % Kinetic energy of the body (J)
         Energy (1, 1) double
@@ -369,6 +375,22 @@ classdef Body < phx.base.Object
         function value = get.TotalTorque(obj)
             if ~isempty(obj.ObjectHandle)
                 value = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'totaltorque');
+            else
+                value = [0 0 0];
+            end
+        end
+
+        function value = get.LinearAcceleration(obj)
+            if ~isempty(obj.ObjectHandle)
+                value = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'linacc');
+            else
+                value = [0 0 0];
+            end
+        end
+
+        function value = get.AngularAcceleration(obj)
+            if ~isempty(obj.ObjectHandle)
+                value = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'angacc');
             else
                 value = [0 0 0];
             end
