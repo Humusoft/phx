@@ -178,9 +178,9 @@ array `{ClassName, Name, Value, ...}`:
 phx.Body("Shape", {"Box",      "Size", [5 3 0.1]});            % Size = [X Y Z]
 phx.Body("Shape", {"Sphere",   "Radius", 0.5});               % or "Diameter", 1
 phx.Body("Shape", {"Cylinder", "Radius", 0.3, "Height", 2, "Axis", "z"});
-phx.Body("Shape", {"Cone",     "Radius", 0.3, "Height", 1});
+phx.Body("Shape", {"Cone",     "Radius", 0.3, "Height", 1});  % [0.3 0] = sharp; [0.3 0.1] = truncated
 phx.Body("Shape", {"Capsule",  "Radius", 0.25, "Height", 1});
-phx.Body("Shape", {"Tube",     "InnerDiameter", 0.5, "Height", 1, "Taper", -0.8});
+phx.Body("Shape", {"Tube",     "InnerDiameter", [0.1 0.5], "Height", 1});  % funnel; 0.5 = straight
 phx.Body("Shape", {"path/to/model.stl", "Scale", 0.06*[1 1 1], "Material", "glossy"});
 ```
 
@@ -188,7 +188,10 @@ Available: `Box`, `Sphere`, `Cylinder`, `Tube`, `Cone`, `Capsule`, `Mesh`,
 `Extrusion`, `Revolution`, `Rock`, `Terrain`. Sizing properties are
 shape-specific — `Box` uses `Size`; round shapes accept **`Radius`** *or* `Diameter`
 (interchangeable), and the axial extent is **`Height`** (not `Length`) with a modeling
-`Axis` (`"x"`/`"y"`/`"z"`) on `Cylinder`/`Cone`/`Capsule`. Round shapes set their visual
+`Axis` (`"x"`/`"y"`/`"z"`) on `Cylinder`/`Cone`/`Capsule`/`Tube`. `Cone` sizes and the `Tube`
+bore take a pair, at the negative and the positive end of `Axis`, and always read back as
+one: a single cone value `d` is `[d 0]`, a single bore `d` is `[d d]` (the wall keeps its
+thickness). Round shapes set their visual
 detail with `Segments` (`Sphere` default 28; about 10 is plenty for hundreds of small
 particles) — the collision shape stays an ideal primitive either way. Most accept `Color` and
 `Density` (auto-computes mass/inertia if you don't set them), and texture/material

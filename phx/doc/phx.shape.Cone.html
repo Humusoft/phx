@@ -13,13 +13,19 @@
 <div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.shape.Cone</div>
 
 <h1 class="phx-title">phx.shape.Cone</h1>
-<p class="phx-purpose">Cone shape</p>
+<p class="phx-purpose">Cone or truncated cone shape</p>
 <p class="phx-classref">Class&nbsp;&nbsp;phx.shape.Cone &nbsp;|&nbsp; Superclass: <a href="phx.base.Shape.html">phx.base.Shape</a></p>
 
 <h2 class="phx-h2">Description</h2>
-<p><code class="phx-inline">phx.shape.Cone</code> is a cone geometry. The visual appearance is a revolved
-triangular profile with an adjustable number of segments; the collision shape and mass properties are modeled
+<p><code class="phx-inline">phx.shape.Cone</code> is a cone or a truncated cone. The visual appearance is a
+revolved profile with an adjustable number of segments; the collision shape and mass properties are modeled
 as an ideal cone independent of the visual detail.</p>
+
+<p><code class="phx-inline">Diameter</code> gives the diameters at the negative and the positive end of
+<code class="phx-inline">Axis</code>. A single value <code class="phx-inline">d</code> is
+<code class="phx-inline">[d 0]</code>, a sharp cone with its apex on the positive axis; two values make a
+truncated cone, or a cylinder when they are equal. Either way the property reads back as a pair, and
+<code class="phx-inline">Radius</code> follows it.</p>
 
 <h2 class="phx-h2">Creation</h2>
 <h3 class="phx-h3">Syntax</h3>
@@ -36,8 +42,8 @@ as an ideal cone independent of the visual detail.</p>
 <h3 class="phx-h3">Geometry</h3>
 <table class="phx-tbl">
 <tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
-<tr><td class="name">Diameter</td><td class="dflt">1</td><td>Base diameter, <span class="phx-unit">m</span>.</td></tr>
-<tr><td class="name">Radius</td><td class="type">double (dependent)</td><td>Base radius, <span class="phx-unit">m</span>. Setting it updates <code class="phx-inline">Diameter</code>.</td></tr>
+<tr><td class="name">Diameter</td><td class="dflt">[1 0]</td><td>Diameters at the negative and the positive end of <code class="phx-inline">Axis</code>, <span class="phx-unit">m</span>. A single value <code class="phx-inline">d</code> is <code class="phx-inline">[d 0]</code>; the values must not be negative, nor both zero.</td></tr>
+<tr><td class="name">Radius</td><td class="type">double (dependent)</td><td>Radii at the two ends, <span class="phx-unit">m</span>, as <code class="phx-inline">Diameter</code>. Setting it updates <code class="phx-inline">Diameter</code>.</td></tr>
 <tr><td class="name">Height</td><td class="dflt">1</td><td>Cone height, <span class="phx-unit">m</span>.</td></tr>
 <tr><td class="name">Axis</td><td class="dflt">"z"</td><td>Modeling axis: <code class="phx-inline">"x"</code>, <code class="phx-inline">"y"</code> or <code class="phx-inline">"z"</code>.</td></tr>
 <tr><td class="name">Segments</td><td class="dflt">24</td><td>Number of segments around the base.</td></tr>
@@ -45,6 +51,12 @@ as an ideal cone independent of the visual detail.</p>
 </table>
 
 <p>Appearance properties are inherited from <a href="phx.base.Shape.html">phx.base.Shape</a>.</p>
+
+<div class="phx-note">
+<span class="lbl">Note.</span> The origin of the shape is at the middle of its height, not at its centre of
+mass, which lies closer to the wider end: a quarter of the height below the origin for a sharp cone. The body
+still turns about its centre of mass.
+</div>
 
 <h2 class="phx-h2">Examples</h2>
 <h4 class="phx-h4">Simple falling cone</h4>
@@ -55,6 +67,17 @@ c = phx.Body(<span class="str">"Position"</span>, [0 0 2], ...
 
 sim = phx.Simulation;
 sim.step(3, 300, 1);</pre>
+
+<h4 class="phx-h4">Truncated cone standing on its wide end</h4>
+<pre class="phx-code">phx.extra.Viewer(<span class="str">"clear"</span>, <span class="str">"DefaultCameraPosition"</span>, [6 6 4]);
+
+phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Position"</span>, [0 0 -0.05], ...
+    <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [3 3 0.1]});
+phx.Body(<span class="str">"Position"</span>, [0 0 1], ...
+    <span class="str">"Shape"</span>, {<span class="str">"Cone"</span>, <span class="str">"Diameter"</span>, [1 0.5], <span class="str">"Height"</span>, 0.8});
+
+sim = phx.Simulation;
+sim.step(2, 200, 1);</pre>
 
 <div class="phx-seealso">
 <span class="lbl">See also</span>
