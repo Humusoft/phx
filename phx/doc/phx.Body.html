@@ -131,6 +131,8 @@ acts for the next step only.) Driven from Simulink as an input of the
 <tr><td class="name">AngularVelocity</td><td class="type">1&times;3 double</td><td>Angular velocity, <span class="phx-unit">rad/s</span>.</td></tr>
 <tr><td class="name">TotalForce</td><td class="type">1&times;3 double (read-only)</td><td>Total force at the body centre, <span class="phx-unit">N</span> (dependent).</td></tr>
 <tr><td class="name">TotalTorque</td><td class="type">1&times;3 double (read-only)</td><td>Total torque at the body centre, <span class="phx-unit">N&middot;m</span> (dependent).</td></tr>
+<tr><td class="name">LinearAcceleration</td><td class="type">1&times;3 double (read-only)</td><td>Mean acceleration of the centre of mass over the last step, <span class="phx-unit">m/s&sup2;</span>; gravity included, so a falling body reads it (dependent).</td></tr>
+<tr><td class="name">AngularAcceleration</td><td class="type">1&times;3 double (read-only)</td><td>Mean angular acceleration over the last step, <span class="phx-unit">rad/s&sup2;</span> (dependent).</td></tr>
 <tr><td class="name">Energy</td><td class="type">double (read-only)</td><td>Kinetic energy of the body, <span class="phx-unit">J</span> (dependent).</td></tr>
 </table>
 

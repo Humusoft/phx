@@ -150,7 +150,8 @@ b = phx.Body(ax, ...
   live): `Position`, `Orientation` (3x3), `Quaternion`, `AxisAngle`, `EulerAngles`,
   `Transform` (4x4). Reading `b.Position` mid-simulation returns the current state.
 - **State you can read**: `LinearVelocity`, `AngularVelocity`, `TotalForce`,
-  `TotalTorque`, `Energy`.
+  `TotalTorque`, `Energy`, and `LinearAcceleration`/`AngularAcceleration` (mean over
+  the last step, world axes; gravity included, so a falling body reads g).
 - **`Mass` and `Inertia` are independent overrides (by design).** A shape computes
   *both* from its `Density` as defaults, but you may override either one on its own —
   e.g. set a custom `Inertia` to model a non-uniform mass distribution, or a custom

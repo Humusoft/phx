@@ -98,6 +98,10 @@ read and written &mdash; even during the simulation (they read/write the engine 
     of a point contact. A contact adds the values of both bodies.</td></tr>
 <tr><td class="name">TotalForce / TotalTorque / Energy</td>
     <td>Current force, torque and kinetic energy (read-only).</td></tr>
+<tr><td class="name">LinearAcceleration / AngularAcceleration</td>
+    <td>Mean accelerations over the last step (read-only), in world axes, the linear one of
+    the centre of mass. Gravity counts: a body in free fall reads g, where an accelerometer
+    would read zero. They work for kinematic bodies and bodies without mass as well.</td></tr>
 </table>
 
 <p>A body can also be acted on directly with a force or a torque. <code class="phx-inline">AppliedForce</code>
