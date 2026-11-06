@@ -6,7 +6,7 @@
 % '\%'. This file itself is never packaged.
 %
 % What ships: phx/, examples/, doc/GettingStarted.mlx, the license files and
-% phx_logo.png (the toolbox image); the packager adds its own README.md and
+% phx_logo.png (the toolbox image) and README.md; the packager adds
 % resources/*.json.
 
 % Repository and development folders
@@ -22,7 +22,6 @@ customer/
 doc/logo/
 
 % Repository documents (not **/*.md - the agent skills in phx/skills ship)
-README.md
 CONTRIBUTING.md
 CODE_REVIEW.md
 CLAUDE.md
