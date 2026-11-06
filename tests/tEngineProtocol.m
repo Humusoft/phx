@@ -730,6 +730,69 @@ classdef tEngineProtocol < PhxTestCase
             tc.verifyEqual(T(1:3, 4), [5; 0; -2*(h/2 - zc)], "AbsTol", 1e-3);
         end
 
+        function revolutionIsTheRevolvedProfile(tc)
+            % The profile [z; r] runs from an end off the axis through a
+            % groove, a step and a sharp tip. Rays towards the axis meet the
+            % solid at the radius of the profile at their height, whatever
+            % their azimuth (it is round, not faceted), for every axis; rays
+            % along the axis meet the cone of the tip and the flat bottom
+            % end, which the end cap closes.
+            profile = [-0.3 -0.1 0 0.1 0.1 0.2 0.3; 0.2 0.2 0.1 0.2 0.25 0.25 0];
+            heights = [-0.2 -0.05 0.02 0.05 0.15 0.25];   % off the seams, where the ray's GJK tolerance shows
+            radii = [0.2 0.15 0.12 0.15 0.25 0.125];
+            azimuths = deg2rad([0 37 90 200]);
+            w = tc.newWorld([0 0 0]);
+            for axis = 'xyz'
+                % Body axes: the axis and two radial directions
+                k = axis - 'w';
+                e = eye(3);
+                e = e(:, [setdiff(1:3, k) k]);
+                T = tEngineProtocol.pose(10*[k 0 0]);
+                phx.engine.io('add', w, 'revolution', 0, profile, axis, T, 1, [1 1 1]);
+                [z, phi] = meshgrid(heights, azimuths);
+                radial = e(:, 1)*cos(phi(:)') + e(:, 2)*sin(phi(:)');
+                from = T(1:3, 4) + e(:, 3)*z(:)' + radial;
+                P = phx.engine.io('raycast', w, from, from - radial);
+                distance = sqrt(sum((P - T(1:3, 4) - e(:, 3)*z(:)').^2, 1));
+                tc.verifyEqual(distance, repelem(radii, numel(azimuths)), "AbsTol", 1e-5, ...
+                    "Radii along the profile, axis " + axis);
+                from = T(1:3, 4) + e(:, 2)*[0.22 0.15] + e(:, 3)*[1 -1];
+                P = phx.engine.io('raycast', w, from, from - e(:, 3)*[2 -2]);
+                tc.verifyEqual(e(:, 3)'*(P - T(1:3, 4)), [0.212 -0.3], "AbsTol", 1e-5, ...
+                    "Heights of the tip cone and the bottom end, axis " + axis);
+            end
+        end
+
+        function revolutionCentreIsTheCentroid(tc)
+            % The centre of mass of a revolution is the centroid of its
+            % volume: the sum over its truncated cones
+            profile = [-0.3 -0.1 0 0.1 0.1 0.2 0.3; 0.2 0.2 0.1 0.2 0.25 0.25 0];
+            z1 = profile(1, 1:end - 1);
+            h = diff(profile(1, :));
+            r1 = profile(2, 1:end - 1);
+            r2 = profile(2, 2:end);
+            V = pi*h/3.*(r1.^2 + r1.*r2 + r2.^2);
+            zc = z1 + h.*(r1.^2 + 2*r1.*r2 + 3*r2.^2)./(4*(r1.^2 + r1.*r2 + r2.^2));
+            zc(V == 0) = 0;
+            w = tc.newWorld([0 0 0]);
+            c = phx.engine.io('add', w, 'revolution', 2, profile, 'y', eye(4), 1, [1 1 1]);
+            tc.verifyEqual(phx.engine.io('get', w, c, 'com'), [0 sum(V.*zc)/sum(V) 0], "AbsTol", 1e-6);
+        end
+
+        function revolutionTakesOnlyOneRadiusPerHeight(tc)
+            % Heights must not decrease (beyond 1e-6 of the size), radii
+            % must not be negative, the profile must enclose a volume
+            w = tc.newWorld([0 0 0]);
+            add = @(profile) phx.engine.io('add', w, 'revolution', 2, profile, 'z', eye(4), 1, [1 1 1]);
+            tc.verifyError(@() add([0 0.2 0.1 0.3; 0 0.1 0.2 0]), "phx:engine:badArgument", "Decreasing heights");
+            tc.verifyError(@() add([0 0 1 1; 0 -0.1 0.1 0]), "phx:engine:badArgument", "Negative radius");
+            tc.verifyError(@() add([0 0 1 1; 0 NaN 0.1 0]), "phx:engine:badArgument", "Not finite");
+            tc.verifyError(@() add([0 0 1 1; 0 0.1 0.1 0; 0 0 0 0]), "phx:engine:badArgument", "Three rows");
+            tc.verifyError(@() add([0 1; 0 0]), "phx:engine:badArgument", "No volume");
+            tc.verifyError(@() add([0 0; 0 1]), "phx:engine:badArgument", "No height");
+            tc.verifyWarningFree(@() add([0 0 1 1 - 1e-9; 0 0.1 0.1 0]), "A height off by less than the tolerance");
+        end
+
         function centreOfMassIsTheShapesUnlessGiven(tc)
             % 'com' reads the centre of mass in body axes from the origin:
             % where the shape has it, or where 'add' and 'set' put it; a
@@ -2302,6 +2365,9 @@ classdef tEngineProtocol < PhxTestCase
             s.cylinderStanding = row(@(w, P) phx.engine.io('add', w, 'cylinder', 2, 0.4, 0.2, 'z', P, 1, I), 0.1);
             s.cone = row(@(w, P) phx.engine.io('add', w, 'cone', 2, 0.3, 0.8, 'z', P, 1, I), 0.4);
             s.capsule = row(@(w, P) phx.engine.io('add', w, 'capsule', 2, 0.2, 0.6, 'z', P, 1, I), 0.5);
+            bottle = [-0.3 0.1 0.3; 0.2 0.2 0];
+            s.revolutionStanding = row(@(w, P) phx.engine.io('add', w, 'revolution', 2, bottle, 'z', P, 1, I), 0.3);
+            s.revolutionLying = row(@(w, P) phx.engine.io('add', w, 'revolution', 2, bottle, 'x', P, 1, I), 0.2);
             s.convexHull = row(@(w, P) phx.engine.io('add', w, 'convexhull', 2, V, P, 1, I), 0.2);
             % The concave mesh keeps an engine-chosen collision envelope
             % whatever the margin, so only a coarse height is part of the
