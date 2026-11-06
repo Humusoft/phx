@@ -14,10 +14,10 @@ function phxex_isolation
     mu      = 0.8;       % friction between the stacked blocks
     rollerR = 0.15;      % radius of the isolation rollers (m)
     ampMax  = 0.16;      % peak ground displacement (m)
-    freq    = 2;       % ground shaking frequency (Hz)
+    freq    = 1.1;       % ground shaking frequency (Hz)
     tRamp   = 8;         % time for the amplitude to ramp up to ampMax (s)
     tShake  = 10;        % duration of the shaking (s)
-    dt      = 0.005;     % time step (s)
+    dt      = 0.002;     % time step (s)
 
     % Viewer
     figure(1);

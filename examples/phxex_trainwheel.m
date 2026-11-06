@@ -23,7 +23,7 @@ function phxex_trainwheel
     
     % Create wheel shape by revolving profile around y-axis
     halfProfile = [-1.25 0; -1.2 0.6; -0.8 0.8; -0.7 1; -0.6 1; -0.6 0.2];
-    wheelShape = phx.shape.Revolution("Axis", "y", "Profile", [halfProfile; flipud(abs(halfProfile))], "Envelope", "concave", "Style", "flat", "Segments", 180);
+    wheelShape = phx.shape.Revolution("Axis", "y", "Profile", [halfProfile; flipud(abs(halfProfile))], "Envelope", "concave", "Style", "flat");
     
     % Create dynamic wheel body with mass and inertia
     wheel = phx.Body(ax, "Position", [14 0.05 1.5], "Shape", wheelShape, "Friction", [1 0 0]);
