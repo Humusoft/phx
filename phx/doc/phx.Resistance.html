@@ -44,9 +44,9 @@ assigns it to all given bodies. All assigned bodies share the same environment p
 <table class="phx-tbl">
 <tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
 <tr><td class="name">VelocityFactors</td><td class="dflt">0</td><td>Polynomial coefficients of the drag force in relative speed, <code class="phx-inline">[f0 f1 f2 ...]</code>.</td></tr>
-<tr><td class="name">EnvironmentVelocity</td><td class="dflt">[0 0 0]</td><td>Linear velocity of the environment, <span class="phx-unit">m/s</span>.</td></tr>
-<tr><td class="name">EnvironmentOrigin</td><td class="dflt">[0 0 0]</td><td>Origin of the environment (reference point for the twist).</td></tr>
-<tr><td class="name">EnvironmentTwist</td><td class="dflt">[0 0 0]</td><td>Angular velocity of the environment, <span class="phx-unit">rad/s</span>.</td></tr>
+<tr><td class="name">EnvironmentLinearVelocity</td><td class="dflt">[0 0 0]</td><td>Linear velocity of the environment, <span class="phx-unit">m/s</span>. At a point <code class="phx-inline">p</code> the environment moves with <code class="phx-inline">EnvironmentLinearVelocity + cross(EnvironmentAngularVelocity, p - EnvironmentOrigin)</code>.</td></tr>
+<tr><td class="name">EnvironmentAngularVelocity</td><td class="dflt">[0 0 0]</td><td>Angular velocity of the environment about <code class="phx-inline">EnvironmentOrigin</code> (right-hand rule), <span class="phx-unit">rad/s</span>.</td></tr>
+<tr><td class="name">EnvironmentOrigin</td><td class="dflt">[0 0 0]</td><td>Point about which the environment rotates.</td></tr>
 <tr><td class="name">ForceVectorSize</td><td class="dflt">0.001</td><td>Force-vector multiplication factor for drawing.</td></tr>
 <tr><td class="name">Overlay</td><td class="dflt">false</td><td>Draw the resistance vectors as an overlay (always on top).</td></tr>
 </table>
@@ -71,7 +71,7 @@ sim.step(3, 300, 1);</pre>
 
 <h4 class="phx-h4">Constant wind</h4>
 <pre class="phx-code">phx.Resistance([b1 b2], <span class="str">"VelocityFactors"</span>, [0 2], ...
-    <span class="str">"EnvironmentVelocity"</span>, [5 0 0]);   <span class="cmt">% 5 m/s wind along x</span></pre>
+    <span class="str">"EnvironmentLinearVelocity"</span>, [5 0 0]);   <span class="cmt">% 5 m/s wind along x</span></pre>
 
 <div class="phx-seealso">
 <span class="lbl">See also</span>

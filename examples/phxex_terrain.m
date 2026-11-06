@@ -41,10 +41,10 @@ function phxex_terrain
     end
 
     % Add wind
-    % phx.Resistance(balls, "VelocityFactors", [0 100], "ForceVectorSize", 0.005, "EnvironmentVelocity", [10 0 0]);
+    % phx.Resistance(balls, "VelocityFactors", [0 100], "ForceVectorSize", 0.005, "EnvironmentLinearVelocity", [10 0 0]);
 
     % Add tornado!
-    % phx.Resistance(balls, "VelocityFactors", [0 100], "ForceVectorSize", 0.005, "EnvironmentTwist", [0 0 2]);
+    % phx.Resistance(balls, "VelocityFactors", [0 100], "ForceVectorSize", 0.005, "EnvironmentAngularVelocity", [0 0 2]);
 
     % Run the simulation for a specified duration and steps
     sim = phx.Simulation;

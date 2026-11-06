@@ -61,8 +61,8 @@ classdef Particles < phx.base.Object
         % Restitution (bounciness) coefficient, 0 = no bounce
         Restitution (1, 1) double {mustBeNonnegative} = 0
 
-        % Damping of the velocities (1/s): dv/dt = -Damping*v
-        Damping (1, 1) double {mustBeNonnegative} = 0
+        % Damping of the linear velocities (1/s): dv/dt = -LinearDamping*v
+        LinearDamping (1, 1) double {mustBeNonnegative} = 0
 
         % Damping of the angular velocities (1/s) of rotating particles
         AngularDamping (1, 1) double {mustBeNonnegative} = 0
@@ -293,8 +293,8 @@ classdef Particles < phx.base.Object
             obj.engineSet('restitution', value);
         end
 
-        function set.Damping(obj, value)
-            obj.Damping = value;
+        function set.LinearDamping(obj, value)
+            obj.LinearDamping = value;
             obj.engineSet('damping', value);
         end
 
@@ -401,7 +401,7 @@ classdef Particles < phx.base.Object
                 end
                 obj.Friction = obj.Friction;
                 obj.Restitution = obj.Restitution;
-                obj.Damping = obj.Damping;
+                obj.LinearDamping = obj.LinearDamping;
                 obj.AngularDamping = obj.AngularDamping;
                 obj.SelfCollisions = obj.SelfCollisions;
                 obj.Sleeping = obj.Sleeping;

@@ -29,17 +29,25 @@ classdef Resistance < phx.base.Object
         % Linear movement resistance force factors (F = f(1)*v^0 + f(2)*v^1 + ...)
         VelocityFactors (1, :) double = [0]
         
-        % Longitudinal velocity vector of the environment
-        EnvironmentVelocity (1, 3) double = [0 0 0]
+        % Linear velocity of the environment (m/s); the environment moves at
+        % point p with EnvironmentLinearVelocity +
+        % cross(EnvironmentAngularVelocity, p - EnvironmentOrigin)
+        EnvironmentLinearVelocity (1, 3) double = [0 0 0]
 
-        % Origin of the environment
+        % Angular velocity of the environment (rad/s) about EnvironmentOrigin
+        EnvironmentAngularVelocity (1, 3) double = [0 0 0]
+
+        % Point about which the environment rotates
         EnvironmentOrigin (1, 3) double = [0 0 0]
-
-        % Angular velocity vector of the environment
-        EnvironmentTwist (1, 3) double = [0 0 0]
 
         % Force vector multiplication factor for drawing
         ForceVectorSize (1, 1) double = 0.001
+    end
+
+    % Former names, kept for compatibility
+    properties (Dependent, Hidden)
+        EnvironmentVelocity
+        EnvironmentTwist
     end
 
     methods
@@ -66,6 +74,22 @@ classdef Resistance < phx.base.Object
 
             % Create graphics objects
             obj.hL = matlab.graphics.primitive.world.LineStrip('Parent', obj.Graphics, 'LineWidth', 0.5, 'ColorBinding', 'object', 'ColorData', uint8([obj.Color*255 255]'), 'Layer', phx.internal.choose({'middle', 'front'}, obj.Overlay + 1));
+        end
+
+        function value = get.EnvironmentVelocity(obj)
+            value = obj.EnvironmentLinearVelocity;
+        end
+
+        function set.EnvironmentVelocity(obj, value)
+            obj.EnvironmentLinearVelocity = value;
+        end
+
+        function value = get.EnvironmentTwist(obj)
+            value = obj.EnvironmentAngularVelocity;
+        end
+
+        function set.EnvironmentTwist(obj, value)
+            obj.EnvironmentAngularVelocity = value;
         end
     end
 
@@ -105,13 +129,13 @@ classdef Resistance < phx.base.Object
 
                 if any(obj.VelocityFactors)
                     v = zeros(3, n);
-                    ve = obj.EnvironmentVelocity;
-                    we = obj.EnvironmentTwist;
+                    ve = obj.EnvironmentLinearVelocity;
+                    we = obj.EnvironmentAngularVelocity;
                     oe = obj.EnvironmentOrigin;
                     for a = 1:n
                         pp = P{a}.Position;
                         pv = P{a}.LinearVelocity;
-                        v(:, a) = (pv - ve - cross(pp - oe, we))';
+                        v(:, a) = (pv - ve - cross(we, pp - oe))';
                     end
                     pow = permute(0:numel(obj.VelocityFactors)-1, [3 1 2]);
                     fk = permute(obj.VelocityFactors, [3 1 2]);
