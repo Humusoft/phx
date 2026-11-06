@@ -730,6 +730,83 @@ classdef tEngineProtocol < PhxTestCase
             tc.verifyEqual(T(1:3, 4), [5; 0; -2*(h/2 - zc)], "AbsTol", 1e-3);
         end
 
+        function centreOfMassIsTheShapesUnlessGiven(tc)
+            % 'com' reads the centre of mass in body axes from the origin:
+            % where the shape has it, or where 'add' and 'set' put it; a
+            % centre that is not finite is refused
+            w = tc.newWorld([0 0 0]);
+            b = tc.addBox(w, 2, [0 0 0], 0.2*[1 1 1]);
+            tc.verifyEqual(phx.engine.io('get', w, b, 'com'), [0 0 0], "AbsTol", 1e-7);
+            c = phx.engine.io('add', w, 'cone', 2, 0.4, 0.6, 'z', tEngineProtocol.pose([2 0 0]), 1, [1 1 1]);
+            tc.verifyEqual(phx.engine.io('get', w, c, 'com'), [0 0 -0.15], "AbsTol", 1e-6);
+            d = phx.engine.io('add', w, 'box', 2, 0.1*[1 1 1], tEngineProtocol.pose([4 0 0]), 1, [1 1 1], [0.1 0 0]);
+            tc.verifyEqual(phx.engine.io('get', w, d, 'com'), [0.1 0 0], "AbsTol", 1e-7);
+            phx.engine.io('set', w, d, 'com', [0 0 0]);
+            tc.verifyEqual(phx.engine.io('get', w, d, 'com'), [0 0 0], "AbsTol", 1e-7);
+            tc.verifyError(@() phx.engine.io('set', w, d, 'com', [NaN 0 0]), "phx:engine:badArgument");
+        end
+
+        function bodyTurnsAboutTheGivenCentre(tc)
+            % With the centre 0.3 m off the origin and no linear velocity,
+            % half a turn takes the origin 0.6 m across
+            w = tc.newWorld([0 0 0]);
+            b = phx.engine.io('add', w, 'box', 2, 0.1*[1 1 1], eye(4), 1, 0.01*[1 1 1], [0.3 0 0]);
+            phx.engine.io('set', w, b, 'angvel', [0 0 pi]);
+            T = tc.lastPose(w, b, 1);
+            tc.verifyEqual(T(1:3, 4), [0.6; 0; 0], "AbsTol", 1e-3);
+        end
+
+        function gravityActsAtTheCentre(tc)
+            % A body pinned at its origin with the centre 0.3 m to the side
+            % starts to fall about the pin: alpha = m g d/(I + m d^2)
+            m = 2;
+            I = 0.05;
+            d = 0.3;
+            w = tc.newWorld;
+            a = tc.addBox(w, 0, [0 0 2], 0.1*[1 1 1]);
+            b = phx.engine.io('add', w, 'box', 2, 0.05*[1 1 1], tEngineProtocol.pose([0 0 2]), m, I*[1 1 1], [d 0 0]);
+            phx.engine.io('add', w, 'spherical', [a b], eye(4), eye(4), false);
+            [~] = phx.engine.io('step', w, tc.Dt);
+            om = phx.engine.io('get', w, b, 'angvel');
+            tc.verifyEqual(om(2), m*tc.G*d/(I + m*d^2)*tc.Dt, "RelTol", 0.02);
+        end
+
+        function movedCentreKeepsTheMotionOfTheBody(tc)
+            % Moving the centre of a spinning body changes neither its pose
+            % nor the velocity of its points: the new centre takes the
+            % velocity it had and from then on flies straight, the body
+            % turning about it
+            w = tc.newWorld([0 0 0]);
+            b = phx.engine.io('add', w, 'box', 2, 0.1*[1 1 1], eye(4), 1, 0.01*[1 1 1]);
+            om = [0 0 pi];
+            phx.engine.io('set', w, b, 'angvel', om);
+            T = tc.lastPose(w, b, 0.25);
+            tc.verifyEqual(T(1:3, 4), [0; 0; 0], "AbsTol", 1e-6);
+            d = [0.3; 0; 0];
+            c = T(1:3, 1:3)*d;
+            phx.engine.io('set', w, b, 'com', d');
+            v = cross(om, c');
+            tc.verifyEqual(phx.engine.io('get', w, b, 'linvel'), v, "AbsTol", 1e-5);
+            T = tc.lastPose(w, b, 0.5);
+            tc.verifyEqual(T(1:3, 4), c + 0.5*v' - T(1:3, 1:3)*d, "AbsTol", 1e-4);
+        end
+
+        function jointHoldsWhenTheCentreMoves(tc)
+            % The joints of a body keep their points on it when its centre
+            % moves during the run
+            w = tc.newWorld;
+            a = tc.addBox(w, 0, [0 0 2], 0.2*[1 1 1]);
+            b = tc.addBox(w, 2, [1 0 2], 0.2*[1 1 1]);
+            phx.engine.io('add', w, 'spherical', [a b], eye(4), tEngineProtocol.pose([-1 0 0]), false);
+            tc.settle(w, 0.2);
+            phx.engine.io('set', w, b, 'com', [0.4 0 0]);
+            for k = 1:100
+                [~, T] = phx.engine.io('step', w, tc.Dt);
+                anchor = T(1:3, 1:3)*[-1; 0; 0] + T(1:3, 4);
+                tc.assertEqual(anchor, [0; 0; 2], "AbsTol", 0.02);
+            end
+        end
+
         function kinematicBodyFollowsItsVelocity(tc)
             % A kinematic body moves with the velocity set to it
             w = tc.newWorld;
