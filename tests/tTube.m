@@ -22,10 +22,15 @@ classdef tTube < PhxTestCase
     % --- Properties and mass --------------------------------------------
     methods (Test)
         function outerSizeFollowsTheBoreAndTheWall(tc)
+            % A single bore is a straight tube, read back as a pair at the
+            % negative and the positive end of the axis
             s = phx.shape.Tube("InnerDiameter", 0.8, "WallThickness", 0.1);
-            tc.verifyEqual(s.Diameter, 1, "RelTol", 1e-12);
-            tc.verifyEqual(s.Radius, 0.5, "RelTol", 1e-12);
-            tc.verifyEqual(s.InnerRadius, 0.4, "RelTol", 1e-12);
+            tc.verifyEqual(s.InnerDiameter, [0.8 0.8]);
+            tc.verifyEqual(s.Diameter, [1 1], "RelTol", 1e-12);
+            tc.verifyEqual(s.Radius, [0.5 0.5], "RelTol", 1e-12);
+            tc.verifyEqual(s.InnerRadius, [0.4 0.4], "RelTol", 1e-12);
+            s.InnerDiameter = [0.8 0.4];
+            tc.verifyEqual(s.Diameter, [1 0.6], "RelTol", 1e-12);
         end
 
         function settingTheOuterSizeKeepsTheWall(tc)
@@ -33,19 +38,24 @@ classdef tTube < PhxTestCase
             % dimension has to come back out of the dependent getter intact.
             s = phx.shape.Tube("WallThickness", 0.1);
             s.Diameter = 2;
-            tc.verifyEqual(s.Diameter, 2, "RelTol", 1e-12);
-            tc.verifyEqual(s.InnerDiameter, 1.8, "RelTol", 1e-12);
-            s.Radius = 3;
-            tc.verifyEqual(s.Diameter, 6, "RelTol", 1e-12);
+            tc.verifyEqual(s.Diameter, [2 2], "RelTol", 1e-12);
+            tc.verifyEqual(s.InnerDiameter, [1.8 1.8], "RelTol", 1e-12);
+            s.Radius = [3 2];
+            tc.verifyEqual(s.Diameter, [6 4], "RelTol", 1e-12);
             s.InnerRadius = 1;
-            tc.verifyEqual(s.InnerDiameter, 2, "RelTol", 1e-12);
+            tc.verifyEqual(s.InnerDiameter, [2 2], "RelTol", 1e-12);
             tc.verifyEqual(s.WallThickness, 0.1, "RelTol", 1e-12);
         end
 
-        function taperIsLimitedToTheClosedRange(tc)
-            tc.verifyError(@() phx.shape.Tube("Taper", 1.5), ...
-                "MATLAB:validators:mustBeInRange");
-            tc.verifyWarningFree(@() phx.shape.Tube("Taper", -1));
+        function boreSizeIsValidated(tc)
+            % One or two nonnegative bores, an outer size at least twice the
+            % wall, a positive wall; a zero bore closes that end
+            tc.verifyError(@() phx.shape.Tube("InnerDiameter", [1 -1]), "phx:Tube:badSize");
+            tc.verifyError(@() phx.shape.Tube("InnerDiameter", [1 1 1]), "phx:Tube:badSize");
+            s = phx.shape.Tube("WallThickness", 0.1);
+            tc.verifyError(@() setfield(s, "Diameter", 0.1), "phx:Tube:badSize"); %#ok<SFLD>
+            tc.verifyError(@() phx.shape.Tube("WallThickness", 0), "MATLAB:validators:mustBePositive");
+            tc.verifyWarningFree(@() phx.shape.Tube("InnerDiameter", [0.5 0]));
         end
 
         function straightTubeMatchesTheAnnulusFormulas(tc)
@@ -61,42 +71,42 @@ classdef tTube < PhxTestCase
             tc.verifyEqual(I, [io io ia], "RelTol", 1e-4);
         end
 
-        function taperRemovesMaterialSymmetrically(tc)
-            % The two signs are the same shape flipped end for end, and a
-            % narrower bore means more wall left standing.
-            mass = @(t) massOf(phx.shape.Tube("Taper", t));
-            tc.verifyEqual(mass(0.5), mass(-0.5), "RelTol", 1e-12);
-            tc.verifyLessThan(mass(0.5), mass(0));
-            tc.verifyLessThan(mass(1), mass(0.9));
+        function taperedBoreKeepsTheWall(tc)
+            % Swapped bores are the same shape flipped end for end, and the
+            % wall follows a narrower bore inwards, so there is less of it.
+            mass = @(d) massOf(phx.shape.Tube("InnerDiameter", d));
+            tc.verifyEqual(mass([0.9 0.45]), mass([0.45 0.9]), "RelTol", 1e-12);
+            tc.verifyLessThan(mass([0.9 0.45]), mass(0.9));
+            tc.verifyLessThan(mass([0.9 0]), mass([0.9 0.09]));
         end
     end
 
     % --- Mesh ------------------------------------------------------------
     methods (Test, TestTags = {'Graphics'})
         function meshIsClosedAndFacesOutwards(tc)
-            for t = [-1 -0.5 0 0.5 0.9 1]
-                [V, F] = tc.meshOf(phx.shape.Tube("Taper", t));
+            for d = {0.9, [0.9 0.45], [0.45 0.9], [0.9 0.09], [0.9 0], [0 0.9]}
+                [V, F] = tc.meshOf(phx.shape.Tube("InnerDiameter", d{1}));
                 tc.verifyTrue(isWatertight(V, F), ...
-                    "Tube mesh has a hole at Taper = " + t);
+                    "Tube mesh has a hole at InnerDiameter = " + mat2str(d{1}));
                 tc.verifyGreaterThan(signedVolume(V, F), 0, ...
-                    "Tube mesh is wound inside out at Taper = " + t);
+                    "Tube mesh is wound inside out at InnerDiameter = " + mat2str(d{1}));
             end
         end
 
-        function taperNarrowsTheEndOnThePositiveSideOfTheAxis(tc)
-            [V, ~] = tc.meshOf(phx.shape.Tube("Taper", 0.5, "Height", 1));
+        function boreEndsFollowTheAxis(tc)
+            % The first bore is at the negative end of the axis
+            [V, ~] = tc.meshOf(phx.shape.Tube("InnerDiameter", [0.9 0.45], "Height", 1));
             tc.verifyEqual(endRadius(V, -1), 0.5, "AbsTol", 1e-6);
-            tc.verifyEqual(endRadius(V, +1), 0.45*(1 - 0.5) + 0.05, "AbsTol", 1e-6);
+            tc.verifyEqual(endRadius(V, +1), 0.225 + 0.05, "AbsTol", 1e-6);
 
-            % The negative sign narrows the opposite end
-            [V, ~] = tc.meshOf(phx.shape.Tube("Taper", -0.5, "Height", 1));
+            [V, ~] = tc.meshOf(phx.shape.Tube("InnerDiameter", [0.45 0.9], "Height", 1));
             tc.verifyEqual(endRadius(V, +1), 0.5, "AbsTol", 1e-6);
         end
 
-        function closedTaperLeavesJustTheWallAtTheTip(tc)
-            % Taper 1 pinches the bore shut, so the tip is a disc as wide as
-            % the wall is thick - not a degenerate point.
-            s = phx.shape.Tube("Taper", 1, "WallThickness", 0.08);
+        function closedBoreLeavesJustTheWallAtTheTip(tc)
+            % A zero bore pinches the end shut, so the tip is a disc as wide
+            % as the wall is thick - not a degenerate point.
+            s = phx.shape.Tube("InnerDiameter", [0.9 0], "WallThickness", 0.08);
             [V, ~] = tc.meshOf(s);
             tc.verifyEqual(endRadius(V, +1), 0.08, "AbsTol", 1e-6);
         end
@@ -144,7 +154,7 @@ classdef tTube < PhxTestCase
         function z = dropBall(tc, radius)
             ax = tc.prepareAxes;
             phx.Body(ax, "Type", "static", "Shape", ...
-                phx.shape.Tube("Taper", -0.9, "Envelope", "concave", "Segments", 48));
+                phx.shape.Tube("InnerDiameter", [0.09 0.9], "Envelope", "concave", "Segments", 48));
             ball = phx.Body(ax, "Position", [0 0 0.8], ...
                 "Shape", phx.shape.Sphere("Diameter", radius*2));
             sim = phx.Simulation(ax);

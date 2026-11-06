@@ -1,10 +1,11 @@
 classdef Tube < phx.base.Shape
 %phx.shape.Tube Tube, pipe or funnel shape
 %
-%   Visual appearance is a straight or tapered tube with an open bore. The
-%   Taper property narrows the bore towards one end while the wall keeps its
-%   thickness, so a single shape covers a pipe, a funnel, a hopper and a
-%   closed cup.
+%   Visual appearance is a straight or tapered tube with an open bore.
+%   InnerDiameter gives the bore at the negative and the positive end of
+%   Axis; a single value is a straight tube, two values taper the bore while
+%   the wall keeps its thickness, so a single shape covers a pipe, a funnel,
+%   a hopper and a closed cup.
 %
 %   Collision shape is selected by the Envelope property: the exact concave
 %   triangle mesh, which is the only one that leaves the bore open, the convex
@@ -28,22 +29,17 @@ classdef Tube < phx.base.Shape
 %#ok<*INUSD> OK to see the full list of arguments for callbacks
 
     properties
-        % Inner diameter of the tube at its wide end
-        InnerDiameter (1, 1) double = 0.9
+        % Inner diameters at the negative and the positive end of Axis
+        % A single value d is [d d], a straight tube; two values taper the
+        % bore while the wall keeps its thickness. A zero closes the bore at
+        % that end, leaving a disc as wide as the wall is thick.
+        InnerDiameter (1, :) double {mustBeBoreSize} = [0.9 0.9]
 
         % Thickness of the tube wall
-        WallThickness (1, 1) double = 0.05
+        WallThickness (1, 1) double {mustBePositive, mustBeFinite} = 0.05
 
         % Tube height along the modeling axis
         Height (1, 1) double = 1
-
-        % Taper of the bore
-        % Zero is a straight tube, a positive value narrows the bore at the
-        % end on the positive side of Axis and a negative value at the
-        % opposite end. The magnitude is the fraction by which the inner
-        % radius shrinks, so 0.3 leaves a bore 70 % as wide and 1 closes it
-        % completely. The wall keeps its thickness all along the tube.
-        Taper (1, 1) double {mustBeInRange(Taper, -1, 1)} = 0
 
         % Modeling axis of the tube
         Axis {mustBeMember(Axis, ["x", "y", "z"])} = "z"
@@ -60,14 +56,18 @@ classdef Tube < phx.base.Shape
     end
 
     properties (Dependent)
-        % Inner radius of the tube at its wide end
-        InnerRadius (1, 1) double
+        % Inner radii at the negative and the positive end of Axis (as
+        % InnerDiameter)
+        InnerRadius (1, :) double {mustBeBoreSize}
 
-        % Outer diameter of the tube
-        Diameter (1, 1) double
+        % Outer diameters at the negative and the positive end of Axis
+        % The bore plus twice the wall; setting it keeps WallThickness and
+        % moves the bore.
+        Diameter (1, :) double
 
-        % Outer radius of the tube
-        Radius (1, 1) double
+        % Outer radii at the negative and the positive end of Axis (as
+        % Diameter)
+        Radius (1, :) double
     end
 
     methods
@@ -80,6 +80,21 @@ classdef Tube < phx.base.Shape
             obj = phx.internal.applyArguments(Options, obj);
             if isnan(obj.Color(1))
                 obj.Color = phx.base.Shape.newColor;
+            end
+        end
+
+        function obj = set.InnerDiameter(obj, diameter)
+            if isscalar(diameter)
+                diameter = [diameter diameter];
+            end
+            obj.InnerDiameter = diameter;
+        end
+
+        function diameter = get.InnerDiameter(obj)
+            % A tube saved by PHX 1.0 kept a single diameter
+            diameter = obj.InnerDiameter;
+            if isscalar(diameter)
+                diameter = [diameter diameter];
             end
         end
 
@@ -129,17 +144,9 @@ classdef Tube < phx.base.Shape
             % Closed [z x] loop of the tube wall. It is traversed outer wall
             % first so that the outer surface, both end faces and the bore all
             % come out facing away from the material.
-            ri = obj.InnerDiameter/2;
+            rb = obj.InnerDiameter/2;
             t = obj.WallThickness;
             h = obj.Height/2;
-
-            % Bore radius at the negative and the positive end of the axis
-            if obj.Taper >= 0
-                rb = [ri ri*(1 - obj.Taper)];
-            else
-                rb = [ri*(1 + obj.Taper) ri];
-            end
-
             ZX = [-h rb(1) + t; h rb(2) + t; h rb(2); -h rb(1); -h rb(1) + t];
         end
     end
@@ -149,7 +156,7 @@ classdef Tube < phx.base.Shape
             switch obj.Envelope
                 case "cylinder"
                     % Bounding cylinder (centered on the shape origin)
-                    eh = phx.engine.io('add', body.WorldHandle, 'cylinder', body.TypeID, obj.Radius, obj.Height, char(obj.Axis), body.Transform, body.Mass, body.Inertia);
+                    eh = phx.engine.io('add', body.WorldHandle, 'cylinder', body.TypeID, max(obj.Radius), obj.Height, char(obj.Axis), body.Transform, body.Mass, body.Inertia);
                 case "convex"
                     ph = phx.internal.PrimitiveHelper(primitive);
                     vertices = ph.Vertices';
@@ -162,4 +169,12 @@ classdef Tube < phx.base.Shape
         end
     end
 
+end
+
+function mustBeBoreSize(value)
+%mustBeBoreSize Validates InnerDiameter and InnerRadius: one or two finite, nonnegative values
+    if ~any(numel(value) == [1 2]) || any(~isfinite(value)) || any(value < 0)
+        error("phx:Tube:badSize", ...
+            "The bore must be one or two finite, nonnegative values (Diameter at least twice WallThickness).");
+    end
 end
