@@ -86,7 +86,9 @@ function [bodies, joints] = import(varargin)
 %     at its zero configuration.
 %   - Masses are taken from the inertial elements; the inertia tensor is
 %     expressed in the axes of the body frame and its diagonal is used as
-%     the Inertia property.
+%     the Inertia property, and the origin of the inertial element becomes
+%     the CenterOfMass of the body. A link without an inertial element keeps
+%     the centre of mass of its shape.
 %
 %   rigidBodyTree to PHX mapping (the same rules as for URDF, with the
 %   differences below):
@@ -115,9 +117,10 @@ function [bodies, joints] = import(varargin)
 %     The frame itself is still available from the tree, through getTransform.
 %   - The tree is imported at the configuration given by the Configuration
 %     option, not only at the home configuration.
-%   - Masses come from the Mass and Inertia properties of each rigid body.
-%     A rigidBodyTree states the inertia about the origin of the body frame,
-%     so it is referred back to the centre of mass on the way in. The base of
+%   - Masses come from the Mass, Inertia and CenterOfMass properties of each
+%     rigid body. A rigidBodyTree states the inertia about the origin of the
+%     body frame, so it is referred back to the centre of mass on the way in.
+%     The base of
 %     a tree carries no mass properties at all and borrows those of the
 %     lightest body of the tree, rather than the token ones a link without an
 %     inertial element gets: a gram at the root of a chain of kilograms is a
@@ -137,10 +140,9 @@ function [bodies, joints] = import(varargin)
 %     warning phx:import:floatingJoint is issued and the link has no entry in
 %     the returned joints struct.
 %   - All joints are passive; no motors or transmissions are created.
-%   - Products of inertia (off-diagonal tensor elements) and the offset of
-%     the centre of mass from the body frame are ignored. Links with a zero
-%     or missing mass get small placeholder mass properties so that they
-%     remain dynamic.
+%   - Products of inertia (off-diagonal tensor elements) are ignored. Links
+%     with a zero or missing mass get small placeholder mass properties so
+%     that they remain dynamic.
 %   - Only the first visual geometry of a link is imported and it also
 %     serves as the collision shape. Additional geometry elements are
 %     reported by the warning phx:import:extraGeometry.
@@ -349,7 +351,10 @@ function [bodies, joints] = importURDF(ax, file, Options)
 
         b = phx.Body(ax, "Name", links(i).name, "Shape", shape);
         b.Transform = TLink{i}*G;
-        [b.Mass, b.Inertia] = massProperties(links(i), G);
+        [b.Mass, b.Inertia, center] = massProperties(links(i), G);
+        if ~isempty(center)
+            b.CenterOfMass = center;
+        end
 
         TBody{i} = b.Transform;
         bodyList{i} = b;
@@ -504,7 +509,10 @@ function [bodies, joints] = importTree(ax, tree, Options)
 
         b = phx.Body(ax, "Name", names(i), "Shape", shape);
         b.Transform = TLink{i}*G;
-        [b.Mass, b.Inertia] = massProperties(treeInertial(rigidBodies{i}, i == 1, placeholder), G);
+        [b.Mass, b.Inertia, center] = massProperties(treeInertial(rigidBodies{i}, i == 1, placeholder), G);
+        if ~isempty(center)
+            b.CenterOfMass = center;
+        end
 
         TBody{i} = b.Transform;
         bodyList{i} = b;
@@ -678,12 +686,15 @@ function link = treeInertial(body, isBase, placeholder)
 % ORIGIN of that frame, while PHX, like the engine underneath, wants a tensor
 % about the centre of mass. The parallel-axis term the tree carries is
 % therefore taken back out; leaving it in makes a link up to five times harder
-% to turn than it is (measured on the arms of loadrobot).
+% to turn than it is (measured on the arms of loadrobot). The inertial frame is
+% the body frame moved to the centre of mass.
     link.inertialT = eye(4);
     if isBase
-        % The base exposes no mass properties at all and borrows them
+        % The base exposes no mass properties at all and borrows them; its
+        % body keeps the centre of its shape
         link.mass = placeholder.mass;
         link.inertiaTensor = placeholder.inertiaTensor;
+        link.hasInertial = false;
         return
     end
 
@@ -692,6 +703,8 @@ function link = treeInertial(body, isBase, placeholder)
     T = [I(1) I(6) I(5); I(6) I(2) I(4); I(5) I(4) I(3)];
     d = body.CenterOfMass(:);
     link.inertiaTensor = T - body.Mass*(dot(d, d)*eye(3) - d*d');
+    link.inertialT(1:3, 4) = d;
+    link.hasInertial = true;
 end
 
 %% OBJ / mesh import -----------------------------------------------------
@@ -920,7 +933,8 @@ function link = parseLink(el, materials)
     link.geometry = [];
 
     inertialEl = firstElement(el, "inertial");
-    if ~isempty(inertialEl)
+    link.hasInertial = ~isempty(inertialEl);
+    if link.hasInertial
         link.inertialT = originTransform(firstElement(inertialEl, "origin"), "inertial");
         massEl = firstElement(inertialEl, "mass");
         if ~isempty(massEl)
@@ -1098,7 +1112,11 @@ function source = resolveMeshFile(uri, meshPath, urdfDir)
     error("phx:import:meshNotFound", "Mesh file '%s' was not found (tried: %s). Use the MeshPath option to point to the mesh root folder.", uri, strjoin(candidates, ", "));
 end
 
-function [mass, inertia] = massProperties(link, G)
+function [mass, inertia, center] = massProperties(link, G)
+% Mass, principal moments and centre of mass in the frame of a body that
+% sits at G in the link frame. The centre is the origin of the inertial
+% frame; it is empty for a link that states no mass properties, whose body
+% keeps the centre of its shape.
     if isempty(link.mass)
         mass = 0;
     else
@@ -1109,10 +1127,17 @@ function [mass, inertia] = massProperties(link, G)
         inertia = [0 0 0];
     else
         % Express the tensor in the axes of the body frame and keep the
-        % diagonal; products of inertia and the offset of the centre of
-        % mass are ignored (see the limitations in the help)
+        % diagonal; products of inertia are ignored (see the limitations in
+        % the help)
         R = G(1:3, 1:3)'*link.inertialT(1:3, 1:3);
         inertia = diag(R*link.inertiaTensor*R')';
+    end
+
+    if link.hasInertial
+        C = G\link.inertialT;
+        center = C(1:3, 4)';
+    else
+        center = [];
     end
 
     % Placeholder values keep massless links dynamic

@@ -114,6 +114,35 @@ classdef tImport < PhxTestCase
             tc.verifyLessThanOrEqual(bodies.tool_frame.Mass, 1e-3);
         end
 
+        function inertialOriginIsTheCentreOfMass(tc)
+            % The origin of the inertial element, in the frame of the body at
+            % the visual origin: 0.04 below it on the base, the link origin
+            % 0.05 behind the visual turned by 90 deg about y on the hand
+            bodies = tc.importFixture;
+            tc.verifyEqual(bodies.base.CenterOfMass, [0 0 -0.04], "AbsTol", 1e-12);
+            tc.verifyEqual(bodies.upper_arm.CenterOfMass, [0 0 0], "AbsTol", 1e-12);
+            tc.verifyEqual(bodies.hand.CenterOfMass, [0 0 -0.05], "AbsTol", 1e-7);
+            % Without an inertial element the shape's own centre stays
+            tc.verifyEqual(bodies.tool_frame.CenterOfMass, [0 0 0]);
+        end
+
+        function treeCentreOfMassComesAlong(tc)
+            % A rigidBodyTree states the centre of mass in the body frame;
+            % the PHX body sits at the visual, 0.5 m up that frame
+            tc.assumeNotEmpty(ver("robotics"), "Robotics System Toolbox is not installed.");
+            tree = rigidBodyTree("DataFormat", "row");
+            arm = rigidBody("arm");
+            arm.Joint = rigidBodyJoint("hinge", "revolute");
+            arm.Mass = 2;
+            arm.CenterOfMass = [0.1 0.2 0.3];
+            arm.Inertia = [1 1 1 0 0 0];
+            addVisual(arm, "Box", [0.1 0.1 0.1], trvec2tform([0 0 0.5]));
+            addBody(tree, arm, tree.BaseName);
+            tc.prepareAxes;
+            bodies = phx.assembly.import(tree);
+            tc.verifyEqual(bodies.arm.CenterOfMass, [0.1 0.2 -0.2], "AbsTol", 1e-12);
+        end
+
         function planarJointMapsToGenericJoint(tc)
             % A planar joint has no direct PHX equivalent yet, so it is
             % approximated by a phx.GenericJoint with a warning
