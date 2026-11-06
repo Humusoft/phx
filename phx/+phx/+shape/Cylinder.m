@@ -73,19 +73,20 @@ classdef Cylinder < phx.base.Shape
             setappdata(primitive, "phxShape", obj);
         end
 
-        function [mass, inertia] = computeMass(obj)
+        function [mass, inertia, center] = computeMass(obj)
             rq = (obj.Diameter/2)^2;
             h = obj.Height;
             mass = obj.Density*pi*rq*h;
             ia = mass*rq/2;
             io = mass*(h^2 + 3*rq)/12;
             inertia = phx.internal.Geometry.switchZAxis(obj.Axis, [io io ia]);
+            center = [0 0 0];
         end
     end
 
     methods (Access = {?phx.base.Shape, ?phx.base.Object})
         function eh = createBody(obj, body, primitive)
-            eh = phx.engine.io('add', body.WorldHandle, 'cylinder', body.TypeID, obj.Diameter/2, obj.Height, char(obj.Axis), body.Transform, body.Mass, body.Inertia);
+            eh = phx.engine.io('add', body.WorldHandle, 'cylinder', body.TypeID, obj.Diameter/2, obj.Height, char(obj.Axis), body.Transform, body.Mass, body.Inertia, body.CenterOfMass);
         end
     end
 

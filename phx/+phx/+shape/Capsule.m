@@ -77,7 +77,7 @@ classdef Capsule < phx.base.Shape
             setappdata(primitive, "phxShape", obj);
         end
 
-        function [mass, inertia] = computeMass(obj)
+        function [mass, inertia, center] = computeMass(obj)
             r = obj.Diameter/2;
             rq = r^2;
             h = obj.Height;
@@ -88,12 +88,13 @@ classdef Capsule < phx.base.Shape
             ia = mc*rq/2 + is;
             io = mc*(h^2 + 3*rq)/12 + is + ms*(h/2)^2;
             inertia = phx.internal.Geometry.switchZAxis(obj.Axis, [io io ia]);
+            center = [0 0 0];
         end
     end
 
     methods (Access = {?phx.base.Shape, ?phx.base.Object})
         function eh = createBody(obj, body, primitive)
-            eh = phx.engine.io('add', body.WorldHandle, 'capsule', body.TypeID, obj.Diameter/2, obj.Height, char(obj.Axis), body.Transform, body.Mass, body.Inertia);
+            eh = phx.engine.io('add', body.WorldHandle, 'capsule', body.TypeID, obj.Diameter/2, obj.Height, char(obj.Axis), body.Transform, body.Mass, body.Inertia, body.CenterOfMass);
         end
     end
 

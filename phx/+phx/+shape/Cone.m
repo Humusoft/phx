@@ -96,7 +96,7 @@ classdef Cone < phx.base.Shape
             setappdata(primitive, "phxShape", obj);
         end
 
-        function [mass, inertia] = computeMass(obj)
+        function [mass, inertia, center] = computeMass(obj)
             % A solid of revolution of radius r(z), linear in z, integrated
             % by the 3-point Gauss rule, exact for the polynomials of up to
             % the fifth degree here: mass, centre of mass zc, the moment
@@ -113,12 +113,13 @@ classdef Cone < phx.base.Shape
             ia = sum(dm.*rz.^2/2);
             io = sum(dm.*(rz.^2/4 + (z - zc).^2));
             inertia = phx.internal.Geometry.switchZAxis(obj.Axis, [io io ia]);
+            center = phx.internal.Geometry.switchZAxis(obj.Axis, [0 0 zc]);
         end
     end
 
     methods (Access = {?phx.base.Shape, ?phx.base.Object})
         function eh = createBody(obj, body, primitive)
-            eh = phx.engine.io('add', body.WorldHandle, 'cone', body.TypeID, obj.Radius, obj.Height, char(obj.Axis), body.Transform, body.Mass, body.Inertia);
+            eh = phx.engine.io('add', body.WorldHandle, 'cone', body.TypeID, obj.Radius, obj.Height, char(obj.Axis), body.Transform, body.Mass, body.Inertia, body.CenterOfMass);
         end
     end
 

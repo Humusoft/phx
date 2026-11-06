@@ -67,16 +67,17 @@ classdef Sphere < phx.base.Shape
             setappdata(primitive, "phxShape", obj);
         end
 
-        function [mass, inertia] = computeMass(obj)
+        function [mass, inertia, center] = computeMass(obj)
             r = obj.Diameter/2;
             mass = obj.Density*pi*r^3*4/3;
             inertia = r^2*mass*2/5;
+            center = [0 0 0];
         end
     end
 
     methods (Access = {?phx.base.Shape, ?phx.base.Object})
         function eh = createBody(obj, body, primitive)
-            eh = phx.engine.io('add', body.WorldHandle, 'sphere', body.TypeID, obj.Radius, body.Transform, body.Mass, body.Inertia);
+            eh = phx.engine.io('add', body.WorldHandle, 'sphere', body.TypeID, obj.Radius, body.Transform, body.Mass, body.Inertia, body.CenterOfMass);
         end
     end
 

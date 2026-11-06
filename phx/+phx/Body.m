@@ -100,8 +100,16 @@ classdef Body < phx.base.Object
         % Body mass (kg)
         Mass (1, 1) double = 0
 
-        % Body inertia tensor (kg*m^2)
+        % Principal moments of inertia (kg*m^2) about the centre of mass, in
+        % the body axes
         Inertia (1, 3) double = [0 0 0]
+
+        % Centre of mass (m) in the body frame, relative to the body origin
+        % The shape gives it, as it gives Mass and Inertia; the body turns
+        % about it and gravity acts at it. Changing it, also while the
+        % simulation runs, moves neither the body nor its Inertia, which is
+        % taken about the new centre as it is.
+        CenterOfMass (1, 3) double {mustBeFinite} = [0 0 0]
 
         % Friction coefficient (Coulomb): a contact resists sliding, and a
         % contact patch turning about its normal, by this coefficient times
@@ -173,6 +181,7 @@ classdef Body < phx.base.Object
             if isempty(obj.Graphics.Children)
                 mass = obj.Mass;
                 inertia = obj.Inertia;
+                center = obj.CenterOfMass;
                 obj.Shape = phx.shape.Box;
                 if mass ~= 0
                     obj.Mass = mass;
@@ -180,6 +189,7 @@ classdef Body < phx.base.Object
                 if sum(inertia) ~= 0
                     obj.Inertia = inertia;
                 end
+                obj.CenterOfMass = center; % the box has its own at the origin
             end
         end
 
@@ -303,7 +313,7 @@ classdef Body < phx.base.Object
             end
 
             shape.drawTo(obj.Graphics);
-            [obj.Mass, obj.Inertia] = shape.computeMass;
+            [obj.Mass, obj.Inertia, obj.CenterOfMass] = shape.computeMass;
         end
 
         function value = get.Transform(obj)
@@ -429,7 +439,14 @@ classdef Body < phx.base.Object
             obj.Inertia = value;
             if ~isempty(obj.ObjectHandle)
                 phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'massprops', obj.Mass, value);
-            end            
+            end
+        end
+
+        function set.CenterOfMass(obj, value)
+            obj.CenterOfMass = value;
+            if ~isempty(obj.ObjectHandle)
+                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'com', value);
+            end
         end
 
         function set.Friction(obj, value)

@@ -71,10 +71,11 @@ classdef Rock < phx.base.Shape
             setappdata(primitive, "phxShape", obj);
         end
 
-        function [mass, inertia] = computeMass(obj)
+        function [mass, inertia, center] = computeMass(obj)
             r = obj.Diameter/2;
             mass = obj.Density*pi*r^3*4/3;
             inertia = [1 1 1]*r^2*mass*2/5;
+            center = [0 0 0];
         end
     end
 

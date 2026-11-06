@@ -85,12 +85,12 @@ classdef Revolution < phx.base.Shape
             setappdata(primitive, "phxShape", obj);
         end
 
-        function [mass, inertia] = computeMass(obj)
+        function [mass, inertia, center] = computeMass(obj)
             [V, ~, F] = phx.internal.Geometry.revolution((obj.Profile), obj.Segments, false, false);
             V = phx.internal.Geometry.switchZAxis(obj.Axis, V);
 
-            [mass, I0] = phx.internal.Geometry.meshMass(V, F, obj.Density);
-            inertia = I0([1 5 9]);
+            [mass, ~, Icm, center] = phx.internal.Geometry.meshMass(V, F, obj.Density);
+            inertia = Icm([1 5 9]);
         end
     end
 
@@ -100,7 +100,7 @@ classdef Revolution < phx.base.Shape
                 case "cylinder"
                     % Bounding cylinder (centered on the shape origin)
                     ext = max(abs(obj.Profile), [], 1);
-                    eh = phx.engine.io('add', body.WorldHandle, 'cylinder', body.TypeID, ext(2), 2*ext(1), char(obj.Axis), body.Transform, body.Mass, body.Inertia);
+                    eh = phx.engine.io('add', body.WorldHandle, 'cylinder', body.TypeID, ext(2), 2*ext(1), char(obj.Axis), body.Transform, body.Mass, body.Inertia, body.CenterOfMass);
                 case "convex"
                     ph = phx.internal.PrimitiveHelper(primitive);
                     vertices = ph.Vertices';

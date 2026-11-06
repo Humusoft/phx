@@ -130,14 +130,12 @@ classdef Mesh < phx.base.Shape
             end
         end
 
-        function [mass, inertia] = computeMass(obj)
+        function [mass, inertia, center] = computeMass(obj)
             % Weigh the body where it is drawn. Centered moves the origin to
-            % the centre of the bounding box for display, and the inertia has
-            % to follow: integrating the raw vertices instead returns the
-            % moments about the source file's own origin, inflated by the
-            % parallel-axis term m*d^2 of however far that origin sits from the
-            % model. The mass itself never noticed, being independent of where
-            % the body sits.
+            % the centre of the bounding box for display, and the centre of
+            % mass has to follow: integrating the raw vertices instead puts
+            % it where the model sits in the source file. The moments are
+            % about the centre of mass.
             [V, F] = obj.mergedGeometry;
             if obj.Centered
                 V = V - obj.Center;
@@ -146,14 +144,19 @@ classdef Mesh < phx.base.Shape
             if prod(obj.Scale) < 0
                 F = fliplr(F); % mirrored, see drawSubmesh
             end
-            [mass, I0] = phx.internal.Geometry.meshMass(V, F, obj.Density);
-            inertia = I0([1 5 9]);
-            if ~(mass > 0) || any(~isfinite(inertia)) || any(inertia <= 0)
+            [mass, ~, Icm, center] = phx.internal.Geometry.meshMass(V, F, obj.Density);
+            inertia = Icm([1 5 9]);
+            if ~(mass > 0) || any(~isfinite(inertia)) || any(inertia <= 0) || any(~isfinite(center))
                 % Non-solid or open mesh: fall back to the bounding box
                 s = obj.BBox.*abs(obj.Scale);
                 mass = obj.Density*s(1)*s(2)*s(3);
                 q = s.^2;
                 inertia = [q(2) + q(3), q(1) + q(3), q(1) + q(2)]*mass/12;
+                if obj.Centered
+                    center = [0 0 0];
+                else
+                    center = obj.Center.*obj.Scale;
+                end
             end
         end
     end
@@ -163,13 +166,13 @@ classdef Mesh < phx.base.Shape
             bsize = (obj.BBox.*abs(obj.Scale))/2; % half-extents
             switch obj.Envelope
                 case "box"
-                    eh = phx.engine.io('add', body.WorldHandle, 'box', body.TypeID, bsize, body.Transform, body.Mass, body.Inertia);
+                    eh = phx.engine.io('add', body.WorldHandle, 'box', body.TypeID, bsize, body.Transform, body.Mass, body.Inertia, body.CenterOfMass);
                 case "cylinder"
                     % Bounding cylinder: the larger cross extent as its radius
                     along = obj.Axis == ["x" "y" "z"];
-                    eh = phx.engine.io('add', body.WorldHandle, 'cylinder', body.TypeID, max(bsize(~along)), 2*bsize(along), char(obj.Axis), body.Transform, body.Mass, body.Inertia);
+                    eh = phx.engine.io('add', body.WorldHandle, 'cylinder', body.TypeID, max(bsize(~along)), 2*bsize(along), char(obj.Axis), body.Transform, body.Mass, body.Inertia, body.CenterOfMass);
                 case "sphere"
-                    eh = phx.engine.io('add', body.WorldHandle, 'sphere', body.TypeID, max(bsize), body.Transform, body.Mass, body.Inertia);
+                    eh = phx.engine.io('add', body.WorldHandle, 'sphere', body.TypeID, max(bsize), body.Transform, body.Mass, body.Inertia, body.CenterOfMass);
                 case "convex"
                     vertices = obj.gatherVertices(body)';
                     eh = obj.createHullBody(body, vertices);

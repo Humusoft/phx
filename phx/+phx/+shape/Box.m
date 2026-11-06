@@ -54,18 +54,19 @@ classdef Box < phx.base.Shape
             setappdata(primitive, "phxShape", obj);
         end
 
-        function [mass, inertia] = computeMass(obj)
+        function [mass, inertia, center] = computeMass(obj)
             s = obj.Size;
             mass = obj.Density*s(1)*s(2)*s(3);
             q = s.^2;
             inertia = [q(2) + q(3), q(1) + q(3), q(1) + q(2)]*mass/12;
+            center = [0 0 0];
         end
     end
 
     methods (Access = {?phx.base.Shape, ?phx.base.Object})
         function eh = createBody(obj, body, primitive)
             bsize = obj.Size/2; % half-extents
-            eh = phx.engine.io('add', body.WorldHandle, 'box', body.TypeID, bsize, body.Transform, body.Mass, body.Inertia);
+            eh = phx.engine.io('add', body.WorldHandle, 'box', body.TypeID, bsize, body.Transform, body.Mass, body.Inertia, body.CenterOfMass);
         end
     end
     

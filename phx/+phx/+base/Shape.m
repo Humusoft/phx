@@ -75,8 +75,9 @@ classdef Shape
         % Draw the shape into the target (axes or hgtransform)
         drawTo(obj, target)
 
-        % Compute mass and moments of inertia of the given shape
-        [mass, inertia] = computeMass(obj)
+        % Compute mass, principal moments of inertia about the centre of
+        % mass, and the centre of mass (shape axes, relative to its origin)
+        [mass, inertia, center] = computeMass(obj)
     end
 
     methods (Abstract, Access = {?phx.base.Shape, ?phx.base.Object})
@@ -146,7 +147,7 @@ classdef Shape
             % Engine body with the convex hull of the given vertices as its
             % collision shape, for the "convex" envelopes. The vertices come
             % as a 3-by-N matrix, one column per point.
-            eh = phx.engine.io('add', body.WorldHandle, 'convexhull', body.TypeID, vertices, body.Transform, body.Mass, body.Inertia);
+            eh = phx.engine.io('add', body.WorldHandle, 'convexhull', body.TypeID, vertices, body.Transform, body.Mass, body.Inertia, body.CenterOfMass);
         end
 
         function eh = createTrimeshBody(~, body, vertices, faces)
@@ -154,7 +155,7 @@ classdef Shape
             % the "concave" envelopes. The vertices come as a 3-by-N matrix,
             % one column per point, the faces as any array of one-based
             % vertex indices, three consecutive ones per triangle.
-            eh = phx.engine.io('add', body.WorldHandle, 'trimesh', body.TypeID, vertices, reshape(double(faces), 3, []), body.Transform, body.Mass, body.Inertia);
+            eh = phx.engine.io('add', body.WorldHandle, 'trimesh', body.TypeID, vertices, reshape(double(faces), 3, []), body.Transform, body.Mass, body.Inertia, body.CenterOfMass);
         end
 
         function applyStyle(obj, patchObj, style)

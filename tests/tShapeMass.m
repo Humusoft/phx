@@ -55,10 +55,14 @@ classdef tShapeMass < PhxTestCase
         function coneMassAndInertia(tc)
             % A sharp cone about its centre of mass: m = rho pi r^2 h/3,
             % 3/10 m r^2 about the axis, 3/80 m h^2 + 3/20 m r^2 across
+            % and the centre itself, a quarter of the height above the base
             s = phx.shape.Cone("Diameter", 2, "Height", 4, "Density", 1000); % r = 1, h = 4
-            [m, I] = s.computeMass;
+            [m, I, c] = s.computeMass;
             tc.verifyEqual(m, 1000*pi*4/3, "RelTol", 1e-12);
             tc.verifyEqual(I, [3/80*16 + 3/20, 3/80*16 + 3/20, 3/10]*m, "RelTol", 1e-12);
+            tc.verifyEqual(c, [0 0 -1], "AbsTol", 1e-12);
+            [~, ~, c] = phx.shape.Cone("Height", 4, "Axis", "x").computeMass;
+            tc.verifyEqual(c, [-1 0 0], "AbsTol", 1e-12);
         end
 
         function truncatedConeMassAndInertia(tc)
@@ -68,13 +72,14 @@ classdef tShapeMass < PhxTestCase
             % Equal diameters give the cylinder's values.
             rho = 1000;
             s = phx.shape.Cone("Diameter", [2 1], "Height", 2, "Density", rho);
-            [m, I] = s.computeMass;
+            [m, I, c] = s.computeMass;
             mBig = rho*pi*4/3;               % r = 1, h = 4, base at z = 0
             mTip = rho*pi*0.25*2/3;          % r = 0.5, h = 2, base at z = 2
             zBig = 1;                        % h/4 above its base
             zTip = 2 + 0.5;
             tc.verifyEqual(m, mBig - mTip, "RelTol", 1e-12);
             zc = (mBig*zBig - mTip*zTip)/m;
+            tc.verifyEqual(c, [0 0 zc - 1], "AbsTol", 1e-12, "The origin is 1 above the base.");
             ia = 3/10*(mBig*1 - mTip*0.25);
             io = (3/80*16 + 3/20)*mBig + mBig*(zBig - zc)^2 ...
                 - (3/80*4 + 3/20*0.25)*mTip - mTip*(zTip - zc)^2;
@@ -85,6 +90,36 @@ classdef tShapeMass < PhxTestCase
             [mc, Ic] = c.computeMass;
             [my, Iy] = phx.shape.Cylinder("Diameter", 2, "Height", 4, "Density", rho).computeMass;
             tc.verifyEqual([mc Ic], [my Iy], "RelTol", 1e-12);
+        end
+
+        function symmetricShapesHaveTheCentreAtTheOrigin(tc)
+            shapes = {phx.shape.Box("Size", [1 2 3]), phx.shape.Sphere, ...
+                phx.shape.Cylinder("Axis", "x"), phx.shape.Capsule("Axis", "y"), ...
+                phx.shape.Tube, phx.shape.Cone("Diameter", [1 1])};
+            for k = 1:numel(shapes)
+                [~, ~, c] = shapes{k}.computeMass;
+                tc.verifyEqual(c, [0 0 0], "AbsTol", 1e-12, class(shapes{k}));
+            end
+        end
+
+        function taperedTubeIsAFrustumLessItsBore(tc)
+            % The mesh of a tapered tube approaches the difference of two
+            % frusta: its centre of mass and its moments about that centre
+            % follow from the two cones
+            rho = 1000;
+            h = 2;
+            d = [0.9 0.3];
+            t = 0.1;
+            tube = phx.shape.Tube("InnerDiameter", d, "WallThickness", t, ...
+                "Height", h, "Segments", 720, "Density", rho);
+            [m, I, c] = tube.computeMass;
+            [mo, Io, co] = phx.shape.Cone("Diameter", d + 2*t, "Height", h, "Density", rho).computeMass;
+            [mi, Ii, ci] = phx.shape.Cone("Diameter", d, "Height", h, "Density", rho).computeMass;
+            tc.verifyEqual(m, mo - mi, "RelTol", 1e-4);
+            ce = (mo*co - mi*ci)/(mo - mi);
+            tc.verifyEqual(c, ce, "AbsTol", 1e-4);
+            io = Io(1) + mo*(co(3) - ce(3))^2 - Ii(1) - mi*(ci(3) - ce(3))^2;
+            tc.verifyEqual(I, [io io Io(3) - Ii(3)], "RelTol", 1e-4);
         end
 
         function coneSizeExpandsToTwoValues(tc)

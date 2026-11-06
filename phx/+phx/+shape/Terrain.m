@@ -56,11 +56,12 @@ classdef Terrain < phx.base.Shape
             setappdata(primitive, "phxShape", obj);
         end
 
-        function [mass, inertia] = computeMass(~)
+        function [mass, inertia, center] = computeMass(~)
             % A terrain is meant to be static, where mass and inertia play no
             % part; these are fixed placeholders for the unusual dynamic case
             mass = 1000;
             inertia = [100 100 100];
+            center = [0 0 0];
         end
     end
 
@@ -70,7 +71,7 @@ classdef Terrain < phx.base.Shape
             % intervals across the full Size, as the drawn surface does
             h = obj.Height';
             spacing = obj.Size./(size(h) - 1);
-            eh = phx.engine.io('add', body.WorldHandle, 'terrain', body.TypeID, h, spacing, body.Transform, body.Mass, body.Inertia);
+            eh = phx.engine.io('add', body.WorldHandle, 'terrain', body.TypeID, h, spacing, body.Transform, body.Mass, body.Inertia, body.CenterOfMass);
         end
     end
 
