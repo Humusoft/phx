@@ -65,9 +65,17 @@ arguments, for example <code class="phx-inline">phx.Body("Type","static","Positi
 <td>Body mass, <span class="phx-unit">kg</span>. Recomputed from the shape and density when a <code class="phx-inline">Shape</code> is assigned;
 the default is that of the default shape, a 1&nbsp;m cube of density 1000.</td></tr>
 <tr><td class="name">Inertia</td><td class="dflt">[166.7 166.7 166.7]</td>
-<td>Principal moments of the inertia tensor, <span class="phx-unit">kg&middot;m&sup2;</span>. Recomputed with
+<td>Principal moments of inertia about the centre of mass, in the body axes, <span class="phx-unit">kg&middot;m&sup2;</span>. Recomputed with
 <code class="phx-inline">Mass</code> when a <code class="phx-inline">Shape</code> is assigned, but not when
-<code class="phx-inline">Mass</code> alone is set.</td></tr>
+<code class="phx-inline">Mass</code> or <code class="phx-inline">CenterOfMass</code> alone is set.</td></tr>
+<tr><td class="name">CenterOfMass</td><td class="dflt">[0 0 0]</td>
+<td>Centre of mass in the body frame, relative to the body origin, <span class="phx-unit">m</span>. The shape gives
+it when a <code class="phx-inline">Shape</code> is assigned: at the origin for a box, sphere, cylinder, capsule or
+straight tube, on the axis for a cone, at the centroid of the geometry for a mesh, extrusion, revolution or
+tapered tube. The body turns about it and gravity acts at it; <code class="phx-inline">Position</code> and
+<code class="phx-inline">Orientation</code> still describe the origin, where the shape is drawn. Setting it,
+also while the simulation runs, moves neither the body nor its <code class="phx-inline">Inertia</code>, which is
+taken about the new centre as it is; a moving body keeps the velocity of its points.</td></tr>
 <tr><td class="name">Friction</td><td class="dflt">0.5</td>
 <td>Coulomb friction coefficient (&ge;&nbsp;0, no upper bound). A contact resists sliding by
 this coefficient times the normal force, and a flat contact patch also resists turning about
@@ -127,7 +135,7 @@ acts for the next step only.) Driven from Simulink as an input of the
 <tr><td class="name">AxisAngle</td><td class="type">1&times;4 double</td><td>Axis-angle rotation <code class="phx-inline">[x y z angle]</code> (dependent).</td></tr>
 <tr><td class="name">EulerAngles</td><td class="type">1&times;3 double</td><td>Euler angles for z&rarr;y&rarr;x order (dependent).</td></tr>
 <tr><td class="name">Quaternion</td><td class="type">1&times;4 double</td><td>Quaternion rotation (dependent).</td></tr>
-<tr><td class="name">LinearVelocity</td><td class="type">1&times;3 double</td><td>Linear velocity, <span class="phx-unit">m/s</span>.</td></tr>
+<tr><td class="name">LinearVelocity</td><td class="type">1&times;3 double</td><td>Linear velocity of the centre of mass, <span class="phx-unit">m/s</span>.</td></tr>
 <tr><td class="name">AngularVelocity</td><td class="type">1&times;3 double</td><td>Angular velocity, <span class="phx-unit">rad/s</span>.</td></tr>
 <tr><td class="name">TotalForce</td><td class="type">1&times;3 double (read-only)</td><td>Total force at the body centre, <span class="phx-unit">N</span> (dependent).</td></tr>
 <tr><td class="name">TotalTorque</td><td class="type">1&times;3 double (read-only)</td><td>Total torque at the body centre, <span class="phx-unit">N&middot;m</span> (dependent).</td></tr>

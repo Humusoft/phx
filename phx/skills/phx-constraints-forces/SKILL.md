@@ -182,9 +182,10 @@ body.AppliedForce  = [0 0 0];     % off again
 ```
 
 - **Force at a point off the centre:** force `F` at body-frame point `r` = `AppliedForce`
-  `F` plus `AppliedTorque` `cross(r, F)`; several such forces simply add up. PHX takes the
-  body origin as the centre of mass (a cone body is the exception: its centre of mass is
-  a quarter of the height above the base, its origin mid-height).
+  `F` plus `AppliedTorque` `cross(r, F)`; several such forces simply add up. `r` is taken
+  from the centre of mass: for a point `p` relative to the body origin, `r = p -
+  body.CenterOfMass` (zero for box, sphere, cylinder, capsule; a cone or a mesh has its
+  centre elsewhere).
 - **World-fixed direction** (e.g. wind): rotate into the body frame yourself, or use
   `applyForce(F, p, false, ...)` every step.
 - **Varying in time:** write the properties from a `phx.Function`, from your control

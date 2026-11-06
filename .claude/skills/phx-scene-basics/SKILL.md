@@ -165,6 +165,13 @@ b = phx.Body(ax, ...
 - Same for the default box: `phx.Body("Mass", 10)` (no explicit `Shape`) weighs 10 kg
   but keeps the unit box's default `Inertia` (166.7); set `Inertia` too when spin
   matters.
+- **`CenterOfMass`** (body frame, from the origin) comes from the shape too: zero for
+  box/sphere/cylinder/capsule, on the axis for a cone, the centroid for meshes. The body
+  turns about it and gravity acts there, while `Position` stays the origin where the
+  shape is drawn. Set it for ballast or cargo (`b.CenterOfMass = [0 0 -0.3]` lowers a
+  hull's centre), also mid-run; it changes neither the pose nor `Inertia` (about the
+  centre). Like `Mass`, a value given *before* `"Shape"` in the constructor is replaced
+  by the shape's — give it after.
 - Change `b.Type = "static"` etc. at runtime. Adding (`sim.addObjects`) or deleting
   (`delete(obj)`) objects mid-run rebuilds the simulation pipelines automatically —
   no manual rebuild needed (see phx-engine-gotchas).

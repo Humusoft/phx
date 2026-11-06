@@ -173,8 +173,8 @@ block (`PhxLibrary`) turns N forces at fixed points into exactly that:
 `F = ΣFk`, `M = Σ(Pk − Origin) × Fk (+ T)`. Mask params: `Points` (N×3, one row per
 force; sets the number of inputs), `Origin` (the reference point of `M`), `TorqueInput`
 (adds a pure torque input `T`). Inputs `F1..FN` (3-vectors), outputs `F`, `M`. It does
-no rotation: give forces and points in the **body frame**, `Origin` = centre of mass
-(`[0 0 0]`, the body origin), and wire `F` → `Name.AppliedForce`, `M` →
+no rotation: give forces and points in the **body frame**, `Origin` = the body's
+`CenterOfMass` (`[0 0 0]` for box, sphere, cylinder, capsule), and wire `F` → `Name.AppliedForce`, `M` →
 `Name.AppliedTorque` of the PHX Model block. Plain Simulink inside (Mux + two matrix
 Gains, set up by `phx.simulink.pointForces` in the mask init), so it is a direct
 feedthrough and works without PHX too.

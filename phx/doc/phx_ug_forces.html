@@ -30,7 +30,8 @@ body.AppliedForce  = [0 0 0];     <span class="cmt">% off again</span></pre>
 <p>A force <code class="phx-inline">F</code> that acts at a point <code class="phx-inline">r</code> off
 the centre of mass (both in the body frame) is the same as the force <code class="phx-inline">F</code>
 at the centre plus the torque <code class="phx-inline">cross(r, F)</code>, and several such forces add
-up. Set the properties from a <a href="phx.Function.html">phx.Function</a> or a
+up. A point <code class="phx-inline">p</code> given relative to the body origin is
+<code class="phx-inline">r = p - body.CenterOfMass</code>. Set the properties from a <a href="phx.Function.html">phx.Function</a> or a
 <a href="phx.Script.html">phx.Script</a> to vary them during the run, or connect them to the inputs of a
 <a href="PhxModel.html">PHX Model</a> block in Simulink, where the
 <a href="PhxPointForces.html">PHX Point Forces</a> block sums forces at several points. For a short

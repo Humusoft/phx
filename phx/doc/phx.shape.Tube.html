@@ -63,10 +63,11 @@ arguments.</p>
 <p>Appearance properties are inherited from <a href="phx.base.Shape.html">phx.base.Shape</a>.</p>
 
 <div class="phx-note">
-<span class="lbl">Note.</span> The origin of the shape stays at the middle of its axial span, not at
-its centre of mass, so a strongly tapered tube pivots about its geometric centre. This matches
-<a href="phx.shape.Revolution.html">phx.shape.Revolution</a> and keeps the shape from shifting in the
-axes when the bore is changed.
+<span class="lbl">Note.</span> The origin of the shape stays at the middle of its axial span, which keeps
+the shape from shifting in the axes when the bore is changed, as with
+<a href="phx.shape.Revolution.html">phx.shape.Revolution</a>. The centre of mass of a tapered tube lies off
+it, towards the heavier end; the body gets it as its <code class="phx-inline">CenterOfMass</code> and turns
+about it.
 </div>
 
 <h2 class="phx-h2">Examples</h2>

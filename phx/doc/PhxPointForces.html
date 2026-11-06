@@ -67,7 +67,7 @@ block is a direct feedthrough.</p>
 <div class="phx-desc">
 <p>Build the scene with a body named <code class="phx-inline">Drone</code> whose motor mounts sit in its
 own frame at <code class="phx-inline">[&plusmn;0.3 &plusmn;0.3 0]</code>. Give the block these mounts as
-<strong>Points</strong> and <code class="phx-inline">[0 0 0]</code>, the centre of mass, as
+<strong>Points</strong> and <code class="phx-inline">[0 0 0]</code>, the centre of mass of a box body, as
 <strong>Origin</strong>. Each rotor input is its thrust along the body Z axis,
 <code class="phx-inline">[0 0 fk]</code>; the reaction torques of the propellers enter through
 <code class="phx-inline">T</code> as <code class="phx-inline">[0 0 kQ*(f1 - f2 + f3 - f4)]</code>.</p>
@@ -82,10 +82,10 @@ Drone.AppliedTorque</pre>
 </div>
 
 <div class="phx-note">
-<span class="lbl">Centre of mass.</span> PHX takes the origin of a body as its centre of mass, so
-<strong>Origin</strong> is <code class="phx-inline">[0 0 0]</code> for points given relative to the body
-origin. The one exception is a body with a <a href="phx.shape.Cone.html">phx.shape.Cone</a>: its origin is
-in the middle of the height, its centre of mass a quarter of the height above the base.
+<span class="lbl">Centre of mass.</span> For points given relative to the body origin,
+<strong>Origin</strong> is the <code class="phx-inline">CenterOfMass</code> of the body. It is
+<code class="phx-inline">[0 0 0]</code> for a box, sphere, cylinder, capsule or straight tube; a cone,
+a mesh or any body given a centre of its own has it elsewhere.
 </div>
 
 <div class="phx-seealso">
