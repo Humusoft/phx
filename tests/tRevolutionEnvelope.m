@@ -1,18 +1,22 @@
 classdef tRevolutionEnvelope < PhxTestCase
-%tRevolutionEnvelope The bounding-cylinder collision envelope of a revolution.
+%tRevolutionEnvelope The round collision envelopes of a revolution.
 %
-%   phx.shape.Revolution can wear a primitive cylinder instead of a hull:
-%   Envelope "cylinder" fits a cylinder about the revolution axis, sized from
-%   the profile (radius = its largest radius, half height = its axial reach).
-%   That is what a body rolling on a rim needs, since a hull is faceted, and
-%   it is the only envelope of this shape that needs no graphics primitive,
-%   so these tests run with no axes at all.
+%   phx.shape.Revolution can wear envelopes that are round about its axis,
+%   where a hull is faceted. Envelope "cylinder" fits a cylinder about the
+%   revolution axis, sized from the profile (radius = its largest radius,
+%   half height = its axial reach). Envelope "cones" revolves the profile
+%   exactly, one truncated cone per segment, for a profile with one radius
+%   per height. Neither needs a graphics primitive, so these tests run with
+%   no axes at all.
 %
 %   Locked in here:
-%     * a revolved rectangle with this envelope moves exactly like the
+%     * a revolved rectangle with either envelope moves exactly like the
 %       equivalent phx.shape.Cylinder, for every modeling axis,
-%     * the body rests at half the axial reach of its profile,
-%     * the envelope is solid: a hole in the profile is not a hole in it.
+%     * the cylinder rests at half the axial reach of its profile and is
+%       solid: a hole in the profile is not a hole in it,
+%     * the cones are round however the body is turned about its axis and
+%       follow the profile into a waist,
+%     * the cones refuse a profile that turns back.
 %
 %   See also phx.shape.Revolution, phx.shape.Cylinder
 
@@ -37,17 +41,62 @@ classdef tRevolutionEnvelope < PhxTestCase
             % initial state they must follow the same trajectory. The drop is
             % tilted and spinning, so the rim rather than the flat face makes
             % the contact and a wrong radius or axis cannot pass unnoticed.
-            for axis = ["z", "x", "y"]
-                h = tc.Height;
-                r = tc.Radius;
-                rect = [-h/2 0; h/2 0; h/2 r; -h/2 r; -h/2 0];
-                revolved = tc.tiltedDrop(tc.revolutionBody(rect, axis), axis);
-                primitive = tc.tiltedDrop(phx.Body([], "Mass", 5, ...
-                    "Inertia", [0.03 0.03 0.06], "Shape", {"Cylinder", ...
-                    "Radius", r, "Height", h, "Axis", axis}), axis);
-                tc.verifyEqual(revolved, primitive, "AbsTol", 1e-9, ...
-                    "Envelope differs from phx.shape.Cylinder for Axis " + axis + ".");
+            % The closed rectangle runs back along the axis, which the cones
+            % drop as enclosing nothing.
+            for envelope = ["cylinder", "cones"]
+                for axis = ["z", "x", "y"]
+                    h = tc.Height;
+                    r = tc.Radius;
+                    rect = [-h/2 0; h/2 0; h/2 r; -h/2 r; -h/2 0];
+                    revolved = tc.tiltedDrop(tc.revolutionBody(rect, axis, envelope), axis);
+                    primitive = tc.tiltedDrop(phx.Body([], "Mass", 5, ...
+                        "Inertia", [0.03 0.03 0.06], "Shape", {"Cylinder", ...
+                        "Radius", r, "Height", h, "Axis", axis}), axis);
+                    tc.verifyEqual(revolved, primitive, "AbsTol", 1e-9, ...
+                        "Envelope " + envelope + " differs from phx.shape.Cylinder for Axis " + axis + ".");
+                end
             end
+        end
+
+        function conesAreRoundAboutTheAxis(tc)
+            % An hourglass lying on its two ends, turned about its axis by
+            % half a facet of its 24-sided drawing, rests at its end radius:
+            % the cones are round where a hull of the drawing would hold it
+            % lower by 1 - cos(7.5 deg) of the radius (0.9 mm here).
+            body = tc.revolutionBody(tc.hourglassProfile, "x", "cones");
+            body.Position = [0 0 0.11];
+            R = makehgtform("xrotate", deg2rad(7.5));
+            body.Orientation = R(1:3, 1:3);
+            z = tc.settle(body, phx.Body.empty);
+            tc.verifyEqual(z, 0.1, "AbsTol", 1e-4, "The cones are not round about the axis.");
+        end
+
+        function conesFollowTheWaist(tc)
+            % A ball dropped onto the waist of a static hourglass lying
+            % along x rests in it, at the waist radius plus its own; a hull
+            % would hold it at the end radius.
+            hourglass = phx.Body([], "Type", "static", "Shape", ...
+                phx.shape.Revolution("Profile", tc.hourglassProfile, "Axis", "x", ...
+                "Envelope", "cones", "Segments", 24));
+            ball = phx.Body([], "Position", [0.105 0 0.2], "Shape", {"Sphere", "Radius", 0.02});
+            sim = tc.simulation([hourglass ball]);
+            sim.step(1, 1000);
+            tc.verifyEqual(ball.Position, [0.1 0 0.03 + 0.02*sqrt(1 + 0.7^2)], "AbsTol", 1e-3, ...
+                "The ball does not rest in the waist.");
+            delete(sim);
+        end
+
+        function conesNeedOneRadiusPerHeight(tc)
+            % A cup returns along the axis at its rim, so its profile has
+            % two radii at some heights: the cones refuse it, whether the
+            % envelope comes with the profile or is set later.
+            cup = [0 0; 0 0.1; 0.1 0.1; 0.1 0.08; 0.01 0.08; 0.01 0];
+            tc.verifyError(@() phx.shape.Revolution("Profile", cup, "Envelope", "cones"), ...
+                "phx:Revolution:profileNotMonotonic");
+            shape = phx.shape.Revolution("Profile", cup);
+            shape.Envelope = "cones";
+            body = phx.Body([], "Shape", shape);
+            tc.verifyError(@() phx.Simulation(body), "phx:Revolution:profileNotMonotonic");
         end
 
         function restsAtHalfTheProfileExtent(tc)
@@ -84,12 +133,24 @@ classdef tRevolutionEnvelope < PhxTestCase
             p = [-h/2 ri; -h/2 tc.Radius; h/2 tc.Radius; h/2 ri; -h/2 ri];
         end
 
-        function body = revolutionBody(tc, profile, axis)
+        function body = revolutionBody(~, profile, axis, envelope)
             % Mass and inertia are set explicitly, so a comparison of two
             % shapes cannot be thrown off by their mass computation
+            arguments
+                ~
+                profile
+                axis
+                envelope = "cylinder"
+            end
             body = phx.Body([], "Mass", 5, "Inertia", [0.03 0.03 0.06], ...
                 "Shape", phx.shape.Revolution("Profile", profile, "Axis", axis, ...
-                "Envelope", "cylinder", "Segments", 24));
+                "Envelope", envelope, "Segments", 24));
+        end
+
+        function p = hourglassProfile(~)
+            % Two cones of slope 0.7 meeting in a waist of radius 0.03 at
+            % axial 0.1, flat ends of radius 0.1, rows of [axial radial]
+            p = [0 0; 0 0.1; 0.1 0.03; 0.2 0.1; 0.2 0];
         end
 
         function T = tiltedDrop(tc, body, axis)

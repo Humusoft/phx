@@ -5,10 +5,13 @@ classdef Revolution < phx.base.Shape
 %   the user.
 %
 %   Collision shape is selected by the Envelope property: the convex hull of
-%   the revolved mesh, the exact concave triangle mesh, or a bounding cylinder
-%   about the revolution axis, which keeps a rolling body smooth where a
-%   faceted hull would not. Mass properties are always calculated from the
-%   actual triangular mesh.
+%   the revolved mesh, the exact concave triangle mesh, a bounding cylinder
+%   about the revolution axis, or the profile revolved exactly as a stack of
+%   truncated cones, one per profile segment. The cones are round about the
+%   axis, so a body rolls on them smoothly where a faceted hull or mesh
+%   would not; they need a profile with one radius per height (no bore, no
+%   overhang). Mass properties are always calculated from the actual
+%   triangular mesh.
 %   
 %   phx.shape.Revolution() creates a shape with default parameters.
 %
@@ -41,9 +44,11 @@ classdef Revolution < phx.base.Shape
         % Volumetric density (kg/m^3)
         Density (1, 1) double = 1000
 
-        % Collision envelope: "convex" hull, "concave" triangle mesh or
-        % bounding "cylinder" about the revolution axis
-        Envelope {mustBeMember(Envelope, ["convex", "concave", "cylinder"])} = "convex"
+        % Collision envelope: "convex" hull, "concave" triangle mesh,
+        % bounding "cylinder" about the revolution axis, or "cones": the
+        % profile revolved exactly, one truncated cone per segment, which
+        % needs the axial coordinates of the profile not to turn back
+        Envelope {mustBeMember(Envelope, ["convex", "concave", "cylinder", "cones"])} = "convex"
     end
 
     methods
@@ -56,6 +61,9 @@ classdef Revolution < phx.base.Shape
             obj = phx.internal.applyArguments(Options, obj);
             if isnan(obj.Color(1))
                 obj.Color = phx.base.Shape.newColor;
+            end
+            if obj.Envelope == "cones"
+                phx.shape.Revolution.conesProfile(obj.Profile);
             end
         end
 
@@ -101,6 +109,10 @@ classdef Revolution < phx.base.Shape
                     % Bounding cylinder (centered on the shape origin)
                     ext = max(abs(obj.Profile), [], 1);
                     eh = phx.engine.io('add', body.WorldHandle, 'cylinder', body.TypeID, ext(2), 2*ext(1), char(obj.Axis), body.Transform, body.Mass, body.Inertia, body.CenterOfMass);
+                case "cones"
+                    % The profile revolved exactly (no graphics needed)
+                    profile = phx.shape.Revolution.conesProfile(obj.Profile);
+                    eh = phx.engine.io('add', body.WorldHandle, 'revolution', body.TypeID, profile, char(obj.Axis), body.Transform, body.Mass, body.Inertia, body.CenterOfMass);
                 case "convex"
                     ph = phx.internal.PrimitiveHelper(primitive);
                     vertices = ph.Vertices';
@@ -110,6 +122,34 @@ classdef Revolution < phx.base.Shape
                     vertices = ph.Vertices';
                     eh = obj.createTrimeshBody(body, vertices, ph.LinearizedFaces);
             end
+        end
+    end
+
+    methods (Static, Access = private)
+        function profile = conesProfile(profile)
+            % The profile as the engine's cones take it, [axial; radial] with
+            % the axial coordinates not decreasing. Points at either end that
+            % run along the axis enclose nothing and go (a closed profile
+            % returns that way); a profile that turns back anywhere else
+            % cannot be built from cones.
+            off = find(profile(:, 2) ~= 0);
+            if ~isempty(off)
+                profile = profile(max(off(1) - 1, 1):min(off(end) + 1, end), :);
+            end
+            if size(profile, 1) < 2
+                profile = profile';
+                return
+            end
+            if profile(end, 1) < profile(1, 1)
+                profile = flipud(profile);
+            end
+            tolerance = 1e-6*max([abs(profile(:, 1) - profile(1, 1)); profile(:, 2)]);
+            if any(diff(profile(:, 1)) < -tolerance)
+                error("phx:Revolution:profileNotMonotonic", ...
+                    "Envelope ""cones"" needs a profile with one radius per height: its axial " + ...
+                    "coordinates must not turn back. Use Envelope ""concave"" or ""convex"" for this profile.");
+            end
+            profile = profile';
         end
     end
 
