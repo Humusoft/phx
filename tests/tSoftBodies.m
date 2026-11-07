@@ -39,7 +39,7 @@ classdef tSoftBodies < PhxTestCase
 
         function flexibleBodyDerivesSurfaceAndMass(tc)
             V = tc.cube;
-            f = phx.FlexibleBody([], "Vertices", V, "Tetrahedra", delaunay(V), "Density", 500);
+            f = phx.FlexibleBody([], "Vertices", V, "Tetrahedra", delaunay(V), "Density", 500, "ElementOrder", "linear");
             tc.verifySize(f.Faces, [12 3], "The surface of a cube is 12 triangles.");
             tc.verifyEqual(f.Mass, 500*(2*tc.Half)^3, "RelTol", 1e-9);
             tc.verifyEqual(f.CurrentVertices, V, "AbsTol", 1e-12);
@@ -49,10 +49,35 @@ classdef tSoftBodies < PhxTestCase
             V = tc.cube;
             T = delaunay(V);
             edges = unique(sort([T(:, [1 2]); T(:, [2 3]); T(:, [1 3]); T(:, [1 4]); T(:, [2 4]); T(:, [3 4])], 2), "rows");
-            f = phx.FlexibleBody([], "Vertices", V, "Tetrahedra", T, "ElementOrder", "quadratic");
+            f = phx.FlexibleBody([], "Vertices", V, "Tetrahedra", T);
+            tc.verifyEqual(f.ElementOrder, "quadratic", "Quadratic tetrahedra are the default.");
             tc.verifySize(f.CurrentVertices, [size(V, 1) + size(edges, 1) 3]);
             tc.verifyEqual(f.CurrentVertices(1:size(V, 1), :), V, "AbsTol", 1e-12, ...
                 "The corner vertices come first.");
+        end
+
+        function meshSetsVerticesAndTetrahedra(tc)
+            % A mesh in the form PDE Toolbox gives it: Nodes 3xN, Elements
+            % 4xK or 10xK; an object whose Mesh is such a mesh works alike
+            V = tc.cube;
+            T = delaunay(V);
+            f = phx.FlexibleBody([], "Mesh", struct("Nodes", V', "Elements", T'));
+            tc.verifyEqual(f.Vertices, V);
+            tc.verifyEqual(f.Tetrahedra, T);
+            tc.verifyEqual(f.Mesh.Elements, T');
+            g = phx.FlexibleBody([], "Mesh", struct("Mesh", struct("Nodes", V', "Elements", T')));
+            tc.verifyEqual(g.Tetrahedra, T);
+            tc.verifyError(@() phx.FlexibleBody([], "Mesh", struct("Nodes", V', "Elements", T(:, 1:3)')), ...
+                "phx:FlexibleBody:badMesh", "A mesh of triangles is not a solid.");
+            tc.verifyError(@() phx.FlexibleBody([], "Mesh", V), "phx:FlexibleBody:badMesh");
+        end
+
+        function meshTakesAPdeToolboxMesh(tc)
+            tc.assumeTrue(exist("fegeometry", "file") > 0, "Needs PDE Toolbox.");
+            gm = generateMesh(fegeometry(multicuboid(0.4, 0.2, 0.1)), Hmax=0.1);
+            f = phx.FlexibleBody([], "Mesh", gm, "Density", 1000);
+            tc.verifySize(f.Tetrahedra, [size(gm.Mesh.Elements, 2) 10], "A quadratic mesh by default.");
+            tc.verifyEqual(f.Mass, 1000*0.4*0.2*0.1, "RelTol", 1e-9);
         end
 
         function weldJoinsASoftBodyAndABody(tc)
@@ -90,7 +115,7 @@ classdef tSoftBodies < PhxTestCase
             Vnow = f.CurrentVertices;
             tc.verifyLessThan(mean(Vnow(:, 3)), 0.9, "The flexible body must fall.");
             tc.verifyGreaterThan(min(Vnow(:, 3)), -0.05, "The floor must stop it.");
-            tc.verifySize(f.VonMisesStress, [size(V, 1) 1]);
+            tc.verifySize(f.VonMisesStress, [size(Vnow, 1) 1]);
             tc.verifyTrue(all(isfinite(f.VonMisesStress)));
         end
 

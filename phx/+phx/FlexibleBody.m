@@ -3,36 +3,41 @@ classdef FlexibleBody < phx.base.Object
 %
 %   FlexibleBody is a solid of an elastic material given by its Young's
 %   modulus and Poisson's ratio: a block of rubber or foam, a soft gripper
-%   pad, a bushing. Its mesh of tetrahedra deforms as the stable
-%   Neo-Hookean material, which also holds for large deformations; the
-%   vertices are particles carrying the mass of the tetrahedra around them.
-%   It collides with rigid bodies (phx.Body), not with soft or flexible
-%   bodies. No joint holds it directly: a body welded into it with
-%   phx.IntersectionWeld holds and loads it instead.
+%   pad, a bushing, a beam. Its mesh of tetrahedra deforms as a fixed
+%   corotated material, which also holds for large rotations; the vertices
+%   carry the mass of the tetrahedra around them. It collides with rigid
+%   bodies (phx.Body), not with soft or flexible bodies. No joint holds it
+%   directly: a body welded into it with phx.IntersectionWeld holds and
+%   loads it instead.
 %
-%   ElementOrder selects the elements. Linear tetrahedra are solved with as
-%   many solver substeps as Iterations gives, so a stiff material on a fine
-%   mesh needs more of them and still comes out softer than it is.
-%   Quadratic tetrahedra, with a vertex in the middle of each edge, bend
-%   without the stiffening of linear ones on a coarse mesh and are solved
-%   implicitly by Newton iterations until the force left unbalanced falls
-%   below Tolerance, so their stiffness does not depend on Iterations, which
-%   only limits the iterations per step; two are usually enough, more only
-%   in a step with a sudden load such as an impact.
+%   ElementOrder selects the elements. Quadratic tetrahedra, the default,
+%   have a vertex in the middle of each edge, bend without the stiffening
+%   of linear ones on a coarse mesh and are solved implicitly by Newton
+%   iterations until the force left unbalanced falls below Tolerance, so
+%   their stiffness does not depend on Iterations, which only limits the
+%   iterations per step; two are usually enough, more only in a step with a
+%   sudden load such as an impact. Linear tetrahedra are cheaper but solved
+%   with as many solver substeps as Iterations gives, so a stiff material on
+%   a fine mesh needs more of them and still comes out softer than it is.
 %
 %   phx.FlexibleBody(axes, Vertices=V, Tetrahedra=T) creates a flexible body
-%   of the tetrahedral mesh V (Nx3, in the body frame) and T (Kx4 vertex
-%   indices, as delaunayTriangulation or generateMesh give them) and draws
-%   its surface into the given axes object; [] draws nothing. The mesh is the
-%   rest shape, placed at Position and Orientation when the simulation
-%   creates the body.
-%
-%   phx.FlexibleBody(axes, Vertices=V, Tetrahedra=T, ElementOrder="quadratic")
-%   creates a body of quadratic tetrahedra. T is either Kx4, and the
+%   of the tetrahedral mesh V (Nx3, in the body frame) and T (vertex
+%   indices) and draws its surface into the given axes object; [] draws
+%   nothing. T is either Kx4, as delaunayTriangulation gives it, and the
 %   vertices in the middles of the edges are added to V, or Kx10, a
-%   quadratic mesh as generateMesh gives it with GeometricOrder="quadratic"
-%   (the corners, then the vertices of the edges 12 23 13 14 24 34). The
-%   added vertices follow V in CurrentVertices and VonMisesStress.
+%   quadratic mesh (the corners, then the vertices of the edges 12 23 13 14
+%   24 34). The added vertices follow V in CurrentVertices and
+%   VonMisesStress. The mesh is the rest shape, placed at Position and
+%   Orientation when the simulation creates the body.
+%
+%   phx.FlexibleBody(axes, Mesh=mesh) takes the mesh of tetrahedra that PDE
+%   Toolbox generates, for example of an STL file:
+%
+%       gm = generateMesh(fegeometry("part.stl"), Hmax=0.01);
+%       flex = phx.FlexibleBody(gca, Mesh=gm.Mesh);
+%
+%   phx.FlexibleBody(___, ElementOrder="linear") creates a body of linear
+%   tetrahedra from a Kx4 mesh.
 %
 %   phx.FlexibleBody(___, Name, Value, ...) sets properties values according
 %   to given name-value pairs.
@@ -60,8 +65,8 @@ classdef FlexibleBody < phx.base.Object
         % Tetrahedra as vertex indices (Kx4, or Kx10 quadratic ones)
         Tetrahedra (:, :) double {mustBeInteger, mustBePositive} = zeros(0, 4)
 
-        % Order of the elements: "linear" or "quadratic"
-        ElementOrder (1, 1) string {mustBeMember(ElementOrder, ["linear", "quadratic"])} = "linear"
+        % Order of the elements: "quadratic" or "linear"
+        ElementOrder (1, 1) string {mustBeMember(ElementOrder, ["linear", "quadratic"])} = "quadratic"
 
         % Position of the rest shape when the body is created
         Position (1, 3) double {mustBeFinite} = [0 0 0]
@@ -77,6 +82,14 @@ classdef FlexibleBody < phx.base.Object
 
         % Poisson's ratio of the material, 0.5 for an incompressible one
         PoissonsRatio (1, 1) double {mustBeInRange(PoissonsRatio, 0, 0.5)} = 0.45
+    end
+
+    properties (Dependent)
+        % Mesh of tetrahedra as PDE Toolbox gives it: an object or struct
+        % with Nodes (3xN) and Elements (4xK or 10xK), such as the Mesh of
+        % fegeometry or femodel, or one of these whose Mesh is used; sets
+        % Vertices and Tetrahedra, and reads them back in this form
+        Mesh
     end
 
     % Settings that apply at any time
@@ -190,6 +203,27 @@ classdef FlexibleBody < phx.base.Object
         function set.ElementOrder(obj, value)
             obj.ElementOrder = value;
             obj.redrawRestShape;
+        end
+
+        function set.Mesh(obj, mesh)
+            has = @(m, name) (isobject(m) && isprop(m, name)) || (isstruct(m) && isfield(m, name));
+            if has(mesh, "Mesh") && ~has(mesh, "Nodes")
+                mesh = mesh.Mesh;
+            end
+            if ~has(mesh, "Nodes") || ~has(mesh, "Elements") || isempty(mesh.Elements)
+                error("phx:FlexibleBody:badMesh", ...
+                    "A mesh needs Nodes (3xN) and Elements (4xK or 10xK), as PDE Toolbox meshes have; generate it first.");
+            end
+            if ~ismember(size(mesh.Elements, 1), [4 10]) || size(mesh.Nodes, 1) ~= 3
+                error("phx:FlexibleBody:badMesh", ...
+                    "The mesh must be a solid of tetrahedra: Nodes 3xN and Elements 4xK or 10xK.");
+            end
+            obj.Vertices = double(mesh.Nodes)';
+            obj.Tetrahedra = double(mesh.Elements)';
+        end
+
+        function mesh = get.Mesh(obj)
+            mesh = struct("Nodes", obj.Vertices', "Elements", obj.Tetrahedra');
         end
 
         function set.Position(obj, value)
