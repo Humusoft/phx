@@ -23,7 +23,7 @@ function phxex_cantilever
     L = 1; embed = 0.06;
     [V, T] = boxTetrahedra([L + embed, 0.12, 0.1], 0.06);
     V(:, 1) = V(:, 1) + (L + embed)/2 - embed;
-    beam = phx.FlexibleBody(ax, "Vertices", V, "Tetrahedra", T, "ElementOrder", "quadratic", "Position", [0 0 1], ...
+    beam = phx.FlexibleBody(ax, "Vertices", V, "Tetrahedra", T, "Position", [0 0 1], ...
         "Density", 1100, "YoungsModulus", 20e6, "PoissonsRatio", 0.45, "Damping", 3, "Colormap", "turbo", "ColorRange", [0 6e5]);
     plate = phx.Body(ax, "Position", [L - 0.12 0 1.05], ...
         "Shape", {"Box", "Size", [0.24 0.3 0.04], "Color", [0.85 0.65 0.2]}, ...
@@ -38,7 +38,7 @@ function phxex_cantilever
     tip = abs(V(:, 1) - max(V(:, 1))) < 1e-9;
     lowest = 0;
     while sim.Time < 4
-        sim.step(0.01, 2, 2);
+        sim.step(0.02, 4, 4);
         X = beam.CurrentVertices;
         sag = 1 - mean(X(tip, 3));
         lowest = max(lowest, sag);

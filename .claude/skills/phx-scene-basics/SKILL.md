@@ -407,11 +407,11 @@ or a bulk of grains is the point.
 ball = phx.SoftBody(ax, "Vertices", V, "Faces", F, "Position", [0 0 1], ...
     "Mass", 1, "Compliance", 1e-4, "Pressure", 200);   % closed mesh, inflated
 
-% Flexible body: an elastic solid of tetrahedra (Neo-Hookean)
+% Flexible body: an elastic solid of quadratic tetrahedra (edge vertices added)
 [x, y, z] = ndgrid(-0.2:0.1:0.2); W = [x(:) y(:) z(:)];
 block = phx.FlexibleBody(ax, "Vertices", W, "Tetrahedra", delaunay(W), ...
-    "Position", [1 0 0.5], "YoungsModulus", 2e5, "PoissonsRatio", 0.45, ...
-    "ElementOrder", "quadratic");                      % or "linear" (default)
+    "Position", [1 0 0.5], "YoungsModulus", 2e5, "PoissonsRatio", 0.45);
+% or a mesh of any shape from PDE Toolbox: "Mesh", generateMesh(fegeometry("part.stl"), Hmax=0.02)
 
 % A rigid body overlapping it holds it: vertices inside the body are welded to it
 plate = phx.Body(ax, "Type", "static", "Position", [1 0 0.7], ...
@@ -432,8 +432,12 @@ gravel.add(Pnew); gravel.remove(gravel.Positions(:, 3) < -1);   % any time, also
   starts; mesh and material are read then, the friction/damping/pressure settings at any
   time. `CurrentVertices` gives the deformed mesh; `FlexibleBody.VonMisesStress` the
   stress per vertex (colour it with `Colormap`/`ColorRange`).
-- `FlexibleBody` linear tetrahedra get softer than the material on a coarse mesh; the
-  quadratic ones keep the stiffness and are solved implicitly (`Tolerance`).
+- `FlexibleBody` uses quadratic tetrahedra by default: implicit, stiffness right on a
+  coarse mesh (2-3 elements across a section to bend, 3-4 to twist), `Tolerance` sets
+  the convergence and `Iterations` caps it. `ElementOrder="linear"` is cheaper but gets
+  softer than the material. Good for large rotations with strains up to some 10-20 %.
+  It touches rigid bodies at its vertices only: keep them well closer together than the
+  radius of a curved body it touches.
 - `Particles`: at most 10 000 per group (use more groups); `Positions`/`Velocities` are
   N×3 arrays, `applyForces(F)` acts in the next step of a running simulation. Set the
   engine's `LengthScale` to the grain size class (`phx.engine.Settings("LengthScale",

@@ -18,19 +18,24 @@
 
 <h2 class="phx-h2">Description</h2>
 <p><code class="phx-inline">phx.FlexibleBody</code> is a solid of an elastic material given by its
-Young's modulus and Poisson's ratio: a block of rubber or foam, a soft gripper pad, a bushing. Its
-mesh of tetrahedra deforms as the stable Neo-Hookean material, which also holds for large
-deformations; the vertices are particles carrying the mass of the tetrahedra around them. It collides
-with rigid bodies (<a href="phx.Body.html">phx.Body</a>), not with soft or flexible bodies. No joint
-holds it directly: a body welded into it with <a href="phx.IntersectionWeld.html">phx.IntersectionWeld</a>
-holds and loads it instead.</p>
-<p><code class="phx-inline">ElementOrder</code> selects the elements. Linear tetrahedra are solved
-with as many solver substeps as <code class="phx-inline">Iterations</code> gives, so a stiff material
-on a fine mesh needs more of them and still comes out softer than it is. Quadratic tetrahedra, with a
-vertex in the middle of each edge, bend without the stiffening of linear ones on a coarse mesh and
-are solved implicitly by Newton iterations until the force left unbalanced falls below
-<code class="phx-inline">Tolerance</code>, so their stiffness does not depend on
-<code class="phx-inline">Iterations</code>, which only limits the iterations per step.</p>
+Young's modulus and Poisson's ratio: a block of rubber or foam, a soft gripper pad, a bushing, a
+beam. Its mesh of tetrahedra deforms as a fixed corotated material, which also holds for large
+rotations; the vertices carry the mass of the tetrahedra around them. It collides with rigid bodies
+(<a href="phx.Body.html">phx.Body</a>), not with soft or flexible bodies. No joint holds it directly:
+a body welded into it with <a href="phx.IntersectionWeld.html">phx.IntersectionWeld</a> holds and
+loads it instead.</p>
+<p><code class="phx-inline">ElementOrder</code> selects the elements. Quadratic tetrahedra, the
+default, have a vertex in the middle of each edge, bend without the stiffening of linear ones on a
+coarse mesh and are solved implicitly by Newton iterations until the force left unbalanced falls
+below <code class="phx-inline">Tolerance</code>, so their stiffness does not depend on
+<code class="phx-inline">Iterations</code>, which only limits the iterations per step; two are usually
+enough, more only in a step with a sudden load such as an impact. Linear tetrahedra are cheaper but
+solved with as many solver substeps as <code class="phx-inline">Iterations</code> gives, so a stiff
+material on a fine mesh needs more of them and still comes out softer than it is.</p>
+<p>The body touches rigid bodies at its vertices only: keep the vertices well closer together than
+the radius of a curved body it touches, or the body feels the spacing of the vertices. Quadratic
+tetrahedra suit large rotations with strains up to some 10-20&nbsp;%; the material is no calibrated
+rubber for larger strains.</p>
 <p>The mesh is the rest shape, placed at <code class="phx-inline">Position</code> and
 <code class="phx-inline">Orientation</code> when the simulation creates the body; the rest shape and
 the material are read once, at that moment. A flexible body is a top-level object: hand it to the
@@ -39,24 +44,27 @@ simulation like a body.</p>
 <h2 class="phx-h2">Creation</h2>
 <h3 class="phx-h3">Syntax</h3>
 <span class="phx-syntax">flex = phx.FlexibleBody(ax,"Vertices",V,"Tetrahedra",T)</span>
-<span class="phx-syntax">flex = phx.FlexibleBody(___,"ElementOrder","quadratic")</span>
+<span class="phx-syntax">flex = phx.FlexibleBody(ax,"Mesh",mesh)</span>
+<span class="phx-syntax">flex = phx.FlexibleBody(___,"ElementOrder","linear")</span>
 <span class="phx-syntax">flex = phx.FlexibleBody(___,Name,Value)</span>
 
 <h3 class="phx-h3">Description</h3>
 <div class="phx-desc">
 <p><code class="phx-inline">flex = phx.FlexibleBody(ax,"Vertices",V,"Tetrahedra",T)</code> creates a
 flexible body of the tetrahedral mesh <code class="phx-inline">V</code> (N&times;3, in the body frame)
-and <code class="phx-inline">T</code> (K&times;4 vertex indices, as
-<code class="phx-inline">delaunayTriangulation</code> or <code class="phx-inline">generateMesh</code>
-give them) and draws its surface into the axes <code class="phx-inline">ax</code>;
-<code class="phx-inline">[]</code> draws nothing.</p>
-<p><code class="phx-inline">flex = phx.FlexibleBody(___,"ElementOrder","quadratic")</code> creates a
-body of quadratic tetrahedra. <code class="phx-inline">T</code> is either K&times;4, and the vertices
-in the middles of the edges are added to <code class="phx-inline">V</code>, or K&times;10, a
-quadratic mesh as <code class="phx-inline">generateMesh</code> gives it with
-<code class="phx-inline">GeometricOrder="quadratic"</code> (the corners, then the vertices of the
-edges 12 23 13 14 24 34). The added vertices follow <code class="phx-inline">V</code> in
-<code class="phx-inline">CurrentVertices</code> and <code class="phx-inline">VonMisesStress</code>.</p>
+and <code class="phx-inline">T</code> (vertex indices) and draws its surface into the axes
+<code class="phx-inline">ax</code>; <code class="phx-inline">[]</code> draws nothing.
+<code class="phx-inline">T</code> is either K&times;4, as <code class="phx-inline">delaunayTriangulation</code>
+gives it, and the vertices in the middles of the edges are added to <code class="phx-inline">V</code>,
+or K&times;10, a quadratic mesh (the corners, then the vertices of the edges 12 23 13 14 24 34). The
+added vertices follow <code class="phx-inline">V</code> in <code class="phx-inline">CurrentVertices</code>
+and <code class="phx-inline">VonMisesStress</code>.</p>
+<p><code class="phx-inline">flex = phx.FlexibleBody(ax,"Mesh",mesh)</code> takes the mesh of
+tetrahedra that PDE Toolbox generates: the <code class="phx-inline">Mesh</code> of an
+<code class="phx-inline">fegeometry</code> or <code class="phx-inline">femodel</code>, or the geometry
+or model itself. PHX only reads the mesh and does not need PDE Toolbox.</p>
+<p><code class="phx-inline">flex = phx.FlexibleBody(___,"ElementOrder","linear")</code> creates a
+body of linear tetrahedra from a K&times;4 mesh.</p>
 </div>
 
 <h2 class="phx-h2">Properties</h2>
@@ -65,7 +73,8 @@ edges 12 23 13 14 24 34). The added vertices follow <code class="phx-inline">V</
 <tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
 <tr><td class="name">Vertices</td><td class="type">N&times;3 double</td><td>Vertices of the mesh in the body frame.</td></tr>
 <tr><td class="name">Tetrahedra</td><td class="type">K&times;4 or K&times;10 double</td><td>Tetrahedra as vertex indices.</td></tr>
-<tr><td class="name">ElementOrder</td><td class="dflt">"linear"</td><td>Order of the elements: <code class="phx-inline">"linear"</code> or <code class="phx-inline">"quadratic"</code>.</td></tr>
+<tr><td class="name">Mesh</td><td class="type">mesh object or struct</td><td>Mesh of tetrahedra as PDE Toolbox gives it, with <code class="phx-inline">Nodes</code> (3&times;N) and <code class="phx-inline">Elements</code> (4&times;K or 10&times;K); an <code class="phx-inline">fegeometry</code> or <code class="phx-inline">femodel</code> gives its <code class="phx-inline">Mesh</code>. Sets <code class="phx-inline">Vertices</code> and <code class="phx-inline">Tetrahedra</code> and reads them back in this form.</td></tr>
+<tr><td class="name">ElementOrder</td><td class="dflt">"quadratic"</td><td>Order of the elements: <code class="phx-inline">"quadratic"</code> or <code class="phx-inline">"linear"</code>.</td></tr>
 <tr><td class="name">Position</td><td class="dflt">[0 0 0]</td><td>Position of the rest shape when the body is created, <span class="phx-unit">m</span>.</td></tr>
 <tr><td class="name">Orientation</td><td class="dflt">eye(3)</td><td>Orientation of the rest shape when the body is created.</td></tr>
 <tr><td class="name">Density</td><td class="dflt">1000</td><td>Density of the material, <span class="phx-unit">kg/m&sup3;</span>.</td></tr>
@@ -115,6 +124,11 @@ block = phx.FlexibleBody(gca, <span class="str">"Vertices"</span>, V, <span clas
 
 sim = phx.Simulation({floor, block});
 sim.step(2, 400, 4);</pre>
+
+<h4 class="phx-h4">A part meshed by PDE Toolbox</h4>
+<pre class="phx-code">gm = generateMesh(fegeometry(multicuboid(0.4, 0.2, 0.1)), Hmax=0.05);
+part = phx.FlexibleBody(gca, <span class="str">"Mesh"</span>, gm, <span class="str">"Position"</span>, [0 0 0.5], ...
+    <span class="str">"YoungsModulus"</span>, 1e6);</pre>
 
 <div class="phx-seealso">
 <span class="lbl">See also</span>
