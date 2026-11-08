@@ -251,8 +251,9 @@ classdef Simulation < phx.base.Object
 
             % Simulation steps
             for s = 1:substeps
-                animate = redrawStep > 0 && mod(s, redrawStep) == 0;
-                requested = animate;
+                % A redraw requested by redrawStep; the adaptive mode may skip it
+                requested = redrawStep > 0 && mod(s, redrawStep) == 0;
+                animate = requested;
                 if animate && adaptive && ~obj.RedrawSync
                     % Skipped when too soon, unless the simulation has run ahead
                     % of real time, even counting the redraw, by a whole frame
