@@ -27,13 +27,12 @@ function catalog = exampleCatalog
 
     rows = [ ...
         entry("phxex_minimal",     "Basics and geometry",            3)
-        entry("phxex_shapes",      "Basics and geometry",            6)
+        entry("phxex_shapes",      "Basics and geometry",            8)
         entry("phxex_joints",      "Basics and geometry",            5)
         entry("phxex_springs",     "Basics and geometry",            4)
         entry("phxex_gravity",     "Basics and geometry",            6)
         entry("phxex_slide",       "Basics and geometry",            5)
         entry("phxex_terrain",     "Basics and geometry",            8)
-        entry("phxex_textures",    "Basics and geometry",           10)
         entry("phxex_raycast",     "Basics and geometry",            7)  % sim time ~10 s, where the orbit aims the fan at the camera
 
         entry("phxex_jenga",       "Contacts, stacking and granular", 6)
@@ -48,6 +47,7 @@ function catalog = exampleCatalog
         entry("phxex_soilparticles", "Contacts, stacking and granular", 15)
         entry("phxex_softball",    "Contacts, stacking and granular",  3)
         entry("phxex_cantilever",  "Contacts, stacking and granular",  6)
+        entry("phxex_plow",        "Contacts, stacking and granular", 40)  % wall-clock, ~3x slower than real time; the tine bent in the soil
 
         entry("phxex_gears",       "Mechanisms and machines",         6)
         entry("phxex_wankel",      "Mechanisms and machines",        10)

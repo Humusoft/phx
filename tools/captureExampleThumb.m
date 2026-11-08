@@ -160,8 +160,10 @@ function target = exportTarget(fig)
 % Export a single axes on its own (that drops dialogs, buttons and the HUD
 % overlay), but keep the whole figure when the example builds a subplot
 % layout - there the arrangement is the point.
+    % The Viewer hides the box of its scene axes, so an axes holding a scene
+    % counts as shown too; otherwise an inset plot would be all that is left
     ax = findall(fig, "-isa", "matlab.graphics.axis.AbstractAxes");
-    ax = ax(arrayfun(@(a) strcmp(a.Visible, "on"), ax));
+    ax = ax(arrayfun(@(a) strcmp(a.Visible, "on") || ~isempty(findall(a, "Type", "hgtransform")), ax));
     if isscalar(ax)
         target = ax;
     else
