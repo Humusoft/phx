@@ -37,7 +37,7 @@ classdef Simulation < phx.base.Object
         PacingClock = uint64(0)
         PacingTime = 0
 
-        % Adaptive redraw: tic at the start of the last redraw (0 = none yet) and
+        % Adaptive redraw: tic at the start of the last redraw and
         % whether the next one has to wait for the renderer (set when the
         % pipelines are built before the simulation starts, so the new scene
         % reaches the screen before the redraws start to be skipped)
@@ -92,9 +92,9 @@ classdef Simulation < phx.base.Object
         HideInvalid (1, 1) logical = false
 
         % Maximum ratio of simulation time to real time (Inf = unpaced)
-        %   Checked at every redraw and at the end of each step; a delay of
-        %   up to 0.1 s is made up, a simulation that is later continues from
-        %   there and never catches up.
+        %   Checked at every requested redraw and at the end of each step; a
+        %   delay of up to 0.1 s is made up, a simulation that is later
+        %   continues from there and never catches up.
         PacingRate (1, 1) double {mustBePositive} = Inf
 
         % Longest stretch of simulation time without a frame (s), adaptive mode
@@ -225,9 +225,6 @@ classdef Simulation < phx.base.Object
         %
         % See also phx.Simulation
 
-        % TODO substep, redrawstep: count or period?
-        % - Time vector instead of step & count? But it might be confusing when the simulation does not start at time 0.
-
             arguments
                 obj 
                 interval (1, 1) double = 0.01
@@ -245,7 +242,6 @@ classdef Simulation < phx.base.Object
                 obj.PacingClock = tic;
                 obj.PacingTime = time;
             end
-            requested = false;
             adaptive = obj.RedrawMode == "adaptive";
             if adaptive
                 % As often as the renderer and the redraw cost allow
@@ -255,31 +251,26 @@ classdef Simulation < phx.base.Object
 
             % Simulation steps
             for s = 1:substeps
-                animate = (redrawStep >= 0) && (mod(s, redrawStep) == 0);
+                animate = redrawStep > 0 && mod(s, redrawStep) == 0;
                 requested = animate;
-                if animate && adaptive && ~obj.RedrawSync && obj.RedrawClock ~= 0
+                if animate && adaptive && ~obj.RedrawSync
+                    % Skipped when too soon, unless the simulation has run ahead
+                    % of real time, even counting the redraw, by a whole frame
+                    % spacing; also when the end of the step comes within a
+                    % frame. The last substep updates the graphics anyway.
                     wallSince = toc(obj.RedrawClock);
-                    if wallSince < max(obj.AdaptiveRedrawInterval, obj.AdaptiveRedrawRatio*obj.RedrawDuration)
-                        % Too soon: no redraw (the last substep still updates the
-                        % graphics), unless the simulation has run ahead of real
-                        % time, even counting the redraw, by a whole frame spacing
-                        simSince = time + dt - obj.RedrawSimTime;
-                        if simSince < obj.FrameSpacing || simSince <= wallSince + obj.RedrawDuration
-                            animate = false;
-                        end
-                    end
-                end
-                if animate && adaptive && s < substeps && ~obj.RedrawSync ...
-                        && obj.StepDuration*(substeps - s)/substeps < obj.AdaptiveRedrawInterval
-                    animate = false; % the end of the step comes within a frame and updates the graphics
+                    simSince = time + dt - obj.RedrawSimTime;
+                    tooSoon = wallSince < max(obj.AdaptiveRedrawInterval, obj.AdaptiveRedrawRatio*obj.RedrawDuration) ...
+                        && (simSince < obj.FrameSpacing || simSince <= wallSince + obj.RedrawDuration);
+                    endNear = s < substeps && obj.StepDuration*(substeps - s)/substeps < obj.AdaptiveRedrawInterval;
+                    animate = ~tooSoon && ~endNear;
                 end
                 if animate && adaptive
                     obj.RedrawClock = tic; % interval measured from the start of one redraw to the next
                     obj.RedrawSimTime = time + dt;
                 end
-                updateView = (redrawStep >= 0) && ((s == substeps) || animate);
 
-                if updateView
+                if animate || (s == substeps && redrawStep >= 0)
                     for p = 1:numel(epComplete)
                         epComplete(p).Function(epComplete(p).Objects, dt, time, world);
                     end
@@ -296,8 +287,9 @@ classdef Simulation < phx.base.Object
 
                 % Pacing is checked at every requested redraw, also at one the
                 % adaptive mode skips, or the simulation would run ahead until
-                % the next drawn frame and then sleep it off in one go
-                if paced && requested
+                % the next drawn frame and then sleep it off in one go; and at
+                % the end of the step
+                if paced && (requested || s == substeps)
                     obj.pace(time);
                 end
 
@@ -321,11 +313,6 @@ classdef Simulation < phx.base.Object
                             end
                     end
                 end
-            end
-
-            % The last substep has not been paced by a redraw request
-            if paced && ~requested
-                obj.pace(time);
             end
 
             obj.Time = obj.Time + interval;
