@@ -58,6 +58,7 @@ function catalog = exampleCatalog
         entry("phxex_beltmaze",    "Mechanisms and machines",         8)
         entry("phxex_bowlfeeder",  "Mechanisms and machines",        40)  % wall-clock, ~5x slower than real time; lands with parts on the track
         entry("phxex_trainwheel",  "Mechanisms and machines",         8)
+        entry("phxex_coaster",     "Mechanisms and machines",        21)  % wall-clock: a long build, then faster than real time; the train is in the loop for only ~0.3 s, so check a re-shot tile
         entry("phxex_tackle",      "Mechanisms and machines",        10)
 
         entry("phxex_buggy",       "Vehicles, robots and control",   10)
