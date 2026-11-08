@@ -53,7 +53,7 @@ function phxex_joints(showGraphs)
 
     % Simulation
     sim = phx.Simulation; % Create a simulation object
-    sim.step(6, 600, 1);  % Run the simulation for 6 seconds with 600 steps
+    sim.step(6, 600);  % Run the simulation for 6 seconds with 600 steps
     delete(sim);          % Clean up the simulation object
 
     % Plot logged signal

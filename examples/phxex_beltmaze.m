@@ -68,7 +68,7 @@ function phxex_beltmaze
     % Run the simulation
     dt = 0.005;
     sim = phx.Simulation;
-    sim.step(24, 24/dt, 2);
+    sim.step(24, 24/dt);
 
     % Clean up by deleting the simulation object
     delete(sim);

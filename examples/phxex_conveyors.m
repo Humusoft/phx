@@ -46,13 +46,11 @@ function phxex_conveyors
     phx.Script(piston, {"Position", [0; 7; 9; 10], [1 0.9 0.2; 1 0.9 0.2; 1 0.1 0.2; 1 0.9 0.2], 'linear', 'repeat'}); % interpolated curve
 
     % Bottle as a body of revolution
-    prof = bottleSizePerc/100*[-0.222 0; -0.222 0.057; 0.056 0.057; 0.078 0.047; ...
-                                0.100 0.029; 0.122 0.024; 0.190 0.024; 0.190 0.027; ...
-                                0.222 0.027; 0.222 0];
-    bottle = phx.shape.Revolution("Profile", prof, "Segments", 24, "Color", [0.4 0.6 1], "Material", "glossy", "Envelope", "cylinder", "Texture", "checker", "TextureBlend", 0.15);
+    prof = bottleSizePerc/100*[-0.222 0; -0.222 0.057; 0.056 0.057; 0.122 0.024; 0.190 0.024; 0.190 0.027; 0.222 0.027; 0.222 0];
+    bottle = phx.shape.Revolution("Profile", prof, "Segments", 24, "Color", [0.4 0.6 1], "Material", "glossy", "Envelope", "cones", "Texture", "checker", "TextureBlend", 0.15);
 
     % Create the simulation object
-    sim = phx.Simulation("EngineSettings", phx.engine.Settings("LengthScale", 0.1));
+    sim = phx.Simulation("EngineSettings", phx.engine.Settings("LengthScale", 0.1), "FrameSpacing", 0.1);
 
     % Add bottles and run the simulation repeatedly
     total = 0;
@@ -66,7 +64,7 @@ function phxex_conveyors
         total = total + nBottles;
         viewer.displayText("Batch "+i+": "+total+" bottles", "below");
         sim.addObjects(newBottles);
-        sim.step(t, t/dt, 10);
+        sim.step(t, t/dt);
     end
 
     % Clean up by deleting the simulation object

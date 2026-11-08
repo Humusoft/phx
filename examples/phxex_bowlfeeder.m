@@ -59,7 +59,7 @@ function phxex_bowlfeeder(Options)
     % The flap sends every part that reaches the top back to the floor, so the
     % zone keeps counting passes for as long as the machine runs.
     for time = window:window:Options.Duration
-        sim.step(window, round(window/dt), 20);
+        sim.step(window, round(window/dt));
         viewer.displayText(sprintf("Gamma = %.1f   |   %d parts through the outlet   |   %.0f/min", ...
             Options.Gamma, outlet.EnteredCount, 60*outlet.EnteredCount/time));
     end
@@ -121,8 +121,8 @@ function outlet = buildFeeder(ax, b, f, Az, settle, nParts, ground)
     outlet = phx.Zone(ground, "Bodies", parts, "Size", 0.1, "Position", [rc*cos(ang) rc*sin(ang) b.Pitch*ang/(2*pi) - b.Base + 0.04]);
 
     % Deflection flap
-    ang = 2*pi*(b.Turns + 0.01);
-    phx.Body(ax, "Type", "static", "Position", [rc*cos(ang) rc*sin(ang) b.Pitch*ang/(2*pi) + 0.02], "EulerAngles", [0 0 1], "Shape", {"Box", "Size", [0.09 0.005 0.03], "Color", [0.9 0.2 0.2]});
+    ang = 2*pi*(b.Turns);
+    phx.Body(ax, "Type", "static", "Position", [rc*cos(ang) rc*sin(ang) b.Pitch*ang/(2*pi) + 0.01], "EulerAngles", [0 0 1], "Shape", {"Box", "Size", [0.09 0.005 0.03], "Color", [0.9 0.2 0.2]});
 
     drive = phx.Function(num2cell(bowl), @shake);
     drive.UserData = struct("Az", Az, "Aphi", Az/tand(b.Beta)/b.R, "Omega", 2*pi*f, ...

@@ -181,7 +181,7 @@ function phxex_swingover
 
         sim = phx.Simulation(ax);
         busy(true);
-        sim.step(0.5, 125, 5);                    % let the walls settle
+        sim.step(0.5, 125);                    % let the walls settle
         busy(false);
         if bailOut, return, end
 
@@ -220,7 +220,7 @@ function phxex_swingover
         end
         if bailOut, return, end
 
-        sim.step(0.5, 125, 2);
+        sim.step(0.5, 125);
         report(crossed, clear0, p0, hops);
         busy(false);
     end
@@ -324,7 +324,7 @@ function phxex_swingover
         end
         if bailOut, return, end
 
-        sim.step(1, 250, 2);                      % let the rubble come to rest
+        sim.step(1, 250);                      % let the rubble come to rest
         viewer.displayText("");
         hint.Text = sprintf("Home again - the drive back displaced %d of %d bricks.", ...
             sum(displaced(p0, brickPositions)), numel(bricks));
@@ -336,7 +336,7 @@ function phxex_swingover
         % One step of the simulation under a clamped drive force
         trolley.applyForce([max(min(F, fMax), -fMax) 0 0], [], false);
         step = step + 1;
-        sim.step(dt, 1, mod(step, 5) == 0);       % 60 redraws a second is plenty
+        sim.step(dt);
     end
 
     function report(crossed, clear0, p0, hops)

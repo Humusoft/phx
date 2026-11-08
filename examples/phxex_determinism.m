@@ -31,8 +31,8 @@ function phxex_determinism(numOfBalls)
     balls.storeState("initial_state"); % Store the initial state of the balls
 
     % Simulation I: Run the first simulation
-    sim = phx.Simulation; % Create simulation with ground and balls
-    sim.step(10, 1000, 10); % Step the simulation
+    sim = phx.Simulation("FrameSpacing", 0.1); % Create simulation with ground and balls
+    sim.step(10, 1000); % Step the simulation
     delete(sim); % Clean up the simulation object
 
     % Read image for coloring the balls
@@ -49,7 +49,7 @@ function phxex_determinism(numOfBalls)
 
     % Simulation II: Run the second simulation
     sim = phx.Simulation; % Create a new simulation for the second run
-    sim.step(10, 1000, 10); % Step the simulation
+    sim.step(10, 1000); % Step the simulation
     delete(sim); % Clean up the simulation object
 
 end

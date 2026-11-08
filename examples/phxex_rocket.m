@@ -145,7 +145,7 @@ function phxex_rocket(hopHeight)
                 eng.Direction = [gim(1) gim(2) 1];
             end
 
-            sim.step(dt, 1, 1);
+            sim.step(dt, 1);
             t = t + dt;
         end
 

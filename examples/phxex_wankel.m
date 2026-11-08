@@ -52,7 +52,7 @@ function phxex_wankel(showGraphs)
 
     % Simulate 3 s in 1 ms steps, redrawing every 10 steps
     sim = phx.Simulation;
-    sim.step(3, 3000, 10);
+    sim.step(3, 3000);
 
     % Clean up the simulation object
     delete(sim);

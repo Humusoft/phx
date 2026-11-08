@@ -289,7 +289,7 @@ of drive:
 
 ```matlab
 hub = phx.RevoluteJoint(base, disc, "TargetVelocity", 6, "MaxTorque", 5);
-sim.step(1, 100, 1);            % spins up to 6 rad/s and holds it
+sim.step(1, 100);               % spins up to 6 rad/s and holds it
 hub.TargetVelocity = 0;         % same motor, now a brake
 hub.MaxTorque = 1;              % lets go once the load passes 1 N*m
 ```
@@ -317,7 +317,7 @@ change it** — no per-step call, unlike `applyTorque`.
 ```matlab
 hub = phx.RevoluteJoint(base, disc, "AppliedTorque", 2);   % 2 N*m from now on
 sim = phx.Simulation(gca);
-sim.step(1, 100, 1);
+sim.step(1, 100);
 hub.AppliedTorque = 0;          % off again
 ```
 
@@ -368,7 +368,7 @@ simulation time. There is no return value — the callback acts by writing to th
 objects (set `AppliedForce` or `Throttle`, call `applyTorque`, move a kinematic body, …).
 
 **Prefer this over a hand-rolled `while` loop** when the logic must run at the physics
-rate: it fires on every substep, so you can keep `sim.step(interval, substeps, …)` with
+rate: it fires on every substep, so you can keep `sim.step(interval, substeps)` with
 many substeps instead of stepping one substep at a time from MATLAB. Demos:
 `phxex_balance` (PD ball-on-plate), `phxex_drone`.
 
@@ -394,7 +394,7 @@ while t < tMax
         eng.Throttle  = throttleCmd;  % write the actuator
         eng.Direction = gimbalCmd;
 
-        sim.step(dt, 1, 1);           % advance ONE substep
+        sim.step(dt);                 % advance ONE substep
         t = t + dt;
     end
     % per-frame logging / HUD update here
@@ -402,9 +402,9 @@ end
 delete(sim);
 ```
 
-`sim.step` renders on its own here too — no `drawnow`/`pause(0)` belongs in this loop
-unless you draw your own overlay; keeping the figure clickable is already the default
-`RedrawMode`'s job. See **phx-scene-basics**.
+`sim.step` renders on its own here too — no `drawnow`/`pause(0)` belongs in this loop, not
+even for your own overlay (the next redraw shows it); keeping the figure clickable and
+thinning the frames is already the default `RedrawMode`'s job. See **phx-scene-basics**.
 
 A controlled vehicle that momentarily hovers near-still keeps responding to thrust
 because bodies never fall asleep; see **phx-engine-gotchas**.

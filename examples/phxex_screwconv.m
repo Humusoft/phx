@@ -53,7 +53,7 @@ function phxex_screwconv(showGraphs)
 
     % Simulation; contact tolerances for the thin screw flight
     sim = phx.Simulation("EngineSettings", phx.engine.Settings("LengthScale", 0.1));
-    sim.step(5, 1500, 5);
+    sim.step(5, 1500);
     delete(sim);
 
     % Plot results

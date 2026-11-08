@@ -20,6 +20,6 @@ function phxex_softball
         "Mass", 1, "Compliance", 1e-3, "Pressure", 15, "Iterations", 10);
 
     sim = phx.Simulation;
-    sim.step(4, 400, 1);
+    sim.step(4, 400);
 
 end

@@ -76,7 +76,7 @@ function phxex_magnets(nBalls, annealTime, seed)
     subSteps = 10;
 
     % Phase 1 - drop
-    sim.step(1, 200, 20);
+    sim.step(1, 200);
 
     % Phase 2 - annealing with random forces and torques; the bond count
     % and the head-to-tail alignment are recorded as the system cools
@@ -91,7 +91,7 @@ function phxex_magnets(nBalls, annealTime, seed)
             balls(i).applyForce(fThermal*T*dir/norm(dir), [0 0 0], false);
             balls(i).applyTorque(tThermal*T*randn(1, 3), false);
         end
-        sim.step(dt*subSteps, subSteps, subSteps);
+        sim.step(dt*subSteps, subSteps);
         t = t + dt*subSteps;
         frame = frame + 1;
 
@@ -109,7 +109,7 @@ function phxex_magnets(nBalls, annealTime, seed)
 
     % Phase 3 - cold settle
     for k = 1:50                            % at most 5 s
-        sim.step(0.1, 20, 20);
+        sim.step(0.1, 20);
         vMax = max(vecnorm(vertcat(balls.LinearVelocity), 2, 2));
         viewer.displayText(sprintf("Settling...   max speed: %.2f", vMax));
         if vMax < 0.05

@@ -23,7 +23,7 @@ function phxex_trainwheel
     
     % Create wheel shape by revolving profile around y-axis
     halfProfile = [-1.25 0; -1.2 0.6; -0.8 0.8; -0.7 1; -0.6 1; -0.6 0.2];
-    wheelShape = phx.shape.Revolution("Axis", "y", "Profile", [halfProfile; flipud(abs(halfProfile))], "Envelope", "concave", "Style", "flat", "Segments", 180);
+    wheelShape = phx.shape.Revolution("Axis", "y", "Profile", [halfProfile; flipud(abs(halfProfile))], "Envelope", "cones", "Style", "flat");
     
     % Create dynamic wheel body with mass and inertia
     wheel = phx.Body(ax, "Position", [14 0.05 1.5], "Shape", wheelShape, "Friction", 1);
@@ -35,7 +35,7 @@ function phxex_trainwheel
     xlim([-15 15]); ylim([-3 3]); zlim([-1 3]);
     subplot(3, 1, 3);
     ln = plot(NaN, NaN, "Color", wheel.Color);
-    xlim([0 20]); ylim([-0.2 0.2]);
+    xlim([0 16]); ylim([-0.2 0.2]);
     xlabel("Time (s)"); ylabel("Y (m)");
     title("Lateral wheel movement")
     grid on;
@@ -45,8 +45,8 @@ function phxex_trainwheel
     sim = phx.Simulation(ax, "EngineSettings", opt);
 
     % Run the simulation, record lateral wheel position each step
-    for i = 1:200
-        sim.step(0.1, 10, 10);
+    for i = 1:160
+        sim.step(0.1, 10);
         ln.XData(end + 1) = sim.Time;
         ln.YData(end + 1) = wheel.Position(2);
     end

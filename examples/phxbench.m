@@ -30,7 +30,7 @@ function phxbench(group)
     if g1, phxex_gravity(100, 128, false); end
     if g3, phxex_grip; end
     if g3, phxex_gyrostab; end
-    if g1, phxex_charges(50); end
+    if g1, phxex_charges; end
     if g2, phxex_joints(false); end
     if g3, phxex_maglev; end
     if g2, phxex_multisim; end

@@ -46,14 +46,14 @@ function phxex_isolation
     logger = phx.Logger([ground roofA roofB], "Frequency", 100, "Parameters", "Position");
 
     % Simulation
-    sim = phx.Simulation(ax);
+    sim = phx.Simulation(ax, "PacingRate", 1);
 
     for k = 1:round(tShake/dt)
         tk  = k*dt;
         amp = ampMax*min(1, tk/tRamp);
         ground.Position = [amp*sin(2*pi*freq*tk) 0 -0.25];
 
-        sim.step(dt, 1, 1);
+        sim.step(dt, 1);
     end
 
     delete(sim);

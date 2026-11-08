@@ -96,7 +96,7 @@ function phxex_stairfall(pushSpeed, duration)
     subSteps = 8;
     calm = 0;
     while sim.Time < duration
-        sim.step(frame, subSteps, 4);
+        sim.step(frame, subSteps);
 
         % Stop once the whole body has come to rest
         vmax = max(vecnorm(vertcat(human.LinearVelocity), 2, 2));

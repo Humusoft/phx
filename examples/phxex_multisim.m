@@ -38,8 +38,8 @@ function phxex_multisim
 
     % Run the simulation for 100 steps
     for i = 1:100
-        sim1.step(0.01); % just compute
-        sim2.step(0.01, 1, 1); % compute and redraw
+        sim1.step(0.01, 1, 0); % compute and update its graphics, no redraw of its own
+        sim2.step(0.01); % compute and redraw
         L.YData(i) = M.Distance;
     end
 

@@ -73,7 +73,7 @@ clf; view(3); axis equal; grid on; camlight headlight;   <span class="cmt">% sce
 phx.Body(...);                                           <span class="cmt">% bodies</span>
 phx.Body(...);
 sim = phx.Simulation;                                    <span class="cmt">% engine</span>
-sim.step(interval, substeps, redrawStep);                <span class="cmt">% run</span>
+sim.step(interval, substeps);                            <span class="cmt">% run</span>
 delete(sim);                                             <span class="cmt">% cleanup</span></pre>
 
 <h2 class="phx-h2">Stepping &mdash; the step method</h2>
@@ -84,19 +84,30 @@ delete(sim);                                             <span class="cmt">% cle
 <li><b>interval</b> &mdash; how many seconds to simulate,</li>
 <li><b>substeps</b> &mdash; into how many sub-steps the interval is split (computation
     granularity),</li>
-<li><b>redrawStep</b> &mdash; how often the view is redrawn (1 = every step).</li>
+<li><b>redrawStep</b> &mdash; optional: on which sub-steps a redraw is requested (default 1 = every
+    one), 0 for no redraw during the step, -1 for no graphics at all.</li>
 </ul>
 </div>
 
-<p>While <i>redrawStep</i> says how <i>often</i> the view is redrawn, the
-<a href="phx.Simulation.html#redrawmode">RedrawMode</a> property says <i>how</i>. The default
-<code class="phx-inline">"interactive"</code> keeps the figure alive during the run &mdash; the scene
-can be orbited, zoomed and picked while it is being simulated. Switch to
-<code class="phx-inline">"performance"</code> when nobody is going to touch the window and the run
-should be as fast as possible (it saves roughly 20&ndash;35&nbsp;% of the time of a redraw-bound
-scene):</p>
+<p>How often the view is actually redrawn is decided by the
+<a href="phx.Simulation.html#redrawmode">RedrawMode</a> property. The default
+<code class="phx-inline">"adaptive"</code> redraws as often as the screen and the cost of drawing
+allow, at most once per display frame, and skips the rest; the scene stays alive during the run, it
+can be orbited, zoomed and picked while it is being simulated. Usually there is nothing to set:</p>
 
-<pre class="phx-code">sim = phx.Simulation(ax, <span class="str">"RedrawMode"</span>, <span class="str">"performance"</span>);</pre>
+<pre class="phx-code">sim = phx.Simulation;
+sim.step(5, 1000);            <span class="cmt">% 5 s in 5 ms substeps, drawn as often as it pays off</span></pre>
+
+<p>Two properties tune the picture. <code class="phx-inline">PacingRate</code> limits the speed of the
+run, <code class="phx-inline">1</code> keeps it at most in real time. <code class="phx-inline">FrameSpacing</code>
+sets how much simulation time may pass between two frames of a fast run (default 1/20&nbsp;s); raise
+it for long time scales. When every frame matters, as in a recorded video, use
+<code class="phx-inline">"full"</code>; for timing measurements with a fixed number of frames, use
+<code class="phx-inline">"performance"</code>; both redraw exactly on the sub-steps asked for by
+<i>redrawStep</i>:</p>
+
+<pre class="phx-code">sim = phx.Simulation(ax, <span class="str">"RedrawMode"</span>, <span class="str">"performance"</span>);
+sim.step(5, 1000, 10);        <span class="cmt">% a frame on every 10th substep</span></pre>
 
 <div class="phx-note">
 <span class="lbl">Note.</span> A smaller step (more <i>substeps</i>) = a more stable but slower

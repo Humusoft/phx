@@ -53,7 +53,7 @@ phx.Body(ax, "Type", "static");              % a default ground/box, immovable
 phx.Body(ax, "Position", [0.6 -0.5 2]);      % a default dynamic body up in the air
 
 sim = phx.Simulation(ax);                    % collects the objects in those axes
-sim.step(1, 100, 1);                         % advance 1 s in 100 substeps, redraw each
+sim.step(1, 100);                            % advance 1 s in 100 substeps
 delete(sim);                                 % tear down engine counterparts
 ```
 
@@ -76,7 +76,7 @@ phx.Body("Type", "static");
 phx.Body("Position", [0.6 -0.5 2]);
 
 sim = phx.Simulation;
-sim.step(1, 100, 1);
+sim.step(1, 100);
 delete(sim);
 ```
 
@@ -529,7 +529,7 @@ sim = phx.Simulation(bodies);         % a Body array / cell array (children auto
 sim = phx.Simulation("scene.mat");    % bodies saved in a MAT file (see Saving & loading)
 
 sim.Gravity = [0 0 -9.81];            % default; settable
-sim.step(interval, substeps, redrawStep);
+sim.step(interval, substeps);
 sim.addObjects(moreBodies);           % rebuilds pipelines
 delete(sim);
 ```
@@ -537,48 +537,61 @@ delete(sim);
 `step(interval, substeps, redrawStep)`:
 - `interval` — seconds of simulated time advanced by this call.
 - `substeps` — number of physics substeps; the engine timestep is `dt = interval/substeps`.
-- `redrawStep` — redraw every Nth substep (use `1` for smooth animation, a larger
-  number to skip frames and run faster).
+- `redrawStep` — optional, **usually left out**. Default `1` = a redraw may be requested on
+  every substep; `0` = no redraw during the step (the graphics are only brought up to date
+  at its end); `-1` = headless, the graphics are not touched at all.
 
 Run it repeatedly to interleave control logic between steps (read body state, set an
 actuator, step again) — see the **phx-constraints-forces** skill for the control-loop
 pattern. Keep `dt` small (≤ 5 ms) for tight constraint networks or they go unstable.
 
-`sim.RedrawMode` decides *how* each of those redraws reaches the figure (`redrawStep`
-decides *how often*):
-- `"interactive"` — the default (`pause(0)`). The figure stays live during the run: the
-  user can orbit/pan/zoom the scene, select and drag bodies, and press the viewer's keys
-  or your app's buttons while the simulation is running. Leave it alone unless you have a
-  reason not to.
-- `"performance"` — the fastest (an incremental graphics update that doesn't service the
-  callback queue, so the window doesn't react while a step runs). Worth ~20–35 % of the
-  wall-clock time of a redraw-bound scene; set it for long runs nobody will touch and for
-  anything that reports a timing number.
-- `"full"` — smoothest and most expensive (`drawnow`); rarely needed over the default.
+`sim.RedrawMode` decides how — and in the default mode also how often — the scene is
+redrawn:
+- `"adaptive"` — the default. Redraws as often as the screen and the cost of a redraw
+  allow (at most once per display frame, drawing never takes more than about half the
+  run) and skips the rest, so frame-thinning by hand is unnecessary: **don't pass a
+  `redrawStep` > 1 and don't throttle with `mod(k, N)`**. The figure stays live during the
+  run (orbit/pan/zoom, select and drag bodies, the viewer's keys and app buttons work).
+  While the simulation runs ahead of real time, a frame is still drawn at least every
+  `sim.FrameSpacing` seconds of *simulation* time (default 1/20 s), so a light scene is
+  seen moving. For long time scales (orbits, thousands of simulated seconds) raise it,
+  e.g. `"FrameSpacing", 1` for one frame per simulated second, or the run spends its time
+  drawing.
+- `"full"` — every requested redraw is drawn and waited for (`drawnow`); the slowest. Use it
+  when every frame matters — recording a video with `phx.Camera`, frame-by-frame figures.
+- `"performance"` — every requested redraw is sent without waiting and without servicing
+  callbacks (the window doesn't react while a step runs); the lowest and most predictable
+  cost per frame. Use it for benchmarks and timing measurements, with an explicit
+  `redrawStep` (e.g. `sim.step(5, 1000, 10)` = a frame every 10th substep).
 - `"none"` — no screen update at all; the graphics objects are still updated, so the
-  figure catches up once MATLAB goes idle. **Not a headless shortcut** — the redraw
-  pipeline keeps running, so a headless run wants `redrawStep = -1` (measured several
-  times cheaper per substep on a 200-body scene), which also makes `RedrawMode` moot.
+  figure catches up once MATLAB goes idle. **Not a headless shortcut** — the graphics are
+  still brought up to date on every requested redraw, so a headless run wants
+  `redrawStep = -1` (measured several times cheaper per substep on a 200-body scene).
 
 ```matlab
-sim = phx.Simulation(ax, "RedrawMode", "performance");   % nobody will touch the window
+sim = phx.Simulation(ax, "RedrawMode", "performance");   % a timing measurement
+sim.step(5, 1000, 10);                                    % fixed: a frame every 10th substep
 ```
+
+The simulation itself — and so every result — is the same in all modes; only the drawing
+differs.
 
 Because the default services callbacks, an animated `step` is a **re-entrancy point**: a
 button callback, key press or timer can fire in the middle of it. Don't `delete` the
 simulation or its bodies from such a callback — set a flag and act on it between steps.
 
-`step` already renders when `redrawStep >= 0`, so **don't add `drawnow` or `pause(0)` to
+`step` already renders when `redrawStep > 0`, so **don't add `drawnow` or `pause(0)` to
 the stepping loop** — the animation shows up without them, and keeping the figure
-responsive is `RedrawMode`'s job, not an extra flush per substep. Add a single `drawnow`
-in the *outer* loop iteration only when you draw your own overlay next to the scene
-(`text`, `plot`, `viewer.displayText`), which the scene's own redraw doesn't cover.
+responsive is `RedrawMode`'s job. Your own overlays next to the scene (`text`, `plot`,
+`viewer.displayText`) updated between steps reach the screen with the next redraw; a
+single `drawnow` is needed only after the last `step` when the code goes on computing.
 
 `sim.PacingRate` caps the speed of the run: `1` = at most real time, `0.5` = half speed,
-`Inf` (the default) = as fast as the computer allows. The wait happens at each redraw and
-at the end of each `step` (a `redrawStep = -1` call waits only at its end); a scene that
-falls behind just runs as fast as it can and never speeds up to catch up. The wait is a
-`pause`, so even under `"performance"` the window reacts while it waits.
+`Inf` (the default) = as fast as the computer allows. The wait happens at each requested
+redraw and at the end of each `step` (a `redrawStep` of 0 or -1 waits only at its end);
+delays up to 0.1 s are made up, a scene that falls further behind just runs as fast as it
+can and never speeds up to catch up. The wait is a `pause`, so even under
+`"performance"` the window reacts while it waits.
 **Don't set it on your own.** When a simple scene — a falling ball, a pendulum, an
 educational demo — will be over faster than the eye can follow, offer it to the user as an
 option in one line of your reply (e.g. "it runs about 10x faster than real time; add

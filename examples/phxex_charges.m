@@ -1,14 +1,10 @@
-function phxex_charges(drawSteps)
+function phxex_charges
 % PHXEX_CHARGES Charged cubes attracting and repelling in a monopole field
 %
 % Four cubes carry a positive or negative charge and interact through a single
 % phx.Monopole, whose force field is visualised by an arrow grid.
 
 %   Copyright 2026 HUMUSOFT s.r.o.
-
-    arguments
-        drawSteps (1, 1) double = 10
-    end
 
     % Figure setup
     [~, ax] = phx.extra.Viewer("clear", "DefaultCameraPosition", [1, 0, 100], "Texture", "Checker"); % Set camera position and view mode
@@ -32,8 +28,8 @@ function phxex_charges(drawSteps)
         "VectorLength", 6, "VectorSegments", 6, "Color", 0.5);
     
     % Simulation
-    sim = phx.Simulation; % Create simulation based on current scene
-    sim.step(60, 6000, drawSteps); % Step the simulation
+    sim = phx.Simulation("FrameSpacing", 0.1); % Create simulation based on current scene
+    sim.step(60, 6000); % Step the simulation
     delete(sim); % Clean up the simulation object
 
 end

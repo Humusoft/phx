@@ -48,8 +48,8 @@ function phxex_gravity(simTime, particleCount, showGraphs)
     phx.Monopole(planets, "Attractivity", 6.67430e-11, "Charge", [planets.Mass], "Visible", false);
 
     % Create and run the simulation
-    sim = phx.Simulation(planets, "Gravity", 0);
-    sim.step(simTime, simTime*10, 10); % Step through the simulation
+    sim = phx.Simulation(planets, "Gravity", 0, "FrameSpacing", 1);
+    sim.step(simTime, simTime*10); % Step through the simulation
     delete(sim);
 
     % View logged data

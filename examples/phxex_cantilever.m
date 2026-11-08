@@ -38,7 +38,7 @@ function phxex_cantilever
     tip = abs(V(:, 1) - max(V(:, 1))) < 1e-9;
     lowest = 0;
     while sim.Time < 4
-        sim.step(0.02, 4, 4);
+        sim.step(0.02, 4);
         X = beam.CurrentVertices;
         sag = 1 - mean(X(tip, 3));
         lowest = max(lowest, sag);

@@ -156,7 +156,7 @@ function phxex_seaplate(duration, maxAmplitude, balance)
     liftOff = NaN;
     dropped = NaN;
     while sim.Time < duration
-        sim.step(dt*subSteps, subSteps, subSteps);
+        sim.step(dt*subSteps, subSteps);
         t = sim.Time;
 
         e = onPlate.PositionInA;

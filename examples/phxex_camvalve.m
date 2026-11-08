@@ -30,7 +30,7 @@ function phxex_camvalve
 
     % --- Run schedule ---------------------------------------------------
     dt       = 1.0e-4;           % physics timestep (s)
-    subFrame = 10;               % substeps between redraws
+    subFrame = 10;               % substeps between log samples
     tSettle  = 0.01;             % seat the valve on the cam
     rpmCal   = 240;              % calibration speed (low, follower stays seated)
     rpmLo    = 1600;             % ramp start
@@ -52,7 +52,7 @@ function phxex_camvalve
     capTop = @() valve.Position(3) + Lvalve;   % tappet-face height (m)
 
     % --- Settle: hold the cam nose up, let the spring seat the follower --
-    sim.step(tSettle, round(tSettle/dt), subFrame);
+    sim.step(tSettle, round(tSettle/dt));
 
     % --- Calibration: one slow revolution captures the true lift profile -
     nbins = 720;
@@ -64,7 +64,7 @@ function phxex_camvalve
     for i = 1:steps
         theta = theta + wCal*dt;
         cam.EulerAngles = [theta 0 0];         % spin about world X (the cam axis)
-        sim.step(dt, 1, mod(i, subFrame*2) == 0);
+        sim.step(dt);
         b = mod(floor(mod(theta, 2*pi)/(2*pi)*nbins), nbins) + 1;
         Lref(b) = capTop();
     end
@@ -82,7 +82,7 @@ function phxex_camvalve
         w = 2*pi*rpm/60;
         theta = theta + w*dt;
         cam.EulerAngles = [theta 0 0];         % spin about world X (the cam axis)
-        sim.step(dt, 1, mod(i, subFrame) == 0);
+        sim.step(dt);
         t = t + dt;
 
         if mod(i, subFrame) == 0

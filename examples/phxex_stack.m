@@ -65,7 +65,7 @@ function phxex_stack(n, mu, tiltRate)
     sim = phx.Simulation;
 
     % Phase 1 - settle under gravity so contacts are properly seated
-    sim.step(0.5, 25, 1);
+    sim.step(0.5, 25);
 
     % Phase 2 - progressively tilt the pallet and watch the stack react
     dt = 0.02;                       % time step
@@ -79,7 +79,7 @@ function phxex_stack(n, mu, tiltRate)
         % Drive the kinematic pallet orientation; boxes follow only via contact
         pallet.EulerAngles = [tiltRad 0 0];
 
-        sim.step(dt, 5, 1);
+        sim.step(dt, 5);
 
         % Detect the onset of collapse from the measured top-box drift
         if isnan(collapseAngle) && abs(drift.Distance) > driftThreshold

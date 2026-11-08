@@ -66,10 +66,15 @@ char/string is treated as a MAT file to load; a struct is scanned for its <code 
 <tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
 <tr><td class="name">Gravity</td><td class="dflt">[0 0 -9.81]</td>
 <td>Global gravitational acceleration applied to the world, <span class="phx-unit">m/s&sup2;</span>.</td></tr>
-<tr><td class="name">RedrawMode</td><td class="dflt">"interactive"</td>
-<td>How the figure is refreshed when the view is redrawn: <code class="phx-inline">"full"</code>,
-<code class="phx-inline">"interactive"</code>, <code class="phx-inline">"performance"</code> or
-<code class="phx-inline">"none"</code>. See <a href="#redrawmode">Redraw modes</a> below.</td></tr>
+<tr><td class="name">RedrawMode</td><td class="dflt">"adaptive"</td>
+<td>How and how often the figure is refreshed during <code class="phx-inline">step</code>:
+<code class="phx-inline">"adaptive"</code>, <code class="phx-inline">"full"</code>,
+<code class="phx-inline">"performance"</code> or <code class="phx-inline">"none"</code>. See
+<a href="#redrawmode">Redraw modes</a> below.</td></tr>
+<tr><td class="name">FrameSpacing</td><td class="dflt">1/20</td>
+<td>Longest stretch of simulation time without a frame in the adaptive redraw mode, while the
+simulation runs ahead of real time, <span class="phx-unit">s</span>. Raise it for long time scales;
+<code class="phx-inline">Inf</code> turns the rule off. See <a href="#redrawmode">Redraw modes</a>.</td></tr>
 <tr><td class="name">PacingRate</td><td class="dflt">Inf</td>
 <td>Maximum ratio of simulation time to real time: <code class="phx-inline">1</code> runs at most in
 real time, <code class="phx-inline">0.5</code> at half speed, <code class="phx-inline">Inf</code> as
@@ -89,75 +94,83 @@ fast as possible. See <a href="#pacing">Pacing</a> below.</td></tr>
 <code class="phx-inline">Name</code> and <code class="phx-inline">UserData</code>.</p>
 
 <h3 class="phx-h3" id="redrawmode">Redraw modes</h3>
-<p><code class="phx-inline">RedrawMode</code> controls how the figure is refreshed on those substeps
-where <code class="phx-inline">step</code> redraws the view. It does not change how often the view is
-redrawn &mdash; that is set by the <code class="phx-inline">redrawStep</code> argument of
-<code class="phx-inline">step</code> &mdash; only the kind of update that is performed.</p>
-
-<p>The default is <code class="phx-inline">"interactive"</code>, so that a running scene stays a window
-you can work with rather than a picture that merely updates. It costs roughly 20&ndash;35&nbsp;% of the
-wall-clock time of <code class="phx-inline">"performance"</code> in a redraw-bound scene; set
-<code class="phx-inline">"performance"</code> explicitly when that matters. Headless runs
-(<code class="phx-inline">redrawStep</code> of <code class="phx-inline">-1</code>) never redraw, so this
-property does not affect them at all.</p>
+<p><code class="phx-inline">RedrawMode</code> controls how the figure is refreshed during
+<code class="phx-inline">step</code> and, in the adaptive mode, also how often. The other modes redraw
+on every substep that the <code class="phx-inline">redrawStep</code> argument of
+<code class="phx-inline">step</code> asks for. Only the drawing changes with the mode; the simulation
+itself, and so its results, are the same in all of them.</p>
 
 <table class="phx-tbl">
-<tr><th>Value</th><th>Update</th><th>Description</th></tr>
-<tr><td class="name">"full"</td><td class="type">drawnow</td>
-<td>Smoothest rendering, at the highest cost. The callback queue is flushed, so figure callbacks,
-timers and UI interaction are serviced during the simulation.</td></tr>
-<tr><td class="name">"interactive"</td><td class="type">pause(0)</td>
-<td>Default. Slightly slower than <code class="phx-inline">"performance"</code>, but callbacks are
-serviced, so the figure stays live while the simulation runs: the scene can be orbited, zoomed and
-picked, and the buttons of an app or of <a href="phx.extra.Viewer.html">phx.extra.Viewer</a> keep
-responding.</td></tr>
-<tr><td class="name">"performance"</td><td class="type">incremental update</td>
-<td>The fastest rendering: only the changed graphics are pushed to the screen. The update does not
-service the callback queue, so the figure does not react to the mouse or the keyboard while a step is
-running. Choose it for long runs that are only watched, and for timing measurements.</td></tr>
+<tr><th>Value</th><th>Frames</th><th>Description</th></tr>
+<tr><td class="name">"adaptive"</td><td class="type">as the renderer allows</td>
+<td>Default. A requested redraw is skipped when it would come sooner than one display frame
+(1/60&nbsp;s) after the previous one, or sooner than twice the time the previous redraw took, so the
+drawing never takes more than about half of the run. While the simulation runs ahead of real time, a
+frame is still drawn at least every <code class="phx-inline">FrameSpacing</code> seconds of simulation
+time, so a light scene is seen moving instead of jumping to its end. The graphics are brought up to
+date at the end of every <code class="phx-inline">step</code>, and UI callbacks are serviced after each
+redraw, so the scene can be orbited, zoomed and picked and the buttons of an app or of
+<a href="phx.extra.Viewer.html">phx.extra.Viewer</a> keep responding.</td></tr>
+<tr><td class="name">"full"</td><td class="type">every redrawStep</td>
+<td>Every requested redraw is drawn with <code class="phx-inline">drawnow</code>, which waits until
+the figure shows it, and callbacks are serviced. The slowest mode; choose it when every frame matters,
+for example when recording a video with <a href="phx.Camera.html">phx.Camera</a>.</td></tr>
+<tr><td class="name">"performance"</td><td class="type">every redrawStep</td>
+<td>Every requested redraw is sent to the screen without waiting and without servicing the callback
+queue, so the figure does not react to the mouse or the keyboard while a step is running. The cost
+of drawing is the lowest per frame and the most predictable, which suits benchmarks and timing
+measurements.</td></tr>
 <tr><td class="name">"none"</td><td class="type">&mdash;</td>
 <td>No screen update at all. The graphics objects themselves are still updated, so the figure catches
 up once MATLAB becomes idle again.</td></tr>
 </table>
 
+<p>A simulation that is much faster than real time, such as an orbit followed over thousands of
+seconds, would draw more frames than it needs with the default <code class="phx-inline">FrameSpacing</code>;
+set it to the time scale of the motion, for example
+<code class="phx-inline">phx.Simulation(bodies,"FrameSpacing",1)</code> for one frame per simulated
+second. To see a light scene in real time instead, set <a href="#pacing">PacingRate</a>.</p>
+
 <div class="phx-note">
 <span class="lbl">Note.</span> A redraw that services callbacks is a re-entrancy point: with
-<code class="phx-inline">"full"</code> or <code class="phx-inline">"interactive"</code>, user
+<code class="phx-inline">"adaptive"</code> or <code class="phx-inline">"full"</code>, user
 callbacks can run in the middle of <code class="phx-inline">step</code>. Do not delete the simulation
 or its bodies from such a callback. For runs that need no picture at all, suppress rendering in
 <code class="phx-inline">step</code> (<code class="phx-inline">redrawStep</code> of
 <code class="phx-inline">-1</code>) rather than setting <code class="phx-inline">RedrawMode</code> to
 <code class="phx-inline">"none"</code>: <code class="phx-inline">"none"</code> skips only the screen
-update, while the redraw pipeline keeps running &mdash; on a 200-body scene that is several times
-the cost of a genuinely headless step.</div>
+update, while the graphics are still brought up to date on every requested redraw &mdash; on a
+200-body scene that is several times the cost of a genuinely headless step.</div>
 
 <h3 class="phx-h3" id="pacing">Pacing</h3>
-<p>By default <code class="phx-inline">step</code> runs as fast as the computer allows, so a simple
-scene can be over before the eye follows it. <code class="phx-inline">PacingRate</code> sets an upper
-limit on the speed of the run instead: the simulation waits whenever it gets ahead of real time
-multiplied by <code class="phx-inline">PacingRate</code>.</p>
+<p>By default <code class="phx-inline">step</code> runs as fast as the computer allows.
+<code class="phx-inline">PacingRate</code> sets an upper limit on the speed of the run instead: the
+simulation waits whenever it gets ahead of real time multiplied by
+<code class="phx-inline">PacingRate</code>.</p>
 
 <pre class="phx-code">sim = phx.Simulation(ax, <span class="str">"PacingRate"</span>, 1);   <span class="cmt">% at most real time</span>
-sim.step(5, 500, 10);</pre>
+sim.step(5, 500);</pre>
 
-<p>The wait happens at each redraw and at the end of each <code class="phx-inline">step</code>, so the
-code between two calls of <code class="phx-inline">step</code> in a loop counts towards the real
-time as well. A single long <code class="phx-inline">step</code> that does not redraw
-(<code class="phx-inline">redrawStep</code> of <code class="phx-inline">-1</code>) runs at full speed and
-waits only at its end.</p>
+<p>The wait happens at each requested redraw (in the adaptive mode also at one that is skipped) and
+at the end of each <code class="phx-inline">step</code>, so the code between two calls of
+<code class="phx-inline">step</code> in a loop counts towards the real time as well. A single long
+<code class="phx-inline">step</code> that does not redraw (<code class="phx-inline">redrawStep</code>
+of <code class="phx-inline">0</code> or <code class="phx-inline">-1</code>) runs at full speed and waits
+only at its end.</p>
 
-<p>Pacing only slows a run down. A scene that cannot keep up runs as fast as it can, and after a slow
-moment (a heavy frame, a breakpoint, a pause between two calls) it continues from there at the set
-rate rather than speeding up to catch up. Setting <code class="phx-inline">PacingRate</code> starts the
-timing afresh.</p>
+<p>Pacing only slows a run down. A delay of up to 0.1&nbsp;s is made up by the following steps, so
+the short oversleeps of <code class="phx-inline">pause</code> do not add up. A scene that cannot keep
+up runs as fast as it can, and after a longer slow moment (a heavy frame, a breakpoint, a pause
+between two calls) it continues from there at the set rate rather than speeding up to catch up.
+Setting <code class="phx-inline">PacingRate</code> starts the timing afresh.</p>
 
 <div class="phx-note">
 <span class="lbl">Note.</span> The wait is done with <code class="phx-inline">pause</code>, which
 services the callback queue and refreshes the figure. With <code class="phx-inline">"performance"</code>
 or <code class="phx-inline">"none"</code> redraw modes the figure therefore reacts and updates during
-the waits. On Windows a single wait can last up to about 16&nbsp;ms longer than requested; the next
-wait makes up for it, so the rate does not drift. Pacing has no effect while
-<code class="phx-inline">pause</code> is turned off by <code class="phx-inline">pause("off")</code>.</div>
+the waits. On Windows a wait of a few milliseconds can last up to about 16&nbsp;ms. Pacing has no
+effect while <code class="phx-inline">pause</code> is turned off by
+<code class="phx-inline">pause("off")</code>.</div>
 
 <h2 class="phx-h2">Object Functions</h2>
 <table class="phx-tbl">
@@ -177,11 +190,14 @@ wait makes up for it, so the rate does not drift. Pacing has no effect while
 <div class="phx-desc">
 <p>Advances the simulation by <code class="phx-inline">interval</code> seconds. With
 <code class="phx-inline">substeps</code> the interval is divided into that many engine steps of size
-<code class="phx-inline">interval/substeps</code>; rendering is then performed only once, on the last
-substep. With <code class="phx-inline">redrawStep</code> the view is additionally redrawn every
-<code class="phx-inline">redrawStep</code>-th substep. Use a value of <code class="phx-inline">-1</code>
-to suppress rendering entirely (headless runs). Smaller substeps improve the stability of stiff
-constraint networks. The way each redraw is performed is set by the
+<code class="phx-inline">interval/substeps</code>; smaller substeps improve the stability of stiff
+constraint networks. <code class="phx-inline">redrawStep</code> (default
+<code class="phx-inline">1</code>) requests a redraw on every <code class="phx-inline">redrawStep</code>-th
+substep. The adaptive redraw mode treats any positive value alike and redraws as often as the
+renderer allows; the full and performance modes redraw exactly on the requested substeps. With
+<code class="phx-inline">0</code> the view is not redrawn, the graphics are only brought up to date at
+the end of the step; with <code class="phx-inline">-1</code> the graphics are not touched at all
+(headless runs). The way and frequency of redrawing are set by the
 <a href="#redrawmode">RedrawMode</a> property; the speed of the run can be limited by the
 <a href="#pacing">PacingRate</a> property.</p>
 </div>
@@ -219,7 +235,7 @@ phx.Body(<span class="str">"Position"</span>, [0.6 -0.5 2]);   <span class="cmt"
 phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>);             <span class="cmt">% ground</span>
 
 sim = phx.Simulation;                  <span class="cmt">% all bodies in the current axes</span>
-sim.step(1, 100, 1);                   <span class="cmt">% 1 s in 100 substeps, redraw each step</span></pre>
+sim.step(1, 100);                      <span class="cmt">% 1 s in 100 substeps</span></pre>
 
 <h4 class="phx-h4">Custom gravity and engine settings</h4>
 <pre class="phx-code"><span class="cmt">% Zero gravity; a large scene stepped on four threads</span>
@@ -229,13 +245,13 @@ sim.step(4, 800, -1);                  <span class="cmt">% run headless (no redr
 
 <h4 class="phx-h4">Add and delete objects between steps</h4>
 <pre class="phx-code">sim = phx.Simulation(boxes, <span class="str">"HideInvalid"</span>, true);
-sim.step(5, 500, 5);
+sim.step(5, 500);
 
 sim.addObjects(newBox);                <span class="cmt">% rebuilds pipelines</span>
-sim.step(10, 1000, 5);
+sim.step(10, 1000);
 
 delete(boxes(7));                      <span class="cmt">% also triggers a rebuild</span>
-sim.step(5, 500, 5);
+sim.step(5, 500);
 delete(sim);                           <span class="cmt">% tear down the engine world</span></pre>
 
 <div class="phx-seealso">

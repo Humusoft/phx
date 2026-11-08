@@ -39,15 +39,15 @@ function phxex_springs(showGraphs)
 
     % Simulation
     sim = phx.Simulation(boxes, "HideInvalid", true);
-    sim.step(5, 500, 5);
+    sim.step(5, 500);
 
     % Add new object to the simulation
     sim.addObjects(newBox);
-    sim.step(10, 1000, 5);
+    sim.step(10, 1000);
 
     % Delete one of the simulation objects
     delete(boxes(7));
-    sim.step(5, 500, 5);
+    sim.step(5, 500);
     delete(sim);
 
     % Display logged data

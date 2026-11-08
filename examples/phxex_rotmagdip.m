@@ -31,7 +31,7 @@ function phxex_rotmagdip
     for i = 1:300
         a = poles(end).EulerAngles(3)*180/pi;
         m.Charge = [sind(phases - a), 1]*1e3;
-        sim.step(0.1, 10, 10); % Step the simulation
+        sim.step(0.1); % Step the simulation
     end
     delete(sim); % Clean up the simulation object
 

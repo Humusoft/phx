@@ -38,7 +38,7 @@ function phxex_shapes
 
     % Create and run the simulation for 4 seconds with 400 steps
     sim = phx.Simulation;
-    sim.step(4, 400, 1);
+    sim.step(4, 400);
 
     % Clean up by deleting the simulation object
     delete(sim);

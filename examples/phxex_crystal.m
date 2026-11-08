@@ -77,7 +77,7 @@ function phxex_crystal(nBalls, annealTime, seed)
     subSteps = 10;
 
     % Phase 1 - drop and a short hot dwell
-    sim.step(1.5, 300, 30);
+    sim.step(1.5, 300);
 
     % Phase 2 - annealing: random thermal kicks with a linearly decreasing
     % amplitude; the order parameter is recorded as the system cools
@@ -91,7 +91,7 @@ function phxex_crystal(nBalls, annealTime, seed)
             dir = randn(1, 3).*[1 1 0.3];
             balls(i).applyForce(fThermal*T*dir/norm(dir), [0 0 0], false);
         end
-        sim.step(dt*subSteps, subSteps, subSteps);
+        sim.step(dt*subSteps, subSteps);
         t = t + dt*subSteps;
         frame = frame + 1;
 
@@ -108,7 +108,7 @@ function phxex_crystal(nBalls, annealTime, seed)
 
     % Phase 3 - cold settle
     for k = 1:50                            % at most 5 s
-        sim.step(0.1, 20, 20);
+        sim.step(0.1, 20);
         vMax = max(vecnorm(vertcat(balls.LinearVelocity), 2, 2));
         viewer.displayText(sprintf("Settling...   max speed: %.2f", vMax));
         if vMax < 0.05

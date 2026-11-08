@@ -99,7 +99,7 @@ function out = phxex_bowling(Options)
 
     % Stand the pins up again and refresh the view under the fan of paths
     resetScene(scene, L, mean(aims), 0, Options.Speed);
-    sim.step(0.05, 5, 1);
+    sim.step(0.05, 5);
 
     % --- Part 3: the release the map found, thrown for real --------------
     best = renderedThrow(sim, scene, L, ax, cmap, 0.435, 10.2, Options.Speed, ...
@@ -176,7 +176,7 @@ function scene = makeScene(ax, L)
               3*dx -3*dy; 3*dx -dy; 3*dx dy; 3*dx 3*dy];
 
     pins = phx.Body.empty;
-    shp = phx.shape.Revolution("Profile", prof, "Segments", 24, "Envelope", "convex", "Color", 1);
+    shp = phx.shape.Revolution("Profile", prof, "Segments", 24, "Envelope", "cones", "Color", 1);
     for k = 1:10
         pins(k) = phx.Body(ax, "Position", [L.xHead + layout(k, 1), layout(k, 2), cg + 0.002], ...
             "Shape", shp, "Friction", 0.08, "Restitution", 0.7, "Mass", L.pinM, "Inertia", [0.0095 0.0095 0.0018]);

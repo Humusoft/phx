@@ -103,9 +103,9 @@ function miss = launchMiss(speed, angle, targetX, targetH, showView)
     dt = 0.01;
     for k = 1:400
         if showView
-            sim.step(dt, 1, 1);
+            sim.step(dt);
         else
-            sim.step(dt, 1);            % no redraw
+            sim.step(dt, 1, -1);        % no redraw
         end
         d = norm(ball.Position - targetPos);
         miss = min(miss, d);

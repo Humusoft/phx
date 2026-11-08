@@ -84,7 +84,7 @@ function phxex_tackle(mCrate)
     while t < tEnd
         for s = 1:subSteps
             rope.Displacement = profile(t);
-            sim.step(dt, 1, 1);
+            sim.step(dt, 1);
             t = t + dt;
         end
 

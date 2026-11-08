@@ -63,7 +63,7 @@ function phxex_balance(Kp, Kd)
     sim = phx.Simulation;
 
     for k = 1:1500
-        sim.step(dt, 1, 1);
+        sim.step(dt, 1);
 
         if mod(k, 10) == 0
             viewer.displayText(sprintf("err = [% .2f % .2f] m   |   tilt = [% .2f % .2f] rad", ...

@@ -48,8 +48,8 @@ function phxex_soilparticles
 
     % Simulation; contact tolerances for stones of 78 mm
     opt = phx.engine.Settings("Threads", 8, "LengthScale", 0.1);
-    sim = phx.Simulation(ax, "EngineSettings", opt); % Initialize the simulation
-    sim.step(25.6, 2560, 10); % Run the simulation and draw each 10th step
+    sim = phx.Simulation(ax, "EngineSettings", opt, "FrameSpacing", 0.1); % Initialize the simulation
+    sim.step(25.6, 2560); % Run the simulation
     delete(sim); % Clean up the simulation object
 
 end

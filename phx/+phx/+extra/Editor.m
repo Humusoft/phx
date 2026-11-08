@@ -423,7 +423,7 @@ classdef Editor < handle
                 obj.stopPlay;
                 return
             end
-            obj.Simulation.step(0.03, 6);
+            obj.Simulation.step(0.03, 6, 0);
         end
 
         function pausePlay(obj)
@@ -438,7 +438,7 @@ classdef Editor < handle
                 obj.startPlay;
                 obj.pausePlay;
             end
-            obj.Simulation.step(0.03, 6);
+            obj.Simulation.step(0.03, 6, 0);
         end
 
         function stopPlay(obj)

@@ -182,14 +182,16 @@ drawn in, or to its axes.
 
 **Recording a video.** Set `RecordFile` (MPEG-4) and optionally `RecordFPS` (default
 30, frames per second of *simulation* time). Frames are grabbed on redraws, so the run
-must redraw (not `redrawStep = -1`) at least as often as the frame rate, otherwise you
-get one frame per redraw. Recording starts when the simulation is built; the file is
-finalized only when the camera itself is deleted (`delete(sim)` leaves it open):
+must redraw at least as often as the frame rate, otherwise you get one frame per redraw.
+The default `"adaptive"` redraw mode skips redraws by timing, so record with
+`RedrawMode = "full"` and an explicit `redrawStep`. Recording starts when the simulation
+is built; the file is finalized only when the camera itself is deleted (`delete(sim)`
+leaves it open):
 
 ```matlab
 rig = phx.Body("Type", "kinematic", "Position", [6 -6 3], "Visible", false, "Collisions", false);
 cam = phx.Camera(rig, ball, "TrackingLag", 0.2, "RecordFile", "drop.mp4");
-sim = phx.Simulation;
+sim = phx.Simulation("RedrawMode", "full");   % every requested frame, no skipping
 sim.step(5, 500, 2);          % redraw every 2nd of 100 substeps/s = 50 redraws/s >= 30 fps
 delete(cam);                  % closes drop.mp4
 ```
@@ -258,10 +260,10 @@ pans, middle drag orbits, scroll zooms, double click selects. Keys: F1 help, F2
 lighting mode, F3 view mode, F5 free-run, Home default view, PgUp/PgDn cycle views.
 
 All of that keeps working *while* `sim.step` runs, because `phx.Simulation` defaults to
-`RedrawMode = "interactive"` (it services UI callbacks). Two consequences: those callbacks
-fire in the middle of a step, so never delete the simulation from one; and if you set
-`RedrawMode` to `"performance"` for speed, the window goes dead for the duration of the
-run — mouse, keys and buttons included. See phx-scene-basics.
+`RedrawMode = "adaptive"` (it services UI callbacks after each redraw). Two consequences:
+those callbacks fire in the middle of a step, so never delete the simulation from one;
+and if you set `RedrawMode` to `"performance"` for a benchmark, the window goes dead for
+the duration of the run — mouse, keys and buttons included. See phx-scene-basics.
 
 **`Texture`.** The equirectangular background of the sky sphere (shown in `ViewMode`
 `"texture"`). Takes an image path *or* the name of a built-in texture bundled with the

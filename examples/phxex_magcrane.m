@@ -57,9 +57,9 @@ function phxex_magcrane(Options)
     % apex up towards the magnet
     rotorShape = phx.shape.Mesh("Source", resdir+"rotor.stl", ...
         "Scale", 0.14, "Envelope", "convex", "Density", 260, ...
-        "Color", [0.45 0.5 0.6], "Material", "metal", "Style", "flat");
-    zStand = 1.26;               % height of the rotor centre when it stands on the floor
-    hTop = 1.26;                 % from the rotor centre up to its top flank
+        "Color", [0.45 0.5 0.6], "Material", "metal", "Style", "flat", "Centered", false);
+    zStand = 1.3;               % height of the rotor centre when it stands on the floor
+    hTop = 1.3;                 % from the rotor centre up to its top flank
 
     % Figure setup
     figure(1);
@@ -147,7 +147,7 @@ function phxex_magcrane(Options)
         coil.VectorFieldCenter = magnet.Position - [0 0 0.3];
         coil.Visible = coil.Charge(1) > 0;
 
-        sim.step(dt*subSteps, subSteps, subSteps);
+        sim.step(dt*subSteps, subSteps);
         t = sim.Time;
         k = min(sum(t >= tEnd) + 1, numel(tSeg));
 

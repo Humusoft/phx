@@ -119,13 +119,13 @@ function phxex_sorter(nBalls, fieldStrength, seed)
             released = i;
             viewer.displayText(sprintf("Released: %d / %d", released, nBalls));
         end
-        sim.step(dt, 5, 5);
+        sim.step(dt, 5);
     end
 
     % Phase 2 - let the last balls land and everything settle
     settleTimeout = sim.Time + 10;
     while sim.Time < settleTimeout
-        sim.step(0.1, 10, 10);
+        sim.step(0.1, 10);
         vMax = max(vecnorm(vertcat(balls.LinearVelocity), 2, 2));
         viewer.displayText(sprintf("Settling...   max speed: %.2f", vMax));
         if vMax < 0.1

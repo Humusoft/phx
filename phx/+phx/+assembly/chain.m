@@ -50,7 +50,7 @@ function parts = chain(varargin)
 %       parts = phx.assembly.chain([0 0 0; 0.4 0 0; 0.8 0 0], ...
 %           "Anchor", "start", "Axis", [0 1 0]);
 %       sim = phx.Simulation(gca);
-%       sim.step(5, 2000, 5);
+%       sim.step(5, 2000);
 %
 %   See also phx.assembly.arena, phx.RevoluteJoint, phx.SphericalJoint,
 %   phx.Rope, phx.Body

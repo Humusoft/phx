@@ -42,14 +42,14 @@ function phxex_buggy(showGraphs)
     % wheels clear of the body
     sim = phx.Simulation("EngineSettings", phx.engine.Settings("LengthScale", 0.1));
     for i = 1:120
-        sim.step(0.05, 50, 50);
+        sim.step(0.05, 50);
         speed.Value = abs(buggy.wheelFR.AngularVelocity(2));
     end
     delete(sim);
 
     % Plot results
     if showGraphs
-        figure(2);
+        clf(figure(2));
         plot(log.Time, log.Data);
         title("Spring lengths");
         legend(get([log.Parents{:}], "Name"))

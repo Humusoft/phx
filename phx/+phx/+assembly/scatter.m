@@ -48,7 +48,7 @@ function bodies = scatter(varargin)
 %       rocks = phx.assembly.scatter({"Rock", "Radius", 0.4}, 30, ...
 %           "Region", [7 7 4], "Spacing", 0.8, "Position", [0 0 1]);
 %       sim = phx.Simulation(gca);
-%       sim.step(3, 600, 6);
+%       sim.step(3, 600);
 %
 %   See also phx.assembly.arena, phx.assembly.chain, phx.Body, rng
 

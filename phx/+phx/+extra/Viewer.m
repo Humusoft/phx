@@ -926,7 +926,7 @@ classdef Viewer < handle
 
         function freeRun(obj, ~, ~)
             stepSize = obj.FreeRunStep;
-            obj.FreerunSim.step(stepSize, round(stepSize*100));
+            obj.FreerunSim.step(stepSize, round(stepSize*100), 0);   % the timer redraws once MATLAB is idle
             obj.displayText(sprintf("▶ Free run: %0.2f", obj.FreerunSim.Time));
 
             dt = toc(obj.FreeRunPrevTime);

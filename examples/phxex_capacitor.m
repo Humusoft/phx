@@ -106,7 +106,7 @@ function phxex_capacitor(nBalls, rampTime, seed)
     sim = phx.Simulation(ax);
 
     % Phase 1 - let the balls land and clump with no field applied
-    sim.step(1.5, 300, 15);
+    sim.step(1.5, 300);
 
     % Phase 2 - ramp the plate charge from zero to full and hold it, then
     % reverse the polarity and let the layers swap sides
@@ -124,7 +124,7 @@ function phxex_capacitor(nBalls, rampTime, seed)
             pol = -1;
         end
         field.Charge = [qUnit*qPlate*level, cls*qBall]';
-        sim.step(0.05, 10, 10);
+        sim.step(0.05, 10);
         [meanX, share] = separation(balls, cls, pol);
         hist.t(end + 1) = sim.Time - tStart;
         hist.level(end + 1) = level;

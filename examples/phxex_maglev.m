@@ -105,7 +105,7 @@ function phxex_maglev(kp, kd)
     mono.Charge = [u0 -qBall]';
     tCrash = NaN;
     while sim.Time < tOn
-        sim.step(dt*subSteps, subSteps, 1);
+        sim.step(dt*subSteps, subSteps);
         if isnan(tCrash) && abs(gap.Distance - g0) > 0.4
             tCrash = sim.Time;
             viewer.displayText(sprintf("Earnshaw: unstable after %.2f s", tCrash));
@@ -148,7 +148,7 @@ function phxex_maglev(kp, kd)
                 end
             end
 
-            sim.step(dt, 1, 1);
+            sim.step(dt, 1);
         end
         viewer.displayText(sprintf("PD control:  gap %.3f m (setpoint %.2f)   coil %4.0f %%", ...
             gap.Distance, gRef, 100*u/u0));

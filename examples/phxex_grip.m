@@ -65,7 +65,7 @@ function phxex_grip(mu, squeeze)
     sim = phx.Simulation;
 
     % Phase 1 - let the object settle on the table
-    sim.step(0.4, 20, 1);
+    sim.step(0.4, 20);
 
     % Target inner-face position when closed: jaw faces overlap the object
     % faces by "squeeze", which sets how hard the object is clamped.
@@ -81,7 +81,7 @@ function phxex_grip(mu, squeeze)
         c = openCenter + (closedCenter - openCenter)*a;
         jawL.Position = [-c 0 objH/2];
         jawR.Position = [ c 0 objH/2];
-        sim.step(dt, 10, 1);
+        sim.step(dt, 10);
     end
 
     % Phase 3 - lift both jaws straight up, carrying the object by friction
@@ -91,14 +91,14 @@ function phxex_grip(mu, squeeze)
         z = objH/2 + liftH*(k/80);
         jawL.Position = [-closedCenter 0 z];
         jawR.Position = [ closedCenter 0 z];
-        sim.step(dt, 10, 1);
+        sim.step(dt, 10);
         viewer.displayText(sprintf("Phase: lift   |   jaw z = %.2f   obj z = %.2f", ...
             z, obj.Position(3)));
     end
 
     % Phase 4 - hold and see whether the object stays in the grip
     viewer.displayText("Phase: hold");
-    sim.step(0.6, 30, 1);
+    sim.step(0.6, 30);
     delete(sim);
 
     % Plot jaw vs object height to visualise any slip

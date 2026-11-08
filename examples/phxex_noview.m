@@ -22,7 +22,7 @@ function phxex_noview
 
     % Run the simulation for 5 seconds with 1000 time steps
     sim = phx.Simulation(simulatedBodies);
-    sim.step(5, 1000);
+    sim.step(5, 1000, -1);
     delete(sim);
 
     % Optional view of the model state after the simulation

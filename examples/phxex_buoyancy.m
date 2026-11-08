@@ -85,7 +85,7 @@ function phxex_buoyancy(duration, waves)
     subSteps = 4;
     dt = 0.01;
     while sim.Time < duration
-        sim.step(dt*subSteps, subSteps, subSteps);
+        sim.step(dt*subSteps, subSteps);
         viewer.displayText(sprintf("t = %4.1f s   crate z = %+.2f   anchor z = %+.2f", ...
             sim.Time, crate.Position(3), anchor.Position(3)));
     end

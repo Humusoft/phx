@@ -70,7 +70,7 @@ function phxex_droptest(dropH, stiffness, damping)
     sim = phx.Simulation;
     dt = 0.001;
     for k = 1:1200
-        sim.step(dt, 1, mod(k, 10));   % redraw every 10 steps
+        sim.step(dt);
         if mod(k, 25) == 0
             viewer.displayText(sprintf("t = %.2f s   |   shell z = %.2f   product z = %.2f", ...
                 sim.Time, shell.Position(3), product.Position(3)));

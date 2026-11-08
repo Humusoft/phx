@@ -111,7 +111,7 @@ function phxex_airbag(withAirbag)
     % Simulation - 2 ms steps for the impact
     sim = phx.Simulation(ax);
     while sim.Time < 3
-        sim.step(0.02, 10, 2);
+        sim.step(0.02, 10);
         viewer.displayText(sprintf("t = %4.2f s   %3.0f km/h", sim.Time, 3.6*sled.LinearVelocity(1)));
     end
     delete(sim);

@@ -60,7 +60,7 @@ function bricks = wall(varargin)
 %       ball = phx.Body("Shape", {"Sphere", "Diameter", 0.4, "Density", 4000}, ...
 %           "Position", [-2.5 0 0.6], "LinearVelocity", [10 0 1]);
 %       sim = phx.Simulation(gca);
-%       sim.step(2, 1000, 20);
+%       sim.step(2, 1000);
 %
 %   See also phx.assembly.arena, phx.assembly.scatter, phx.assembly.chain,
 %   phx.Body, phx.shape.Box

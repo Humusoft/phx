@@ -79,10 +79,10 @@ function phxex_drum(Options)
     % Ball positions every tenth of a second
     logger = phx.Logger(balls, "Parameters", "Position", "Frequency", 10);
 
-    sim = phx.Simulation([drum balls], "EngineSettings", phx.engine.Settings("Threads", 8));
-    sim.step(settle, settle/dt, 10);
+    sim = phx.Simulation([drum balls], "EngineSettings", phx.engine.Settings("Threads", 4), "FrameSpacing", 0.1);
+    sim.step(settle, settle/dt);
     nTurn = round(turning/dt);
-    sim.step(nTurn*dt, nTurn, 10);
+    sim.step(nTurn*dt, nTurn);
 
     % Mean orbit radius of every class from the start of the rotation on
     keep = logger.Time > settle - dt/2;

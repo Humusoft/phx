@@ -34,7 +34,7 @@ function phxex_slide
 
     % Simulation
     sim = phx.Simulation;
-    sim.step(15, 1500, 3);
+    sim.step(15, 1500);
     delete(sim);
 
 end

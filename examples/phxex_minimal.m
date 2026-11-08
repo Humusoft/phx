@@ -9,6 +9,6 @@ function phxex_minimal
     phx.Body("Position", [0.6 -0.5 2]);
 
     sim = phx.Simulation;
-    sim.step(1, 100, 1);
+    sim.step(1, 100);
 
 end

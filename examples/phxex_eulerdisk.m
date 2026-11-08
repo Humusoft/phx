@@ -104,7 +104,7 @@ function phxex_eulerdisk(duration, tilt, rollingResistance)
     subSteps = 20;
 
     while sim.Time < duration
-        sim.step(dt*subSteps, subSteps, subSteps);
+        sim.step(dt*subSteps, subSteps);
 
         % Done once every body lies flat and has stopped rattling
         pose = vertcat(bodies.Position);

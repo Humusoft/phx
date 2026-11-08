@@ -35,7 +35,7 @@ function phxex_raycast
     for t = 0:dt:duration
         cube.EulerAngles = [0 0 cubeRate*t];
         sphere.Transform = orbitPose(orbitRate*t, orbitRadius);
-        sim.step(dt, 1, 1);
+        sim.step(dt, 1);
         ln.YData = raycast.Distances;
     end
     delete(sim);

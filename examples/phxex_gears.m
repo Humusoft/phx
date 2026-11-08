@@ -44,7 +44,7 @@ function phxex_gears
 
     % Run the simulation for 500 steps
     for i = 1:500
-        sim.step(0.005, 1, 1);
+        sim.step(0.005, 1);
     end
     delete(sim); % Clean up the simulation object
 

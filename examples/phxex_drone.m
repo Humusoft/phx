@@ -77,7 +77,7 @@ function phxex_drone(wpScale)
     ball = phx.Body(ax, "Position", [xyBall, zBall], ...
         "Shape", {"Sphere", "Diameter", 0.36, "Density", 20, ...
         "Color", [0.7 0.2 0.5], "Texture", "xor", "TextureBlend", 0.5}, "Friction", 0.5, "Restitution", 1, ...
-        "RollingResistance", 0.01);
+        "RollingResistance", 0.01, "SpinRadius", 0.01);
 
     % The quadcopter frame; mass properties are set explicitly
     drone = phx.Body(ax, "Position", [0 0 0.36], ...
@@ -139,7 +139,7 @@ function phxex_drone(wpScale)
 
     log = struct("t", [], "p", [], "wp", [], "f", [], "pb", [], "agl", []);
     while sim.Time < tMax && (isnan(ctrl.UserData.tLand) || sim.Time < ctrl.UserData.tLand + 1.5)
-        sim.step(dt*subSteps, subSteps, 1);
+        sim.step(dt*subSteps, subSteps);
 
         log.t(end + 1) = sim.Time;
         log.p(:, end + 1) = drone.Position;

@@ -166,7 +166,7 @@ function phxex_kinova(sweepTime, Tmax, smooth)
     picked = 0;
     coupler = phx.FixedJoint.empty;
     while sim.Time < duration
-        sim.step(0.01, 10, 10);     % 1 ms substeps for the joint chain
+        sim.step(0.01, 10);     % 1 ms substeps for the joint chain
 
         if picked == 0 && sim.Time > hold(2) - 0.3
             [picked, coupler] = latch(sim, hand, Ttool, blade, paddle(3), grip);

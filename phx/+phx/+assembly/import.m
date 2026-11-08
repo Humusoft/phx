@@ -65,7 +65,7 @@ function [bodies, joints] = import(varargin)
 %       [bodies, joints] = phx.assembly.import("robot.urdf");
 %       bodies.base.Type = "static";
 %       sim = phx.Simulation(bodies);
-%       sim.step(1, 500, 5);
+%       sim.step(1, 500);
 %
 %   URDF to PHX mapping:
 %   - Every link becomes a phx.Body. The body frame is placed at the origin

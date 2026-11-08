@@ -41,8 +41,8 @@ function phxex_soil
     phx.Camera(ground, exc, "PointA", [-3, 6.6, 3]);
 
     % Simulation; contact tolerances for rocks of a few decimetres
-    sim = phx.Simulation("EngineSettings", phx.engine.Settings("LengthScale", 0.1)); % Initialize the simulation
-    sim.step(25.6, 2560, 10); % Run the simulation and draw each 10th step
+    sim = phx.Simulation("EngineSettings", phx.engine.Settings("LengthScale", 0.1), "FrameSpacing", 0.1); % Initialize the simulation
+    sim.step(25.6, 2560); % Run the simulation
     delete(sim); % Clean up the simulation object
 
     % Number of rocks in a zone

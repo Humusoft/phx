@@ -60,9 +60,8 @@ function phxex_antisway
         for s = 1:subSteps
             A.trolley.Position = [xDirect(t) 0 zTrolley];
             B.trolley.Position = [xShaped(t) 0 zTrolley];
-            redraw = mod(s, 5) == 0;
-            simA.step(dt, 1, redraw);
-            simB.step(dt, 1, redraw);
+            simA.step(dt);
+            simB.step(dt);
             t = t + dt;
         end
 

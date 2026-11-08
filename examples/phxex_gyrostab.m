@@ -103,7 +103,7 @@ function phxex_gyrostab(duration, spinRate, maxAmplitude)
     sim = phx.Simulation(ax);
 
     while sim.Time < duration
-        sim.step(dt*subSteps, subSteps, subSteps);
+        sim.step(dt*subSteps, subSteps);
         t = sim.Time;
         viewer.displayText(sprintf(...
             "t = %4.1f s   amplitude %.2f m   roll: bare %+5.1f deg / gyro %+5.1f deg", ...

@@ -165,7 +165,7 @@ function phxex_segway(Kp, Kd, push)
             viewer.displayText("Disturbance push!");
         end
 
-        sim.step(dt, 1, 1);
+        sim.step(dt, 1);
 
         if ~seen && min(range) < 8
             seen = true;
@@ -182,7 +182,7 @@ function phxex_segway(Kp, Kd, push)
         % Stop if the robot has fallen over
         if abs(pitch) > pi/3
             viewer.displayText("Crashed!");
-            sim.step(2, 200, 1);            % let it settle for the view
+            sim.step(2, 200);            % let it settle for the view
             break;
         end
     end

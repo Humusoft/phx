@@ -48,7 +48,7 @@ function phxex_terrain
 
     % Run the simulation for a specified duration and steps
     sim = phx.Simulation;
-    sim.step(5, 500, 5);
+    sim.step(5, 500);
     delete(sim);
 
 end

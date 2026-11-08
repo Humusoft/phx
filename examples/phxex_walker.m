@@ -101,7 +101,7 @@ function phxex_walker(freq, duty)
     sim = phx.Simulation;
     x0 = chassis.Position(1);
     for frame = 1:round(duration/dt)
-        sim.step(dt, 10, 10);       % 2 ms substeps, one redraw per frame
+        sim.step(dt, 10);       % 2 ms substeps
         travel = chassis.Position(1) - x0;
         viewer.displayText(sprintf("%4.1f s   %+.2f m   %+.2f m/s", ...
             sim.Time, travel, travel/sim.Time));
