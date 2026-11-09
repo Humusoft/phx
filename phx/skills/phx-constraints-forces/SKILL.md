@@ -53,7 +53,7 @@ Joint classes:
   otherwise set the frames in full via `TransformA/B` (4×4) or the dependent `PointA/B` +
   `EulerAnglesA/B` (z→y→x) views, so both frames coincide in *every* axis.
   **Motorized:** `TargetVelocity` (m/s) + `MaxForce` (N), or a plain force `AppliedForce` (N).
-  See `phxex_camvalve` (valve train), `phxex_vengine`, `phxex_joints`.
+  See `phxex_camvalve` (valve train), `phxex_vengine`, `phxex_cartpendulum`.
 - `phx.CylindricalJoint` — shaft in a sleeve; 2 DOF, translation along **and** rotation about
   `AxisA/B` (the joint frame's local Z). A prismatic and a revolute joint on one axis. Unlike
   the prismatic joint it leaves the rotation about the axis free, so `AxisA/B` alone fully

@@ -28,8 +28,7 @@ function catalog = exampleCatalog
     rows = [ ...
         entry("phxex_minimal",     "Basics and geometry",            3)
         entry("phxex_shapes",      "Basics and geometry",            8)
-        entry("phxex_joints",      "Basics and geometry",            5)
-        entry("phxex_springs",     "Basics and geometry",            4)
+        entry("phxex_cartpendulum", "Basics and geometry",           7)
         entry("phxex_gravity",     "Basics and geometry",            6)
         entry("phxex_slide",       "Basics and geometry",            5)
         entry("phxex_terrain",     "Basics and geometry",            8)

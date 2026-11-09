@@ -31,7 +31,6 @@ function phxbench(group)
     if g3, phxex_grip; end
     if g3, phxex_gyrostab; end
     if g1, phxex_charges; end
-    if g2, phxex_joints(false); end
     if g3, phxex_maglev; end
     if g2, phxex_multisim; end
     if g2, phxex_noview; end
@@ -42,11 +41,9 @@ function phxbench(group)
     if g2, phxex_shapes; end
     if g1, phxex_slide; end
     if g1, phxex_soil; end
-    if g1, phxex_springs(false); end
     if g3, phxex_stairfall; end
     if g3, phxex_tackle; end
     if g1, phxex_terrain; end
-    if g1, phxex_textures; end
     if g2, phxex_trainwheel; end
     if g3, phxex_vengine; end
     if g1, phxex_wankel(false); end
