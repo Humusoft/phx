@@ -1,8 +1,8 @@
 % PHX
 % Version 1.0.15 (R2026b) 19-Oct-2026
 %
-% PHX is an object-oriented physics toolbox for MATLAB, layered over the
-% Jolt Physics engine. Scenes are built from phx.* objects that draw into
+% PHX is an object-oriented physics toolbox for MATLAB, layered over a
+% physics engine. Scenes are built from phx.* objects that draw into
 % MATLAB axes, are stepped by a phx.Simulation, and can be driven from Simulink.
 %
 % Core

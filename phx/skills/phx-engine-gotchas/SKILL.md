@@ -2,7 +2,7 @@
 name: phx-engine-gotchas
 description: >
   Low-level PHX engine reference and pitfalls — the stringly-typed phx.engine.io
-  gateway (add/set/get/apply/remove/step) to the Jolt Physics engine,
+  gateway (add/set/get/apply/remove/step) to the physics engine,
   phx.engine.Settings, the phx:Component:mnemonic error-ID convention, the
   matlab.unittest suite, and known quirks (timestep stability, solver iterations).
   Use when debugging PHX behavior,
@@ -14,7 +14,7 @@ description: >
 ## phx.engine.io — the single gateway
 
 All physics goes through one stringly-typed MEX dispatcher in `phx/+phx/+engine/`, a
-gateway to the Jolt Physics engine (adapted for engineering use; its sources are not part
+gateway to the physics engine (adapted for engineering use; its sources are not part
 of the toolbox).
 The first arg is a **verb**, then a world handle and/or object handle, then a field
 name and payload. Verbs and field names are raw strings — **typos surface only at
