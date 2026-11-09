@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Units, Scale and Engine Settings</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; User Guide &rsaquo; Units, scale and engine settings</div>
+
+<h1 class="phx-title">Units, Scale and Engine Settings</h1>
+<p class="phx-purpose">Choosing the time step, matching the engine to the size of the parts, and running on several threads</p>
+
+<h2 class="phx-h2">Units</h2>
+<p>PHX works in SI units: metres, kilograms, seconds, newtons, radians. The <b>z</b> axis points up
+and gravity is <code class="phx-inline">[0 0 -9.81]</code>&nbsp;m/s&sup2; unless you set the
+<code class="phx-inline">Gravity</code> of the simulation. Model parts at their real size: a scene
+scaled up to make small parts easier to simulate also hides real problems, such as springs too soft
+for the loads they carry.</p>
+
+<h2 class="phx-h2">Time step</h2>
+<p>The physics engine advances the scene in fixed substeps,
+<code class="phx-inline">interval/substeps</code> of
+<a href="phx_ug_concepts.html">sim.step(interval, substeps)</a>. The substep is the most important
+setting for accuracy and stability: a step too long makes stacks creep, joints stretch and fast
+bodies pass through thin walls, and more solver iterations do not make up for it.</p>
+
+<table class="phx-tbl">
+<tr><th>Scene</th><th>Substep to start with</th></tr>
+<tr><td>Bodies of about a metre, loose contacts, vehicles</td><td>5&ndash;10&nbsp;ms</td></tr>
+<tr><td>Joint networks, stiff springs, stacks, mechanisms in contact</td><td>5&nbsp;ms or less</td></tr>
+<tr><td>Parts of a few centimetres, gears, ratchets</td><td>1&nbsp;ms or less</td></tr>
+</table>
+
+<p>Smaller parts need shorter steps: their motions are faster in proportion to their size. Treat
+the table as a starting point and check a result that matters by halving the substep: if the
+result changes, the step was too long.</p>
+
+<h2 class="phx-h2">Length scale and collision tolerances</h2>
+<p>The engine keeps small tolerances around every contact: shapes are slightly rounded
+(<code class="phx-inline">Margin</code>), resting bodies may sink into each other by a tiny depth
+(<code class="phx-inline">PenetrationSlop</code>), and contacts begin a little before bodies touch
+(<code class="phx-inline">SpeculativeDistance</code>). By default these suit parts of about a metre.
+For smaller or larger parts, set one value, the <code class="phx-inline">LengthScale</code> of
+<a href="phx.engine.Settings.html">phx.engine.Settings</a>: the typical size of the parts whose
+contacts matter, as an order of magnitude. The tolerances then follow from it.</p>
+
+<table class="phx-tbl">
+<tr><th>Parts</th><th>LengthScale</th><th>Example</th></tr>
+<tr><td>About a metre: furniture, machines, large boxes</td><td><code class="phx-inline">1</code> (default)</td><td><code>phxex_drum</code></td></tr>
+<tr><td>Decimetres: wheels of a small vehicle, bricks, gravel</td><td><code class="phx-inline">0.1</code></td><td><code>phxex_buggy</code>, <code>phxex_soilparticles</code></td></tr>
+<tr><td>Centimetres: small parts, dice, marbles</td><td><code class="phx-inline">0.01</code></td><td><code>phxex_bowlfeeder</code></td></tr>
+</table>
+
+<pre class="phx-code">opt = phx.engine.Settings(<span class="str">"LengthScale"</span>, 0.01);   <span class="cmt">% centimetre parts</span>
+sim = phx.Simulation(gca, <span class="str">"EngineSettings"</span>, opt);
+sim.step(2, 2000);                                   <span class="cmt">% and 1 ms substeps</span></pre>
+
+<p>When the parts differ much in size, take the smaller of those whose contacts matter. Too large
+a scale makes small parts float on rounded edges and slows them down with needless contacts; too
+small a scale lets fast bodies pass through each other. Any of the three tolerances can also be
+set directly, which overrides the value derived from the scale.</p>
+
+<h2 class="phx-h2">Solver iterations</h2>
+<p>Contacts and joints are solved iteratively in every substep.
+<code class="phx-inline">Iterations</code> (default 10) applies to everything,
+<code class="phx-inline">JointIterations</code> (default 50) to groups of bodies held together by
+joints, so that motors hold loads and chains stay stiff without the cost spreading to the rest of the
+scene. Raise <code class="phx-inline">Iterations</code> for tall stacks or heavy bodies resting on
+light ones; mass ratios beyond about 1:100 between touching bodies are hard for any iteration
+count. If more iterations do not help, shorten the substep instead.</p>
+
+<h2 class="phx-h2">Threads</h2>
+<p><code class="phx-inline">Threads</code> runs the step of the engine on several threads. The
+results do not depend on the number of threads: a run repeats bit for bit on one thread or on
+eight. Whether more threads pay off depends on the amount of work in a step:</p>
+
+<table class="phx-tbl">
+<tr><th>Scene</th><th>Threads</th></tr>
+<tr><td>Up to about a hundred bodies</td><td><code class="phx-inline">1</code> (default); more
+    threads only add overhead</td></tr>
+<tr><td>Hundreds to thousands of bodies, particles, mesh contacts</td><td>about
+    <code class="phx-inline">8</code>; typically 3&ndash;6 times faster</td></tr>
+<tr><td>A single soft or flexible body</td><td><code class="phx-inline">1</code>; its solver
+    gains little from threads</td></tr>
+</table>
+
+<p>More threads than physical cores, or than one group of cores of the processor shares a cache,
+usually make the step slower again; try a few counts on your computer. Only the engine runs on the
+threads: with thousands of moving bodies the MATLAB side of the step, which updates the
+<code class="phx-inline">phx.*</code> objects and the graphics, soon takes the larger part of the
+time.</p>
+
+<pre class="phx-code">opt = phx.engine.Settings(<span class="str">"Threads"</span>, 8);
+sim = phx.Simulation(gca, <span class="str">"EngineSettings"</span>, opt);</pre>
+
+<div class="phx-note">
+<span class="lbl">Settings take effect once.</span> The simulation applies its
+<code class="phx-inline">EngineSettings</code> when it creates the physics world. Changing them
+afterwards does not reach a running simulation; create a new one.
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.engine.Settings.html">phx.engine.Settings</a>,
+<a href="phx.Simulation.html">phx.Simulation</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_concepts.html">Core concepts</a>,
+<a href="phx_ug_deformables.html">Soft bodies, flexible bodies and particles</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox User Guide</div>
+
+</div>
+</body>
+</html>

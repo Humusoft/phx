@@ -86,8 +86,10 @@ classdef Settings
         % ("manual"); setting SpeculativeDistance switches it to "manual"
         SpeculativeDistanceMode (1, 1) string {mustBeMember(SpeculativeDistanceMode, ["auto", "manual"])} = "auto"
 
-        % Threads of the step; 1 runs it on the MATLAB thread alone, more
-        % pay off in scenes of hundreds of bodies
+        % Threads of the step; 1 runs it on the MATLAB thread alone and
+        % suits scenes of up to about a hundred bodies, about 8 suit
+        % hundreds to thousands of bodies, particles or mesh contacts.
+        % Results do not depend on the number of threads.
         Threads (1, 1) double {mustBeInteger, mustBePositive} = 1
 
         % Reuse the contacts of body pairs that moved by less than 1 mm and

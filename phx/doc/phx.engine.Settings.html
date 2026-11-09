@@ -85,8 +85,10 @@ automatic mode 2&nbsp;% of <code class="phx-inline">LengthScale</code>; setting 
 <td><code class="phx-inline">SpeculativeDistance</code> from <code class="phx-inline">LengthScale</code>
 or as set.</td></tr>
 <tr><td class="name">Threads</td><td class="dflt">1</td>
-<td>Threads of the step. <code class="phx-inline">1</code> runs it on the MATLAB thread alone;
-more pay off in scenes of hundreds of bodies.</td></tr>
+<td>Threads of the step. <code class="phx-inline">1</code> runs it on the MATLAB thread alone and suits
+scenes of up to about a hundred bodies; scenes of hundreds to thousands of bodies, particles or mesh
+contacts run fastest on about <code class="phx-inline">8</code>. More threads than physical cores
+usually slow the step down again. The results do not depend on the number of threads.</td></tr>
 <tr><td class="name">ContactCache</td><td class="dflt">false</td>
 <td>Reuse the contacts of body pairs that moved by less than 1&nbsp;mm and 2&nbsp;degrees in a
 step instead of finding them anew. Faster for large piles at rest, but the reused contacts stay
@@ -110,6 +112,7 @@ sim = phx.Simulation(gca, <span class="str">"EngineSettings"</span>, opt);</pre>
 
 <div class="phx-seealso">
 <span class="lbl">Topics</span>
+<a href="phx_ug_engine.html">Units, scale and engine settings</a>,
 <a href="phx_ug_concepts.html">Core concepts</a>
 </div>
 

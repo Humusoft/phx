@@ -8,7 +8,9 @@
 
     <tocitem target="phx_ug_concepts.html" image="$toolbox/matlab/icons/book_mat.gif">User Guide
         <tocitem target="phx_ug_concepts.html">Core concepts</tocitem>
+        <tocitem target="phx_ug_engine.html">Units, scale and engine settings</tocitem>
         <tocitem target="phx_ug_bodies.html">Bodies and shapes</tocitem>
+        <tocitem target="phx_ug_deformables.html">Soft bodies, flexible bodies and particles</tocitem>
         <tocitem target="phx_ug_joints.html">Joints, springs and ropes</tocitem>
         <tocitem target="phx_ug_forces.html">Forces, actuators and fields</tocitem>
         <tocitem target="phx_ug_assemblies.html">Prefab assemblies</tocitem>

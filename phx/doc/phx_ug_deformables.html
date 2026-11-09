@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Soft Bodies, Flexible Bodies and Particles</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; User Guide &rsaquo; Soft bodies, flexible bodies and particles</div>
+
+<h1 class="phx-title">Soft Bodies, Flexible Bodies and Particles</h1>
+<p class="phx-purpose">Objects that deform, and granular material in bulk</p>
+
+<h2 class="phx-h2">Overview</h2>
+<p>Besides rigid bodies, a scene can hold three kinds of objects made of many points. All three are
+top-level objects like a <a href="phx.Body.html">phx.Body</a>: create them in the axes, or hand
+them to the simulation, and they collide with the rigid bodies of the scene.</p>
+
+<table class="phx-tbl">
+<tr><th>Object</th><th>Made of</th><th>Typical use</th></tr>
+<tr><td class="name"><a href="phx.SoftBody.html">phx.SoftBody</a></td>
+    <td>A triangle mesh whose vertices are held together by its edges, optionally inflated by a gas
+    pressure.</td>
+    <td>Cloth, cushions, balls, airbags.</td></tr>
+<tr><td class="name"><a href="phx.FlexibleBody.html">phx.FlexibleBody</a></td>
+    <td>A mesh of tetrahedra of an elastic material given by its Young's modulus and Poisson's
+    ratio; reports the von Mises stress.</td>
+    <td>Rubber blocks, pads and bushings, beams, springy tines.</td></tr>
+<tr><td class="name"><a href="phx.Particles.html">phx.Particles</a></td>
+    <td>Many small spheres of one radius, read and drawn all at once.</td>
+    <td>Sand, gravel, grain, beads.</td></tr>
+</table>
+
+<p>Soft and flexible bodies collide with rigid bodies and particles, not with each other. Their mesh
+is the rest shape: it is placed at <code class="phx-inline">Position</code> and
+<code class="phx-inline">Orientation</code> and read, together with the material, once, when the
+simulation creates the object. The other settings, such as <code class="phx-inline">Damping</code>
+or <code class="phx-inline">Friction</code>, apply at any time. The deformed mesh is in
+<code class="phx-inline">CurrentVertices</code>.</p>
+
+<h2 class="phx-h2">Soft bodies</h2>
+<p>A <a href="phx.SoftBody.html">phx.SoftBody</a> spreads its <code class="phx-inline">Mass</code>
+evenly over the vertices of the mesh. Its edges keep their length up to their
+<code class="phx-inline">Compliance</code> (the inverse of stiffness; 0 makes them rigid), and
+<code class="phx-inline">BendCompliance</code> adds edges across adjacent triangles that resist
+bending. A closed mesh can hold a gas <code class="phx-inline">Pressure</code> that pushes on its
+faces, which turns it into a ball or an airbag; list its faces counter-clockwise seen from outside, as
+<code class="phx-inline">convhull</code> gives them.</p>
+
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+floor = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Position"</span>, [0 0 -0.1], <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [2 2 0.2]});
+[x, y, z] = sphere(16);
+V = unique([x(:) y(:) z(:)]*0.25, <span class="str">"rows"</span>);
+ball = phx.SoftBody(gca, <span class="str">"Vertices"</span>, V, <span class="str">"Faces"</span>, convhull(V), <span class="str">"Position"</span>, [0 0 1], ...
+    <span class="str">"Mass"</span>, 0.5, <span class="str">"Compliance"</span>, 1e-3, <span class="str">"Pressure"</span>, 15, <span class="str">"Iterations"</span>, 10);
+sim = phx.Simulation(gca);
+sim.step(4, 800);                    <span class="cmt">% the ball bounces, squashes and settles</span></pre>
+
+<p>The vertices collide as spheres of <code class="phx-inline">VertexRadius</code>.
+<code class="phx-inline">Iterations</code> sets the solver substeps of the soft body per simulation
+step: more of them bring stiff edges closer to their compliance.</p>
+
+<h2 class="phx-h2">Flexible bodies</h2>
+<p>A <a href="phx.FlexibleBody.html">phx.FlexibleBody</a> is an elastic solid. Give it a mesh of
+tetrahedra and a material (<code class="phx-inline">Density</code>,
+<code class="phx-inline">YoungsModulus</code>, <code class="phx-inline">PoissonsRatio</code>); the
+mesh can be a <code class="phx-inline">delaunay</code> triangulation of points or the mesh that PDE
+Toolbox generates (<code class="phx-inline">"Mesh"</code>, PHX only reads it). The body deforms as a
+material that also holds for large rotations, and colors its surface by the von Mises stress when you
+choose a <code class="phx-inline">Colormap</code>.</p>
+
+<p>By default the elements are quadratic tetrahedra: they add a vertex in the middle of each edge,
+bend without stiffening on a coarse mesh, and are solved by Newton iterations until the force left
+unbalanced falls below <code class="phx-inline">Tolerance</code>, so their stiffness does not depend
+on <code class="phx-inline">Iterations</code>. Linear tetrahedra
+(<code class="phx-inline">"ElementOrder", "linear"</code>) are cheaper but come out softer than the
+material on a coarse mesh.</p>
+
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+wall = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Position"</span>, [-0.05 0 0], <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [0.1 0.3 0.3]});
+[x, y, z] = ndgrid(-0.05:0.05:1, -0.05:0.05:0.05, -0.05:0.05:0.05);
+V = [x(:) y(:) z(:)];
+beam = phx.FlexibleBody(gca, <span class="str">"Vertices"</span>, V, <span class="str">"Tetrahedra"</span>, delaunay(V), ...
+    <span class="str">"YoungsModulus"</span>, 2e7, <span class="str">"Damping"</span>, 2, <span class="str">"Colormap"</span>, <span class="str">"turbo"</span>, <span class="str">"ColorRange"</span>, [0 3e5]);
+phx.IntersectionWeld(beam, wall);    <span class="cmt">% the wall holds the end of the beam inside it</span>
+sim = phx.Simulation(gca);
+sim.step(3, 600);                    <span class="cmt">% the beam sags under its weight, stressed most at the wall</span></pre>
+
+<p>The body touches rigid bodies at its vertices only, so keep them well closer together than the
+radius of a curved body it touches. Quadratic tetrahedra suit strains up to some 10&ndash;20&nbsp;%.</p>
+
+<h2 class="phx-h2">Holding and loading a deformable body</h2>
+<p>No joint, spring or force acts on a soft or flexible body directly. Instead, place a rigid body so
+that it overlaps the deformable one and join them with
+<a href="phx.IntersectionWeld.html">phx.IntersectionWeld</a>: every vertex that lies inside the
+body's shape when the simulation starts is welded to it, like a metal insert held in rubber. Joints,
+motors, springs and forces then act on the rigid body, and through it on the deformable one, which
+acts back. A static body clamps the deformable one, as the wall does in the example above.</p>
+
+<ul>
+<li>The rigid body should overlap at least three vertices that do not lie on one line, or it cannot
+pass on a turn; <code class="phx-inline">VertexCount</code> tells how many it holds once the
+simulation runs.</li>
+<li>It should not be much lighter than the vertices it holds.</li>
+<li>One rigid body welded into several deformable ones joins them.</li>
+</ul>
+
+<h2 class="phx-h2">Particles</h2>
+<p><a href="phx.Particles.html">phx.Particles</a> is a group of spheres of one
+<code class="phx-inline">Radius</code> and <code class="phx-inline">Density</code> that collide with
+all bodies and with each other. The group reads their state as N&times;3 arrays
+(<code class="phx-inline">Positions</code>, <code class="phx-inline">Velocities</code>) and draws them
+as one graphics object, so many thousands of them stay fast; a group holds up to 10&nbsp;000
+particles. Particles can be added (<code class="phx-inline">add</code>) and removed
+(<code class="phx-inline">remove</code>) at any time, also while the simulation runs, and pushed by
+forces of your own (<code class="phx-inline">applyForces</code>).</p>
+
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+phx.assembly.arena(gca, <span class="str">"Size"</span>, [1 1 0.3]);
+sand = phx.Particles(gca, <span class="str">"Radius"</span>, 0.02, <span class="str">"Density"</span>, 1600, <span class="str">"Color"</span>, [0.8 0.7 0.5], <span class="str">"RandomTint"</span>, 0.3);
+sim = phx.Simulation(gca, <span class="str">"EngineSettings"</span>, phx.engine.Settings(<span class="str">"LengthScale"</span>, 0.1));
+[x, y] = meshgrid(-0.1:0.05:0.1);
+spout = [x(:) y(:) repmat(0.6, numel(x), 1)];
+<span class="kw">for</span> k = 1:40                         <span class="cmt">% pour 25 grains every 50 ms</span>
+    sand.add(spout, repmat([0 0 -1], height(spout), 1));
+    sim.step(0.05, 10);
+<span class="kw">end</span>
+sim.step(1, 200);                    <span class="cmt">% let the heap settle</span></pre>
+
+<p>By default the particles only slide; <code class="phx-inline">"Rotation", true</code> lets them
+roll as well, at some cost. <code class="phx-inline">Sleeping</code> makes a heap at rest cost next
+to nothing until something touches it. For particles of a few centimetres or less, match the
+engine tolerances to their size with the <code class="phx-inline">LengthScale</code> of
+<a href="phx.engine.Settings.html">phx.engine.Settings</a>, as above; the default suits parts of
+about a metre and makes small particles slower to simulate.</p>
+
+<div class="phx-note">
+<span class="lbl">Cost.</span> Deformable bodies and particles are solved point by point, so they
+cost far more per step than rigid bodies of the same size. Start with a coarse mesh or large
+particles and refine only as far as the result needs it.
+</div>
+
+<h2 class="phx-h2">Examples</h2>
+<ul>
+<li><code>phxex_softball</code> &mdash; a soft ball dropped on the edge of a rigid cube.</li>
+<li><code>phxex_airbag</code> &mdash; a sled crash test with a belted dummy thrown into an
+airbag.</li>
+<li><code>phxex_cantilever</code> &mdash; a ball dropped on a flexible rubber beam.</li>
+<li><code>phxex_soilparticles</code> &mdash; an excavator bucket scooping gravel made of
+particles.</li>
+<li><code>phxex_plow</code> &mdash; a flexible spring tine plowing granular soil.</li>
+</ul>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.SoftBody.html">phx.SoftBody</a>,
+<a href="phx.FlexibleBody.html">phx.FlexibleBody</a>,
+<a href="phx.IntersectionWeld.html">phx.IntersectionWeld</a>,
+<a href="phx.Particles.html">phx.Particles</a>,
+<a href="phx.engine.Settings.html">phx.engine.Settings</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_bodies.html">Bodies and shapes</a>,
+<a href="phx_ug_joints.html">Joints, springs and ropes</a>,
+<a href="phx_ug_engine.html">Units, scale and engine settings</a>,
+<a href="phx_ex_gallery.html">Examples</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox User Guide</div>
+
+</div>
+</body>
+</html>
