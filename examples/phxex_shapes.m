@@ -51,7 +51,7 @@ end
 function makeLandscape(ax)
 % Heightfield terrain: a flat plateau at 1 m for y > -1, falling into a
 % valley along x at y = -4 and rising again at the far ends of x. The
-% heights double as the texture, tinted from grass green to sand.
+% heights double as the texture.
     extent = [14 11];
     x = linspace(-extent(1)/2, extent(1)/2, 141);
     y = linspace(-8, 3, 111)';
@@ -59,11 +59,10 @@ function makeLandscape(ax)
     ends = 1.2*(x/7).^4;
     bumps = 0.05*sin(1.7*x).*cos(1.3*y).*(y < -1.5);
     H = max(valley, ends) + bumps;
-    tint = interp1([0 1], [0.35 0.5 0.25; 0.85 0.78 0.55], linspace(0, 1, 256)');
 
     phx.Body(ax, "Type", "static", "Position", [0 -2.5 0], "Friction", 0.6, ...
         "Shape", {"Terrain", "Size", extent, "Height", H, "Texture", H, ...
-                  "TextureColormap", tint, "Material", "matte"});
+                  "TextureColormap", summer(64), "Material", "matte"});
 end
 
 function table = makeTable(ax, top)

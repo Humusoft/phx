@@ -32,11 +32,11 @@ function phxex_plow(Options)
 
     arguments
         Options.Depths (1, :) double {mustBePositive} = [0.03 0.06]
-        Options.Speed (1, 1) double {mustBePositive} = 0.3
+        Options.Speed (1, 1) double {mustBePositive} = 0.6
         Options.Revolutions (1, 1) double {mustBePositive} = 1
-        Options.YoungsModulus (1, 1) double {mustBePositive} = 2e9
-        Options.Angle (1, 1) double {mustBeInRange(Options.Angle, -60, 60)} = 0
-        Options.Offset (1, 1) double {mustBeInRange(Options.Offset, -0.025, 0.025)} = 0
+        Options.YoungsModulus (1, 1) double {mustBePositive} = 5e8
+        Options.Angle (1, 1) double {mustBeInRange(Options.Angle, -60, 60)} = 10
+        Options.Offset (1, 1) double {mustBeInRange(Options.Offset, -0.025, 0.025)} = 0.02
     end
 
     % Bin: ring trough between radii Ri and Ro, the share runs at radius Rm
@@ -61,14 +61,14 @@ function phxex_plow(Options)
 
     figure(1);
     [viewer, ax] = phx.extra.Viewer("clear", "Texture", "tiles", ...
-        "DefaultCameraPosition", [1.35 -1.35 1.25], "DefaultCameraTarget", [0.2 0 0.35]);
+        "DefaultCameraPosition", [1.35 -1.35 1.25], "DefaultCameraTarget", [0 0 0.35]);
 
     % Trough revolved about z, standing on the floor; the closed profile
     % starts at axis coordinate 0
     profile = [0 Ri; 0 Ro; wall Ro; wall Ro+t; -t Ro+t; -t Ri-t; wall Ri-t; wall Ri; 0 Ri];
     bin = phx.Body(ax, "Type", "kinematic", "Position", [0 0 t], "Friction", 0.9, ...
         "Shape", phx.shape.Revolution("Axis", "z", "Profile", profile, "Segments", 90, ...
-        "Envelope", "concave", "Color", 0.35, "Style", "flat"));
+        "Envelope", "concave", "Color", 0.35, "Texture", "xor", "TextureBlend", 0.5));
 
     % Soil poured in as loose layers; it settles with low friction first,
     % which packs it densely
@@ -90,8 +90,8 @@ function phxex_plow(Options)
         phx.Body(ax, "Type", "static", "Visible", false, "Position", [0 0 t + wall + collar/2], ...
             "Shape", {"Tube", "InnerDiameter", 2*(Ri - t), "WallThickness", t, "Height", collar, ...
             "Segments", 90, "Envelope", "concave"})];
-    soil = phx.Particles(ax, "Positions", P, "Radius", d/2, "Density", 2650, "Friction", 0.1, ...
-        "Color", [0.75 0.55 0.35], "RandomTint", 0.4, "MarkerSize", 14);
+    soil = phx.Particles(ax, "Positions", P, "Radius", d/2, "Density", 2650, "Friction", 0.5, ...
+        "Color", [0.75 0.55 0.35], "RandomTint", 0.4, "MarkerSize", 28);
 
     % Tool, top down: a kinematic shank sliding in a guide on a cantilever
     % arm, a clamp held to it by the joint that measures the mount load, the
@@ -115,7 +115,7 @@ function phxex_plow(Options)
     [V, T] = boxTetrahedra([b h L + 2*e], 0.02);
     tine = phx.FlexibleBody(ax, "Vertices", V, "Tetrahedra", T, "Position", [Rm 0 zStart - 0.25 - L/2], "Orientation", turn, ...
         "Density", 1800, "YoungsModulus", Options.YoungsModulus, "PoissonsRatio", 0.3, "Damping", 2, ...
-        "Colormap", "turbo", "ColorRange", [0 25e6]);
+        "Colormap", turbo(64), "ColorRange", [0 10e6]);
     shift = (turn*[Options.Offset; 0; 0])';
     plate = phx.Body(ax, "Position", [Rm 0 zStart - offset + share(3)/2] + shift, "Orientation", turn, "Friction", 0.5, ...
         "Shape", {"Box", "Size", share, "Density", 7800, "Color", [0.25 0.35 0.6]});
@@ -127,11 +127,6 @@ function phxex_plow(Options)
         "Shape", {"Box", "Size", [Rm + 0.1 0.05 0.05], "Color", [0.45 0.45 0.5]});
     post = phx.Body(ax, "Type", "static", "Collisions", false, "Position", [0 0 zTop/2], ...
         "Shape", {"Cylinder", "Diameter", 0.08, "Height", zTop + 0.05, "Color", [0.45 0.45 0.5]});
-
-    % Strike-off plate on the far side, lowered to the soil surface once the
-    % soil has settled
-    scraper = phx.Body(ax, "Type", "kinematic", "Position", [-Rm 0 zTop], "Friction", 0.3, ...
-        "Shape", {"Box", "Size", [Ro - Ri - 0.01 0.01 0.05], "Color", [0.6 0.6 0.6]});
 
     % Schedule: settle, run in above the soil, then a ramp to each depth and
     % a hold of the given number of revolutions
@@ -146,8 +141,8 @@ function phxex_plow(Options)
 
     % Inset plot of the draft and the mount moment, 0.1 s means
     size_ = viewer.Figure.Position(3:4);
-    inset = uiaxes(viewer.Figure, "Position", [10 10 min(400, 0.38*size_(1)) min(220, 0.3*size_(2))], ...
-        "XLim", [0 tEnd], "Box", "on");
+    h_ = size_(2) - 250;
+    inset = uiaxes(viewer.Figure, "Position", [10 h_ min(400, 0.38*size_(1)) min(220, 0.3*size_(2))], "XLim", [0 tEnd], "Box", "on");
     grid(inset, "on");
     xlabel(inset, "time (s)");
     title(inset, "Share above the soil");
@@ -157,12 +152,10 @@ function phxex_plow(Options)
     yyaxis(inset, "right");
     ylabel(inset, "mount moments (N m)");
     p.LineM = plot(inset, NaN, NaN, "-", NaN, NaN, ":", "LineWidth", 1);
-    legend(inset, ["draft" "bending" "torsion"], "Location", "northwest");
+    % legend(inset, ["draft" "bending" "torsion"], "Location", "northwest");
 
-    % Shank and scraper driver and load recorder, called every substep
+    % Shank driver and load recorder, called every substep
     p.Shank = shank;
-    p.Scraper = scraper;
-    p.ScraperStart = zTop;
     p.Clamp = clamp;
     p.Plate = plate;
     p.Holder = holder;
@@ -184,7 +177,7 @@ function phxex_plow(Options)
     driver.UserData = p;
 
     opt = phx.engine.Settings("Threads", 8, "LengthScale", 0.025);
-    sim = phx.Simulation({bin, collars(1), collars(2), soil, shank, clamp, plate, tine, arm, post, scraper}, ...
+    sim = phx.Simulation({bin, collars(1), collars(2), soil, shank, clamp, plate, tine, arm, post}, ...
         "EngineSettings", opt);
     dt = 0.005;
 
@@ -200,7 +193,13 @@ function phxex_plow(Options)
     p.Schedule(1, 2) = p.Start - p.Surface;
     driver.UserData = p;
 
-    sim.step(tEnd - settle, round((tEnd - settle)/dt));
+    %sim.step(tEnd - settle, round((tEnd - settle)/dt));
+    tic
+    sim.step(4, 4/dt);
+    viewer.CameraPosition = [1.2 -0.5 0.75];
+    viewer.CameraTarget = [0.4 0.0 0.31];
+    sim.step(6, 6/dt);
+    toc
 
     % Mean loads at each depth, skipping the first second of each hold
     p = driver.UserData;
@@ -228,13 +227,6 @@ function driveShank(fcn, ~, dt, time)
     end
     pos = p.Shank.Position;
     p.Shank.Position = [pos(1:2) p.Surface + zb + p.Offset];
-
-    % The scraper comes down to the surface while the share runs in
-    if time <= p.Schedule(2, 1) + dt
-        pos = p.Scraper.Position;
-        z = interp1(p.Schedule(1:2, 1), [p.ScraperStart, p.Surface + 0.025], min(time, p.Schedule(2, 1)));
-        p.Scraper.Position = [pos(1:2) z];
-    end
 
     % The joint holds the clamp against the soil force and the weight of the
     % tool below it: the draft along y, a side force along x (radial), the

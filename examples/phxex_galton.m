@@ -1,26 +1,24 @@
 function phxex_galton(nBalls, nRows, seed)
 % PHXEX_GALTON Galton board - a binomial distribution built from collisions
 %
-% Balls are released one by one above a triangular grid of pins. Each pin
-% deflects a falling ball randomly to the left or to the right, so after
-% passing all rows the ball lands in one of the bins at the bottom. The
-% growing piles reproduce the binomial (approximately normal) distribution
-% - a statistical law emerging from nothing but rigid-body contacts
-% between hundreds of bodies. Resolving contacts among arbitrary body
-% pairs is exactly what a collision engine does for free, while defining
-% every contact pair by hand would be impractical.
+% The balls start in a hopper above a triangular grid of pins and trickle
+% out through the gap in its middle. Each pin deflects a falling ball
+% randomly to the left or to the right, so after passing all rows the ball
+% lands in one of the bins at the bottom. The growing piles reproduce the
+% binomial (approximately normal) distribution - a statistical law
+% emerging from nothing but rigid-body contacts between hundreds of bodies.
+% Resolving contacts among arbitrary body pairs is exactly what a
+% collision engine does for free, while defining every contact pair by
+% hand would be impractical.
 %
-% The balls do not exist when the simulation starts - each one is created
-% on the fly and added to the running simulation with
-% phx.Simulation.addObjects, demonstrating runtime changes of the scene.
 % After all balls settle, they are recolored by the bin they ended up in
 % and the measured histogram is compared with the theoretical binomial
 % expectation.
 %
 % Input Arguments:
-%     nBalls - number of released balls (default 150)
+%     nBalls - number of balls in the hopper (default 150)
 %     nRows  - number of pin rows, giving nRows+1 bins (default 9)
-%     seed   - random seed for the release jitter (default 0)
+%     seed   - random seed for the jitter of the initial packing (default 0)
 %
 % Example:
 %     phxex_galton            % default board
@@ -34,7 +32,7 @@ function phxex_galton(nBalls, nRows, seed)
         seed (1, 1) double = 0
     end
 
-    rng(seed); % Random seed for reproducible release jitter
+    rng(seed); % Random seed for a reproducible initial packing
 
     % Board proportions (everything derives from the ball diameter)
     d = 0.012;             % ball diameter: glass marbles of 12 mm
@@ -50,11 +48,27 @@ function phxex_galton(nBalls, nRows, seed)
     pmf = arrayfun(@(k) nchoosek(nRows, k), 0:nRows)*0.5^nRows;
     hBin = (ceil(nBalls*max(pmf)*1.3/1.7) + 2)/100;   % 7.6 mm per ball, plus 20 mm
 
-    % Vertical layout: bins at the bottom, pin rows above, drop point on top
+    % Vertical layout: bins at the bottom, pin rows above, the outlet of the
+    % hopper just above the top pin
     zRowBot = hBin + 0.015;
     zRowTop = zRowBot + (nRows - 1)*dz;
-    zDrop = zRowTop + 0.02;
-    hWall = zDrop + 0.02;
+    zOut = zRowTop + 0.025;
+
+    % Hopper: two plates sloping down from the side walls to a gap in the
+    % middle, filled with balls in a hexagonal packing, lowest places first
+    outlet = 1.4*d;        % width of the gap between the plates
+    slope = deg2rad(30);   % inclination of the plates
+    plateZ = @(x) zOut + (abs(x) - outlet/2)*tan(slope);   % top surface of the plates
+    pitch = 1.02*d;
+    [col, row] = meshgrid(-ceil(halfW/pitch):ceil(halfW/pitch), 0:ceil(2*nBalls*pitch/halfW));
+    xs = (col(:) + mod(row(:), 2)/2)*pitch;
+    zs = zOut + d/2 + row(:)*pitch*sqrt(3)/2;
+    fits = abs(xs) < halfW - d/2 - 0.001 & (abs(xs) < outlet/2 - d/2 | zs > plateZ(xs) + d/2/cos(slope) + 0.001);
+    xs = xs(fits); zs = zs(fits);
+    [~, order] = sortrows([zs abs(xs)]);
+    xs = xs(order(1:nBalls)) + (rand(nBalls, 1) - 0.5)*0.02*d;
+    zs = zs(order(1:nBalls));
+    hWall = max(zs) + d;
 
     % Figure setup
     figure(1);
@@ -101,44 +115,53 @@ function phxex_galton(nBalls, nRows, seed)
         end
     end
 
+    % Hopper plates, each from a side wall down to the edge of the outlet
+    span = halfW - outlet/2;
+    for sgn = [-1 1]
+        phx.Body(ax, "Type", "static", ...
+            "Position", [sgn*(outlet/2 + span/2), 0, zOut + span/2*tan(slope) - 0.0015/cos(slope)], ...
+            "Orientation", [cos(slope) 0 -sgn*sin(slope); 0 1 0; sgn*sin(slope) 0 cos(slope)], ...
+            "Shape", {"Box", "Size", [span/cos(slope), gapY, 0.003], "Color", [0.5 0.5 0.55]});
+    end
+
+    % Balls, packed in the hopper
+    shp = phx.shape.Sphere("Diameter", d, "Segments", 10, "Density", 2500);
+    for i = 1:nBalls
+        shp = shp.nextColor;
+        balls(i) = phx.Body(ax, "Position", [xs(i) 0 zs(i)], "Shape", shp, "Friction", 0.1); %#ok<AGROW> preallocation of handle objects
+    end
+
     % One passive phx.Zone per bin (a full-height x-slab) so the piles count
     % themselves; tallied once at the end with update(), free during the run.
     bins = phx.Zone.empty;
     for k = 0:nRows
         bins(k + 1) = phx.Zone(floor, "Position", [(k - nRows/2)*sx, 0, hWall/2], ...
             "Size", [sx, gapY + 0.004, hWall], "SimulationOrder", "none", ...
-            "Visible", false); %#ok<AGROW> fixed nBins
+            "Visible", false);
     end
 
-    % On-screen readout
-    viewer.displayText("Released: 0 / " + nBalls);
-
-    % Simulation of the static board; balls are added later, on the fly
     sim = phx.Simulation;
 
-    % Phase 1 - release the balls one by one above the top pin and let the
-    % board do its work; each ball is spawned into the running simulation
-    shp = phx.shape.Sphere("Diameter", d, "Segments", 10, "Density", 2500);
-    releasePeriod = 0.07; % time between two released balls
-    dt = 0.005;           % outer simulation step, in substeps of 1 ms
-    released = 0;
-    while released < nBalls
-        if sim.Time >= released*releasePeriod
-            jit = (rand(1, 1) - 0.5)*0.01;   % entry jitter randomizes the path (the ball still hits the top pin)
-
-            shp = shp.nextColor;
-            balls(released + 1) = phx.Body(ax, "Position", [jit 0 zDrop], ...
-                "Shape", shp); %#ok<AGROW> unknown rate
-
-            sim.addObjects(balls(released + 1));
-            released = released + 1;
-            viewer.displayText(sprintf("Released: %d / %d", released, nBalls));
+    % Phase 1 - the hopper empties over the pins, in substeps of 1 ms; it
+    % ends early when no ball has come through for 3 s (a jammed hopper)
+    inBins = 0;
+    lastArrival = 0;
+    while inBins < nBalls && sim.Time - lastArrival < 3
+        sim.step(0.05, 50, 1);
+        p = vertcat(balls.Position);
+        n = nnz(p(:, 3) < zRowBot - d);
+        if n > inBins
+            lastArrival = sim.Time;
         end
-        sim.step(dt, 5, 5);
+        inBins = n;
+        viewer.displayText(sprintf("t = %4.1f s   %d of %d balls in the bins", sim.Time, inBins, nBalls));
+    end
+    if inBins < nBalls
+        viewer.displayText(sprintf("The hopper jammed: %d of %d balls in the bins", inBins, nBalls));
     end
 
-    % Phase 2 - let the last balls trickle down and the piles settle
-    sim.step(2, 2000, 10);
+    % Phase 2 - let the piles settle
+    sim.step(1, 1000, 1);
 
     % Tally the settled piles from the zones and recolor each ball by its bin
     update(bins);
