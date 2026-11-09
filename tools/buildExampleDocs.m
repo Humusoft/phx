@@ -20,7 +20,7 @@ function buildExampleDocs(options)
 %   Example:
 %       buildExampleDocs                                    % incremental
 %       buildExampleDocs(Thumbnails = "all")                % re-shoot all
-%       buildExampleDocs(Thumbnails = "phxex_galton")       % fix one tile
+%       buildExampleDocs(Thumbnails = "phxex_drum")         % fix one tile
 %
 %   The section an example belongs to comes from a "% Category: <name>" line in
 %   its header if present, from exampleCatalog otherwise. tests/tExampleGallery

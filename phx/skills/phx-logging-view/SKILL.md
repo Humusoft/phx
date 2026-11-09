@@ -110,7 +110,7 @@ set(bins(3).Contents, "Color", [1 0 0]);
 Notes: `Visible`/`Overlay` control the drawn translucent box; the watch set is
 resolved at pipeline build time (a scene change re-enumerates it), and a zone
 anchored to a **static** body watches only non-static bodies.
-Demos: `phxex_galton` (passive bins), `phxex_soil` (active zone + HUD).
+Demos: `phxex_bowlfeeder` (counts parts at the outlet), `phxex_soil` (active zone + HUD).
 
 ## phx.Raycast — ray sensor
 

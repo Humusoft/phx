@@ -36,7 +36,6 @@ function catalog = exampleCatalog
 
         entry("phxex_jenga",       "Contacts, stacking and granular", 6)
         entry("phxex_stack",       "Contacts, stacking and granular", 6)
-        entry("phxex_galton",      "Contacts, stacking and granular", 25)
         entry("phxex_droptest",    "Contacts, stacking and granular", 6)
         entry("phxex_soil",        "Contacts, stacking and granular", 20)
         entry("phxex_grip",        "Contacts, stacking and granular", 10)

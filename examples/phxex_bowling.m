@@ -28,7 +28,7 @@ function out = phxex_bowling(Options)
 %     phxex_bowling
 %     phxex_bowling(Throws = 400)
 %
-% See also phxex_optimize, phxex_determinism, phxex_galton
+% See also phxex_optimize, phxex_determinism
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 

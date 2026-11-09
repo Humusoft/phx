@@ -25,7 +25,7 @@ function phxex_drum(Options)
 % Example:
 %     phxex_drum(Revolutions = 12, Froude = 0.06)
 %
-% See also phxex_galton, phxex_soil
+% See also phxex_soil
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 
