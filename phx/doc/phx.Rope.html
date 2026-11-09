@@ -64,7 +64,7 @@ per body).</p>
 <tr><td class="name">Displacement</td><td class="dflt">0</td><td>Free-length change: positive pays out, negative winches in, <span class="phx-unit">m</span>.</td></tr>
 <tr><td class="name">Stiffness</td><td class="dflt">1000</td><td>Stiffness of the stretched rope, <span class="phx-unit">N/m</span>.</td></tr>
 <tr><td class="name">Damping</td><td class="dflt">10</td><td>Damping of the stretched rope, <span class="phx-unit">N&middot;s/m</span>.</td></tr>
-<tr><td class="name">Colormap</td><td class="dflt">"none"</td><td>Colormap used to color the rope by tension.</td></tr>
+<tr><td class="name">Colormap</td><td class="dflt">[]</td><td>Colormap (N&times;3 matrix, RGB in 0&ndash;1, e.g. <code class="phx-inline">hot(64)</code>) that colors the rope and its routing points by its tension. Empty draws the fixed <code class="phx-inline">Color</code>, which the colormap leaves unchanged.</td></tr>
 <tr><td class="name">ColorRange</td><td class="dflt">[0 100]</td><td>Tension range mapped across the whole colormap, <span class="phx-unit">N</span>.</td></tr>
 <tr><td class="name">Overlay</td><td class="dflt">false</td><td>Draw the rope as an overlay (always on top).</td></tr>
 <tr><td class="name">FreeLength</td><td class="type">double (read-only)</td><td><code class="phx-inline">InitialLength + Displacement</code> (dependent).</td></tr>
@@ -82,7 +82,7 @@ load   = phx.Body(<span class="str">"Position"</span>, [0 0 3], ...
     <span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>, <span class="str">"Radius"</span>, 0.2, <span class="str">"Density"</span>, 300});   <span class="cmt">% a 10 kg ball</span>
 
 rope = phx.Rope([anchor load], <span class="str">"Stiffness"</span>, 5e3, <span class="str">"Damping"</span>, 50, ...
-    <span class="str">"Colormap"</span>, <span class="str">"hot"</span>, <span class="str">"ColorRange"</span>, [0 200]);
+    <span class="str">"Colormap"</span>, hot(64), <span class="str">"ColorRange"</span>, [0 200]);
 
 sim = phx.Simulation;
 sim.step(4, 800, 5);</pre>

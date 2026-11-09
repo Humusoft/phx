@@ -109,7 +109,7 @@ boxes(1) = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"<
 <span class="kw">for</span> i = 2:7
     boxes(i) = phx.Body(<span class="str">"Position"</span>, [(i-1)*6-18 0 10], <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [4 2 1]});
     phx.Spring(boxes(i-1), boxes(i), <span class="str">"Stiffness"</span>, 3e5, <span class="str">"Damping"</span>, 2e3, ...
-               <span class="str">"PointA"</span>, [2 0 0], <span class="str">"PointB"</span>, [-2 0 0], <span class="str">"Colormap"</span>, <span class="str">"jet"</span>);
+               <span class="str">"PointA"</span>, [2 0 0], <span class="str">"PointB"</span>, [-2 0 0], <span class="str">"Colormap"</span>, jet(64));
 <span class="kw">end</span>
 boxes(<span class="kw">end</span>).Type = <span class="str">"static"</span>;       <span class="cmt">% anchor the far end too</span></pre>
 

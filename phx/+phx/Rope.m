@@ -43,7 +43,6 @@ classdef Rope < phx.base.Object
     properties (Access = private)
         hL
         hM
-        CMap
     end
 
     properties (Dependent, SetAccess = private)
@@ -70,8 +69,9 @@ classdef Rope < phx.base.Object
         % Damping of the stretched rope (N*s/m)
         Damping (1, 1) double {mustBeNonnegative, mustBeFinite} = 10
 
-        % Name of the used colormap (tension coloring)
-        Colormap (1, 1) string = "none"
+        % Colormap (Nx3, RGB in 0-1) that colors the rope by its tension
+        % over ColorRange, e.g. hot(64); empty for the fixed Color
+        Colormap (:, 3) double {mustBeInRange(Colormap, 0, 1)} = zeros(0, 3)
 
         % Tension range mapped on the whole color map
         ColorRange (1, 2) double = [0 100]
@@ -135,6 +135,7 @@ classdef Rope < phx.base.Object
             layer = phx.internal.choose({'middle', 'front'}, obj.Overlay + 1);
             obj.hL = matlab.graphics.primitive.world.LineStrip('Parent', obj.Graphics, 'LineWidth', 2.0, 'ColorBinding', 'object', 'ColorData', clr, 'StripData', uint32([1 n + 1]), 'Layer', layer);
             obj.hM = matlab.graphics.primitive.world.Marker('Parent', obj.Graphics, 'EdgeColorData', clr, 'Style', 'circle', 'Size', 10, 'Layer', layer, 'PickableParts', 'none');
+            obj.applyColormap;
             phx.Rope.updateView({obj});
         end
 
@@ -179,15 +180,8 @@ classdef Rope < phx.base.Object
         end
 
         function set.Colormap(obj, map)
-            try
-                cmap = feval(map, 100);
-                cmap(:, 4) = 1;
-                obj.Colormap = map;
-            catch
-                cmap = [];
-                obj.Colormap = "none";
-            end
-            obj.CMap = uint8(cmap*255);
+            obj.Colormap = map;
+            obj.applyColormap;
         end
     end
 
@@ -206,6 +200,23 @@ classdef Rope < phx.base.Object
         function pushSpring(obj)
             if ~isempty(obj.ObjectHandle)
                 phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'spring', obj.Stiffness, obj.Damping);
+            end
+        end
+
+        function applyColormap(obj)
+            % Keep Color aside while the colormap draws the rope and its
+            % routing points, or draw them in Color again; the next redraw
+            % applies the colormap
+            if isempty(obj.hL) || ~isvalid(obj.hL)
+                return
+            end
+            for h = [obj.hL obj.hM]
+                ph = phx.internal.PrimitiveHelper(h);
+                if isempty(obj.Colormap)
+                    ph.releaseColor;
+                else
+                    ph.holdColor;
+                end
             end
         end
     end
@@ -254,10 +265,12 @@ classdef Rope < phx.base.Object
                 hL = obj.hL;
                 hL.VertexData = pts;
                 obj.hM.VertexData = pts;
-                if ~isempty(obj.CMap)
-                    cid = phx.Spring.x2id(obj.Force, obj.ColorRange, [1 100]);
-                    hL.ColorData = obj.CMap(cid, :)';
-                    obj.hM.EdgeColorData = obj.CMap(cid, :)';
+                map = obj.Colormap;
+                if ~isempty(map)
+                    cid = phx.Spring.x2id(obj.Force, obj.ColorRange, [1 size(map, 1)]);
+                    clr = uint8([map(cid, :) 1]'*255);
+                    hL.ColorData = clr;
+                    obj.hM.EdgeColorData = clr;
                 end
             end
         end

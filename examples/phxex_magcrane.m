@@ -92,7 +92,7 @@ function phxex_magcrane(Options)
     rotor = phx.Body(ax, "Position", [pick zStand], "AxisAngle", [1 0 0 pi/2], "Shape", rotorShape);
 
     rope = phx.Rope([trolley magnet], "Points", [0 0 -0.2; 0 0 hMag/2], ...
-        "Stiffness", 6e5, "Damping", 6e3, "Colormap", "heat", "ColorRange", [0 12000]);
+        "Stiffness", 6e5, "Damping", 6e3, "Colormap", hot(64), "ColorRange", [0 12000]);
 
     % Tracking camera
     phx.Camera(parts(1), rotor, "PointA", [-3 -22 11], "TrackingLag", 1);

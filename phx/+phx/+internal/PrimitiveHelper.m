@@ -32,7 +32,12 @@ classdef PrimitiveHelper < handle
         end
 
         function value = get.Color(obj)
-            value = [];
+            % A primitive drawn in other colors than its own (a colormap,
+            % the shaded points of phx.Particles) keeps its color aside
+            value = getappdata(obj.Primitive, 'phxBaseColor');
+            if ~isempty(value)
+                return
+            end
             switch obj.Type
                 case {'patch', 'surface'}
                     value = obj.Primitive.FaceColor;
@@ -43,16 +48,16 @@ classdef PrimitiveHelper < handle
                         value = [0 0 0];
                     end
                 case 'marker'
-                    % A marker shading each point (phx.Particles) keeps its
-                    % base color aside
-                    value = getappdata(obj.Primitive, 'phxBaseColor');
-                    if isempty(value)
-                        value = double(obj.Primitive.EdgeColorData(1:3, 1)')/255;
-                    end
+                    value = double(obj.Primitive.EdgeColorData(1:3, 1)')/255;
             end
         end
 
         function set.Color(obj, value)
+            if isappdata(obj.Primitive, 'phxBaseColor') && ~isappdata(obj.Primitive, 'phxPointShade')
+                % Drawn by a colormap: the color waits for releaseColor
+                setappdata(obj.Primitive, 'phxBaseColor', value);
+                return
+            end
             switch obj.Type
                 case {'patch', 'surface'}
                     obj.Primitive.FaceColor = value;
@@ -75,6 +80,25 @@ classdef PrimitiveHelper < handle
                         setappdata(obj.Primitive, 'phxBaseColor', value);
                         obj.Primitive.EdgeColorData = [uint8(value'*shade*255); repmat(uint8(255), 1, numel(shade))];
                     end
+            end
+        end
+
+        function holdColor(obj)
+        %holdColor Keeps the color aside while a colormap draws the primitive.
+        %
+        %   Until releaseColor, Color reads and writes the kept color and
+        %   leaves the drawn colors to the colormap.
+            if ~isappdata(obj.Primitive, 'phxBaseColor')
+                setappdata(obj.Primitive, 'phxBaseColor', obj.Color);
+            end
+        end
+
+        function releaseColor(obj)
+        %releaseColor Draws the primitive in the color kept by holdColor again.
+            if isappdata(obj.Primitive, 'phxBaseColor')
+                color = getappdata(obj.Primitive, 'phxBaseColor');
+                rmappdata(obj.Primitive, 'phxBaseColor');
+                obj.Color = color;
             end
         end
 

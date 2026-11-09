@@ -59,6 +59,34 @@ classdef tSpringElements < PhxTestCase
             tc.verifyEqual(t.Torque, [0 0 0]);
             tc.verifyEqual(t.Energy, 0.5*2*(0.4 - 0.1)^2, "RelTol", 1e-9);
         end
+
+        function colormapDrawsTheLineAndKeepsColor(tc)
+            % A colormap draws the line (zero force picks its first row),
+            % Color keeps its own value meanwhile and is drawn again once
+            % the colormap is emptied
+            a = tc.spawnBody([0 0 0], "Type", "static");
+            b = tc.spawnBody([0 0 -2]);
+            map = [0 0 1; 1 0 0];
+            elements = {phx.Spring(a, b, "Color", [0 1 0], "Colormap", map), ...
+                phx.Rope([a b], "Color", [0 1 0], "Colormap", map)};
+            for k = 1:numel(elements)
+                e = elements{k};
+                tc.verifyEqual(tc.lineColor(e), [0 0 1], class(e));
+                tc.verifyEqual(e.Color, [0 1 0], class(e));
+                e.Color = [1 1 0];
+                tc.verifyEqual(e.Color, [1 1 0], class(e));
+                e.Colormap = [];
+                tc.verifyEqual(tc.lineColor(e), [1 1 0], class(e));
+            end
+        end
+
+        function colormapIsAMatrixNotAName(tc)
+            a = tc.spawnBody([0 0 0]);
+            b = tc.spawnBody([0 0 2]);
+            tc.verifyError(@() phx.Spring(a, b, "Colormap", "jet"), ?MException);
+            tc.verifyError(@() phx.Rope([a b], "Colormap", "jet"), ?MException);
+            tc.verifyEmpty(a.Children, "A failed construction must leave nothing behind.");
+        end
     end
 
     % --- Physics (engine) ---------------------------------------------------
@@ -104,6 +132,32 @@ classdef tSpringElements < PhxTestCase
             tc.verifyEqual(s.Length - 1, m*tc.G/100, "RelTol", 0.01);
         end
 
+        function colormapFollowsTheForceAfterSaveAndLoad(tc)
+            % A saved and reloaded spring keeps its colormap and Color, and
+            % the colormap keeps coloring it by the force
+            tc.requireEngine;
+            [a, b] = tc.anchorAndMass([0 0 -2], 1);
+            map = gray(11);
+            phx.Spring(a, b, "FreeLength", 1, "Stiffness", 100, "Color", [0 1 0], ...
+                "Colormap", map, "ColorRange", [0 20]);
+            sim = tc.simulate({a, b});
+            sim.step(0.1, 20, -1);
+            delete(sim);
+
+            file = fullfile(tc.tempFolder, "spring.mat");
+            save(file, "a", "b");
+            scene = load(file);
+            s = scene.a.Children{1};
+            tc.verifyEqual(s.Colormap, map);
+            tc.verifyEqual(s.Color, [0 1 0]);
+
+            sim = tc.simulate({scene.a, scene.b});
+            sim.step(0.1, 20, 0);                  % redraw at the end of the step
+            row = phx.Spring.x2id(norm(s.Force), s.ColorRange, [1 size(map, 1)]);
+            tc.verifyEqual(tc.lineColor(s), map(row, :), "AbsTol", 1/255);
+            tc.verifyGreaterThan(row, 1, "The spring must carry a force.");
+        end
+
         function ropeCarriesTheWeightOverAPulley(tc)
             % A rope from a fixed point over a pulley holds a hanging mass:
             % its tension is the weight, its stretch m*g/k
@@ -143,6 +197,12 @@ classdef tSpringElements < PhxTestCase
     end
 
     methods (Access = private)
+        function rgb = lineColor(~, element)
+            % Color the line of a spring or a rope is drawn in
+            h = findobj(element.Graphics.Children, "-isa", "matlab.graphics.primitive.world.LineStrip");
+            rgb = double(h.ColorData(1:3)')/255;
+        end
+
         function [a, b] = anchorAndMass(tc, position, m)
             % Static anchor at the origin and a small sphere of mass m
             a = tc.spawnBody([0 0 0], "Type", "static", "Shape", {"Sphere", "Radius", 0.05});

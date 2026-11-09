@@ -87,7 +87,7 @@ wall = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</spa
 [x, y, z] = ndgrid(-0.05:0.05:1, -0.05:0.05:0.05, -0.05:0.05:0.05);
 V = [x(:) y(:) z(:)];
 beam = phx.FlexibleBody(gca, <span class="str">"Vertices"</span>, V, <span class="str">"Tetrahedra"</span>, delaunay(V), ...
-    <span class="str">"YoungsModulus"</span>, 2e7, <span class="str">"Damping"</span>, 2, <span class="str">"Colormap"</span>, <span class="str">"turbo"</span>, <span class="str">"ColorRange"</span>, [0 3e5]);
+    <span class="str">"YoungsModulus"</span>, 2e7, <span class="str">"Damping"</span>, 2, <span class="str">"Colormap"</span>, turbo(64), <span class="str">"ColorRange"</span>, [0 3e5]);
 phx.IntersectionWeld(beam, wall);    <span class="cmt">% the wall holds the end of the beam inside it</span>
 sim = phx.Simulation(gca);
 sim.step(3, 600);                    <span class="cmt">% the beam sags under its weight, stressed most at the wall</span></pre>

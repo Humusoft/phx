@@ -60,7 +60,7 @@ function phxex_droptest(dropH, stiffness, damping)
     % Cushioning element between shell and product (spring + damper).
     cushion = phx.Spring(shell, product, "Stiffness", stiffness, "Damping", damping, ...
         "FreeLength", freeLen, "PointA", [0 0 shellSize(3)/2], "PointB", [0 0 -prodSize(3)/2], ...
-        "Visible", true, "Colormap", "jet", "ColorRange", [0 2e3]);
+        "Visible", true, "Colormap", jet(64), "ColorRange", [0 2e3]);
 
     % Data logging: force in the cushioning spring and heights of both bodies
     logForce  = phx.Logger(cushion,  "Frequency", 500, "Parameters", "Force");

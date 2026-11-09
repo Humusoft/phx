@@ -56,7 +56,7 @@ attached at their origins. Use <code class="phx-inline">PointA</code> and
 <tr><td class="name">Stiffness</td><td class="dflt">20</td><td>Spring stiffness, <span class="phx-unit">N/m</span>.</td></tr>
 <tr><td class="name">Damping</td><td class="dflt">0</td><td>Damping coefficient, <span class="phx-unit">N&middot;s/m</span>.</td></tr>
 <tr><td class="name">Inertance</td><td class="dflt">0</td><td>Inertance of an inerter in parallel, <span class="phx-unit">kg</span>: a force proportional to the relative acceleration of the connecting points along the line. A mass m on a spring with inertance b oscillates as a mass m&nbsp;+&nbsp;b.</td></tr>
-<tr><td class="name">Colormap</td><td class="dflt">"none"</td><td>Name of the colormap used to color the spring by force.</td></tr>
+<tr><td class="name">Colormap</td><td class="dflt">[]</td><td>Colormap (N&times;3 matrix, RGB in 0&ndash;1, e.g. <code class="phx-inline">parula(64)</code>) that colors the spring by the magnitude of its force. Empty draws the fixed <code class="phx-inline">Color</code>, which the colormap leaves unchanged.</td></tr>
 <tr><td class="name">ColorRange</td><td class="dflt">[0 100]</td><td>Force range mapped across the whole colormap, <span class="phx-unit">N</span>.</td></tr>
 <tr><td class="name">Overlay</td><td class="dflt">false</td><td>Draw the spring as an overlay (always on top).</td></tr>
 <tr><td class="name">Force</td><td class="type">1&times;3 double (read-only)</td><td>Current spring force acting on the first body, <span class="phx-unit">N</span>; the second body gets the opposite force.</td></tr>
@@ -79,7 +79,7 @@ b = phx.Body(<span class="str">"Position"</span>, [3 0 10], <span class="str">"S
 
 phx.Spring(a, b, <span class="str">"Stiffness"</span>, 3e5, <span class="str">"Damping"</span>, 2e3, ...
     <span class="str">"PointA"</span>, [2 0 0], <span class="str">"PointB"</span>, [-2 0 0], ...
-    <span class="str">"Colormap"</span>, <span class="str">"jet"</span>, <span class="str">"ColorRange"</span>, [0 2e6]);
+    <span class="str">"Colormap"</span>, jet(64), <span class="str">"ColorRange"</span>, [0 2e6]);
 
 sim = phx.Simulation;
 sim.step(5, 500, 5);</pre>

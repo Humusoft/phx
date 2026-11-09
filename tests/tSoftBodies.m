@@ -80,6 +80,27 @@ classdef tSoftBodies < PhxTestCase
             tc.verifyEqual(f.Mass, 1000*0.4*0.2*0.1, "RelTol", 1e-9);
         end
 
+        function flexibleBodyColormapKeepsColorAcrossSaveAndLoad(tc)
+            % The colormap paints the surface while Color keeps its value;
+            % both survive save and load, and an emptied colormap gives the
+            % surface its Color back
+            V = tc.cube;
+            f = phx.FlexibleBody([], "Vertices", V, "Tetrahedra", delaunay(V), "ElementOrder", "linear", ...
+                "Color", [0 1 0], "Colormap", turbo(8));
+            tc.verifyEqual(f.Color, [0 1 0]);
+
+            file = fullfile(tc.tempFolder, "flexible.mat");
+            save(file, "f");
+            g = load(file).f;
+            tc.verifyEqual(g.Colormap, turbo(8));
+            tc.verifyEqual(g.Color, [0 1 0]);
+            surface = findobj(g.Graphics, "Type", "patch");
+            tc.verifyEqual(surface.FaceColor, 'interp');
+
+            g.Colormap = [];
+            tc.verifyEqual(surface.FaceColor, [0 1 0]);
+        end
+
         function weldJoinsASoftBodyAndABody(tc)
             [V, F] = tc.cube;
             s = phx.SoftBody([], "Vertices", V, "Faces", F);

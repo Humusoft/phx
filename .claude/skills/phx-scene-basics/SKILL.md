@@ -431,7 +431,8 @@ gravel.add(Pnew); gravel.remove(gravel.Positions(:, 3) < -1);   % any time, also
 - The mesh is the rest shape, placed at `Position`/`Orientation` when the simulation
   starts; mesh and material are read then, the friction/damping/pressure settings at any
   time. `CurrentVertices` gives the deformed mesh; `FlexibleBody.VonMisesStress` the
-  stress per vertex (colour it with `Colormap`/`ColorRange`).
+  stress per vertex (colour it with `Colormap`, an N×3 matrix such as `turbo(64)`, and
+  `ColorRange`).
 - `FlexibleBody` uses quadratic tetrahedra by default: implicit, stiffness right on a
   coarse mesh (2-3 elements across a section to bend, 3-4 to twist), `Tolerance` sets
   the convergence and `Iterations` caps it. `ElementOrder="linear"` is cheaper but gets

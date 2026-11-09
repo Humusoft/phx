@@ -28,7 +28,6 @@ classdef Spring < phx.base.Object
 
     properties (Access = private)
         hL
-        CMap
     end
 
     properties (Dependent, SetAccess = private)
@@ -63,8 +62,10 @@ classdef Spring < phx.base.Object
         % the relative acceleration of the connecting points along the line
         Inertance (1, 1) double {mustBeNonnegative, mustBeFinite} = 0
 
-        % Name of the used colormap
-        Colormap (1, 1) string = "none"
+        % Colormap (Nx3, RGB in 0-1) that colors the spring by the
+        % magnitude of its force over ColorRange, e.g. parula(64); empty
+        % for the fixed Color
+        Colormap (:, 3) double {mustBeInRange(Colormap, 0, 1)} = zeros(0, 3)
 
         % Force range mapped on the whole color map
         ColorRange (1, 2) double = [0 100]
@@ -95,6 +96,7 @@ classdef Spring < phx.base.Object
 
             % Create graphics objects
             obj.hL = matlab.graphics.primitive.world.LineStrip('Parent', obj.Graphics, 'LineWidth', 2.0, 'ColorBinding', 'object', 'ColorData', uint8([obj.Color*255 255]'), 'Layer', phx.internal.choose({'middle', 'front'}, obj.Overlay + 1));
+            obj.applyColormap;
             phx.Spring.updateView({obj});
         end
 
@@ -146,15 +148,8 @@ classdef Spring < phx.base.Object
         end
 
         function set.Colormap(obj, map)
-            try
-                cmap = feval(map, 100);
-                cmap(:, 4) = 1;
-                obj.Colormap = map;
-            catch
-                cmap = [];
-                obj.Colormap = "none";
-            end
-            obj.CMap = uint8(cmap*255);
+            obj.Colormap = map;
+            obj.applyColormap;
         end
 
         function showCharacteristic(obj, x, vmul)
@@ -209,6 +204,20 @@ classdef Spring < phx.base.Object
                 phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'spring', obj.Stiffness, obj.Damping);
             end
         end
+
+        function applyColormap(obj)
+            % Keep Color aside while the colormap draws the line, or draw the
+            % line in Color again; the next redraw applies the colormap
+            if isempty(obj.hL) || ~isvalid(obj.hL)
+                return
+            end
+            ph = phx.internal.PrimitiveHelper(obj.hL);
+            if isempty(obj.Colormap)
+                ph.releaseColor;
+            else
+                ph.holdColor;
+            end
+        end
     end
 
     methods (Access = protected)
@@ -253,9 +262,10 @@ classdef Spring < phx.base.Object
 
                 hL = obj.hL;
                 hL.VertexData = single([pa', pb']);
-                if ~isempty(obj.CMap)
-                    cid = phx.Spring.x2id(norm(obj.Force), obj.ColorRange, [1 100]);
-                    hL.ColorData = obj.CMap(cid, :)';
+                map = obj.Colormap;
+                if ~isempty(map)
+                    cid = phx.Spring.x2id(norm(obj.Force), obj.ColorRange, [1 size(map, 1)]);
+                    hL.ColorData = uint8([map(cid, :) 1]'*255);
                 end
             end
         end

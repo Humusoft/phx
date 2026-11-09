@@ -125,7 +125,7 @@ s = phx.Spring(boxA, boxB, ...
     "FreeLength", 0, ...                   % rest length
     "Inertance", 0, ...                    % kg; an inerter adds it to the moving mass
     "PointA", [2 0 0], "PointB", [-2 0 0], ...
-    "Visible", true, "Colormap", "jet", "ColorRange", [0 2e6]);  % color = force magnitude
+    "Visible", true, "Colormap", jet(64), "ColorRange", [0 2e6]);  % color = force magnitude
 s.Force                                    % force on boxA over the last step (3-vector)
 s.Length                                   % current length (distance of the points)
 s.Energy                                   % elastic energy (J), dependent
@@ -146,7 +146,8 @@ t.Torque                                   % torque on the first body (3-vector)
   `k·(L − FreeLength) + c·L' + b·L''`. `Inertance` b (kg) is an ideal inerter in parallel:
   a mass m on it oscillates as m + b (suspension and vibration-isolation models).
   `Length` is the full current length (extension = `Length - FreeLength`).
-  `Colormap`/`ColorRange` visualize force magnitude along the drawn line.
+  `Colormap` (an N×3 matrix such as `jet(64)`, not a name; empty = the fixed `Color`, which
+  the colormap leaves unchanged) and `ColorRange` visualize force magnitude along the drawn line.
 - `phx.TorsionSpring` — torsion spring+rotary damper (+ rotary `Inertance`, kg·m²) about
   the z axis of `TransformA`; it only turns the bodies about that axis, so put it on a
   `phx.RevoluteJoint` with the **same frames** to spring the hinge. The angle (that of

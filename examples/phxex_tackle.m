@@ -12,7 +12,7 @@ function phxex_tackle(mCrate)
 % crate, the rope tension is a quarter of its weight, and the winch has
 % to reel in four meters of rope for every meter of lift. The winch is
 % driven by the Displacement property of the rope (negative = reeling
-% in); the rope is colored by its tension.
+% in).
 %
 % The demo hoists the crate, holds it, and lowers it back. The report
 % compares the measured tension and winching ratio with the theoretical
@@ -68,7 +68,7 @@ function phxex_tackle(mCrate)
     rope = phx.Rope([beam crate beam crate beam drum], ...
         "Points", [-0.3 0 -0.2; -0.15 0 0.35; 0 0 -0.25; 0.15 0 0.35; 0.3 0 -0.25; 0 0 0], ...
         "Stiffness", kRope, "Damping", cRope, ...
-        "Colormap", "heat", "ColorRange", [0 0.5*mCrate*grav]);
+        "Color", [0 0 0]);
 
     viewer.displayText("Settling...");
 

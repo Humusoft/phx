@@ -54,7 +54,6 @@ classdef FlexibleBody < phx.base.Object
 
     properties (Access = private)
         hP
-        CMap = zeros(0, 3)
     end
 
     % Rest shape and material, read when the simulation creates the body
@@ -115,9 +114,10 @@ classdef FlexibleBody < phx.base.Object
         % Restitution (bounciness) coefficient, 0 = no bounce
         Restitution (1, 1) double {mustBeNonnegative} = 0
 
-        % Name of the colormap that colours the surface by the von Mises
-        % stress, "none" for the plain Color
-        Colormap (1, 1) string = "none"
+        % Colormap (Nx3, RGB in 0-1) that colors the surface by the von
+        % Mises stress over ColorRange, e.g. turbo(64); empty for the
+        % plain Color
+        Colormap (:, 3) double {mustBeInRange(Colormap, 0, 1)} = zeros(0, 3)
 
         % Stress range (Pa) mapped on the whole colormap
         ColorRange (1, 2) double = [0 1e6]
@@ -269,14 +269,7 @@ classdef FlexibleBody < phx.base.Object
         end
 
         function set.Colormap(obj, map)
-            try
-                cmap = feval(map, 100);
-                obj.Colormap = map;
-            catch
-                cmap = zeros(0, 3);
-                obj.Colormap = "none";
-            end
-            obj.CMap = cmap;
+            obj.Colormap = map;
             obj.recolor;
         end
 
@@ -371,18 +364,21 @@ classdef FlexibleBody < phx.base.Object
             if isempty(obj.hP) || ~isvalid(obj.hP)
                 return
             end
-            if isempty(obj.CMap)
-                set(obj.hP, "FaceColor", obj.Color);
+            ph = phx.internal.PrimitiveHelper(obj.hP);
+            if isempty(obj.Colormap)
+                ph.releaseColor;
             else
+                ph.holdColor;
                 set(obj.hP, "FaceVertexCData", obj.stressColors(obj.VonMisesStress), "FaceColor", "interp");
             end
         end
 
         function rgb = stressColors(obj, stress)
+            map = obj.Colormap;
             r = obj.ColorRange;
-            id = round(1 + (stress - r(1))/(r(2) - r(1))*(size(obj.CMap, 1) - 1));
-            id = min(max(id, 1), size(obj.CMap, 1));
-            rgb = obj.CMap(id, :);
+            id = round(1 + (stress - r(1))/(r(2) - r(1))*(size(map, 1) - 1));
+            id = min(max(id, 1), size(map, 1));
+            rgb = map(id, :);
         end
 
         function engineSet(obj, field, value)
@@ -457,7 +453,7 @@ classdef FlexibleBody < phx.base.Object
             for i = 1:numel(cellObjs)
                 obj = cellObjs{i};
                 obj.hP.Vertices = phx.engine.io('get', world, obj.ObjectHandle, 'vertices')';
-                if ~isempty(obj.CMap)
+                if ~isempty(obj.Colormap)
                     obj.hP.FaceVertexCData = obj.stressColors(phx.engine.io('get', world, obj.ObjectHandle, 'stress')');
                 end
             end

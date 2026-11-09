@@ -137,11 +137,11 @@ function phxex_antisway
         % Main rope trolley -> hook and four corner slings hook -> platform
         phx.Rope([S.trolley S.hook], "Points", [0 0 -0.15; 0 0 0.1], ...
             "Stiffness", 2e5, "Damping", 2e3, ...
-            "Colormap", "heat", "ColorRange", [0 10000]);
+            "Colormap", hot(64), "ColorRange", [0 10000]);
         for c = [-1 -1; -1 1; 1 1; 1 -1]'
             phx.Rope([S.hook S.plate], "Points", [0 0 -0.05; 0.85*c' 0.04], ...
                 "Stiffness", 5e4, "Damping", 500, ...
-                "Colormap", "heat", "ColorRange", [0 4000]);
+                "Colormap", hot(64), "ColorRange", [0 4000]);
         end
 
         % The cargo: a two-layer pile of rocks dropped onto the platform

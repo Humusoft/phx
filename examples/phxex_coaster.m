@@ -75,7 +75,7 @@ function phxex_coaster(Options)
     for k = 1:nCars - 1
         phx.Spring(cars(k), cars(k + 1), "PointA", [-0.7 0 0], "PointB", [0.7 0 0], ...
             "FreeLength", 0.6, "Stiffness", 2e5, "Damping", 5e3, ...
-            "Colormap", "heat", "ColorRange", [0 2e4]);
+            "Colormap", hot(64), "ColorRange", [0 2e4]);
     end
     cart = cars(ceil(nCars/2));
 
