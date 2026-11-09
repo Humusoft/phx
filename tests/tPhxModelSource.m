@@ -40,9 +40,14 @@ classdef tPhxModelSource < PhxTestCase
 
             source = tc.writeSource(Kind);
             model = "tPhxModelSource_" + Kind;
+            % Close the library again, after the model and while PhxModel is
+            % still on the path: the DestroyFcn of its block calls PhxModel.
+            if ~bdIsLoaded("PhxLibrary")
+                load_system("PhxLibrary");
+                tc.addTeardown(@() close_system("PhxLibrary", 0));
+            end
             new_system(model);
             tc.addTeardown(@() close_system(model, 0));
-            load_system("PhxLibrary");
 
             add_block("PhxLibrary/PHX Model", model + "/PHX");
             set_param(model + "/PHX", "ModelSource", source, "OutputRefs", "Ball.Position(3)", ...
