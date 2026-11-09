@@ -81,7 +81,6 @@ function catalog = exampleCatalog
         entry("phxex_magnets",     "Fields, magnetism and fluids",   15)
         entry("phxex_magpendulum", "Fields, magnetism and fluids",   12)
         entry("phxex_charges",     "Fields, magnetism and fluids",   10)
-        entry("phxex_crystal",     "Fields, magnetism and fluids",   25)
         entry("phxex_rotmagdip",   "Fields, magnetism and fluids",   10)
         entry("phxex_maglev",      "Fields, magnetism and fluids",   10)
         entry("phxex_magcrane",    "Fields, magnetism and fluids",   10)  % mid-travel, the rotor hanging under the live magnet

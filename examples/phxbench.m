@@ -23,7 +23,6 @@ function phxbench(group)
     if g3, phxex_buoyancy; end
     if g3, phxex_camvalve; end
     if g1, phxex_conveyors; end
-    if g3, phxex_crystal; end
     if g1, phxex_determinism(200); end
     if g3, phxex_drone; end
     if g1, phxex_gears; end

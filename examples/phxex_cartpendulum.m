@@ -14,7 +14,7 @@ function phxex_cartpendulum
 %   Copyright 2026 HUMUSOFT s.r.o.
 
     % Clear the current figure, view the XZ plane, and configure lighting
-    clf; view(0, 0); axis("equal"); camlight("headlight"); grid("on");
+    clf; view(15, 15); axis("equal"); camlight("headlight"); grid("on");
     xlim([-1.5 1.5]); ylim([-0.2 0.2]); zlim([0 1.5]);
 
     % Bodies: a static rail, a cart on it, a pendulum rod under the cart and
