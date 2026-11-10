@@ -5,10 +5,10 @@ function phxex_plow(Options)
 % carried by a spring tine, a flexible beam clamped to a shank. The share is
 % lowered into the soil in steps. The joint that holds the clamp measures
 % the load on the mount: the inset plots the draft, the force against the
-% direction of travel, and the bending moment the tine puts on the mount.
-% The tine bends back under the draft and is coloured by its von Mises
-% stress. A strike-off plate on the far side levels the furrow before the
-% share comes round again.
+% direction of travel, and the bending moment (solid) and torsion (dotted)
+% the tine puts on the mount. The tine bends back under the draft and is
+% coloured by its von Mises stress. The camera moves in close before the
+% last plunge.
 %
 % Options:
 %     Depths        - working depths of the share below the soil surface (m)
@@ -24,16 +24,16 @@ function phxex_plow(Options)
 %                     welded only partly and the tine breaks up.
 %
 % Examples:
-%     phxex_plow(Depths = [0.02 0.04 0.06 0.08])
+%     phxex_plow(Depths = [0.02 0.04 0.06 0.08], Revolutions = 1)
+%     phxex_plow(Angle = 0, Offset = 0)    % share square on the tine axis
 %     phxex_plow(Angle = 30)
-%     phxex_plow(Offset = 0.025)
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 
     arguments
         Options.Depths (1, :) double {mustBePositive} = [0.03 0.06]
         Options.Speed (1, 1) double {mustBePositive} = 0.6
-        Options.Revolutions (1, 1) double {mustBePositive} = 1
+        Options.Revolutions (1, 1) double {mustBePositive} = 0.6
         Options.YoungsModulus (1, 1) double {mustBePositive} = 5e8
         Options.Angle (1, 1) double {mustBeInRange(Options.Angle, -60, 60)} = 10
         Options.Offset (1, 1) double {mustBeInRange(Options.Offset, -0.025, 0.025)} = 0.02
@@ -70,8 +70,7 @@ function phxex_plow(Options)
         "Shape", phx.shape.Revolution("Axis", "z", "Profile", profile, "Segments", 90, ...
         "Envelope", "concave", "Color", 0.35, "Texture", "xor", "TextureBlend", 0.5));
 
-    % Soil poured in as loose layers; it settles with low friction first,
-    % which packs it densely
+    % Soil poured in as loose layers
     rng(1);
     s = 1.25*d;
     [x, y, z] = ndgrid(-Ro:s:Ro, -Ro:s:Ro, t + d/2 + 0.002 + (0:8)*s);
@@ -139,10 +138,12 @@ function phxex_plow(Options)
     tEnd = ts(end);
     phx.Script(bin, {"EulerAngles", [0 settle tEnd]', [0 0 0; 0 0 0; 0 0 omega*(tEnd - settle)]});
 
-    % Inset plot of the draft and the mount moment, 0.1 s means
-    size_ = viewer.Figure.Position(3:4);
-    h_ = size_(2) - 250;
-    inset = uiaxes(viewer.Figure, "Position", [10 h_ min(400, 0.38*size_(1)) min(220, 0.3*size_(2))], "XLim", [0 tEnd], "Box", "on");
+    % Inset plot of the draft and the mount moments, 0.1 s means, in the
+    % top left corner whatever the size of the window
+    inset = uiaxes(viewer.Figure, "Units", "normalized", "Position", [0.005 0.68 0.32 0.31], ...
+        "XLim", [0 tEnd], "Box", "on");
+    inset.XAxis.Color = [0.2 0.2 0.2];      % the title and the time axis stand on the light sky
+    inset.Title.Color = [0.2 0.2 0.2];
     grid(inset, "on");
     xlabel(inset, "time (s)");
     title(inset, "Share above the soil");
@@ -150,9 +151,8 @@ function phxex_plow(Options)
     ylabel(inset, "draft (N)");
     p.Line = plot(inset, NaN, NaN, "LineWidth", 1.5);
     yyaxis(inset, "right");
-    ylabel(inset, "mount moments (N m)");
+    ylabel(inset, "bending, torsion (N m)");
     p.LineM = plot(inset, NaN, NaN, "-", NaN, NaN, ":", "LineWidth", 1);
-    % legend(inset, ["draft" "bending" "torsion"], "Location", "northwest");
 
     % Shank driver and load recorder, called every substep
     p.Shank = shank;
@@ -181,10 +181,9 @@ function phxex_plow(Options)
         "EngineSettings", opt);
     dt = 0.005;
 
-    % Let the soil settle, then give it its working friction and measure the
-    % surface along the path of the share
+    % Let the soil settle, open the collar and measure the surface along the
+    % path of the share
     sim.step(settle, round(settle/dt));
-    soil.Friction = 0.5;
     [collars.Collisions] = deal(false);
     P = soil.Positions;
     near = abs(hypot(P(:, 1), P(:, 2)) - Rm) < 0.05;
@@ -193,13 +192,12 @@ function phxex_plow(Options)
     p.Schedule(1, 2) = p.Start - p.Surface;
     driver.UserData = p;
 
-    %sim.step(tEnd - settle, round((tEnd - settle)/dt));
-    tic
-    sim.step(4, 4/dt);
+    % Run up to the last plunge, then move the camera in close to the tine
+    tClose = ts(end - 2);
+    sim.step(tClose - settle, round((tClose - settle)/dt));
     viewer.CameraPosition = [1.2 -0.5 0.75];
-    viewer.CameraTarget = [0.4 0.0 0.31];
-    sim.step(6, 6/dt);
-    toc
+    viewer.CameraTarget = [0.4 0 0.31];
+    sim.step(tEnd - tClose, round((tEnd - tClose)/dt));
 
     % Mean loads at each depth, skipping the first second of each hold
     p = driver.UserData;
@@ -221,10 +219,8 @@ function driveShank(fcn, ~, dt, time)
     if isnan(p.Surface)
         return
     end
-    zb = interp1(p.Schedule(:, 1), p.Schedule(:, 2), time, "linear", p.Schedule(end, 2));
-    if time < p.Schedule(1, 1)
-        zb = p.Schedule(1, 2);
-    end
+    s = p.Schedule;
+    zb = interp1(s(:, 1), s(:, 2), min(max(time, s(1, 1)), s(end, 1)));
     pos = p.Shank.Position;
     p.Shank.Position = [pos(1:2) p.Surface + zb + p.Offset];
 
