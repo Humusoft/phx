@@ -21,5 +21,6 @@ function phxex_softball
 
     sim = phx.Simulation;
     sim.step(4, 400);
+    delete(sim);
 
 end

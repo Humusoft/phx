@@ -10,5 +10,6 @@ function phxex_minimal
 
     sim = phx.Simulation;
     sim.step(1, 100);
+    delete(sim);
 
 end

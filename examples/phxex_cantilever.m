@@ -45,6 +45,7 @@ function phxex_cantilever
         viewer.displayText(sprintf("t = %4.2f s   tip sag %3.0f mm", sim.Time, 1e3*sag));
     end
     fprintf("The tip sagged by up to %.0f mm; the ball ended at z = %.2f m.\n", 1e3*lowest, ball.Position(3));
+    delete(sim);
 
 end
 
