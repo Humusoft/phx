@@ -125,7 +125,7 @@ default contact tolerance a box sliding on a floor brakes within 0.05&nbsp;% of 
 at any speed. It is the quantity that the diagnostics of the simulation report as
 <code class="phx-inline">JointResidual</code> and <code class="phx-inline">ContactResidual</code>
 (<a href="phx.Simulation.html#diagnostics">DiagnosticInfo</a>): a residual above the tolerance means
-that islands ran to their cap (<code class="phx-inline">IslandsAtCap</code>), where a higher cap or a
+that islands ran to their cap (<code class="phx-inline">JointIslandsAtCap</code>, <code class="phx-inline">ContactIslandsAtCap</code>), where a higher cap or a
 shorter step helps; a residual below it with a result still too coarse calls for a smaller
 tolerance.</p>
 <p>The tolerances and caps leave the time step as it is: a step too long for the scene makes stacks

@@ -73,7 +73,7 @@ classdef Settings
         % Most velocity iterations per step of a group of bodies held
         % together by a joint (and of whatever touches them); fewer once it
         % has converged. Raise it when such groups run to it without
-        % meeting their tolerance (IslandsAtCap of the diagnostics, a
+        % meeting their tolerance (JointIslandsAtCap of the diagnostics, a
         % JointResidual above JointTolerance) and the result matters: a
         % hard mechanism halves its joint gap with each doubling, one that
         % does not converge at all gains nothing. 0 leaves such groups at

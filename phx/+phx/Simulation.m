@@ -40,6 +40,12 @@ classdef Simulation < phx.base.Object
         % names by handle (built on first need, dropped with the pipelines)
         DiagnosticWarned = strings(1, 0)
         DiagnosticObjects = []
+        % The next step is the first of a new or changed scene: its
+        % penetrations are bodies placed inside each other (initialOverlap)
+        DiagnosticNewScene = true
+        % Bodies placed inside each other are still being pushed apart: no
+        % deepPenetration warning until the penetration falls below the limit
+        DiagnosticOverlapping = false
         % Diagnostics of the last call of step (getDiagnosticReport)
         DiagnosticReport = []
     end
@@ -84,7 +90,6 @@ classdef Simulation < phx.base.Object
         % body's velocity in the step (at least |g| dt), as the tolerances of
         % EngineSettings. Lengths are fractions of EngineSettings.LengthScale.
         DiagnosticJointResidual = 1
-        DiagnosticContactResidual = 1
         DiagnosticPenetration = 0.1
         DiagnosticJointGap = 0.01
         DiagnosticTravel = 0.25
@@ -137,11 +142,12 @@ classdef Simulation < phx.base.Object
         % Diagnostic information on the accuracy of the engine, after every step
         %   off - nothing is collected, at no cost (default)
         %   warnings - a warning when a step looks untrustworthy, each kind once
-        %     per simulation: joints or contacts far from converged
-        %     (phx:Simulation:jointsNotConverged, contactsNotConverged), bodies
-        %     deep in each other (deepPenetration), a joint pulled apart
-        %     (jointGap), a body that moves a large part of LengthScale in one
-        %     step (fastBody), NaN or Inf (nonfinite)
+        %     per simulation: joints far from converged
+        %     (phx:Simulation:jointsNotConverged), bodies placed inside each
+        %     other (initialOverlap) or sinking deep into each other later
+        %     (deepPenetration), a joint pulled apart (jointGap), a body that
+        %     moves a large part of LengthScale in one step (fastBody), NaN or
+        %     Inf (nonfinite)
         %   summary - the warnings, and one line per call of step
         %   detailed - the warnings, and a few lines per call of step that also
         %     name the bodies and joints concerned
@@ -288,6 +294,11 @@ classdef Simulation < phx.base.Object
                 redrawStep = min(redrawStep, 1);
             end
 
+            % Diagnostics of the first step of a new scene, read on their own
+            firstDiagnostics = [];
+            checkFirst = obj.DiagnosticLevel > 0 && obj.DiagnosticNewScene;
+            obj.DiagnosticNewScene = false;
+
             % Simulation steps
             for s = 1:substeps
                 % A redraw requested by redrawStep; the adaptive mode may skip it
@@ -324,6 +335,9 @@ classdef Simulation < phx.base.Object
                 end
 
                 time = time + dt;
+                if checkFirst && s == 1
+                    firstDiagnostics = phx.engine.io('get', world, uint64(0), 'diagnostics');
+                end
 
                 % Pacing is checked at every requested redraw, also at one the
                 % adaptive mode skips, or the simulation would run ahead until
@@ -360,7 +374,7 @@ classdef Simulation < phx.base.Object
                 obj.StepDuration = toc(stepClock);
             end
             if obj.DiagnosticLevel > 0
-                obj.reportDiagnostics(dt);
+                obj.reportDiagnostics(dt, firstDiagnostics);
             end
         end
 
@@ -378,8 +392,11 @@ classdef Simulation < phx.base.Object
         %       of them were split for parallel solving
         %     Iterations, MaxIterations - velocity iterations per island, mean
         %       and most
-        %     IslandsAtCap - islands that ran to JointIterations or
-        %       ContactIterations without meeting their tolerances
+        %     JointIslandsAtCap, ContactIslandsAtCap - islands that ran to
+        %       their cap without meeting their tolerances: those holding a
+        %       joint, spring or rope (cap JointIterations, or
+        %       ContactIterations for springs and ropes alone) and those of
+        %       contacts only (cap ContactIterations); summed over the steps
         %     JointResidual, ContactResidual - the largest velocity change one
         %       joint or contact still made to a body in the last iteration,
         %       relative to what the joints and contacts changed that body's
@@ -469,15 +486,21 @@ classdef Simulation < phx.base.Object
             end
         end
 
-        function reportDiagnostics(obj, dt)
+        function reportDiagnostics(obj, dt, first)
         %reportDiagnostics Reads the diagnostics of the steps just taken and reports them.
         %
         %   Stores the report of getDiagnosticReport, issues the warnings of the limits exceeded
         %   (each identifier once per simulation) and prints the summary or
-        %   detailed lines that DiagnosticInfo asks for.
+        %   detailed lines that DiagnosticInfo asks for. first holds the
+        %   diagnostics of the first step of a new scene, read on their own
+        %   ([] otherwise): its penetration is an initial overlap.
 
-            D = phx.engine.io('get', obj.ObjectHandle, uint64(0), 'diagnostics');
-            if isempty(D) || D.steps == 0
+            later = phx.engine.io('get', obj.ObjectHandle, uint64(0), 'diagnostics');
+            if isempty(later) && isempty(first)
+                return
+            end
+            D = phx.Simulation.mergeDiagnostics(first, later);
+            if D.steps == 0
                 return
             end
             scale = 1;
@@ -488,7 +511,7 @@ classdef Simulation < phx.base.Object
                 "MaxStepTime", D.maxsteptime, "ActiveBodies", D.activebodies, ...
                 "Islands", D.islands/D.steps, "SplitIslands", D.splitislands/D.steps, ...
                 "Iterations", D.iterations/max(D.islands, 1), "MaxIterations", D.maxiterations, ...
-                "IslandsAtCap", D.islandsatcap, ...
+                "JointIslandsAtCap", D.jointislandsatcap, "ContactIslandsAtCap", D.contactislandsatcap, ...
                 "JointResidual", D.residualjoints, "ContactResidual", D.residualcontacts, ...
                 "Penetration", D.penetration, "PenetratingBodies", {obj.diagnosticObjects(D.penetrationbodies)}, ...
                 "JointGap", D.jointgap, "GapJoint", {obj.diagnosticObjects(D.gapjoint)}, ...
@@ -497,7 +520,29 @@ classdef Simulation < phx.base.Object
                 "NonfiniteSteps", D.nonfinite, "NonfiniteBody", {obj.diagnosticObjects(D.nonfinitebody)}, ...
                 "Warnings", strings(1, 0));
 
-            % Limits: identifier, exceeded, message
+            % Penetrations: of the first step of a new scene (bodies placed
+            % inside each other) and of the steps after it
+            overlap = 0; overlapBodies = {};
+            if ~isempty(first) && first.steps > 0
+                overlap = first.penetration;
+                overlapBodies = obj.diagnosticObjects(first.penetrationbodies);
+            end
+            sink = 0; sinkBodies = {};
+            if ~isempty(later) && later.steps > 0
+                sink = later.penetration;
+                sinkBodies = obj.diagnosticObjects(later.penetrationbodies);
+            end
+            placedInside = overlap > obj.DiagnosticPenetration*scale;
+            deep = sink > obj.DiagnosticPenetration*scale;
+            if placedInside
+                obj.DiagnosticOverlapping = true;
+            elseif ~deep
+                obj.DiagnosticOverlapping = false;   % the overlap is resolved
+            end
+
+            % Limits: identifier, exceeded, message. A scene built with bodies
+            % inside each other takes some steps to push them apart; those steps
+            % do not warn of deep penetration as well.
             checks = {
                 "nonfinite", R.NonfiniteSteps > 0, ...
                     sprintf("A body reached a NaN or Inf pose or velocity (%s): the simulation has failed; reduce the step.", ...
@@ -505,12 +550,12 @@ classdef Simulation < phx.base.Object
                 "jointsNotConverged", R.JointResidual > obj.DiagnosticJointResidual, ...
                     sprintf("Joints converge poorly (residual %.2g, limit %.2g): reduce the step or raise JointIterations of EngineSettings.", ...
                     R.JointResidual, obj.DiagnosticJointResidual)
-                "contactsNotConverged", R.ContactResidual > obj.DiagnosticContactResidual, ...
-                    sprintf("Contacts converge poorly (residual %.2g, limit %.2g): reduce the step or raise ContactIterations of EngineSettings.", ...
-                    R.ContactResidual, obj.DiagnosticContactResidual)
-                "deepPenetration", R.Penetration > obj.DiagnosticPenetration*scale, ...
+                "initialOverlap", placedInside, ...
+                    sprintf("Bodies start %.3g m inside each other (%s), more than %g %% of LengthScale: place them apart; the engine pushes them out over the first steps.", ...
+                    overlap, obj.describe(overlapBodies), 100*obj.DiagnosticPenetration)
+                "deepPenetration", deep && ~obj.DiagnosticOverlapping, ...
                     sprintf("Bodies sink %.3g m into each other (%s), more than %g %% of LengthScale: reduce the step, or check LengthScale and the masses.", ...
-                    R.Penetration, obj.describe(R.PenetratingBodies), 100*obj.DiagnosticPenetration)
+                    sink, obj.describe(sinkBodies), 100*obj.DiagnosticPenetration)
                 "jointGap", R.JointGap > obj.DiagnosticJointGap*scale, ...
                     sprintf("A joint is pulled %.3g m apart (%s), more than %g %% of LengthScale: reduce the step or raise JointIterations.", ...
                     R.JointGap, obj.describe(R.GapJoint), 100*obj.DiagnosticJointGap)
@@ -539,15 +584,16 @@ classdef Simulation < phx.base.Object
             end
             if obj.DiagnosticLevel == 2
                 fprintf("t = %.4g s: %d steps, %.3g ms | iterations %.3g (max %d) | residual joints %.2g, contacts %.2g | " + ...
-                    "penetration %s | joint gap %s | speed %.3g m/s, %.3g rad/s%s\n", ...
+                    "at the cap %d, %d | penetration %s | joint gap %s | speed %.3g m/s, %.3g rad/s%s\n", ...
                     R.Time, R.Steps, 1000*R.StepTime, R.Iterations, R.MaxIterations, R.JointResidual, R.ContactResidual, ...
-                    mm(R.Penetration), mm(R.JointGap), R.MaxSpeed, R.MaxAngularSpeed, flags);
+                    R.JointIslandsAtCap, R.ContactIslandsAtCap, mm(R.Penetration), mm(R.JointGap), R.MaxSpeed, R.MaxAngularSpeed, flags);
             elseif obj.DiagnosticLevel == 3
                 fprintf("PHX diagnostics at t = %.4g s: %d steps, engine %.3g ms per step (longest %.3g), %d active bodies%s\n", ...
                     R.Time, R.Steps, 1000*R.StepTime, 1000*R.MaxStepTime, R.ActiveBodies, flags);
-                fprintf("  solver:      %.3g islands per step (%.3g split), %.3g iterations per island (most %d), %d at the cap\n", ...
-                    R.Islands, R.SplitIslands, R.Iterations, R.MaxIterations, R.IslandsAtCap);
-                fprintf("  residual:    joints %.2g, contacts %.2g\n", R.JointResidual, R.ContactResidual);
+                fprintf("  solver:      %.3g islands per step (%.3g split), %.3g iterations per island (most %d)\n", ...
+                    R.Islands, R.SplitIslands, R.Iterations, R.MaxIterations);
+                fprintf("  residual:    joints %.2g (%d islands at the cap), contacts %.2g (%d islands at the cap)\n", ...
+                    R.JointResidual, R.JointIslandsAtCap, R.ContactResidual, R.ContactIslandsAtCap);
                 fprintf("  penetration: %s, %s\n", mm(R.Penetration), obj.describe(R.PenetratingBodies));
                 fprintf("  joint gap:   %s, %s\n", mm(R.JointGap), obj.describe(R.GapJoint));
                 fprintf("  fastest:     %.3g m/s, %s; %.3g rad/s, %s\n", R.MaxSpeed, obj.describe(R.FastestBody), ...
@@ -644,8 +690,10 @@ classdef Simulation < phx.base.Object
                 obj.RedrawSync = true;
             end
 
-            % The diagnostics look the objects up anew
+            % The diagnostics look the objects up anew, and check the first
+            % step of the changed scene for bodies placed inside each other
             obj.DiagnosticObjects = [];
+            obj.DiagnosticNewScene = true;
 
             % Prepare empty execution pipelines structs
             epStruct = @(f, o) struct("Function", f, "Objects", o);
@@ -805,6 +853,37 @@ classdef Simulation < phx.base.Object
     end
 
     methods (Static, Access = private)
+        function D = mergeDiagnostics(A, B)
+        %mergeDiagnostics Joins the diagnostics of two runs of steps, A before B (either may be empty).
+
+            if isempty(A) || A.steps == 0
+                D = B;
+                return
+            elseif isempty(B) || B.steps == 0
+                D = A;
+                return
+            end
+            D = B;
+            for f = ["steps" "time" "islands" "splitislands" "iterations" "jointislandsatcap" ...
+                    "contactislandsatcap" "manifolds" "nonfinite"]
+                D.(f) = A.(f) + B.(f);
+            end
+            D.maxsteptime = max(A.maxsteptime, B.maxsteptime);
+            D.maxiterations = max(A.maxiterations, B.maxiterations);
+            D.residualjoints = max(A.residualjoints, B.residualjoints);       % max ignores NaN
+            D.residualcontacts = max(A.residualcontacts, B.residualcontacts);
+            for p = ["penetration" "penetrationbodies"; "jointgap" "gapjoint"; "speed" "fastestbody"; ...
+                    "angularspeed" "fastestturningbody"]'
+                if A.(p(1)) > B.(p(1))
+                    D.(p(1)) = A.(p(1));
+                    D.(p(2)) = A.(p(2));
+                end
+            end
+            if isempty(B.nonfinitebody)
+                D.nonfinitebody = A.nonfinitebody;
+            end
+        end
+
         function tf = isTopLevel(simObject)
             % A valid object that no other object owns; a simulation it already
             % belongs to does not count, so a scene can be simulated again

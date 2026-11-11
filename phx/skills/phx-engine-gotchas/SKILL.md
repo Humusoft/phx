@@ -147,12 +147,16 @@ keeps the worst value. Fields:
   made to a body in the solver's last iteration, relative to what joints and contacts
   changed that body's velocity in the step (at least |g| dt): the quantity of
   `JointTolerance` / `ContactTolerance`. At or below the tolerance = converged; above it =
-  islands stopped at their cap (`IslandsAtCap` > 0); `NaN` = no joints / contacts.
+  islands stopped at their cap (`JointIslandsAtCap` / `ContactIslandsAtCap` > 0); `NaN` =
+  no joints / contacts. Heaps of contacts rarely converge and sit at their cap as a rule:
+  judge them by `Penetration`, not by `ContactResidual` (there is no contact warning).
 - `Penetration` (m) + `PenetratingBodies`, `JointGap` (m) + `GapJoint` (fixed, revolute,
   spherical joints), `MaxSpeed` (m/s) + `FastestBody`, `MaxAngularSpeed` +
   `FastestTurningBody`, `NonfiniteSteps` + `NonfiniteBody` — the objects are the scene's
   `phx.*` objects in cell arrays, so you can read their `Name`, pose or mass directly.
-- `Iterations`/`MaxIterations` per island, `IslandsAtCap`, `Islands`/`SplitIslands`,
+- `Iterations`/`MaxIterations` per island, `JointIslandsAtCap` (islands with a joint,
+  spring or rope; cap `JointIterations`) and `ContactIslandsAtCap` (contacts only; cap
+  `ContactIterations`), summed over the steps, `Islands`/`SplitIslands`,
   `StepTime`/`MaxStepTime` (s, engine only), `ActiveBodies`, `Steps`, `Time`.
 - `Warnings` — identifiers of the limits exceeded in this call, even those whose
   console warning was already issued once.
@@ -164,8 +168,8 @@ to do:
 |---|---|---|
 | `nonfinite` | NaN/Inf pose or velocity | the run failed; reduce `dt` |
 | `jointsNotConverged` | joint residual > 1 | reduce `dt`, or raise `JointIterations` |
-| `contactsNotConverged` | contact residual > 1 | reduce `dt`, or raise `ContactIterations` |
-| `deepPenetration` | > 10 % of LengthScale | reduce `dt`; check `LengthScale`, mass ratios |
+| `initialOverlap` | bodies > 10 % of LengthScale inside each other in the first step after the simulation was made or `addObjects` | place them apart (the engine pushes them out, often violently) |
+| `deepPenetration` | later: > 10 % of LengthScale (silent while an initial overlap is pushed out) | reduce `dt`; check `LengthScale`, mass ratios |
 | `jointGap` | > 1 % of LengthScale | reduce `dt`, or raise `JointIterations` |
 | `fastBody` | > 25 % of LengthScale per engine step | reduce `dt` (tunnelling risk) |
 
@@ -176,8 +180,9 @@ How to use it when debugging:
   Prefer the report over parsing console text. `"detailed"` is for a human, or for
   finding *which* body or joint is the culprit in a few calls.
 - Fix in the order of the remedies: `dt` first, then `LengthScale` for small or large
-  parts, the solver last. Residual above the tolerance with `IslandsAtCap` > 0 → raise
-  the cap (`JointIterations` / `ContactIterations`); residual at the tolerance but the
+  parts, the solver last. Residual above the tolerance with islands at the cap → raise
+  that cap (`JointIslandsAtCap` → `JointIterations`, `ContactIslandsAtCap` →
+  `ContactIterations`); residual at the tolerance but the
   result still too coarse → lower the tolerance. Re-run and compare the numbers; halving
   `dt` until they stop changing is the ground truth.
 - A warning is a hint, not a verdict: a body in free fall (a parcel off a conveyor) trips

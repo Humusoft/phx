@@ -201,11 +201,11 @@ bodies and joints concerned.</td></tr>
 <pre class="phx-code">sim = phx.Simulation(ax, <span class="str">"DiagnosticInfo"</span>, <span class="str">"detailed"</span>);
 sim.step(0.05, 5);</pre>
 
-<pre class="phx-code">PHX diagnostics at t = 0.05 s: 5 steps, engine 0.0432 ms per step (longest 0.0885), 9 active bodies
-  solver:      2 islands per step (0 split), 30 iterations per island (most 50), 0 at the cap
-  residual:    joints 2.5e-06, contacts 0.16
-  penetration: 0.557 mm, phx.Body at [0.000146 2 0.3] and phx.Body at [0.000182 2 0.499]
-  joint gap:   0.000408 mm, phx.RevoluteJoint of phx.Body "anchor" and phx.Body "link1"
+<pre class="phx-code">PHX diagnostics at t = 0.05 s: 5 steps, engine 0.0505 ms per step (longest 0.0973), 9 active bodies
+  solver:      2 islands per step (0 split), 19 iterations per island (most 24)
+  residual:    joints 0.00098 (0 islands at the cap), contacts 0.061 (5 islands at the cap)
+  penetration: 0.136 mm, phx.Body at [-2.09e-05 2 0.3] and phx.Body at [-6.4e-05 2 0.5]
+  joint gap:   0.00267 mm, phx.RevoluteJoint of phx.Body "link1" and phx.Body "link2"
   fastest:     0.544 m/s, phx.Body "link2"; 2.15 rad/s, phx.Body "link1"</pre>
 
 <p>Each line covers the engine steps of one call of <code class="phx-inline">step</code>, taking the
@@ -219,7 +219,9 @@ its joints and contacts meet <code class="phx-inline">JointTolerance</code> and
 <code class="phx-inline">ContactTolerance</code> of <a href="phx.engine.Settings.html">phx.engine.Settings</a>,
 at the latest at <code class="phx-inline">JointIterations</code> or
 <code class="phx-inline">ContactIterations</code> (its cap); the islands that reached their cap
-without meeting their tolerances are counted.</li>
+without meeting their tolerances are counted apart for islands with joints and islands of contacts
+only, so that it shows which cap to raise. Heaps of bodies rarely converge and reach their cap as a
+rule; the depth of their contacts (penetration below) tells whether that matters.</li>
 <li><b>residual</b> &mdash; how far the solver still was from a solution after its last iteration:
 the largest change of velocity that one joint or one contact still made to a body in that iteration,
 as a fraction of what the joints and contacts changed that body's velocity in the step (at least
@@ -240,9 +242,12 @@ joint.</li>
 <td>The simulation has failed; reduce the step.</td></tr>
 <tr><td class="name">phx:Simulation:jointsNotConverged</td><td>the joint residual exceeds 1</td>
 <td>Reduce the step, or raise <code class="phx-inline">JointIterations</code>.</td></tr>
-<tr><td class="name">phx:Simulation:contactsNotConverged</td><td>the contact residual exceeds 1</td>
-<td>Reduce the step, or raise <code class="phx-inline">ContactIterations</code>.</td></tr>
-<tr><td class="name">phx:Simulation:deepPenetration</td><td>bodies sink into each other by more than
+<tr><td class="name">phx:Simulation:initialOverlap</td><td>in the first step of a new or changed
+scene (after creating the simulation or <code class="phx-inline">addObjects</code>), bodies are inside each
+other by more than 10&nbsp;% of <code class="phx-inline">LengthScale</code></td>
+<td>Place the bodies apart. The engine pushes them out over the first steps, often violently;
+<code class="phx-inline">deepPenetration</code> stays silent until it has done so.</td></tr>
+<tr><td class="name">phx:Simulation:deepPenetration</td><td>later, bodies sink into each other by more than
 10&nbsp;% of <code class="phx-inline">LengthScale</code></td>
 <td>Reduce the step; check <code class="phx-inline">LengthScale</code> and the mass ratios.</td></tr>
 <tr><td class="name">phx:Simulation:jointGap</td><td>a joint is pulled apart by more than 1&nbsp;% of
@@ -323,7 +328,7 @@ Window.</p>
 <tr><td class="name">ActiveBodies</td><td>Number of bodies the engine moves.</td></tr>
 <tr><td class="name">Islands, SplitIslands</td><td>Islands per engine step, and how many of them were split to be solved on several threads.</td></tr>
 <tr><td class="name">Iterations, MaxIterations</td><td>Velocity iterations per island, mean and most.</td></tr>
-<tr><td class="name">IslandsAtCap</td><td>Number of islands that ran to <code class="phx-inline">JointIterations</code> or <code class="phx-inline">ContactIterations</code> without meeting their tolerances.</td></tr>
+<tr><td class="name">JointIslandsAtCap, ContactIslandsAtCap</td><td>Number of islands that ran to their cap without meeting their tolerances, summed over the steps: islands holding a joint, spring or rope (cap <code class="phx-inline">JointIterations</code>; <code class="phx-inline">ContactIterations</code> for springs and ropes alone), and islands of contacts only (cap <code class="phx-inline">ContactIterations</code>).</td></tr>
 <tr><td class="name">JointResidual, ContactResidual</td><td>Largest relative residual of a joint and of a contact (see <a href="#diagnostics">Diagnostics</a>); <code class="phx-inline">NaN</code> when there were none.</td></tr>
 <tr><td class="name">Penetration, PenetratingBodies</td><td>Deepest penetration, <span class="phx-unit">m</span>, and a cell array of the two bodies concerned.</td></tr>
 <tr><td class="name">JointGap, GapJoint</td><td>Widest joint gap, <span class="phx-unit">m</span>, and the joint concerned (in a cell array).</td></tr>
