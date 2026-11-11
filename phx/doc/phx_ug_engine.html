@@ -69,7 +69,7 @@ set directly, which overrides the value derived from the scale.</p>
 <p>Contacts and joints are solved iteratively in every substep, each group of bodies that touch or
 are joined on its own. A group stops iterating once its joints and contacts are accurate enough:
 <code class="phx-inline">JointTolerance</code> (default 10<sup>&minus;3</sup>) and
-<code class="phx-inline">ContactTolerance</code> (default 10<sup>&minus;2</sup>) of
+<code class="phx-inline">ContactTolerance</code> (default 10<sup>&minus;3</sup>) of
 <a href="phx.engine.Settings.html">phx.engine.Settings</a> are the relative accuracy of the impulses
 a body receives. A mechanism at rest or in steady motion needs only a few iterations; a group that
 has not converged stops at <code class="phx-inline">JointIterations</code> (default 50, a group

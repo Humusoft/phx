@@ -65,9 +65,10 @@ classdef Settings
         JointTolerance (1, 1) double {mustBeNonnegative, mustBeFinite} = 1e-3
 
         % Velocity tolerance of the contacts, as JointTolerance; 0 runs
-        % every group to its iteration count. Contacts in heaps converge
-        % slowly, hence the looser default.
-        ContactTolerance (1, 1) double {mustBeNonnegative, mustBeFinite} = 1e-2
+        % every group to its iteration count. Heaps rarely meet it and run
+        % to ContactIterations; a looser tolerance lets small rolling or
+        % tipping bodies drift off their course.
+        ContactTolerance (1, 1) double {mustBeNonnegative, mustBeFinite} = 1e-3
 
         % Most velocity iterations per step of a group of bodies held
         % together by a joint (and of whatever touches them); fewer once it

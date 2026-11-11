@@ -48,10 +48,11 @@ what the joints and contacts changed it in the step. Smaller is more accurate an
 iterations; <code class="phx-inline">0</code> runs every group with a joint to
 <code class="phx-inline">JointIterations</code>, a fixed count. See <a href="#iterations">How the
 iterations end</a>.</td></tr>
-<tr><td class="name">ContactTolerance</td><td class="dflt">1e-2</td>
+<tr><td class="name">ContactTolerance</td><td class="dflt">1e-3</td>
 <td>Velocity tolerance of the contacts, as <code class="phx-inline">JointTolerance</code>;
-<code class="phx-inline">0</code> runs every group to its iteration count. Contacts in heaps
-converge slowly, hence the looser default.</td></tr>
+<code class="phx-inline">0</code> runs every group to its iteration count. Heaps rarely meet it
+and run to <code class="phx-inline">ContactIterations</code>; a looser tolerance makes them
+cheaper but lets small rolling or tipping bodies drift off their course.</td></tr>
 <tr><td class="name">JointIterations</td><td class="dflt">50</td>
 <td>The most velocity iterations per step of a group of bodies held together by a joint, and of
 whatever touches it; fewer once it has converged. Raise it when such groups run to it without
@@ -120,7 +121,7 @@ heavy body on a light one or a tall stack runs to the cap.</p>
 <p>A tolerance is the relative accuracy of the impulses a body receives: the largest change one
 joint or contact still made to the body's velocity in the last iteration, as a fraction of what
 the joints and contacts changed its velocity in the whole step (at least |g|&nbsp;dt). With the
-default contact tolerance a box sliding on a floor brakes within 0.3&nbsp;% of its Coulomb friction
+default contact tolerance a box sliding on a floor brakes within 0.05&nbsp;% of its Coulomb friction
 at any speed. It is the quantity that the diagnostics of the simulation report as
 <code class="phx-inline">JointResidual</code> and <code class="phx-inline">ContactResidual</code>
 (<a href="phx.Simulation.html#diagnostics">DiagnosticInfo</a>): a residual above the tolerance means

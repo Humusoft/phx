@@ -113,7 +113,7 @@ sim = phx.Simulation(ax, "EngineSettings", ...
   Set `LengthScale` for small parts instead of tuning the tolerances one by one.
 - **Velocity iterations end at a tolerance.** Each island (bodies that touch or are
   joined) iterates until its joints meet `JointTolerance` (1e-3) and its contacts
-  `ContactTolerance` (1e-2), at most `JointIterations` (50, an island with a joint) or
+  `ContactTolerance` (1e-3), at most `JointIterations` (50, an island with a joint) or
   `ContactIterations` (20, any other; there is no `Iterations` property any more). A
   tolerance is the relative accuracy of the impulses a body receives: the largest change
   one joint/contact still makes to a body's velocity in an iteration, as a fraction of
