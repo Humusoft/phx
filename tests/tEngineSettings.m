@@ -1,5 +1,5 @@
 classdef tEngineSettings < PhxTestCase
-%tEngineSettings Contract of phx.engine.Settings: LengthScale and the modes.
+%tEngineSettings Contract of phx.engine.Settings: LengthScale, modes, convergence.
 %
 %   The collision tolerances follow LengthScale in automatic mode (Margin
 %   4 %, SpeculativeDistance 2 %, PenetrationSlop 0.1 % of it) and keep a
@@ -7,7 +7,13 @@ classdef tEngineSettings < PhxTestCase
 %   XLim and XLimMode. Settings is a value class, so these tests need
 %   neither the physics engine nor a graphics session.
 %
-%   See also phx.engine.Settings
+%   The velocity iterations of an island end at JointTolerance and
+%   ContactTolerance, at the latest at JointIterations (an island with a
+%   joint) or ContactIterations (any other); a tolerance of 0 runs every
+%   island to its cap. The tests of that (tagged Engine) read the counts
+%   from getDiagnosticReport of phx.Simulation.
+%
+%   See also phx.engine.Settings, phx.Simulation/getDiagnosticReport
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 
@@ -83,6 +89,102 @@ classdef tEngineSettings < PhxTestCase
         function lengthScaleMustBePositiveAndFinite(tc)
             tc.verifyError(@() phx.engine.Settings("LengthScale", 0), "MATLAB:validators:mustBePositive");
             tc.verifyError(@() phx.engine.Settings("LengthScale", Inf), "MATLAB:validators:mustBeFinite");
+        end
+
+        function convergenceDefaults(tc)
+            s = phx.engine.Settings;
+            tc.verifyEqual([s.JointTolerance, s.ContactTolerance], [1e-3 1e-3]);
+            tc.verifyEqual([s.JointIterations, s.ContactIterations, s.PositionIterations], [50 20 4]);
+        end
+
+        function invalidConvergenceValuesAreRefused(tc)
+            s = phx.engine.Settings;
+            for name = ["JointTolerance" "ContactTolerance"]
+                tc.verifyError(@() setfield(s, name, -1e-3), "MATLAB:validators:mustBeNonnegative", name); %#ok<SFLD>
+                tc.verifyError(@() setfield(s, name, Inf), "MATLAB:validators:mustBeFinite", name); %#ok<SFLD>
+            end
+            tc.verifyError(@() setfield(s, "JointIterations", 256), "MATLAB:validators:mustBeInRange"); %#ok<SFLD>
+            tc.verifyError(@() setfield(s, "JointIterations", 2.5), "MATLAB:validators:mustBeInteger"); %#ok<SFLD>
+            tc.verifyError(@() setfield(s, "ContactIterations", 0), "MATLAB:validators:mustBePositive"); %#ok<SFLD>
+            tc.verifyError(@() setfield(s, "PositionIterations", 0), "MATLAB:validators:mustBePositive"); %#ok<SFLD>
+        end
+    end
+
+    methods (Test, TestTags = {'Engine'})
+        function applyHandsTheValuesToTheEngine(tc)
+            % ContactIterations is the engine's iteration count; the angular
+            % velocities enter the tolerances over a tenth of LengthScale
+            tc.requireEngine;
+            w = phx.engine.io('setup');
+            tc.addTeardown(@() phx.engine.io('clear', w));
+            phx.engine.Settings("JointTolerance", 2e-3, "ContactTolerance", 5e-3, "JointIterations", 30, ...
+                "ContactIterations", 12, "PositionIterations", 3, "LengthScale", 0.01).apply(w);
+            s = phx.engine.io('get', w, uint64(0), 'settings');
+            tc.verifyEqual([s.jointtolerance, s.contacttolerance], [2e-3 5e-3], "RelTol", 1e-6);
+            tc.verifyEqual(s.tolerancelength, 1e-3, "RelTol", 1e-6);
+            tc.verifyEqual([s.iterations, s.jointiterations, s.positioniterations], [12 30 3]);
+        end
+
+        function zeroJointToleranceRunsToJointIterations(tc)
+            % A swinging pendulum changes its joint impulse in every
+            % iteration, so it runs to the cap in every step
+            s = phx.engine.Settings("JointTolerance", 0, "JointIterations", 30, "ContactIterations", 12);
+            r = tc.runScene(s, "pendulum");
+            tc.verifyEqual([r.Iterations, r.MaxIterations], [30 30]);
+        end
+
+        function islandsAtTheCapAreCountedByKind(tc)
+            % An unmet tolerance runs a jointed island to JointIterations and
+            % a contact island to ContactIterations, each counted apart
+            s = phx.engine.Settings("JointTolerance", 1e-9, "ContactTolerance", 1e-9, ...
+                "JointIterations", 30, "ContactIterations", 12);
+            r = tc.runScene(s, "pendulum");
+            tc.verifyEqual(r.MaxIterations, 30);
+            tc.verifyGreaterThan(r.JointIslandsAtCap, 0);
+            tc.verifyEqual(r.ContactIslandsAtCap, 0);
+            tc.verifyTrue(isnan(r.ContactResidual), "No contact island, no contact residual");
+            r = tc.runScene(s, "box");
+            tc.verifyEqual(r.MaxIterations, 12);
+            tc.verifyEqual(r.JointIslandsAtCap, 0);
+            tc.verifyGreaterThan(r.ContactIslandsAtCap, 0);
+            tc.verifyTrue(isnan(r.JointResidual), "No joint island, no joint residual");
+        end
+
+        function convergedIslandsEndBeforeTheCap(tc)
+            % At the default tolerances a swinging pendulum and a box sliding
+            % to rest converge long before their caps
+            r = tc.runScene(phx.engine.Settings, "both");
+            tc.verifyEqual(r.Islands, 2, "A pendulum and a box");
+            tc.verifyLessThan(r.MaxIterations, 50);
+            tc.verifyLessThan(r.Iterations, 20);
+            tc.verifyEqual([r.JointIslandsAtCap, r.ContactIslandsAtCap], [0 0]);
+            tc.verifyLessThanOrEqual([r.JointResidual, r.ContactResidual], 1e-3);
+        end
+    end
+
+    methods (Access = private)
+        function r = runScene(tc, settings, scene)
+            % Diagnostics of 0.2 s of a pendulum swinging from 60 degrees,
+            % of a box sliding on a static floor at 1 m/s, or of both apart
+            tc.requireEngine;
+            bodies = phx.Body.empty;
+            if scene ~= "box"
+                anchor = phx.Body([], "Type", "static", "Position", [0 0 2], "Shape", {"Sphere", "Radius", 0.05});
+                bob = phx.Body([], "Position", [sind(60) 0 2 - cosd(60)], "Shape", {"Sphere", "Radius", 0.1});
+                phx.RevoluteJoint(anchor, bob, "PointA", [0 0 0], "PointB", [-sind(60) 0 cosd(60)], ...
+                    "AxisA", [0 1 0], "AxisB", [0 1 0]);
+                bodies = [bodies anchor bob];
+            end
+            if scene ~= "pendulum"
+                floor = phx.Body([], "Type", "static", "Position", [3 0 -0.5], "Shape", {"Box", "Size", [2 2 1]});
+                box = phx.Body([], "Position", [3 0 0.25], "LinearVelocity", [1 0 0], ...
+                    "Shape", {"Box", "Size", [0.5 0.5 0.5]});
+                bodies = [bodies floor box];
+            end
+            sim = phx.Simulation(bodies, "EngineSettings", settings, "DiagnosticInfo", "warnings");
+            tc.addTeardown(@() delete(sim));
+            sim.step(0.2, 20, -1);
+            r = sim.getDiagnosticReport;
         end
     end
 
