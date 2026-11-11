@@ -3,7 +3,7 @@ function phxex_screwconv(showGraphs)
 %
 % The screw is a flat profile swept along a helix (phx.shape.Extrusion). It
 % turns kinematically, picks up balls from a hopper and pushes them along a
-% corridor; the axial force on the screw is logged.
+% round trough; the axial force on the screw is logged.
 %
 % phxex_screwconv(false) skips the plot.
 
@@ -27,16 +27,25 @@ function phxex_screwconv(showGraphs)
     t = linspace(0, 2*pi, 8)';
     profile = [cos(t), sin(t)*0.2]*0.1;
     shape = phx.shape.Extrusion("Spine", spine, "Profile", profile, "Axis", "x", "Envelope", "concave", "Material", "glossy", "Color", [0.5 0.5 0.5]);
-    screw = phx.Body(ax, "Type", "kinematic", "Position", [-0.5 0 0.33], "Shape", shape);
+    zAxis = 0.35;
+    screw = phx.Body(ax, "Type", "kinematic", "Position", [-0.31 0 zAxis], "Shape", shape);
+
+    % Trough round about the screw axis, 25 mm wider than the flight, so that
+    % no ball can wedge between the flight and the trough
+    rIn = 0.275; wall = 0.03; h = 0.6 - zAxis;
+    a = linspace(pi, 2*pi, 37)';
+    troughProfile = [-rIn h; rIn*cos(a) rIn*sin(a); rIn h; ...
+        rIn+wall h; (rIn+wall)*cos(flip(a)) (rIn+wall)*sin(flip(a)); -rIn-wall h];
+    trough = phx.shape.Extrusion("Spine", [-1 0 0; 0.975 0 0], "Profile", troughProfile, ...
+        "Envelope", "concave", "Color", 0.9);
+    phx.Body(ax, "Type", "static", "Position", [0 0 zAxis], "Shape", trough);
 
     % Walls
-    phx.Body(ax, "Type", "static", "Position", [0 0.3 0.2], "Shape", {"Box", "Size", [2 0.05 0.4], "Color", 0.9});
-    phx.Body(ax, "Type", "static", "Position", [0 -0.3 0.2], "Shape", {"Box", "Size", [2 0.05 0.4], "Color", 0.9});
     phx.Body(ax, "Type", "static", "Position", [1 0 0.2], "Shape", {"Box", "Size", [0.05 0.6 0.4], "Color", 0.9});
     phx.Body(ax, "Type", "static", "Position", [1 0 0.7], "Shape", {"Box", "Size", [0.05 0.6 0.6], "Color", [1 1 0.8], "Style", "wireframe", "ForcePatch", true});
     phx.Body(ax, "Type", "static", "Position", [0.7 0.3 0.7], "Shape", {"Box", "Size", [0.6 0.05 0.6], "Color", [1 1 0.8], "Style", "wireframe", "ForcePatch", true});
     phx.Body(ax, "Type", "static", "Position", [0.7 -0.3 0.7], "Shape", {"Box", "Size", [0.6 0.05 0.6], "Color", [1 1 0.8], "Style", "wireframe", "ForcePatch", true});
-    phx.Body(ax, "Type", "static", "Position", [0.4 0 0.95], "Shape", {"Box", "Size", [0.05 0.6 0.6], "Color", [1 1 0.8], "Style", "wireframe", "ForcePatch", true});
+    phx.Body(ax, "Type", "static", "Position", [0.4 0 1.05], "Shape", {"Box", "Size", [0.05 0.6 0.6], "Color", [1 1 0.8], "Style", "wireframe", "ForcePatch", true});
 
     % Balls
     for j = -0.2:0.2:0.2
