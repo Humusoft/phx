@@ -1,7 +1,7 @@
 function phxex_vengine(opts)
 % PHXEX_VENGINE V-configuration multi-cylinder piston engine (slider-crank)
 %
-% A motor-driven crankshaft (phx.shape.Extrusion) on two main bearings spins a
+% A motor-driven crankshaft (phx.shape.Extrusion) on its main bearing spins a
 % bank of slider-crank cylinders: crank pin -> rod (phx.RevoluteJoint) -> wrist
 % pin (phx.SphericalJoint) -> piston on a phx.PrismaticJoint, in two banks opened
 % by the bank angle. The block is dynamic, connected to a static pedestal by one
@@ -9,7 +9,7 @@ function phxex_vengine(opts)
 % block motion and the joint reaction (mount.ForceA). Cylinder count, bank angle,
 % stroke, bore and rod length are settable.
 %
-% The drive is the front main bearing's motor: TargetVelocity sets the shaft
+% The drive is the main bearing's motor: TargetVelocity sets the shaft
 % speed, MaxTorque paces the spin-up.
 %
 % phxex_vengine("NumCylinders", 6, "BankAngle", 60) runs a 60-degree V6.
@@ -173,10 +173,10 @@ function [crank, block, mount, cat, drive] = buildScene(ax, nPair, halfV, r, L, 
     crank = phx.Body(ax, "Type", "dynamic", "Position", [0 0 zc], "Shape", crankShape);
     crank.Collisions = false;               % visual-only shape; joints do the constraining
     crank.Mass    = 3;                       % lumped shaft + flywheel
-    crank.Inertia = [0.03 0.03 0.03];        % modest flywheel (bearings lock the tilt DOFs)
+    crank.Inertia = [0.03 0.03 0.03];        % modest flywheel (the bearing locks the tilt DOFs)
 
     % Engine block: a dynamic plate carrying the whole engine, held only by the
-    % single central mount below (partner for the bearings and piston sliders).
+    % single central mount below (partner for the bearing and piston sliders).
     blkT   = 0.02;
     blkTop = zc - r - 1.0*bore;
     blkPos = [0 0 blkTop - blkT/2];
@@ -184,13 +184,11 @@ function [crank, block, mount, cat, drive] = buildScene(ax, nPair, halfV, r, L, 
     block  = phx.Body(ax, "Type", "dynamic", "Position", blkPos, ...
         "Shape", {"Box", "Size", [Lx, Ly, blkT], "Color", [0.8 0.32 0.36]});
 
-    % Two main bearings: a revolute joint at each shaft end ties the crankshaft
+    % Main bearing: one revolute joint at the front shaft end ties the crankshaft
     % to the block, leaving it free only to spin about its own axis (world X).
-    % The loop ends on the front bearing, left in drive for the caller to drive.
-    for e = [-1 +1]
-        drive = phx.RevoluteJoint(block, crank, "PointA", [e*crankLen/2, 0, zc] - blkPos, "PointB", [e*crankLen/2, 0, 0], ...
-            "AxisA", [1 0 0], "AxisB", [1 0 0], "Visible", false);
-    end
+    % A second one at the other end would hold the same five motions again.
+    drive = phx.RevoluteJoint(block, crank, "PointA", [crankLen/2, 0, zc] - blkPos, "PointB", [crankLen/2, 0, 0], ...
+        "AxisA", [1 0 0], "AxisB", [1 0 0], "Visible", false);
 
     % Engine mount: one static pedestal under the block, connected by a phx.BushingJoint
     % whose small compliance lets the block micro-vibrate - read from
