@@ -27,7 +27,7 @@ function phxex_screwconv(showGraphs)
     t = linspace(0, 2*pi, 8)';
     profile = [cos(t), sin(t)*0.2]*0.1;
     shape = phx.shape.Extrusion("Spine", spine, "Profile", profile, "Axis", "x", "Envelope", "concave", "Material", "glossy", "Color", [0.5 0.5 0.5]);
-    screw = phx.Body(ax, "Type", "kinematic", "Position", [-0.5 0 0.3], "Shape", shape);
+    screw = phx.Body(ax, "Type", "kinematic", "Position", [-0.5 0 0.33], "Shape", shape);
 
     % Walls
     phx.Body(ax, "Type", "static", "Position", [0 0.3 0.2], "Shape", {"Box", "Size", [2 0.05 0.4], "Color", 0.9});
@@ -36,7 +36,7 @@ function phxex_screwconv(showGraphs)
     phx.Body(ax, "Type", "static", "Position", [1 0 0.7], "Shape", {"Box", "Size", [0.05 0.6 0.6], "Color", [1 1 0.8], "Style", "wireframe", "ForcePatch", true});
     phx.Body(ax, "Type", "static", "Position", [0.7 0.3 0.7], "Shape", {"Box", "Size", [0.6 0.05 0.6], "Color", [1 1 0.8], "Style", "wireframe", "ForcePatch", true});
     phx.Body(ax, "Type", "static", "Position", [0.7 -0.3 0.7], "Shape", {"Box", "Size", [0.6 0.05 0.6], "Color", [1 1 0.8], "Style", "wireframe", "ForcePatch", true});
-    phx.Body(ax, "Type", "static", "Position", [0.4 0 0.7], "Shape", {"Box", "Size", [0.05 0.6 0.6], "Color", [1 1 0.8], "Style", "wireframe", "ForcePatch", true});
+    phx.Body(ax, "Type", "static", "Position", [0.4 0 0.95], "Shape", {"Box", "Size", [0.05 0.6 0.6], "Color", [1 1 0.8], "Style", "wireframe", "ForcePatch", true});
 
     % Balls
     for j = -0.2:0.2:0.2

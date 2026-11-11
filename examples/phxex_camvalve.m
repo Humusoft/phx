@@ -147,13 +147,14 @@ function [cam, valve] = buildScene(ax, rBase, lift, noseSpan, camThick, ...
                 Lvalve-hCap rStem; Lvalve-hCap rCap; Lvalve rCap; Lvalve 0];
     valveShape = phx.shape.Revolution("Axis", "z", "Profile", vProfile, "Envelope", "concave", ...
         "Color", [0.8 0.5 0.2], "Texture", "stripes", "TextureBlend", 0.3);
-    zv = zc - rBase - Lvalve;                    % tappet just touching the base circle
+    zTouch = zc - rBase - Lvalve;                % tappet just touching the base circle
+    zv = zTouch - 0.002;                         % valve resting on its stop, 2 mm lash
     valve = phx.Body(ax, "Position", [0 0 zv], "Shape", valveShape, "Friction", 1);
     valve.Mass = mValve;
     valve.Inertia = [1e-4 1e-4 1e-4];            % rotation is locked by the joint
 
     % Cylinder-head deck: static, both the guide partner and the spring seat.
-    zDeck = zv + 0.045;
+    zDeck = zTouch + 0.045;
     deck = phx.Body(ax, "Type", "static", "Position", [0 0 zDeck], ...
         "Shape", {"Cylinder", "Diameter", 0.04 "Height", 0.04, "Color", [0.5 0.7 0.9]});
 
