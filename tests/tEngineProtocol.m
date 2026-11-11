@@ -1014,7 +1014,8 @@ classdef tEngineProtocol < PhxTestCase
             tc.verifyTrue(s.contactcache);
             tc.verifyFalse(s.sleeping, "newWorld switches sleeping off.");
             tc.verifyEqual(sort(string(fieldnames(s)))', sort(["iterations" "positioniterations" "jointiterations" ...
-                "springiterations" "margin" "penetrationslop" "speculativedistance" "contactcache" "threads" "sleeping"]));
+                "springiterations" "margin" "penetrationslop" "speculativedistance" "contactcache" "threads" "sleeping" ...
+                "jointtolerance" "contacttolerance" "tolerancelength" "diagnostics"]));
             tc.verifyError(@() phx.engine.io('set', w, uint64(0), 'settings', struct('nosuchsetting', 1)), ...
                 "phx:engine:unsupported");
             tc.verifyError(@() phx.engine.io('set', w, uint64(0), 'numiterations', 7), "phx:engine:unsupported");

@@ -682,6 +682,10 @@ building a scene from scratch:
   `Mass` (see the note above) or the lever will feel wrong even with the right masses.
 - **Stability.** Keep `dt = interval/substeps ≤ 5 ms` for contact-heavy or tightly
   constrained scenes; raise `substeps` rather than taking bigger steps.
+- **A scene that misbehaves** (joints stretch, bodies sink or tunnel, jitter): measure
+  first with `phx.Simulation(..., "DiagnosticInfo", "warnings")` and
+  `sim.getDiagnosticReport` — warnings with remedies, residuals, penetration, joint gaps
+  and the bodies concerned. Details in **phx-engine-gotchas**; switch it off when done.
 
 ## How the object model works (only when subclassing)
 

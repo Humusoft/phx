@@ -69,10 +69,12 @@ classdef tJointFrames < PhxTestCase
         function constrainedOffsetIsPulledGradually(tc)
             % The recovery is a pull over several steps, not a teleport in
             % the first substep - a scene built with inconsistent frames
-            % drifts into place rather than exploding.
+            % drifts into place rather than exploding. (Each position
+            % iteration takes a fifth of the error: 4 iterations close 59 %
+            % of it in a step.)
             p = tc.slide([0 tc.Skew tc.ZStart - tc.ZColumn], tc.Dt);
             tc.verifyGreaterThan(p(2), 0);
-            tc.verifyLessThan(p(2), tc.Skew/2);
+            tc.verifyLessThan(p(2), 0.75*tc.Skew);
         end
 
         function perpendicularDirectionStaysConstrained(tc)

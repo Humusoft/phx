@@ -85,6 +85,11 @@ fast as possible. See <a href="#pacing">Pacing</a> below.</td></tr>
 <td>Turn off visibility for all objects that become invalid during the simulation.</td></tr>
 <tr><td class="name">EngineSettings</td><td class="dflt">[]</td>
 <td>Initial engine settings, a <a href="phx.engine.Settings.html">phx.engine.Settings</a> object, applied once as the physics world is created.</td></tr>
+<tr><td class="name">DiagnosticInfo</td><td class="dflt">"off"</td>
+<td>Diagnostic information on the accuracy of the engine after every <code class="phx-inline">step</code>:
+<code class="phx-inline">"off"</code>, <code class="phx-inline">"warnings"</code>,
+<code class="phx-inline">"summary"</code> or <code class="phx-inline">"detailed"</code>. Can be changed
+at any time. See <a href="#diagnostics">Diagnostics</a> below.</td></tr>
 <tr><td class="name">Time</td><td class="type">double (read-only)</td>
 <td>Current simulation time, in seconds. Starts at 0 and advances with each <code class="phx-inline">step</code>.</td></tr>
 </table>
@@ -172,11 +177,99 @@ the waits. On Windows a wait of a few milliseconds can last up to about 16&nbsp;
 effect while <code class="phx-inline">pause</code> is turned off by
 <code class="phx-inline">pause("off")</code>.</div>
 
+<h3 class="phx-h3" id="diagnostics">Diagnostics</h3>
+<p>A scene can run without an error and still be wrong: joints that stretch, bodies that sink into
+each other or pass through a wall. <code class="phx-inline">DiagnosticInfo</code> makes the engine
+report after every call of <code class="phx-inline">step</code> how well it solved the scene, and warns
+when a result looks untrustworthy. Use it when a scene behaves strangely, and to check the time step
+and the solver settings of a scene that matters.</p>
+
+<table class="phx-tbl">
+<tr><th>Value</th><th>Description</th></tr>
+<tr><td class="name">"off"</td>
+<td>Default. Nothing is collected and the run costs nothing extra.</td></tr>
+<tr><td class="name">"warnings"</td>
+<td>A warning when a limit below is exceeded, each kind once per simulation. The numbers are
+available from <a href="#getdiagnosticreport">getDiagnosticReport</a>; nothing else is printed.</td></tr>
+<tr><td class="name">"summary"</td>
+<td>The warnings, and one line in the Command Window per call of <code class="phx-inline">step</code>.</td></tr>
+<tr><td class="name">"detailed"</td>
+<td>The warnings, and a few lines per call of <code class="phx-inline">step</code> that also name the
+bodies and joints concerned.</td></tr>
+</table>
+
+<pre class="phx-code">sim = phx.Simulation(ax, <span class="str">"DiagnosticInfo"</span>, <span class="str">"detailed"</span>);
+sim.step(0.05, 5);</pre>
+
+<pre class="phx-code">PHX diagnostics at t = 0.05 s: 5 steps, engine 0.0432 ms per step (longest 0.0885), 9 active bodies
+  solver:      2 islands per step (0 split), 30 iterations per island (most 50), 0 at the cap
+  residual:    joints 2.5e-06, contacts 0.16
+  penetration: 0.557 mm, phx.Body at [0.000146 2 0.3] and phx.Body at [0.000182 2 0.499]
+  joint gap:   0.000408 mm, phx.RevoluteJoint of phx.Body "anchor" and phx.Body "link1"
+  fastest:     0.544 m/s, phx.Body "link2"; 2.15 rad/s, phx.Body "link1"</pre>
+
+<p>Each line covers the engine steps of one call of <code class="phx-inline">step</code>, taking the
+worst value over them. Bodies are named by their <code class="phx-inline">Name</code>, or by their
+class and position; joints by their class and the bodies they connect.</p>
+
+<ul>
+<li><b>solver</b> &mdash; the bodies that touch or are joined form islands, each solved on its own;
+an island of many bodies is split to be solved on several threads. An island stops iterating when
+its joints and contacts meet <code class="phx-inline">JointTolerance</code> and
+<code class="phx-inline">ContactTolerance</code> of <a href="phx.engine.Settings.html">phx.engine.Settings</a>,
+at the latest at <code class="phx-inline">JointIterations</code> or
+<code class="phx-inline">ContactIterations</code> (its cap); the islands that reached their cap
+without meeting their tolerances are counted.</li>
+<li><b>residual</b> &mdash; how far the solver still was from a solution after its last iteration:
+the largest change of velocity that one joint or one contact still made to a body in that iteration,
+as a fraction of what the joints and contacts changed that body's velocity in the step (at least
+|g|&middot;dt). It is the quantity of the tolerances: a residual at or below the tolerance means a
+converged island, one above it an island stopped by its cap.</li>
+<li><b>penetration</b> &mdash; the deepest overlap of two bodies in contact.</li>
+<li><b>joint gap</b> &mdash; the widest separation of the two halves of a fixed, revolute or spherical
+joint.</li>
+<li><b>fastest</b> &mdash; the highest linear and angular speed of a dynamic body.</li>
+</ul>
+
+<p>The warnings and their limits, with lengths relative to the
+<code class="phx-inline">LengthScale</code> of <a href="phx.engine.Settings.html">phx.engine.Settings</a>:</p>
+
+<table class="phx-tbl">
+<tr><th>Identifier</th><th>Warns when</th><th>Usual remedy</th></tr>
+<tr><td class="name">phx:Simulation:nonfinite</td><td>a body reached a NaN or Inf pose or velocity</td>
+<td>The simulation has failed; reduce the step.</td></tr>
+<tr><td class="name">phx:Simulation:jointsNotConverged</td><td>the joint residual exceeds 1</td>
+<td>Reduce the step, or raise <code class="phx-inline">JointIterations</code>.</td></tr>
+<tr><td class="name">phx:Simulation:contactsNotConverged</td><td>the contact residual exceeds 1</td>
+<td>Reduce the step, or raise <code class="phx-inline">ContactIterations</code>.</td></tr>
+<tr><td class="name">phx:Simulation:deepPenetration</td><td>bodies sink into each other by more than
+10&nbsp;% of <code class="phx-inline">LengthScale</code></td>
+<td>Reduce the step; check <code class="phx-inline">LengthScale</code> and the mass ratios.</td></tr>
+<tr><td class="name">phx:Simulation:jointGap</td><td>a joint is pulled apart by more than 1&nbsp;% of
+<code class="phx-inline">LengthScale</code></td>
+<td>Reduce the step, or raise <code class="phx-inline">JointIterations</code>.</td></tr>
+<tr><td class="name">phx:Simulation:fastBody</td><td>a body moves more than 25&nbsp;% of
+<code class="phx-inline">LengthScale</code> in one engine step</td>
+<td>Reduce the step, or the body may pass through thin parts.</td></tr>
+</table>
+
+<p>The warnings are ordinary MATLAB warnings, printed without a backtrace. Turn one off with
+<code class="phx-inline">warning("off","phx:Simulation:fastBody")</code>, for example for a body that
+falls freely and touches nothing. Changing <code class="phx-inline">DiagnosticInfo</code> lets every
+kind warn once more. A warning is a hint, not a proof: a parcel that falls off a conveyor and keeps
+falling triggers <code class="phx-inline">fastBody</code> although nothing is wrong.</p>
+
+<div class="phx-note">
+<span class="lbl">Note.</span> Collecting the diagnostics adds a few per cent to the time of the
+engine step and does not change the results. Leave <code class="phx-inline">DiagnosticInfo</code>
+off for production runs and for timing measurements.</div>
+
 <h2 class="phx-h2">Object Functions</h2>
 <table class="phx-tbl">
 <tr><th>Function</th><th>Description</th></tr>
 <tr><td class="name">step</td><td>Perform one or more simulation steps.</td></tr>
 <tr><td class="name">addObjects</td><td>Add top-level objects (with their children) and rebuild the execution pipelines.</td></tr>
+<tr><td class="name">getDiagnosticReport</td><td>Return the diagnostics of the last call of <code class="phx-inline">step</code>.</td></tr>
 <tr><td class="name">findTopLevel</td><td>Find the top-level objects drawn in an axes (static).</td></tr>
 <tr><td class="name">dispStructure</td><td>Display the object tree of the scene.</td></tr>
 <tr><td class="name">dispPipelines</td><td>Display the compute and compute-and-redraw execution pipelines.</td></tr>
@@ -212,6 +305,35 @@ rebuilds the pipelines, then returns the added objects in a cell array for furth
 top-level object is one that no other object owns: a joint, a spring or a logger comes along with the
 bodies it belongs to and cannot be added on its own. From axes and from a MAT file only the top-level
 objects are taken; anything else stored there is left out.</p>
+</div>
+
+<h3 class="phx-h3" id="getdiagnosticreport">getDiagnosticReport</h3>
+<span class="phx-syntax">report = getDiagnosticReport(sim)</span>
+<div class="phx-desc">
+<p>Returns the numbers that <a href="#diagnostics">DiagnosticInfo</a> collected during the last call
+of <code class="phx-inline">step</code>, as a struct. It is empty while
+<code class="phx-inline">DiagnosticInfo</code> is <code class="phx-inline">"off"</code> and before the
+first step. Use it to check the accuracy of a run in a script, without reading the Command
+Window.</p>
+<table class="phx-tbl">
+<tr><th>Field</th><th>Description</th></tr>
+<tr><td class="name">Time</td><td>Simulation time at the end of the call, <span class="phx-unit">s</span>.</td></tr>
+<tr><td class="name">Steps</td><td>Number of engine steps in the call.</td></tr>
+<tr><td class="name">StepTime, MaxStepTime</td><td>Mean and longest wall time of one engine step, <span class="phx-unit">s</span>.</td></tr>
+<tr><td class="name">ActiveBodies</td><td>Number of bodies the engine moves.</td></tr>
+<tr><td class="name">Islands, SplitIslands</td><td>Islands per engine step, and how many of them were split to be solved on several threads.</td></tr>
+<tr><td class="name">Iterations, MaxIterations</td><td>Velocity iterations per island, mean and most.</td></tr>
+<tr><td class="name">IslandsAtCap</td><td>Number of islands that ran to <code class="phx-inline">JointIterations</code> or <code class="phx-inline">ContactIterations</code> without meeting their tolerances.</td></tr>
+<tr><td class="name">JointResidual, ContactResidual</td><td>Largest relative residual of a joint and of a contact (see <a href="#diagnostics">Diagnostics</a>); <code class="phx-inline">NaN</code> when there were none.</td></tr>
+<tr><td class="name">Penetration, PenetratingBodies</td><td>Deepest penetration, <span class="phx-unit">m</span>, and a cell array of the two bodies concerned.</td></tr>
+<tr><td class="name">JointGap, GapJoint</td><td>Widest joint gap, <span class="phx-unit">m</span>, and the joint concerned (in a cell array).</td></tr>
+<tr><td class="name">MaxSpeed, FastestBody</td><td>Highest speed of a dynamic body, <span class="phx-unit">m/s</span>, and the body.</td></tr>
+<tr><td class="name">MaxAngularSpeed, FastestTurningBody</td><td>Highest angular speed, <span class="phx-unit">rad/s</span>, and the body.</td></tr>
+<tr><td class="name">NonfiniteSteps, NonfiniteBody</td><td>Number of engine steps with a NaN or Inf pose or velocity, and a body concerned.</td></tr>
+<tr><td class="name">Warnings</td><td>String array of the identifiers of the limits exceeded in this call, also of those not printed again.</td></tr>
+</table>
+<p>The objects in the cell arrays are the <code class="phx-inline">phx.*</code> objects of the scene,
+so they can be inspected or changed directly.</p>
 </div>
 
 <h3 class="phx-h3">findTopLevel</h3>
@@ -253,6 +375,16 @@ sim.step(10, 1000);
 delete(boxes(7));                      <span class="cmt">% also triggers a rebuild</span>
 sim.step(5, 500);
 delete(sim);                           <span class="cmt">% tear down the engine world</span></pre>
+
+<h4 class="phx-h4">Check the accuracy of a run</h4>
+<pre class="phx-code">sim = phx.Simulation(ax, <span class="str">"DiagnosticInfo"</span>, <span class="str">"warnings"</span>);
+worst = 0;
+<span class="kw">for</span> k = 1:100
+    sim.step(0.02, 4, -1);             <span class="cmt">% 5 ms engine steps, headless</span>
+    r = sim.getDiagnosticReport;
+    worst = max(worst, r.JointGap);
+<span class="kw">end</span>
+fprintf(<span class="str">"widest joint gap %.3g mm\n"</span>, 1000*worst);</pre>
 
 <div class="phx-seealso">
 <span class="lbl">See also</span>

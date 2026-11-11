@@ -13,7 +13,7 @@
 <div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; User Guide &rsaquo; Units, scale and engine settings</div>
 
 <h1 class="phx-title">Units, Scale and Engine Settings</h1>
-<p class="phx-purpose">Choosing the time step, matching the engine to the size of the parts, and running on several threads</p>
+<p class="phx-purpose">Choosing the time step, matching the engine to the size of the parts, checking the accuracy, and running on several threads</p>
 
 <h2 class="phx-h2">Units</h2>
 <p>PHX works in SI units: metres, kilograms, seconds, newtons, radians. The <b>z</b> axis points up
@@ -66,13 +66,39 @@ small a scale lets fast bodies pass through each other. Any of the three toleran
 set directly, which overrides the value derived from the scale.</p>
 
 <h2 class="phx-h2">Solver iterations</h2>
-<p>Contacts and joints are solved iteratively in every substep.
-<code class="phx-inline">Iterations</code> (default 10) applies to everything,
-<code class="phx-inline">JointIterations</code> (default 50) to groups of bodies held together by
-joints, so that motors hold loads and chains stay stiff without the cost spreading to the rest of the
-scene. Raise <code class="phx-inline">Iterations</code> for tall stacks or heavy bodies resting on
-light ones; mass ratios beyond about 1:100 between touching bodies are hard for any iteration
-count. If more iterations do not help, shorten the substep instead.</p>
+<p>Contacts and joints are solved iteratively in every substep, each group of bodies that touch or
+are joined on its own. A group stops iterating once its joints and contacts are accurate enough:
+<code class="phx-inline">JointTolerance</code> (default 10<sup>&minus;3</sup>) and
+<code class="phx-inline">ContactTolerance</code> (default 10<sup>&minus;2</sup>) of
+<a href="phx.engine.Settings.html">phx.engine.Settings</a> are the relative accuracy of the impulses
+a body receives. A mechanism at rest or in steady motion needs only a few iterations; a group that
+has not converged stops at <code class="phx-inline">JointIterations</code> (default 50, a group
+with a joint) or <code class="phx-inline">ContactIterations</code> (default 20, any other).</p>
+
+<p>The defaults suit most scenes. For a mechanism that must be more precise, lower
+<code class="phx-inline">JointTolerance</code>; when the diagnostics below report groups at their cap,
+raise the cap. Tall stacks and heavy bodies resting on light ones converge slowly at any setting:
+mass ratios beyond about 1:100 between touching bodies are hard for the solver. If more iterations
+do not help, shorten the substep instead. <code class="phx-inline">PositionIterations</code> (default 4)
+pulls drifted joints and penetrating bodies back after the velocity iterations.</p>
+
+<h2 class="phx-h2">Checking the accuracy</h2>
+<p>Whether the substep, the length scale and the iterations suit a scene can be checked while it
+runs. Set <code class="phx-inline">DiagnosticInfo</code> of the simulation, and the engine reports
+after every <code class="phx-inline">step</code> how far its solver was from converging, how deep
+bodies sink into each other, how far joints pull apart and how fast the bodies move. It warns when
+a value is beyond what the scene can be trusted with, and names the remedy.</p>
+
+<pre class="phx-code">sim = phx.Simulation(gca, <span class="str">"DiagnosticInfo"</span>, <span class="str">"summary"</span>);
+sim.step(1, 200);                    <span class="cmt">% one line per call, warnings when needed</span>
+r = sim.getDiagnosticReport;         <span class="cmt">% the numbers of the last call, as a struct</span></pre>
+
+<p>Use <code class="phx-inline">"warnings"</code> to be told only about problems,
+<code class="phx-inline">"summary"</code> for one line per call of <code class="phx-inline">step</code>,
+and <code class="phx-inline">"detailed"</code> to see which bodies and joints are concerned. Turn
+the diagnostics off again once the scene is tuned: they cost a few per cent of the engine time. The
+levels, the warnings and the fields of the report are described in
+<a href="phx.Simulation.html#diagnostics">phx.Simulation</a>.</p>
 
 <h2 class="phx-h2">Threads</h2>
 <p><code class="phx-inline">Threads</code> runs the step of the engine on several threads. The

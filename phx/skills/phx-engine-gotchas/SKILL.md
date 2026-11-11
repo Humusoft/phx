@@ -4,9 +4,11 @@ description: >
   Low-level PHX engine reference and pitfalls — the stringly-typed phx.engine.io
   gateway (add/set/get/apply/remove/step) to the physics engine,
   phx.engine.Settings, the phx:Component:mnemonic error-ID convention, the
-  matlab.unittest suite, and known quirks (timestep stability, solver iterations).
-  Use when debugging PHX behavior,
-  writing new simulable objects, or running the tests.
+  matlab.unittest suite, known quirks (timestep stability, solver iterations), and
+  the accuracy diagnostics of phx.Simulation (DiagnosticInfo, getDiagnosticReport).
+  Use when debugging PHX behavior or a scene that misbehaves (stretching joints,
+  sinking or tunnelling bodies, jitter, NaN), writing new simulable objects, or
+  running the tests.
 ---
 
 # PHX engine gateway & gotchas
@@ -109,12 +111,80 @@ sim = phx.Simulation(ax, "EngineSettings", ...
   the rounding of convex shapes, taken inside them), `SpeculativeDistance` (2 %) and
   `PenetrationSlop` (0.1 %). Setting one switches it to manual, like MATLAB axis limits.
   Set `LengthScale` for small parts instead of tuning the tolerances one by one.
-- `Iterations` (10) — velocity iterations for contacts and stacks; `JointIterations` (50)
-  — those of every group of bodies held by joints (motors hold, chains stay stiff);
-  `PositionIterations` (2).
+- **Velocity iterations end at a tolerance.** Each island (bodies that touch or are
+  joined) iterates until its joints meet `JointTolerance` (1e-3) and its contacts
+  `ContactTolerance` (1e-2), at most `JointIterations` (50, an island with a joint) or
+  `ContactIterations` (20, any other; there is no `Iterations` property any more). A
+  tolerance is the relative accuracy of the impulses a body receives: the largest change
+  one joint/contact still makes to a body's velocity in an iteration, as a fraction of
+  what joints and contacts changed it in the whole step (at least |g| dt). Tolerance 0 =
+  run to the cap every step (the old fixed count). A converged mechanism stops after a
+  few iterations; heaps and suddenly loaded mechanisms run to the cap.
+- `PositionIterations` (4) — pull drifted joints and penetrations back after the velocity
+  iterations; each takes a fifth of the error, so a joint's drift halves per doubling.
 - `Threads` (1) — more pay off from hundreds of bodies; `ContactCache` (off) — faster
   piles at rest, but slowly rolling bodies gain speed, so leave it off.
 - Bodies **never sleep** (no setting); `phx.Particles` has its own `Sleeping`.
+
+## Diagnosing a scene — DiagnosticInfo
+
+When a scene misbehaves (a mechanism sags or rings, joints stretch, bodies sink, jitter
+or pass through walls, a result changes with the step) **measure before tuning**: turn on
+the engine's accuracy diagnostics instead of guessing at `dt` or iterations.
+
+```matlab
+sim = phx.Simulation(ax, "DiagnosticInfo", "warnings");  % or set it later, any time
+sim.step(0.02, 4, -1);
+r = sim.getDiagnosticReport;      % struct of the last call of step; [] while "off"
+```
+
+Levels: `"off"` (default, zero cost), `"warnings"` (warnings only, each kind once per
+simulation), `"summary"` (+ one line per `step` call), `"detailed"` (+ a few lines per call
+naming the bodies and joints). Each report covers the engine steps of one `step` call and
+keeps the worst value. Fields:
+
+- `JointResidual`, `ContactResidual` — the largest velocity change one joint / contact still
+  made to a body in the solver's last iteration, relative to what joints and contacts
+  changed that body's velocity in the step (at least |g| dt): the quantity of
+  `JointTolerance` / `ContactTolerance`. At or below the tolerance = converged; above it =
+  islands stopped at their cap (`IslandsAtCap` > 0); `NaN` = no joints / contacts.
+- `Penetration` (m) + `PenetratingBodies`, `JointGap` (m) + `GapJoint` (fixed, revolute,
+  spherical joints), `MaxSpeed` (m/s) + `FastestBody`, `MaxAngularSpeed` +
+  `FastestTurningBody`, `NonfiniteSteps` + `NonfiniteBody` — the objects are the scene's
+  `phx.*` objects in cell arrays, so you can read their `Name`, pose or mass directly.
+- `Iterations`/`MaxIterations` per island, `IslandsAtCap`, `Islands`/`SplitIslands`,
+  `StepTime`/`MaxStepTime` (s, engine only), `ActiveBodies`, `Steps`, `Time`.
+- `Warnings` — identifiers of the limits exceeded in this call, even those whose
+  console warning was already issued once.
+
+Warnings (`phx:Simulation:*`, lengths relative to `EngineSettings.LengthScale`) and what
+to do:
+
+| Identifier | Limit | Remedy |
+|---|---|---|
+| `nonfinite` | NaN/Inf pose or velocity | the run failed; reduce `dt` |
+| `jointsNotConverged` | joint residual > 1 | reduce `dt`, or raise `JointIterations` |
+| `contactsNotConverged` | contact residual > 1 | reduce `dt`, or raise `ContactIterations` |
+| `deepPenetration` | > 10 % of LengthScale | reduce `dt`; check `LengthScale`, mass ratios |
+| `jointGap` | > 1 % of LengthScale | reduce `dt`, or raise `JointIterations` |
+| `fastBody` | > 25 % of LengthScale per engine step | reduce `dt` (tunnelling risk) |
+
+How to use it when debugging:
+
+- Run the suspect part **headless with `"warnings"`**, loop over `step` and collect the
+  worst values from `getDiagnosticReport` (e.g. `max` of `JointGap` and the residuals).
+  Prefer the report over parsing console text. `"detailed"` is for a human, or for
+  finding *which* body or joint is the culprit in a few calls.
+- Fix in the order of the remedies: `dt` first, then `LengthScale` for small or large
+  parts, the solver last. Residual above the tolerance with `IslandsAtCap` > 0 → raise
+  the cap (`JointIterations` / `ContactIterations`); residual at the tolerance but the
+  result still too coarse → lower the tolerance. Re-run and compare the numbers; halving
+  `dt` until they stop changing is the ground truth.
+- A warning is a hint, not a verdict: a body in free fall (a parcel off a conveyor) trips
+  `fastBody` harmlessly; silence one with `warning("off", "phx:Simulation:fastBody")`.
+  Changing `DiagnosticInfo` re-arms all warnings.
+- **Turn it off again** in the final script and in any timing measurement: it costs a few
+  per cent of the engine step (results stay bit-identical). Don't leave it on in demos.
 
 ## Error-ID convention
 
@@ -137,12 +207,13 @@ new code, follow the same namespace.
   raise `substeps` (or lower `interval`) rather than taking big steps. Springs, ropes
   and torsion springs are the exception: the engine solves them stably at any
   stiffness, so a stiff spring alone is no reason for a smaller `dt`.
-- **Remedy for a scene that stays soft at a sane `dt`: solver iterations.** Leave
+- **Remedy for a scene that stays soft at a sane `dt`: the solver settings.** Leave
   `phx.engine.Settings` alone in ordinary scenes. Reach for it only when, already at
-  `dt ≤ 5 ms`, a stack sinks and drifts (raise `Iterations`, default 10) or a jointed
-  mechanism sags or rings (raise `JointIterations`, default 50, up to 100; it costs
-  only the jointed groups). Neither helps when the step itself is too long, so lower
-  `dt` first. There is no choice of solver.
+  `dt ≤ 5 ms`, a stack sinks and drifts (raise `ContactIterations`, default 20) or a
+  jointed mechanism sags or rings (raise `JointIterations`, default 50, up to 100, or
+  lower `JointTolerance` if its islands already converge; it costs only the jointed
+  groups). None of it helps when the step itself is too long, so lower `dt` first. There
+  is no choice of solver. `DiagnosticInfo` (above) tells which of them the scene needs.
 - **Static vs kinematic vs dynamic**: `static` bodies have infinite mass and never
   move; `kinematic` bodies are driven by you and push dynamics but ignore forces;
   only `dynamic` bodies integrate forces. Set mass/inertia explicitly for controlled

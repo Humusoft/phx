@@ -23,9 +23,20 @@ classdef Settings
 %       s.SpeculativeDistance        % 2e-4, SpeculativeDistanceMode "auto"
 %       s.SpeculativeDistance = 0;   % SpeculativeDistanceMode "manual"
 %
+%   The velocity iterations of a group of bodies (an island: the bodies
+%   that touch or are joined) end when its joints and its contacts have
+%   converged, each to its own tolerance, and at the latest after
+%   JointIterations (a group with a joint) or ContactIterations (any other).
+%   A tolerance is the largest change of a body's velocity that one joint
+%   or contact may still make in an iteration, as a fraction of that body's
+%   velocity; it is the quantity that getDiagnosticReport of phx.Simulation
+%   reports as JointResidual and ContactResidual.
+%
 %   Properties:
-%     Iterations              - Velocity iterations of the constraint solver per step
-%     JointIterations         - Velocity iterations of the groups of bodies held by joints
+%     JointTolerance          - Velocity tolerance of the joints
+%     ContactTolerance        - Velocity tolerance of the contacts
+%     JointIterations         - Most velocity iterations of a group of bodies held by a joint
+%     ContactIterations       - Most velocity iterations of any other group of bodies
 %     PositionIterations      - Position iterations of the constraint solver per step
 %     LengthScale             - Typical size of the parts in contact, as an order of magnitude, in metres
 %     Margin                  - Rounding of convex shapes and contact distance of meshes, in metres
@@ -45,26 +56,39 @@ classdef Settings
 %   ^..^
 
     properties
-        % Velocity iterations of the constraint solver per step; more
-        % iterations make joint chains and stacks stiffer at a proportional
-        % cost
-        Iterations (1, 1) double {mustBeInteger, mustBePositive} = 10
+        % Velocity tolerance of the joints: the joints of a group of bodies
+        % have converged when none of them changed the velocity of one of
+        % its bodies in an iteration by more than this fraction of that
+        % body's velocity (of at least |g| dt). Smaller is more accurate and
+        % takes more iterations; 0 runs every group with a joint to
+        % JointIterations, a fixed count.
+        JointTolerance (1, 1) double {mustBeNonnegative, mustBeFinite} = 1e-3
 
-        % Velocity iterations per step of every group of bodies held together
-        % by a joint (and of whatever touches them); 0 leaves them at
-        % Iterations. Only jointed mechanisms pay for them: motors hold
-        % loads and servoed arms track without ringing (a Kinova arm on a
-        % floating pontoon needs 50, a servo rings 0.010 / 0.001 rad at
-        % 20 / 50) and loaded chains get stiffer (ten links holding 100 kg
-        % at 5 ms steps stretch 9.8 / 3.9 / 1.9 mm at 20 / 50 / 100) at
-        % 1.5 / 2.4 times the cost of the mechanism at 50 / 100 compared
-        % with 20.
+        % Velocity tolerance of the contacts, as JointTolerance; 0 runs
+        % every group to its iteration count. Contacts in heaps converge
+        % slowly, hence the looser default.
+        ContactTolerance (1, 1) double {mustBeNonnegative, mustBeFinite} = 1e-2
+
+        % Most velocity iterations per step of a group of bodies held
+        % together by a joint (and of whatever touches them); fewer once it
+        % has converged. Raise it when such groups run to it without
+        % meeting their tolerance (IslandsAtCap of the diagnostics, a
+        % JointResidual above JointTolerance) and the result matters: a
+        % hard mechanism halves its joint gap with each doubling, one that
+        % does not converge at all gains nothing. 0 leaves such groups at
+        % ContactIterations.
         JointIterations (1, 1) double {mustBeInteger, mustBeInRange(JointIterations, 0, 255)} = 50
+
+        % Most velocity iterations per step of a group of bodies without a
+        % joint (contacts, springs, ropes); fewer once it has converged.
+        % Heaps rarely converge and run to it, so it sets their cost.
+        ContactIterations (1, 1) double {mustBeInteger, mustBePositive} = 20
 
         % Position iterations of the constraint solver per step, which push
         % penetrating bodies and drifted joints back after the velocity
-        % iterations
-        PositionIterations (1, 1) double {mustBeInteger, mustBePositive} = 2
+        % iterations; the drift of a joint halves with every doubling, for
+        % a few per cent of the step
+        PositionIterations (1, 1) double {mustBeInteger, mustBePositive} = 4
 
         % Typical size, in metres, of the parts that touch each other, as an
         % order of magnitude: 1 for parts of about a metre, 0.1 for
@@ -177,7 +201,10 @@ classdef Settings
         end
 
         function apply(obj, objectHandle)
-            s.iterations = obj.Iterations;
+            s.jointtolerance = obj.JointTolerance;
+            s.contacttolerance = obj.ContactTolerance;
+            s.tolerancelength = 0.1*obj.LengthScale;   % turns an angular velocity into a linear one
+            s.iterations = obj.ContactIterations;
             s.jointiterations = obj.JointIterations;
             s.positioniterations = obj.PositionIterations;
             s.margin = obj.Margin;

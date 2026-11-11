@@ -29,6 +29,19 @@ classdef Simulation < phx.base.Object
 
         % Nesting depth of holdPipelines
         PipelineHold = 0
+
+        % DiagnosticInfo as a number (0 off, 1 warnings, 2 summary, 3 detailed),
+        % checked after every step
+        DiagnosticLevel = 0
+    end
+
+    properties (Access = private, Transient)
+        % Diagnostics: the warnings already issued, and the objects the engine
+        % names by handle (built on first need, dropped with the pipelines)
+        DiagnosticWarned = strings(1, 0)
+        DiagnosticObjects = []
+        % Diagnostics of the last call of step (getDiagnosticReport)
+        DiagnosticReport = []
     end
 
     properties (Access = private, Transient)
@@ -64,6 +77,17 @@ classdef Simulation < phx.base.Object
         % Lateness (s of real time) that pacing still makes up; pause oversleeps
         % short waits by up to a timer tick (~15 ms on Windows)
         PacingTolerance = 0.1
+
+        % Limits of the diagnostic warnings. Residuals are relative: the largest
+        % velocity change one joint or contact still made to a body in the last
+        % iteration, as a fraction of what the joints and contacts changed that
+        % body's velocity in the step (at least |g| dt), as the tolerances of
+        % EngineSettings. Lengths are fractions of EngineSettings.LengthScale.
+        DiagnosticJointResidual = 1
+        DiagnosticContactResidual = 1
+        DiagnosticPenetration = 0.1
+        DiagnosticJointGap = 0.01
+        DiagnosticTravel = 0.25
     end
 
     properties (SetAccess = private)
@@ -109,6 +133,21 @@ classdef Simulation < phx.base.Object
 
         % Initial engine-specific settings
         EngineSettings = []
+
+        % Diagnostic information on the accuracy of the engine, after every step
+        %   off - nothing is collected, at no cost (default)
+        %   warnings - a warning when a step looks untrustworthy, each kind once
+        %     per simulation: joints or contacts far from converged
+        %     (phx:Simulation:jointsNotConverged, contactsNotConverged), bodies
+        %     deep in each other (deepPenetration), a joint pulled apart
+        %     (jointGap), a body that moves a large part of LengthScale in one
+        %     step (fastBody), NaN or Inf (nonfinite)
+        %   summary - the warnings, and one line per call of step
+        %   detailed - the warnings, and a few lines per call of step that also
+        %     name the bodies and joints concerned
+        %   getDiagnosticReport returns the numbers of the last call. Collecting
+        %   them costs a few per cent of the engine time.
+        DiagnosticInfo {mustBeMember(DiagnosticInfo, ["off", "warnings", "summary", "detailed"])} = "off"
     end
 
     methods
@@ -320,6 +359,57 @@ classdef Simulation < phx.base.Object
             if adaptive
                 obj.StepDuration = toc(stepClock);
             end
+            if obj.DiagnosticLevel > 0
+                obj.reportDiagnostics(dt);
+            end
+        end
+
+        function report = getDiagnosticReport(obj)
+        %getDiagnosticReport Returns the diagnostics of the last call of step.
+        %
+        %   report = getDiagnosticReport(simulation) returns the numbers that
+        %   DiagnosticInfo collects, as a struct with the fields
+        %     Time - simulation time at the end of the call (s)
+        %     Steps - number of engine steps in the call
+        %     StepTime, MaxStepTime - mean and longest wall time of an engine
+        %       step (s)
+        %     ActiveBodies - number of bodies awake
+        %     Islands, SplitIslands - simulation islands per step, and how many
+        %       of them were split for parallel solving
+        %     Iterations, MaxIterations - velocity iterations per island, mean
+        %       and most
+        %     IslandsAtCap - islands that ran to JointIterations or
+        %       ContactIterations without meeting their tolerances
+        %     JointResidual, ContactResidual - the largest velocity change one
+        %       joint or contact still made to a body in the last iteration,
+        %       relative to what the joints and contacts changed that body's
+        %       velocity in the step; the quantity of JointTolerance and
+        %       ContactTolerance of phx.engine.Settings
+        %     Penetration, PenetratingBodies - deepest penetration (m) and the
+        %       two bodies concerned
+        %     JointGap, GapJoint - widest joint gap (m) and the joint concerned
+        %     MaxSpeed, FastestBody - highest speed (m/s) and its body
+        %     MaxAngularSpeed, FastestTurningBody - highest angular speed
+        %       (rad/s) and its body
+        %     NonfiniteSteps, NonfiniteBody - steps with NaN or Inf, and a body
+        %       concerned
+        %     Warnings - identifiers of the limits exceeded in this call
+        %   The report is empty while DiagnosticInfo is off and before the
+        %   first step.
+        %
+        % See also phx.Simulation.step
+
+            report = obj.DiagnosticReport;
+        end
+
+        function set.DiagnosticInfo(obj, value)
+            obj.DiagnosticInfo = value;
+            obj.DiagnosticLevel = find(value == ["off", "warnings", "summary", "detailed"]) - 1;
+            obj.DiagnosticWarned = strings(1, 0);
+            obj.DiagnosticReport = [];
+            if ~isempty(obj.ObjectHandle)
+                phx.engine.io('set', obj.ObjectHandle, uint64(0), 'settings', struct('diagnostics', obj.DiagnosticLevel > 0));
+            end
         end
 
         function set.PacingRate(obj, value)
@@ -378,6 +468,138 @@ classdef Simulation < phx.base.Object
                 obj.PacingTime = time;
             end
         end
+
+        function reportDiagnostics(obj, dt)
+        %reportDiagnostics Reads the diagnostics of the steps just taken and reports them.
+        %
+        %   Stores the report of getDiagnosticReport, issues the warnings of the limits exceeded
+        %   (each identifier once per simulation) and prints the summary or
+        %   detailed lines that DiagnosticInfo asks for.
+
+            D = phx.engine.io('get', obj.ObjectHandle, uint64(0), 'diagnostics');
+            if isempty(D) || D.steps == 0
+                return
+            end
+            scale = 1;
+            if ~isempty(obj.EngineSettings)
+                scale = obj.EngineSettings.LengthScale;
+            end
+            R = struct("Time", obj.Time, "Steps", D.steps, "StepTime", D.time/D.steps, ...
+                "MaxStepTime", D.maxsteptime, "ActiveBodies", D.activebodies, ...
+                "Islands", D.islands/D.steps, "SplitIslands", D.splitislands/D.steps, ...
+                "Iterations", D.iterations/max(D.islands, 1), "MaxIterations", D.maxiterations, ...
+                "IslandsAtCap", D.islandsatcap, ...
+                "JointResidual", D.residualjoints, "ContactResidual", D.residualcontacts, ...
+                "Penetration", D.penetration, "PenetratingBodies", {obj.diagnosticObjects(D.penetrationbodies)}, ...
+                "JointGap", D.jointgap, "GapJoint", {obj.diagnosticObjects(D.gapjoint)}, ...
+                "MaxSpeed", D.speed, "FastestBody", {obj.diagnosticObjects(D.fastestbody)}, ...
+                "MaxAngularSpeed", D.angularspeed, "FastestTurningBody", {obj.diagnosticObjects(D.fastestturningbody)}, ...
+                "NonfiniteSteps", D.nonfinite, "NonfiniteBody", {obj.diagnosticObjects(D.nonfinitebody)}, ...
+                "Warnings", strings(1, 0));
+
+            % Limits: identifier, exceeded, message
+            checks = {
+                "nonfinite", R.NonfiniteSteps > 0, ...
+                    sprintf("A body reached a NaN or Inf pose or velocity (%s): the simulation has failed; reduce the step.", ...
+                    obj.describe(R.NonfiniteBody))
+                "jointsNotConverged", R.JointResidual > obj.DiagnosticJointResidual, ...
+                    sprintf("Joints converge poorly (residual %.2g, limit %.2g): reduce the step or raise JointIterations of EngineSettings.", ...
+                    R.JointResidual, obj.DiagnosticJointResidual)
+                "contactsNotConverged", R.ContactResidual > obj.DiagnosticContactResidual, ...
+                    sprintf("Contacts converge poorly (residual %.2g, limit %.2g): reduce the step or raise ContactIterations of EngineSettings.", ...
+                    R.ContactResidual, obj.DiagnosticContactResidual)
+                "deepPenetration", R.Penetration > obj.DiagnosticPenetration*scale, ...
+                    sprintf("Bodies sink %.3g m into each other (%s), more than %g %% of LengthScale: reduce the step, or check LengthScale and the masses.", ...
+                    R.Penetration, obj.describe(R.PenetratingBodies), 100*obj.DiagnosticPenetration)
+                "jointGap", R.JointGap > obj.DiagnosticJointGap*scale, ...
+                    sprintf("A joint is pulled %.3g m apart (%s), more than %g %% of LengthScale: reduce the step or raise JointIterations.", ...
+                    R.JointGap, obj.describe(R.GapJoint), 100*obj.DiagnosticJointGap)
+                "fastBody", R.MaxSpeed*dt > obj.DiagnosticTravel*scale, ...
+                    sprintf("A body moves %.3g m in one step (%s), more than %g %% of LengthScale: it may pass through thin parts; reduce the step.", ...
+                    R.MaxSpeed*dt, obj.describe(R.FastestBody), 100*obj.DiagnosticTravel)
+                };
+            for i = 1:size(checks, 1)
+                if checks{i, 2}
+                    id = "phx:Simulation:" + checks{i, 1};
+                    R.Warnings(end + 1) = id;
+                    if ~any(obj.DiagnosticWarned == id)
+                        obj.DiagnosticWarned(end + 1) = id;
+                        backtrace = warning('off', 'backtrace');
+                        warning(id, '%s', checks{i, 3});
+                        warning(backtrace);
+                    end
+                end
+            end
+            obj.DiagnosticReport = R;
+
+            mm = @(x) sprintf("%.3g mm", 1000*x);
+            flags = "";
+            if ~isempty(R.Warnings)
+                flags = " | ! " + join(extractAfter(R.Warnings, "phx:Simulation:"), ", ");
+            end
+            if obj.DiagnosticLevel == 2
+                fprintf("t = %.4g s: %d steps, %.3g ms | iterations %.3g (max %d) | residual joints %.2g, contacts %.2g | " + ...
+                    "penetration %s | joint gap %s | speed %.3g m/s, %.3g rad/s%s\n", ...
+                    R.Time, R.Steps, 1000*R.StepTime, R.Iterations, R.MaxIterations, R.JointResidual, R.ContactResidual, ...
+                    mm(R.Penetration), mm(R.JointGap), R.MaxSpeed, R.MaxAngularSpeed, flags);
+            elseif obj.DiagnosticLevel == 3
+                fprintf("PHX diagnostics at t = %.4g s: %d steps, engine %.3g ms per step (longest %.3g), %d active bodies%s\n", ...
+                    R.Time, R.Steps, 1000*R.StepTime, 1000*R.MaxStepTime, R.ActiveBodies, flags);
+                fprintf("  solver:      %.3g islands per step (%.3g split), %.3g iterations per island (most %d), %d at the cap\n", ...
+                    R.Islands, R.SplitIslands, R.Iterations, R.MaxIterations, R.IslandsAtCap);
+                fprintf("  residual:    joints %.2g, contacts %.2g\n", R.JointResidual, R.ContactResidual);
+                fprintf("  penetration: %s, %s\n", mm(R.Penetration), obj.describe(R.PenetratingBodies));
+                fprintf("  joint gap:   %s, %s\n", mm(R.JointGap), obj.describe(R.GapJoint));
+                fprintf("  fastest:     %.3g m/s, %s; %.3g rad/s, %s\n", R.MaxSpeed, obj.describe(R.FastestBody), ...
+                    R.MaxAngularSpeed, obj.describe(R.FastestTurningBody));
+            end
+        end
+
+        function objs = diagnosticObjects(obj, handles)
+        %diagnosticObjects The simulated objects (bodies, joints) of engine handles, a cell row.
+
+            objs = cell(1, numel(handles));
+            if isempty(handles)
+                return
+            end
+            if isempty(obj.DiagnosticObjects)
+                found = obj.sortedBranchObjects;
+                keep = cellfun(@(o) isvalid(o) && isscalar(o.ObjectHandle) && isa(o.ObjectHandle, 'uint64'), found);
+                found = found(keep);
+                obj.DiagnosticObjects = struct("Handles", cellfun(@(o) o.ObjectHandle, found), "Objects", {found});
+            end
+            for i = 1:numel(handles)
+                k = find(obj.DiagnosticObjects.Handles == handles(i), 1);
+                if ~isempty(k)
+                    objs{i} = obj.DiagnosticObjects.Objects{k};
+                end
+            end
+        end
+
+        function s = describe(obj, objs)
+        %describe Names objects for a diagnostic message: Name, or class and pose.
+
+            if isempty(objs)
+                s = "none";
+                return
+            end
+            parts = strings(1, numel(objs));
+            for i = 1:numel(objs)
+                o = objs{i};
+                if isempty(o) || ~isvalid(o)
+                    parts(i) = "an object outside the simulation";
+                elseif o.Name ~= ""
+                    parts(i) = class(o) + " """ + o.Name + """";
+                elseif isa(o, 'phx.Body')
+                    parts(i) = sprintf("%s at [%.3g %.3g %.3g]", class(o), o.Position);
+                elseif isa(o, 'phx.base.Joint')
+                    parts(i) = class(o) + " of " + obj.describe(o.Parents);
+                else
+                    parts(i) = class(o);
+                end
+            end
+            s = join(parts, " and ");
+        end
     end
 
     methods (Access = ?phx.base.Object)
@@ -421,6 +643,9 @@ classdef Simulation < phx.base.Object
             if obj.Time == 0
                 obj.RedrawSync = true;
             end
+
+            % The diagnostics look the objects up anew
+            obj.DiagnosticObjects = [];
 
             % Prepare empty execution pipelines structs
             epStruct = @(f, o) struct("Function", f, "Objects", o);
@@ -505,6 +730,9 @@ classdef Simulation < phx.base.Object
                 % Apply engine-specific settings
                 if ~isempty(obj.EngineSettings)
                     obj.EngineSettings.apply(obj.ObjectHandle);
+                end
+                if obj.DiagnosticLevel > 0
+                    phx.engine.io('set', obj.ObjectHandle, uint64(0), 'settings', struct('diagnostics', true));
                 end
             end
             valid = true;
