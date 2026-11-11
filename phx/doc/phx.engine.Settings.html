@@ -72,7 +72,9 @@ for decimetres, <code class="phx-inline">0.01</code> for centimetres. When the p
 take the smaller of those whose contacts matter. The collision tolerances in automatic mode follow
 from it.</td></tr>
 <tr><td class="name">Margin</td><td class="dflt">0.04</td>
-<td>Rounding radius, in metres, of boxes, cylinders, cones and convex hulls, taken inside the
+<td>Rounding radius, in metres, of boxes, cylinders, cones (also those of a
+<a href="phx.shape.Revolution.html">phx.shape.Revolution</a> with the <code class="phx-inline">"cones"</code>
+envelope) and convex hulls, taken inside the
 shape so that it keeps its size, and limited by its dimensions; also the distance at which
 concave meshes begin to touch each other. In automatic mode 4&nbsp;% of
 <code class="phx-inline">LengthScale</code>; setting it switches <code class="phx-inline">MarginMode</code>

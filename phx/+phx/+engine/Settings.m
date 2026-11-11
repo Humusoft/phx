@@ -127,8 +127,9 @@ classdef Settings
     end
 
     properties (Dependent)
-        % Rounding radius, in metres, of boxes, cylinders, cones and convex
-        % hulls, taken inside the shape (it keeps its size) and limited by
+        % Rounding radius, in metres, of boxes, cylinders, cones (also those
+        % of a Revolution with Envelope "cones") and convex hulls, taken
+        % inside the shape (it keeps its size) and limited by
         % its dimensions; also the distance at which concave meshes begin to
         % touch each other. In automatic mode 4 % of LengthScale.
         Margin (1, 1) double {mustBeNonnegative}
