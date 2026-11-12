@@ -13,12 +13,15 @@ function model_buggy
     % Create a buggy chassis from an STL model (in millimetres)
     chassis = phx.Body("Position", [0 0 1], "Shape", {"Mesh", "Source", resdir+"BuggyBody.stl", "Details", 0.2, "Scale", 0.001, "Color", [0.9 0.9 0.9], "Envelope", "convex", "Material", "metal", "Texture", "circles", "Color", 1, "TextureBlend", 0.25}, "Mass", 300, "Inertia", [100 100 100], "Name", "Chassis");
 
-    % Create wheels with marks
+    % Create wheels with marks. Their collision shape is the bounding
+    % cylinder, whose rims stand out of the rounded tyres: the track of 1.44 m
+    % keeps those rims clear of the convex hull of the chassis when the
+    % suspension compresses
     shpWheel = phx.shape.Mesh("Source", resdir+"BuggyWheelFL.stl", "Details", 0.2, "Scale", 0.001, "Color", [0.3 0.3 0.3], "Envelope", "cylinder", "Axis", "x");
-    wheelFL = phx.Body("Position", [-0.9 -0.7 0.4], "EulerAngles", [0 0 -pi/2], "Shape", shpWheel, "Mass", 30, "Inertia", [2 2 2], "Name", "WheelFL");
-    wheelFR = phx.Body("Position", [-0.9 0.7 0.4], "EulerAngles", [0 0 pi/2], "Shape", shpWheel, "Mass", 30, "Inertia", [2 2 2], "Name", "WheelFR");
-    wheelRL = phx.Body("Position", [1.1 -0.7 0.4], "EulerAngles", [0 0 -pi/2], "Shape", shpWheel, "Mass", 30, "Inertia", [2 2 2], "Name", "WheelRL");
-    wheelRR = phx.Body("Position", [1.1 0.7 0.4], "EulerAngles", [0 0 pi/2], "Shape", shpWheel, "Mass", 30, "Inertia", [2 2 2], "Name", "WheelRR");
+    wheelFL = phx.Body("Position", [-0.9 -0.72 0.4], "EulerAngles", [0 0 -pi/2], "Shape", shpWheel, "Mass", 30, "Inertia", [2 2 2], "Name", "WheelFL");
+    wheelFR = phx.Body("Position", [-0.9 0.72 0.4], "EulerAngles", [0 0 pi/2], "Shape", shpWheel, "Mass", 30, "Inertia", [2 2 2], "Name", "WheelFR");
+    wheelRL = phx.Body("Position", [1.1 -0.72 0.4], "EulerAngles", [0 0 -pi/2], "Shape", shpWheel, "Mass", 30, "Inertia", [2 2 2], "Name", "WheelRL");
+    wheelRR = phx.Body("Position", [1.1 0.72 0.4], "EulerAngles", [0 0 pi/2], "Shape", shpWheel, "Mass", 30, "Inertia", [2 2 2], "Name", "WheelRR");
     for wheel = [wheelFL wheelFR wheelRL wheelRR]
         line([0.1 0.1], [0 0], [0.16 0.22], "LineWidth", 2, "Color", [1 1 1], "Parent", wheel.Graphics);
     end
@@ -33,13 +36,13 @@ function model_buggy
     % Create joints connecting arms with chassis and wheels
     s = 0; % -0.5 "steering angle"
     phx.RevoluteJoint(chassis, armFL, "AxisA", [1 0 0], "AxisB", [1 0 0], "PointA", [-0.9 -0.15 -0.6], "PointB", [0 0.25 0], "Visible", false);
-    phx.RevoluteJoint(armFL, wheelFL, "AxisA", [s 1 0], "AxisB", [-1 0 0], "PointA", [0 -0.3 0], "PointB", [0 0 0], "Visible", false);
+    phx.RevoluteJoint(armFL, wheelFL, "AxisA", [s 1 0], "AxisB", [-1 0 0], "PointA", [0 -0.32 0], "PointB", [0 0 0], "Visible", false);
     phx.RevoluteJoint(chassis, armFR, "AxisA", [1 0 0], "AxisB", [1 0 0], "PointA", [-0.9 0.15 -0.6], "PointB", [0 -0.25 0], "Visible", false);
-    phx.RevoluteJoint(armFR, wheelFR, "AxisA", [s 1 0], "AxisB", [1 0 0], "PointA", [0 0.3 0], "PointB", [0 0 0], "Visible", false);
+    phx.RevoluteJoint(armFR, wheelFR, "AxisA", [s 1 0], "AxisB", [1 0 0], "PointA", [0 0.32 0], "PointB", [0 0 0], "Visible", false);
     phx.RevoluteJoint(chassis, armRL, "AxisA", [1 0 0], "AxisB", [1 0 0], "PointA", [1.1 -0.15 -0.6], "PointB", [0 0.25 0], "Visible", false);
-    phx.RevoluteJoint(armRL, wheelRL, "AxisA", [0 1 0], "AxisB", [-1 0 0], "PointA", [0 -0.3 0], "PointB", [0 0 0], "Visible", false);
+    phx.RevoluteJoint(armRL, wheelRL, "AxisA", [0 1 0], "AxisB", [-1 0 0], "PointA", [0 -0.32 0], "PointB", [0 0 0], "Visible", false);
     phx.RevoluteJoint(chassis, armRR, "AxisA", [1 0 0], "AxisB", [1 0 0], "PointA", [1.1 0.15 -0.6], "PointB", [0 -0.25 0], "Visible", false);
-    phx.RevoluteJoint(armRR, wheelRR, "AxisA", [0 1 0], "AxisB", [1 0 0], "PointA", [0 0.3 0], "PointB", [0 0 0], "Visible", false);
+    phx.RevoluteJoint(armRR, wheelRR, "AxisA", [0 1 0], "AxisB", [1 0 0], "PointA", [0 0.32 0], "PointB", [0 0 0], "Visible", false);
 
     % Create springs between arms and chassis
     phx.Spring(chassis, armFL, "Stiffness", 28e3, "Damping", 1900, "FreeLength", 0.45, "PointA", [-0.9 -0.15 -0.3], "Color", [1 0.5 0], "Name", "SpringFL");
