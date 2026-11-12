@@ -1362,6 +1362,33 @@ classdef tEngineProtocol < PhxTestCase
             tc.verifyLessThan(norm(p1(1:2) - p0(1:2)), 5e-5, "Horizontal drift of the top box in 5 s (m)");
         end
 
+        function loadedChainHoldsItsLength(tc)
+            % Ten 1 kg links of 0.2 m hung from an anchor by point joints,
+            % the last one 100 kg: at 5 ms the chain stretches less than
+            % 0.1 mm in 3 s. (Its joints swept one after another, the mass
+            % ratio of 1:100 left it 3.4 mm long at the iteration cap.)
+            w = tc.newWorld;
+            s = [0.05 0.05 0.2];
+            up = [0 0 0.1];
+            anchor = tc.addBox(w, 0, [0 0 2], 0.05*[1 1 1]);
+            links = zeros(1, 10, "uint64");
+            for i = 1:10
+                m = 1 + 99*(i == 10);
+                links(i) = tc.addBox(w, 2, [0 0 2.1 - 0.2*i], s, m, m*(sum(s.^2) - s.^2)/12);
+                if i == 1
+                    phx.engine.io('add', w, 'spherical', [anchor links(i)], eye(4), [eye(3) up'; 0 0 0 1], false);
+                else
+                    phx.engine.io('add', w, 'spherical', [links(i - 1) links(i)], [eye(3) -up'; 0 0 0 1], [eye(3) up'; 0 0 0 1], false);
+                end
+            end
+            for k = 1:round(3/tc.Dt)
+                [ids, T] = phx.engine.io('step', w, tc.Dt);
+            end
+            last = T(:, :, ids == links(end));
+            bottom = last(1:3, 4) - last(1:3, 1:3)*up';
+            tc.verifyLessThan(norm(bottom - [0; 0; 2]) - 2, 1e-4, "Stretch of the chain (m)");
+        end
+
         function tiltedRotorKeepsItsSpeed(tc)
             % A box rotor on a hinge, without gravity, its principal axes
             % tilted 10 deg to the hinge (dynamic imbalance), spinning at
