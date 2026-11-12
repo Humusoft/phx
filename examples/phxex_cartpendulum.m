@@ -51,5 +51,6 @@ function phxex_cartpendulum
 
     sim = phx.Simulation("PacingRate", 1);    % run in real time
     sim.step(10, 1000);
+    delete(sim);
 
 end

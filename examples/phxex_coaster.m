@@ -120,22 +120,16 @@ function phxex_coaster(Options)
 end
 
 function addSurroundings(ax, trk)
-% Cottages and palm trees outside the ride, clear of the camera's view of
-% the track and of the lane where the car lands
+% Palm trees outside the ride, clear of the camera's view of the track and
+% of the lane where the car lands
     rng(0);                                      % reproducible palm placement
     resdir = fullfile(fileparts(mfilename("fullpath")), "res") + filesep;
-
-    cottage = phx.shape.Mesh("Source", resdir + "cottage.obj", "Group", "Cube_Cube.002", ...
-        "Texture", resdir + "cottage_diffuse.jpg", "Centered", false, "Scale", 0.3);
-    phx.Body(ax, "Type", "static", "Position", [16 -14 0], "Shape", cottage);
-    phx.Body(ax, "Type", "static", "Position", [62 38 0], "EulerAngles", [0 0 pi], "Shape", cottage);
 
     palm = phx.shape.Mesh("Source", resdir + "palm_tree.obj", "Material", "matte", ...
         "Centered", false, "Scale", 1.1);
     sites = [(-8:9:88)', -8 + 0*(-8:9:88)'           % behind the drop and the loop
              (36:9:90)', 33 + 0*(36:9:90)'           % behind the run-out
              92 + 0*(4:9:22)', (4:9:22)'];           % behind the turn
-    sites(sites(:, 1) > 4 & sites(:, 1) < 30 & sites(:, 2) < 0, :) = [];   % the cottage
     for k = 1:size(sites, 1)
         position = sites(k, :) + 2*randn(1, 2);
         yaw = 2*pi*rand;

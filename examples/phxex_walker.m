@@ -55,7 +55,7 @@ function phxex_walker(freq, duty)
         "Vmax", 25);                % joint servo velocity limit, rad/s
 
     duration = 20;
-    dt = 0.02;
+    dt = 0.01;
 
     % --- Scene ----------------------------------------------------------
     figure(1);

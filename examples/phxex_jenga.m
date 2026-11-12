@@ -7,39 +7,40 @@ function phxex_jenga(n, s)
 %
 % Input Arguments:
 %     n - number of blocks to stack (default: 15)
-%     s - size of the blocks in metres (default: [0.02 0.06 0.01])
+%     s - size of the blocks in metres (default: [0.2 0.6 0.1])
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 
     arguments
         n (1, 1) double = 15
-        s (1, 3) double = [0.02 0.06 0.01]
+        s (1, 3) double = [0.2 0.6 0.1]
     end
 
     % Resources directory
     resdir = fullfile(fileparts(mfilename("fullpath")), "res") + filesep;
 
     % Figure setup
-    [viewer, ax] = phx.extra.Viewer("clear", "DefaultCameraTarget", [0 0 0.08], "DefaultCameraPosition", [0.22 -0.3 0.17], ...
+    [viewer, ax] = phx.extra.Viewer("clear", "DefaultCameraTarget", [0 0 0.8], "DefaultCameraPosition", [2.2 -3 1.7], ...
         "Texture", resdir+"HumusoftHall.png", "Lighting", "studio");
 
     % Physical model
-    ground = phx.Body(ax, "Type", "static", "Position", [0 0 0], "Shape", {"Box", "Size", [0.5 0.5 0.01], "Color", [1 1 1]});
+    ground = phx.Body(ax, "Type", "static", "Position", [0 0 0], "Shape", {"Box", "Size", [5 5 0.1], "Color", [1 1 1]});
     shpA = phx.shape.Box("Size", s, "Texture", "wood", "TextureBlend", 0.4);
     shpB = phx.shape.Box("Size", s([2 1 3]), "Texture", "wood", "TextureBlend", 0.4);
     clr = (jet(n) + 1)/2; % Generate colors for the blocks
+    mu = 0.2; % Friction of the blocks, low enough for a pulled block not to drag the tower along
     % Create layers with three blocks each
     for i = 1:n
         if mod(i, 2) == 1 % Alternate between two shapes for odd/even blocks
             shpA.Color = clr(i, :);
-            sticks(i*3 - 2) = phx.Body(ax, "Position", [-s(1) 0.01*rand i*s(3)], "Shape", shpA, "UserData", [0 1 0], "OnDoubleClickFcn", @moveOut);
-            sticks(i*3 - 1) = phx.Body(ax, "Position", [0 0.01*rand i*s(3)], "Shape", shpA, "UserData", [0 1 0], "OnDoubleClickFcn", @moveOut);
-            sticks(i*3 - 0) = phx.Body(ax, "Position", [s(1) 0.01*rand i*s(3)], "Shape", shpA, "UserData", [0 1 0], "OnDoubleClickFcn", @moveOut);
+            sticks(i*3 - 2) = phx.Body(ax, "Position", [-s(1) 0.1*rand i*s(3)], "Shape", shpA, "UserData", [0 1 0], "OnDoubleClickFcn", @moveOut, "Friction", mu);
+            sticks(i*3 - 1) = phx.Body(ax, "Position", [0 0.1*rand i*s(3)], "Shape", shpA, "UserData", [0 1 0], "OnDoubleClickFcn", @moveOut, "Friction", mu);
+            sticks(i*3 - 0) = phx.Body(ax, "Position", [s(1) 0.1*rand i*s(3)], "Shape", shpA, "UserData", [0 1 0], "OnDoubleClickFcn", @moveOut, "Friction", mu);
         else
             shpB.Color = clr(i, :);
-            sticks(i*3 - 2) = phx.Body(ax, "Position", [0.01*rand -s(1) i*s(3)], "Shape", shpB, "UserData", [1 0 0], "OnDoubleClickFcn", @moveOut);
-            sticks(i*3 - 1) = phx.Body(ax, "Position", [0.01*rand 0 i*s(3)], "Shape", shpB, "UserData", [1 0 0], "OnDoubleClickFcn", @moveOut);
-            sticks(i*3 - 0) = phx.Body(ax, "Position", [0.01*rand s(1) i*s(3)], "Shape", shpB, "UserData", [1 0 0], "OnDoubleClickFcn", @moveOut);
+            sticks(i*3 - 2) = phx.Body(ax, "Position", [0.1*rand -s(1) i*s(3)], "Shape", shpB, "UserData", [1 0 0], "OnDoubleClickFcn", @moveOut, "Friction", mu);
+            sticks(i*3 - 1) = phx.Body(ax, "Position", [0.1*rand 0 i*s(3)], "Shape", shpB, "UserData", [1 0 0], "OnDoubleClickFcn", @moveOut, "Friction", mu);
+            sticks(i*3 - 0) = phx.Body(ax, "Position", [0.1*rand s(1) i*s(3)], "Shape", shpB, "UserData", [1 0 0], "OnDoubleClickFcn", @moveOut, "Friction", mu);
         end
     end
     simBodies = [ground sticks]; % Combine ground and sticks into a single array
@@ -50,30 +51,22 @@ function phxex_jenga(n, s)
 
     % Callbacks
     function moveOut(body, event)
-        % Move the selected block out of the stack
         set(gca, "PickableParts", "none", "HitTest", "off");
-        vec = body.UserData*(1 + rand)*sign(rand - 0.5)*0.002; % Random movement vector
-        simBodies.storeState; % Store the current state of the simulation
-        sim = phx.Simulation(simBodies); % Create a new simulation instance
-        body.Type = "kinematic"; % Set the body type to kinematic for controlled movement
-
-        % Physical animation
         viewer.displayText(["Pulling", ""]);
-        for j = 1:100
-            if j < 50
-                body.Position = body.Position + vec; % Move the block
-            elseif j == 50
-                body.Type = "dynamic"; % Change to dynamic type for physics simulation
-            end
-            sim.step(0.01, 10); % Step the simulation in substeps of 1 ms
-            prog = '----------'; % Progress indicator
-            prog(1:round(10*sim.Time)) = '>'; % Update progress based on simulation time
-            viewer.displayText(prog, "replacelast");
-            pause(0);
-        end
+
+        % Move the selected block out of the stack
+        vel = body.UserData*(1 + rand)*sign(rand - 0.5)*0.7; % Random pulling velocity
+        simBodies.storeState; % Store the current state of the simulation
+        sim = phx.Simulation(simBodies, "PacingRate", 1); % Create a new simulation instance
+        body.Type = "kinematic"; % Set the body type to kinematic for controlled movement
+        body.LinearVelocity = vel; % Pull the block, it keeps this velocity
+        sim.step(1, 100);
+        body.LinearVelocity = [0 0 0]; % Stop pulling
+        body.Type = "dynamic"; % Change to dynamic type for physics simulation
+        sim.step(1, 100);
+        delete(sim); % Clean up simulation object
 
         viewer.displayText("");
-        delete(sim); % Clean up simulation object
         set(gca, "PickableParts", "visible", "HitTest", "on"); % Restore pickable parts
     end
 
