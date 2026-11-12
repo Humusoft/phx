@@ -11,8 +11,10 @@ function phxex_gyrostab(duration, spinRate, maxAmplitude)
 %
 % When a wave rolls the platform, the roll rate crosses the disk's angular
 % momentum and the gyroscopic torque swings the gimbal; the reaction of
-% that precession opposes the roll. Everything emerges from rigid-body
-% dynamics alone, without a single line of control code.
+% that precession opposes the roll. A friction brake on the gimbal bearing
+% takes the energy out of the precession, as on a real stabilizer. Everything
+% emerges from rigid-body dynamics alone, without a single line of control
+% code.
 %
 % The sea builds up: the wave amplitude ramps from calm to maxAmplitude
 % over the run. A crate slides once the roll of its platform exceeds its
@@ -75,7 +77,10 @@ function phxex_gyrostab(duration, spinRate, maxAmplitude)
     disk = phx.Body(ax, "Position", [offset 0 gyroZ], "Shape", {"Cylinder", "Radius", diskR, "Height", 0.06, "Density", 7800, "Color", [0.95 0.55 0.5], "Texture", "stripes", "TextureBlend", 0.5});
     line(shaft.Graphics, [0 0], [-0.6 0.6], [0 0], "LineWidth", 2, "Color", [0.4 0.4 0.4]);
 
-    gimbal = phx.RevoluteJoint(platB, shaft, "PointA", [0 0 gyroZ], "PointB", [0 0 0], "AxisA", [0 1 0], "AxisB", [0 1 0]);
+    % The gimbal bearing brakes by friction (a motor holding zero speed with
+    % a limited torque): an undamped gimbal would swing ever wider
+    gimbal = phx.RevoluteJoint(platB, shaft, "PointA", [0 0 gyroZ], "PointB", [0 0 0], "AxisA", [0 1 0], "AxisB", [0 1 0], ...
+        "TargetVelocity", 0, "MaxTorque", 100);
     phx.RevoluteJoint(shaft, disk, "PointA", [0 0 0], "PointB", [0 0 0]);
 
     % The flywheel is only spun up initially, never driven again
