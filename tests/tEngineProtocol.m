@@ -1337,6 +1337,31 @@ classdef tEngineProtocol < PhxTestCase
             tc.verifyLessThan(speed, 0.01, "Largest speed of the resting boxes (m/s)");
         end
 
+        function stackOfTenStaysPut(tc)
+            % Ten boxes of 0.2 m stacked on a floor stay where they are:
+            % over 5 s after settling, the top box moves less than 0.05 mm.
+            % The load of each face is statically indeterminate; it must not
+            % drift from step to step. (The positions come from the steps
+            % themselves: a step much shorter than the others rescales the
+            % warm start of the next one and kicks the stack.)
+            w = tc.newWorld;
+            tc.addFloor(w);
+            boxes = zeros(1, 10, "uint64");
+            for i = 1:10
+                boxes(i) = tc.addBox(w, 2, [0 0 0.2*(i - 0.5)], 0.2*[1 1 1]);
+            end
+            top = @(ids, T) T(1:3, 4, ids == boxes(end));
+            for k = 1:round(1/tc.Dt)
+                [ids, T] = phx.engine.io('step', w, tc.Dt);
+            end
+            p0 = top(ids, T);
+            for k = 1:round(5/tc.Dt)
+                [ids, T] = phx.engine.io('step', w, tc.Dt);
+            end
+            p1 = top(ids, T);
+            tc.verifyLessThan(norm(p1(1:2) - p0(1:2)), 5e-5, "Horizontal drift of the top box in 5 s (m)");
+        end
+
         function tiltedRotorKeepsItsSpeed(tc)
             % A box rotor on a hinge, without gravity, its principal axes
             % tilted 10 deg to the hinge (dynamic imbalance), spinning at
