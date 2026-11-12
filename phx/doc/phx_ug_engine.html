@@ -66,21 +66,35 @@ small a scale lets fast bodies pass through each other. Any of the three toleran
 set directly, which overrides the value derived from the scale.</p>
 
 <h2 class="phx-h2">Solver iterations</h2>
-<p>Contacts and joints are solved iteratively in every substep, each group of bodies that touch or
+<p>Contacts and joints are solved in iterations in every substep, each group of bodies that touch or
 are joined on its own. A group stops iterating once its joints and contacts are accurate enough:
 <code class="phx-inline">JointTolerance</code> (default 10<sup>&minus;3</sup>) and
 <code class="phx-inline">ContactTolerance</code> (default 10<sup>&minus;3</sup>) of
 <a href="phx.engine.Settings.html">phx.engine.Settings</a> are the relative accuracy of the impulses
-a body receives. A mechanism at rest or in steady motion needs only a few iterations; a group that
-has not converged stops at <code class="phx-inline">JointIterations</code> (default 50, a group
-with a joint) or <code class="phx-inline">ContactIterations</code> (default 20, any other).</p>
+a body receives. A group that has not converged stops at <code class="phx-inline">JointIterations</code>
+(default 50, a group with a joint) or <code class="phx-inline">ContactIterations</code> (default 20,
+any other).</p>
 
-<p>The defaults suit most scenes. For a mechanism that must be more precise, lower
-<code class="phx-inline">JointTolerance</code>; when the diagnostics below report groups at their cap,
-raise the cap. Tall stacks and heavy bodies resting on light ones converge slowly at any setting:
-mass ratios beyond about 1:100 between touching bodies are hard for the solver. If more iterations
-do not help, shorten the substep instead. <code class="phx-inline">PositionIterations</code> (default 4)
-pulls drifted joints and penetrating bodies back after the velocity iterations.</p>
+<p>The joints of a group are solved together, directly, in every iteration: fixed, revolute,
+prismatic and spherical joints, generic joints with all rotations or all translations locked, and
+the motors of revolute and prismatic joints while they stay below their
+<code class="phx-inline">MaxTorque</code> or <code class="phx-inline">MaxForce</code>, closed loops
+included (a crank, a linkage, an engine). A chain, a robot arm or a mechanism of such joints is
+therefore exact after a few iterations, at any mass ratio between its links, and the forces in its
+joints are the true reactions. The points of each contact face are solved together as well. What
+remains iterative is the interplay of the bodies with their contacts, motors working at their limit,
+the other joints (cylindrical, gear, bushing) and the springs and ropes. A group of more than about
+a hundred joints and contacts together, which the engine splits up to solve it in parallel
+(<code class="phx-inline">SplitIslands</code> in the diagnostics), is solved by iterations alone.</p>
+
+<p>The defaults suit most scenes. Groups that run to their cap are mostly mechanisms in contact:
+walking robots, vehicles, figures falling down stairs. A lower <code class="phx-inline">JointIterations</code>
+makes them faster, at the price of their accuracy (a roller coaster's wheel joints opened twice as
+far at 20 as at 50); a higher one rarely helps. For a result that must be more precise, lower the
+tolerance or shorten the substep. Tall stacks and heavy bodies resting on light ones converge slowly
+at any setting: mass ratios beyond about 1:100 between touching bodies are hard for the solver.
+<code class="phx-inline">PositionIterations</code> (default 4) pulls drifted joints and penetrating
+bodies back after the velocity iterations.</p>
 
 <h2 class="phx-h2">Checking the accuracy</h2>
 <p>Whether the substep, the length scale and the iterations suit a scene can be checked while it

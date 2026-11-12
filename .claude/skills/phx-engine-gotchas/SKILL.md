@@ -118,8 +118,18 @@ sim = phx.Simulation(ax, "EngineSettings", ...
   tolerance is the relative accuracy of the impulses a body receives: the largest change
   one joint/contact still makes to a body's velocity in an iteration, as a fraction of
   what joints and contacts changed it in the whole step (at least |g| dt). Tolerance 0 =
-  run to the cap every step (the old fixed count). A converged mechanism stops after a
-  few iterations; heaps and suddenly loaded mechanisms run to the cap.
+  run to the cap every step (the old fixed count).
+- **The joints of an island are solved directly.** Fixed, revolute, prismatic and
+  spherical joints, generic joints with all rotations or all translations locked, and
+  revolute/prismatic motors below their `MaxTorque`/`MaxForce` are solved together in
+  every iteration, closed loops included: a mechanism of them converges in a few
+  iterations at any mass ratio and its joint forces are true reactions. Iterative remain
+  contacts, motors at their limit, cylindrical/gear/bushing joints, springs and ropes,
+  and islands of more than about a hundred joints and contacts (split; `SplitIslands`).
+  So the islands at the cap are mechanisms in contact (walkers, vehicles, ragdolls),
+  heaps and tall stacks; a lower `JointIterations` speeds them up at a cost in accuracy
+  (a coaster's wheel joints opened twice as far at 20 as at 50), a higher one rarely
+  helps.
 - `PositionIterations` (4) — pull drifted joints and penetrations back after the velocity
   iterations; each takes a fifth of the error, so a joint's drift halves per doubling.
 - `Threads` (1) — more pay off from hundreds of bodies; `ContactCache` (off) — faster
@@ -215,7 +225,8 @@ new code, follow the same namespace.
 - **Remedy for a scene that stays soft at a sane `dt`: the solver settings.** Leave
   `phx.engine.Settings` alone in ordinary scenes. Reach for it only when, already at
   `dt ≤ 5 ms`, a stack sinks and drifts (raise `ContactIterations`, default 20) or a
-  jointed mechanism sags or rings (raise `JointIterations`, default 50, up to 100, or
+  jointed mechanism in contact, or with joints solved by iterations (above), sags or
+  rings (raise `JointIterations`, default 50, up to 100, or
   lower `JointTolerance` if its islands already converge; it costs only the jointed
   groups). None of it helps when the step itself is too long, so lower `dt` first. There
   is no choice of solver. `DiagnosticInfo` (above) tells which of them the scene needs.

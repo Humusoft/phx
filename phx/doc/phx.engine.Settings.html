@@ -113,11 +113,16 @@ wedge.</td></tr>
 
 <h3 class="phx-h3" id="iterations">How the iterations end</h3>
 <p>The engine solves the joints and contacts of every group of bodies that touch or are joined (an
-island) iteratively in each step. An island stops iterating when its joints and its contacts have
+island) in iterations in each step. An island stops iterating when its joints and its contacts have
 each met their tolerance, and at the latest after <code class="phx-inline">JointIterations</code>
-(an island with a joint) or <code class="phx-inline">ContactIterations</code> (any other). A
-mechanism at rest or moving steadily stops after a few iterations; a load taken up suddenly, a
-heavy body on a light one or a tall stack runs to the cap.</p>
+(an island with a joint) or <code class="phx-inline">ContactIterations</code> (any other). The
+joints of an island are solved together, directly, in every iteration (fixed, revolute, prismatic
+and spherical joints, generic joints with all rotations or all translations locked, revolute and
+prismatic motors below their limit, closed loops included), so a mechanism of them stops after a
+few iterations even under a load taken up suddenly or with heavy and light links. What runs to the
+cap is the interplay with contacts: a heavy body on a light one, a tall stack, a mechanism standing
+or rolling on its contacts (see <a href="phx_ug_engine.html">Units, scale and engine settings</a>).
+There a lower <code class="phx-inline">JointIterations</code> saves time at the price of accuracy.</p>
 <p>A tolerance is the relative accuracy of the impulses a body receives: the largest change one
 joint or contact still made to the body's velocity in the last iteration, as a fraction of what
 the joints and contacts changed its velocity in the whole step (at least |g|&nbsp;dt). With the
