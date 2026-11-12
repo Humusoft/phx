@@ -22,8 +22,9 @@ function phxex_segway(Kp, Kd, push)
 %
 % The wheels propel the robot only through their friction contact with the
 % ground. Each wheel is driven by the motor of its phx.RevoluteJoint, run as
-% a pure torque source: an unreachable TargetVelocity keeps the motor
-% saturated, so it delivers exactly MaxTorque. Because the motor is part of
+% a torque source: its TargetVelocity is the no-load speed of the motor, far
+% above the cruise, so it delivers exactly MaxTorque until a wheel that has
+% lost its grip spins up to that speed. Because the motor is part of
 % the joint, the chassis feels the equal and opposite reaction - the term a
 % real segway leans on. On the straight between the two walls an external
 % push shoves the body to test the controller against a kick.
@@ -124,6 +125,7 @@ function phxex_segway(Kp, Kd, push)
     Kv = 2000;              % speed term -> the lean the robot commands (Kv/Kp)
     Ks = 700;               % steering gain on the left/right ray difference
     Kh = 800;               % heading term holding the original course
+    wMax = 30;              % no-load speed of the hub motors, rad/s (10 m/s at the rim)
 
     dt = 0.01;              % small step (0.005-0.01) balancing needs a fast loop
     nSteps = 3000;
@@ -156,8 +158,8 @@ function phxex_segway(Kp, Kd, push)
         % to the hub motors as a signed torque. MaxTorque = 0 when the demand
         % is zero, which switches the motor off rather than braking. ---
         tauL = tau - tauTurn;  tauR = tau + tauTurn;
-        hubL.TargetVelocity = sign(tauL)*1e6;  hubL.MaxTorque = abs(tauL);
-        hubR.TargetVelocity = sign(tauR)*1e6;  hubR.MaxTorque = abs(tauR);
+        hubL.TargetVelocity = sign(tauL)*wMax;  hubL.MaxTorque = abs(tauL);
+        hubR.TargetVelocity = sign(tauR)*wMax;  hubR.MaxTorque = abs(tauR);
 
         % External disturbance: a sideways shove on the body
         if k == pushStep
@@ -179,10 +181,13 @@ function phxex_segway(Kp, Kd, push)
             end
         end
 
-        % Stop if the robot has fallen over
+        % Stop if the robot has fallen over: the motors go off and the wreck
+        % settles for the view
         if abs(pitch) > pi/3
             viewer.displayText("Crashed!");
-            sim.step(2, 200);            % let it settle for the view
+            hubL.MaxTorque = 0;
+            hubR.MaxTorque = 0;
+            sim.step(2, 200);
             break;
         end
     end
