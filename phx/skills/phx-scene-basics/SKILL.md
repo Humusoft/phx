@@ -100,7 +100,15 @@ b = phx.Body(ax, ...
 ```
 
 - **Type**: `static` (infinite mass, never moves — floors, walls), `kinematic`
-  (you drive its pose, it pushes others), `dynamic` (engine-driven).
+  (you drive its pose or velocity, it pushes others), `dynamic` (engine-driven).
+- **Driving a kinematic body**: a pose (`Position`, `EulerAngles`, …) is reached within
+  the **next engine step**, then the body stands still. So set the pose before **every**
+  step and step without substeps (`sim.step(dt)` in the loop), never once before
+  `sim.step(interval, n)`: the body would jump in the first substep and stand still in the
+  others, and friction would jerk whatever rides on it. For motion at a steady rate,
+  set `LinearVelocity` / `AngularVelocity` once instead: they hold until changed, over
+  any number of substeps (set them to zero to stop). A `phx.Script` or `phx.Function`
+  writing the pose runs every substep, so it is fine.
 - **"Hold then release" idiom**: to hang a body still and later let it fall, create
   it `kinematic` and switch it to `dynamic` at the release moment
   (`body.Type = "dynamic"`). Do **not** start it `static` for this: a body switched

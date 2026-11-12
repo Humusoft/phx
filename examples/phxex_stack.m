@@ -68,25 +68,29 @@ function phxex_stack(n, mu, tiltRate)
     sim.step(0.5, 25);
 
     % Phase 2 - progressively tilt the pallet and watch the stack react
-    dt = 0.02;                       % time step
-    nSteps = 300;                    % total tilt steps
+    dt = 0.004;                      % time step, one engine step each
+    nSteps = 1500;                   % total tilt steps
     collapseAngle = NaN;             % tilt angle at which the stack lets go
     driftThreshold = drift.Distance*1.1;  % 110 % of initial distance counts as collapse
     for k = 1:nSteps
         tiltDeg = tiltRate * (k*dt);
         tiltRad = tiltDeg * pi/180;
 
-        % Drive the kinematic pallet orientation; boxes follow only via contact
+        % Drive the kinematic pallet orientation; boxes follow only via
+        % contact. A pose is reached within the next engine step, so it is
+        % set at every step, without substeps.
         pallet.EulerAngles = [tiltRad 0 0];
 
-        sim.step(dt, 5);
+        sim.step(dt);
 
         % Detect the onset of collapse from the measured top-box drift
         if isnan(collapseAngle) && abs(drift.Distance) > driftThreshold
             collapseAngle = tiltDeg;
         end
 
-        viewer.displayText(sprintf("Tilt: %.1f deg   |   top drift: %.3f m", tiltDeg, drift.Distance));
+        if mod(k, 5) == 0
+            viewer.displayText(sprintf("Tilt: %.1f deg   |   top drift: %.3f m", tiltDeg, drift.Distance));
+        end
     end
     delete(sim);
 

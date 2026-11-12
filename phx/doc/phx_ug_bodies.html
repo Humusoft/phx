@@ -90,7 +90,12 @@ read and written &mdash; even during the simulation (they read/write the engine 
     <td>Linear and angular velocity.</td></tr>
 <tr><td class="name">Type</td>
     <td><code class="phx-inline">"dynamic"</code> &middot; <code class="phx-inline">"static"</code>
-    &middot; <code class="phx-inline">"kinematic"</code>.</td></tr>
+    &middot; <code class="phx-inline">"kinematic"</code>. A kinematic body moves only as you drive it.
+    A pose (<code class="phx-inline">Position</code>, <code class="phx-inline">EulerAngles</code>, &hellip;)
+    is reached within the next engine step, and then the body stands still: set it before every
+    step, without substeps (<code class="phx-inline">sim.step(dt)</code>), or drive the body by
+    <code class="phx-inline">LinearVelocity</code> and <code class="phx-inline">AngularVelocity</code>,
+    which hold until changed.</td></tr>
 <tr><td class="name">Mass</td>
     <td>Mass [kg]. Can also be derived from the shape density
     (<code class="phx-inline">Density</code>).</td></tr>

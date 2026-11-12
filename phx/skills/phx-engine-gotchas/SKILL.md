@@ -221,7 +221,11 @@ new code, follow the same namespace.
   is no choice of solver. `DiagnosticInfo` (above) tells which of them the scene needs.
 - **Static vs kinematic vs dynamic**: `static` bodies have infinite mass and never
   move; `kinematic` bodies are driven by you and push dynamics but ignore forces;
-  only `dynamic` bodies integrate forces. Set mass/inertia explicitly for controlled
+  only `dynamic` bodies integrate forces. A kinematic pose is reached within the next
+  engine step and the body then stands still: a pose set once before
+  `sim.step(interval, n)` with `n > 1` jerks the body (moves in the first substep, still
+  in the others), which shows up as early sliding or toppling of what rides on it. Set
+  the pose before every `sim.step(dt)`, or drive by `LinearVelocity`/`AngularVelocity`. Set mass/inertia explicitly for controlled
   vehicles instead of relying on shape density.
 - **Negative time steps are refused** (`phx:engine:badArgument`): the engine only steps
   forward.

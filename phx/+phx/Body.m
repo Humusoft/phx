@@ -105,8 +105,12 @@ classdef Body < phx.base.Object
     properties
         % Body type
         % - static
-        % - kinematic
-        % - dynamic 
+        % - kinematic: moves only as driven. A pose (Position, EulerAngles,
+        %   ...) is reached within the next engine step, and then the body
+        %   stands still: set it before every step, without substeps, or
+        %   drive the body by LinearVelocity and AngularVelocity, which hold
+        %   until changed
+        % - dynamic
         Type {mustBeMember(Type, ["static", "kinematic", "dynamic"])} = "dynamic";
 
         % Body mass (kg)
