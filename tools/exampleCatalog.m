@@ -74,6 +74,7 @@ function catalog = exampleCatalog
         entry("phxex_stairfall",   "Vehicles, robots and control",    8)
         entry("phxex_walker",      "Vehicles, robots and control",    1)  % the chase camera is still close in at the start
         entry("phxex_kinova",      "Vehicles, robots and control",   13)  % wall-clock; the plan and the import take about 4.5 s before the arm moves
+        entry("phxex_delta",       "Vehicles, robots and control",   19)  % wall-clock, the build takes ~7 s; four blocks out over the edge, the fifth is let go at sim 12.6 s
         entry("phxex_seaplate",    "Vehicles, robots and control",   12)  % wall-clock, runs faster than real time; afloat, the ball still on the plate
         entry("phxex_airbag",      "Vehicles, robots and control",    8)
 
