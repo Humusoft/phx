@@ -218,7 +218,7 @@ classdef Settings
             s.speculativedistance = obj.SpeculativeDistance;
             s.threads = obj.Threads;
             s.contactcache = obj.ContactCache;
-            phx.engine.io('set', objectHandle, uint64(0), 'settings', s);
+            phxEngine('set', objectHandle, uint64(0), 'settings', s);
         end
     end
 

@@ -166,13 +166,13 @@ classdef Mesh < phx.base.Shape
             bsize = (obj.BBox.*abs(obj.Scale))/2; % half-extents
             switch obj.Envelope
                 case "box"
-                    eh = phx.engine.io('add', body.WorldHandle, 'box', body.TypeID, bsize, body.Transform, body.Mass, body.Inertia, body.CenterOfMass);
+                    eh = phxEngine('add', body.WorldHandle, 'box', body.TypeID, bsize, body.Transform, body.Mass, body.Inertia, body.CenterOfMass);
                 case "cylinder"
                     % Bounding cylinder: the larger cross extent as its radius
                     along = obj.Axis == ["x" "y" "z"];
-                    eh = phx.engine.io('add', body.WorldHandle, 'cylinder', body.TypeID, max(bsize(~along)), 2*bsize(along), char(obj.Axis), body.Transform, body.Mass, body.Inertia, body.CenterOfMass);
+                    eh = phxEngine('add', body.WorldHandle, 'cylinder', body.TypeID, max(bsize(~along)), 2*bsize(along), char(obj.Axis), body.Transform, body.Mass, body.Inertia, body.CenterOfMass);
                 case "sphere"
-                    eh = phx.engine.io('add', body.WorldHandle, 'sphere', body.TypeID, max(bsize), body.Transform, body.Mass, body.Inertia, body.CenterOfMass);
+                    eh = phxEngine('add', body.WorldHandle, 'sphere', body.TypeID, max(bsize), body.Transform, body.Mass, body.Inertia, body.CenterOfMass);
                 case "convex"
                     vertices = obj.gatherVertices(body)';
                     eh = obj.createHullBody(body, vertices);

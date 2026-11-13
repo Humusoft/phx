@@ -103,7 +103,7 @@ classdef TorsionSpring < phx.base.Object
         function value = get.Torque(obj)
             value = [0 0 0];
             if ~isempty(obj.ObjectHandle)
-                M = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'spring');
+                M = phxEngine('get', obj.WorldHandle, obj.ObjectHandle, 'spring');
                 Ma = obj.Parents{1}.Matrix*obj.TransformA;
                 value = -M*Ma(9:11);
             end
@@ -111,7 +111,7 @@ classdef TorsionSpring < phx.base.Object
 
         function value = get.Angle(obj)
             if ~isempty(obj.ObjectHandle)
-                [~, value] = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'spring');
+                [~, value] = phxEngine('get', obj.WorldHandle, obj.ObjectHandle, 'spring');
             else
                 value = obj.wrappedAngle;
             end
@@ -124,7 +124,7 @@ classdef TorsionSpring < phx.base.Object
         function set.RestAngle(obj, value)
             obj.RestAngle = value;
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'angle', value);
+                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'angle', value);
             end
         end
 
@@ -141,7 +141,7 @@ classdef TorsionSpring < phx.base.Object
         function set.Inertance(obj, value)
             obj.Inertance = value;
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'inertance', value);
+                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'inertance', value);
             end
         end
     end
@@ -157,7 +157,7 @@ classdef TorsionSpring < phx.base.Object
 
         function pushSpring(obj)
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'spring', obj.Stiffness, obj.Damping);
+                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'spring', obj.Stiffness, obj.Damping);
             end
         end
     end
@@ -175,18 +175,18 @@ classdef TorsionSpring < phx.base.Object
                 % Built once and kept across pipeline rebuilds; the setters
                 % update it, except for the frames
                 obj.WorldHandle = world;
-                obj.ObjectHandle = phx.engine.io('add', world, 'torsionspring', ...
+                obj.ObjectHandle = phxEngine('add', world, 'torsionspring', ...
                     [obj.Parents{1}.ObjectHandle obj.Parents{2}.ObjectHandle], obj.TransformA, obj.TransformB, true, ...
                     obj.RestAngle, obj.Stiffness, obj.Damping);
                 if obj.Inertance > 0
-                    phx.engine.io('set', world, obj.ObjectHandle, 'inertance', obj.Inertance);
+                    phxEngine('set', world, obj.ObjectHandle, 'inertance', obj.Inertance);
                 end
             end
         end
 
         function destroyObject(obj)
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('remove', obj.WorldHandle, obj.ObjectHandle);
+                phxEngine('remove', obj.WorldHandle, obj.ObjectHandle);
                 obj.ObjectHandle = [];
             end
         end

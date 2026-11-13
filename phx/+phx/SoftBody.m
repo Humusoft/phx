@@ -182,7 +182,7 @@ classdef SoftBody < phx.base.Object
 
         function value = get.CurrentVertices(obj)
             if ~isempty(obj.ObjectHandle)
-                value = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'vertices')';
+                value = phxEngine('get', obj.WorldHandle, obj.ObjectHandle, 'vertices')';
             else
                 value = obj.Vertices*obj.Orientation' + obj.Position;
             end
@@ -210,7 +210,7 @@ classdef SoftBody < phx.base.Object
     methods (Access = private)
         function engineSet(obj, field, value)
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, field, value);
+                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, field, value);
             end
         end
 
@@ -230,7 +230,7 @@ classdef SoftBody < phx.base.Object
             if isempty(obj.ObjectHandle)
                 obj.WorldHandle = world;
                 T = [obj.Orientation obj.Position'; 0 0 0 1];
-                obj.ObjectHandle = phx.engine.io('add', world, 'softbody', obj.Vertices', obj.Faces', ...
+                obj.ObjectHandle = phxEngine('add', world, 'softbody', obj.Vertices', obj.Faces', ...
                     T, obj.Mass, [obj.Compliance obj.BendCompliance]);
                 obj.Pressure = obj.Pressure;
                 obj.VertexRadius = obj.VertexRadius;
@@ -244,7 +244,7 @@ classdef SoftBody < phx.base.Object
 
         function destroyObject(obj)
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('remove', obj.WorldHandle, obj.ObjectHandle);
+                phxEngine('remove', obj.WorldHandle, obj.ObjectHandle);
                 obj.ObjectHandle = [];
             end
         end
@@ -257,7 +257,7 @@ classdef SoftBody < phx.base.Object
         function updateView(cellObjs, dt, time, world)
             for i = 1:numel(cellObjs)
                 obj = cellObjs{i};
-                obj.hP.Vertices = phx.engine.io('get', world, obj.ObjectHandle, 'vertices')';
+                obj.hP.Vertices = phxEngine('get', world, obj.ObjectHandle, 'vertices')';
             end
         end
     end

@@ -108,11 +108,11 @@ classdef Revolution < phx.base.Shape
                 case "cylinder"
                     % Bounding cylinder (centered on the shape origin)
                     ext = max(abs(obj.Profile), [], 1);
-                    eh = phx.engine.io('add', body.WorldHandle, 'cylinder', body.TypeID, ext(2), 2*ext(1), char(obj.Axis), body.Transform, body.Mass, body.Inertia, body.CenterOfMass);
+                    eh = phxEngine('add', body.WorldHandle, 'cylinder', body.TypeID, ext(2), 2*ext(1), char(obj.Axis), body.Transform, body.Mass, body.Inertia, body.CenterOfMass);
                 case "cones"
                     % The profile revolved exactly (no graphics needed)
                     profile = phx.shape.Revolution.conesProfile(obj.Profile);
-                    eh = phx.engine.io('add', body.WorldHandle, 'revolution', body.TypeID, profile, char(obj.Axis), body.Transform, body.Mass, body.Inertia, body.CenterOfMass);
+                    eh = phxEngine('add', body.WorldHandle, 'revolution', body.TypeID, profile, char(obj.Axis), body.Transform, body.Mass, body.Inertia, body.CenterOfMass);
                 case "convex"
                     ph = phx.internal.PrimitiveHelper(primitive);
                     vertices = ph.Vertices';

@@ -147,7 +147,7 @@ classdef Shape
             % Engine body with the convex hull of the given vertices as its
             % collision shape, for the "convex" envelopes. The vertices come
             % as a 3-by-N matrix, one column per point.
-            eh = phx.engine.io('add', body.WorldHandle, 'convexhull', body.TypeID, vertices, body.Transform, body.Mass, body.Inertia, body.CenterOfMass);
+            eh = phxEngine('add', body.WorldHandle, 'convexhull', body.TypeID, vertices, body.Transform, body.Mass, body.Inertia, body.CenterOfMass);
         end
 
         function eh = createTrimeshBody(~, body, vertices, faces)
@@ -155,7 +155,7 @@ classdef Shape
             % the "concave" envelopes. The vertices come as a 3-by-N matrix,
             % one column per point, the faces as any array of one-based
             % vertex indices, three consecutive ones per triangle.
-            eh = phx.engine.io('add', body.WorldHandle, 'trimesh', body.TypeID, vertices, reshape(double(faces), 3, []), body.Transform, body.Mass, body.Inertia, body.CenterOfMass);
+            eh = phxEngine('add', body.WorldHandle, 'trimesh', body.TypeID, vertices, reshape(double(faces), 3, []), body.Transform, body.Mass, body.Inertia, body.CenterOfMass);
         end
 
         function applyStyle(obj, patchObj, style)

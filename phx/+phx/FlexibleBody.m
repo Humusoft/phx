@@ -283,7 +283,7 @@ classdef FlexibleBody < phx.base.Object
 
         function value = get.VonMisesStress(obj)
             if ~isempty(obj.ObjectHandle)
-                value = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'stress')';
+                value = phxEngine('get', obj.WorldHandle, obj.ObjectHandle, 'stress')';
             else
                 value = zeros(size(obj.mesh, 1), 1);
             end
@@ -317,7 +317,7 @@ classdef FlexibleBody < phx.base.Object
 
         function value = get.CurrentVertices(obj)
             if ~isempty(obj.ObjectHandle)
-                value = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'vertices')';
+                value = phxEngine('get', obj.WorldHandle, obj.ObjectHandle, 'vertices')';
             else
                 value = obj.mesh*obj.Orientation' + obj.Position;
             end
@@ -386,7 +386,7 @@ classdef FlexibleBody < phx.base.Object
 
         function engineSet(obj, field, value)
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, field, value);
+                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, field, value);
             end
         end
 
@@ -427,7 +427,7 @@ classdef FlexibleBody < phx.base.Object
             if isempty(obj.ObjectHandle)
                 pose = [obj.Orientation obj.Position'; 0 0 0 1];
                 [V, T] = obj.mesh;
-                obj.ObjectHandle = phx.engine.io('add', world, 'flexiblebody', V', ...
+                obj.ObjectHandle = phxEngine('add', world, 'flexiblebody', V', ...
                     obj.Faces', pose, obj.Mass, [obj.YoungsModulus obj.PoissonsRatio], ...
                     T');
                 obj.WorldHandle = world;
@@ -442,7 +442,7 @@ classdef FlexibleBody < phx.base.Object
 
         function destroyObject(obj)
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('remove', obj.WorldHandle, obj.ObjectHandle);
+                phxEngine('remove', obj.WorldHandle, obj.ObjectHandle);
                 obj.ObjectHandle = [];
             end
         end
@@ -455,9 +455,9 @@ classdef FlexibleBody < phx.base.Object
         function updateView(cellObjs, dt, time, world)
             for i = 1:numel(cellObjs)
                 obj = cellObjs{i};
-                obj.hP.Vertices = phx.engine.io('get', world, obj.ObjectHandle, 'vertices')';
+                obj.hP.Vertices = phxEngine('get', world, obj.ObjectHandle, 'vertices')';
                 if ~isempty(obj.Colormap)
-                    obj.hP.FaceVertexCData = obj.stressColors(phx.engine.io('get', world, obj.ObjectHandle, 'stress')');
+                    obj.hP.FaceVertexCData = obj.stressColors(phxEngine('get', world, obj.ObjectHandle, 'stress')');
                 end
             end
         end

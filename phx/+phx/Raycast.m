@@ -227,7 +227,7 @@ classdef Raycast < phx.base.Object
 
             [Ow, Ew] = obj.worldRays;
             % Misses come back as NaN with objectID 0
-            [obj.P, obj.Nrm, obj.Dst, obj.IDs] = phx.engine.io('raycast', obj.WorldHandle, Ow, Ew);
+            [obj.P, obj.Nrm, obj.Dst, obj.IDs] = phxEngine('raycast', obj.WorldHandle, Ow, Ew);
         end
 
         function tf = raysConsistent(obj)

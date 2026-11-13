@@ -103,7 +103,7 @@ classdef Spring < phx.base.Object
         function value = get.Force(obj)
             value = [0 0 0];
             if ~isempty(obj.ObjectHandle)
-                f = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'spring');
+                f = phxEngine('get', obj.WorldHandle, obj.ObjectHandle, 'spring');
                 [pa, pb] = obj.ends;
                 d = pb - pa;
                 n = norm(d);
@@ -126,7 +126,7 @@ classdef Spring < phx.base.Object
         function set.FreeLength(obj, value)
             obj.FreeLength = value;
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'lengths', value);
+                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'lengths', value);
             end
         end
 
@@ -143,7 +143,7 @@ classdef Spring < phx.base.Object
         function set.Inertance(obj, value)
             obj.Inertance = value;
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'inertance', value);
+                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'inertance', value);
             end
         end
 
@@ -201,7 +201,7 @@ classdef Spring < phx.base.Object
 
         function pushSpring(obj)
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'spring', obj.Stiffness, obj.Damping);
+                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'spring', obj.Stiffness, obj.Damping);
             end
         end
 
@@ -232,19 +232,19 @@ classdef Spring < phx.base.Object
                 % Built once and kept across pipeline rebuilds; the setters
                 % update it
                 obj.WorldHandle = world;
-                obj.ObjectHandle = phx.engine.io('add', world, 'spring', ...
+                obj.ObjectHandle = phxEngine('add', world, 'spring', ...
                     [obj.Parents{1}.ObjectHandle obj.Parents{2}.ObjectHandle], ...
                     makehgtform('translate', obj.PointA), makehgtform('translate', obj.PointB), true, ...
                     obj.FreeLength, obj.Stiffness, obj.Damping);
                 if obj.Inertance > 0
-                    phx.engine.io('set', world, obj.ObjectHandle, 'inertance', obj.Inertance);
+                    phxEngine('set', world, obj.ObjectHandle, 'inertance', obj.Inertance);
                 end
             end
         end
 
         function destroyObject(obj)
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('remove', obj.WorldHandle, obj.ObjectHandle);
+                phxEngine('remove', obj.WorldHandle, obj.ObjectHandle);
                 obj.ObjectHandle = [];
             end
         end

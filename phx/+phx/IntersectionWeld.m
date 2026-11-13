@@ -61,7 +61,7 @@ classdef IntersectionWeld < phx.base.Object
         function value = get.VertexCount(obj)
             value = 0;
             if ~isempty(obj.ObjectHandle)
-                value = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'vertexcount');
+                value = phxEngine('get', obj.WorldHandle, obj.ObjectHandle, 'vertexcount');
             end
         end
     end
@@ -86,7 +86,7 @@ classdef IntersectionWeld < phx.base.Object
                     return
                 end
                 obj.WorldHandle = world;
-                obj.ObjectHandle = phx.engine.io('add', world, 'attachment', softBody.ObjectHandle, body.ObjectHandle);
+                obj.ObjectHandle = phxEngine('add', world, 'attachment', softBody.ObjectHandle, body.ObjectHandle);
                 if obj.VertexCount < 3
                     warning("phx:IntersectionWeld:fewVertices", ...
                         "The body overlaps %d vertices of the soft body; at least 3 are needed to hold it.", ...
@@ -97,7 +97,7 @@ classdef IntersectionWeld < phx.base.Object
 
         function destroyObject(obj)
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('remove', obj.WorldHandle, obj.ObjectHandle);
+                phxEngine('remove', obj.WorldHandle, obj.ObjectHandle);
                 obj.ObjectHandle = [];
             end
         end

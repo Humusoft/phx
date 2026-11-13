@@ -151,7 +151,7 @@ teleporting a kinematic body into a resting body ejects it. Ramp it.
 
 The main block is declarative (property ports). For **occasional imperative work** —
 adding/removing bodies at runtime, one-off method calls (`applyForce`, reparenting,
-any `phx.engine.io`) — use the **PHX Action** block (`PhxLibrary`, `PhxAction.m`). On a
+any `phxEngine`) — use the **PHX Action** block (`PhxLibrary`, `PhxAction.m`). On a
 rising edge of its trigger (input 1) it runs user MATLAB code against the running scene.
 Mask params: `Code`, `NumInputs`, `OutputSizes`, `MainBlock` (the bound scene block,
 set via the **Select main block** button → stores its `SID`). The code runs with these
@@ -237,4 +237,4 @@ divide the block's `SimulationStep` (equal, or e.g. 0.005 for a 0.01 block step 
 - **phx-scene-basics** — build the scene (`phx.Body`, shapes, `Name`, `Type`) the block loads,
   and save it to the `.mat` the `ModelSource` points at.
 - **phx-constraints-forces** — body loads, joints/springs/thrusters and the in-MATLAB control-loop analogue.
-- **phx-engine-gotchas** — `phx.engine.io`, pipeline rebuilds, `dt` stability, error IDs, tests.
+- **phx-engine-gotchas** — `phxEngine`, pipeline rebuilds, `dt` stability, error IDs, tests.

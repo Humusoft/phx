@@ -140,7 +140,7 @@ classdef Resistance < phx.base.Object
                     pow = permute(0:numel(obj.VelocityFactors)-1, [3 1 2]);
                     fk = permute(obj.VelocityFactors, [3 1 2]);
                     F = -sum(abs(v).^pow.*fk, 3).*sign(v);
-                    phx.engine.io('apply', world, obj.ehs, 'centralforce', F, false);
+                    phxEngine('apply', world, obj.ehs, 'centralforce', F, false);
                 else
                     F = zeros(3, n);
                 end

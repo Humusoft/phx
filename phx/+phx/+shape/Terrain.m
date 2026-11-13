@@ -71,7 +71,7 @@ classdef Terrain < phx.base.Shape
             % intervals across the full Size, as the drawn surface does
             h = obj.Height';
             spacing = obj.Size./(size(h) - 1);
-            eh = phx.engine.io('add', body.WorldHandle, 'terrain', body.TypeID, h, spacing, body.Transform, body.Mass, body.Inertia, body.CenterOfMass);
+            eh = phxEngine('add', body.WorldHandle, 'terrain', body.TypeID, h, spacing, body.Transform, body.Mass, body.Inertia, body.CenterOfMass);
         end
     end
 

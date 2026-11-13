@@ -94,7 +94,7 @@ classdef Capsule < phx.base.Shape
 
     methods (Access = {?phx.base.Shape, ?phx.base.Object})
         function eh = createBody(obj, body, primitive)
-            eh = phx.engine.io('add', body.WorldHandle, 'capsule', body.TypeID, obj.Diameter/2, obj.Height, char(obj.Axis), body.Transform, body.Mass, body.Inertia, body.CenterOfMass);
+            eh = phxEngine('add', body.WorldHandle, 'capsule', body.TypeID, obj.Diameter/2, obj.Height, char(obj.Axis), body.Transform, body.Mass, body.Inertia, body.CenterOfMass);
         end
     end
 

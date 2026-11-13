@@ -20,8 +20,8 @@ classdef PhxTestCase < matlab.unittest.TestCase
     methods (Access = protected)
         function requireEngine(tc)
             % Assume the MEX away rather than fail when it is not installed.
-            tc.assumeNotEmpty(which("phx.engine.io"), ...
-                "Physics engine (phx.engine.io) is not on the path.");
+            tc.assumeNotEmpty(which("phxEngine"), ...
+                "Physics engine (phxEngine) is not on the path.");
         end
 
         function b = spawnBody(tc, position, varargin) %#ok<INUSD> tc unused by design

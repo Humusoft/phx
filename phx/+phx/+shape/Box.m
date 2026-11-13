@@ -66,7 +66,7 @@ classdef Box < phx.base.Shape
     methods (Access = {?phx.base.Shape, ?phx.base.Object})
         function eh = createBody(obj, body, primitive)
             bsize = obj.Size/2; % half-extents
-            eh = phx.engine.io('add', body.WorldHandle, 'box', body.TypeID, bsize, body.Transform, body.Mass, body.Inertia, body.CenterOfMass);
+            eh = phxEngine('add', body.WorldHandle, 'box', body.TypeID, bsize, body.Transform, body.Mass, body.Inertia, body.CenterOfMass);
         end
     end
     

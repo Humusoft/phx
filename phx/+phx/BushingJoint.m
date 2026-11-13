@@ -156,7 +156,7 @@ classdef BushingJoint < phx.base.Joint
         function pushSprings(obj)
         %pushSprings Writes the stiffness and damping through to the engine.
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'springs', ...
+                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'springs', ...
                     obj.LinearStiffness, obj.AngularStiffness, obj.LinearDamping, obj.AngularDamping);
             end
         end
@@ -165,9 +165,9 @@ classdef BushingJoint < phx.base.Joint
         %pushLimits Writes the linear or angular limits through to the engine.
             if ~isempty(obj.ObjectHandle)
                 if field == "linlimits"
-                    phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'linlimits', obj.LowerLinearLimits, obj.UpperLinearLimits);
+                    phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'linlimits', obj.LowerLinearLimits, obj.UpperLinearLimits);
                 else
-                    phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'anglimits', obj.LowerAngularLimits, obj.UpperAngularLimits);
+                    phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'anglimits', obj.LowerAngularLimits, obj.UpperAngularLimits);
                 end
             end
         end
@@ -181,7 +181,7 @@ classdef BushingJoint < phx.base.Joint
                 % which is then kept across pipeline rebuilds; the springs and
                 % the limits write through from their setters at any time.
                 obj.WorldHandle = world;
-                obj.ObjectHandle = phx.engine.io('add', world, 'bushing', [obj.Parents{1}.ObjectHandle obj.Parents{2}.ObjectHandle], ...
+                obj.ObjectHandle = phxEngine('add', world, 'bushing', [obj.Parents{1}.ObjectHandle obj.Parents{2}.ObjectHandle], ...
                     obj.TransformA, obj.TransformB, obj.MutualCollisions);
                 obj.pushSprings;
                 obj.pushLimits("linlimits");

@@ -15,7 +15,7 @@ description: >
 
 PHX is a MATLAB toolbox (package root `phx/+phx`, requires MATLAB R2025a or newer) — a thin
 object-oriented layer over a physics engine reached through one MEX
-gateway (`phx.engine.io`). You build a scene from `phx.*` handle objects that
+gateway (`phxEngine`). You build a scene from `phx.*` handle objects that
 draw into MATLAB axes via `hgtransform`, then step it with a `phx.Simulation`.
 
 ## Path & how to run
@@ -703,7 +703,7 @@ Subclasses implement four methods: `initObject(obj, world)` (build/refresh engin
 counterpart; return `false` to exclude), `destroyObject(obj)`, and the **static,
 batch-by-class** `resolveState(cellObjs, dt, time, world)` and
 `updateView(cellObjs, dt, time, world)`. New objects route **all** engine access
-through `phx.engine.io` — never call the engine any other way. Use the `phx.template.Interaction`
+through `phxEngine` — never call the engine any other way. Use the `phx.template.Interaction`
 class as a starting point.
 
 ## Related skills
@@ -711,5 +711,5 @@ class as a starting point.
 - **phx-constraints-forces** — joints, springs, ropes, thrusters, buoyancy, fields,
   `applyForce`/`applyTorque`, scripted and closed-loop control.
 - **phx-logging-view** — Logger, Trace, Measure, Zone, Raycast, PlanarShadow, Camera, the interactive Viewer, plotting.
-- **phx-engine-gotchas** — the `phx.engine.io` gateway, error IDs, known quirks, tests.
+- **phx-engine-gotchas** — the `phxEngine` gateway, error IDs, known quirks, tests.
 - **phx-simulink** — drive a PHX scene from Simulink via the PhxModel co-simulation block.

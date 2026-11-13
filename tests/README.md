@@ -39,7 +39,7 @@ Prefer headless bodies (`[]` axes) unless the test is about the drawing.
 | `tSimulation` | engine (one `Graphics` case) | `Engine` / `Graphics` | free fall, static bodies, time accumulation, determinism, draw-path independence of mesh collision hulls |
 | `tPipelineRebuild` | engine (two `Graphics` cases) | `Engine` / `Graphics` | rebuilding the execution pipelines: a body added or deleted mid-run, body identity across a rebuild, invisible bodies kept out of the redraw, and the mid-run `delete` that used to crash the process |
 | `tStoredState` | graphics (transfer tests also engine) | `Graphics` / `Engine` | the named kinematic-state store (`storeState`/`restoreState`/`clearStates`) and the pose & velocity transfer across engine initialization and teardown |
-| `tEngineProtocol` | engine | `Engine` | contract of `phx.engine.io` itself, without `phx.*` objects: the verbs, the shapes of their inputs and outputs and the physics they set (shapes, contacts, friction and restitution, joints with their limits changed at run time, motors and applied joint loads, persistent body loads, kinematic bodies); `MexFolder` tests another build of the engine |
+| `tEngineProtocol` | engine | `Engine` | contract of `phxEngine` itself, without `phx.*` objects: the verbs, the shapes of their inputs and outputs and the physics they set (shapes, contacts, friction and restitution, joints with their limits changed at run time, motors and applied joint loads, persistent body loads, kinematic bodies); `MexFolder` tests another build of the engine |
 | `tEngineSettings` | nothing | — | `phx.engine.Settings`: the metre defaults, the tolerances following `LengthScale` in automatic mode, a value set switching its mode to manual and staying put, `"auto"` restoring the derived value, construction order, validation |
 | `tForceApplication` | engine | `Engine` | local/world force & torque frames, absolute vs COM-relative point of application, as one table of cases (guards the 2026-07-17 wrapper fixes); `AppliedForce`/`AppliedTorque` acting in every step until changed |
 | `tSurfaceVelocity` | graphics (drive tests also engine) | `Graphics` / `Engine` | the conveyor-belt surface drive: the commanded speed reached, the vector read in the body frame, friction as its only path, the reaction on a belt free to move, and the property refusing a non-finite value |
@@ -68,7 +68,7 @@ Prefer headless bodies (`[]` axes) unless the test is about the drawing.
 | `tDocLinks` | nothing (source checkout only) | — | no HTML help page links to or shows a file that is not there; Contents.m, the reference toc and the product page group the classes alike |
 
 - **`Graphics`** — the test creates figures (invisible ones), so a display-capable session is needed. Headless bodies (`[]` axes) need no display and run untagged.
-- **`Engine`** — needs the `phx.engine.io` MEX; gracefully *assumed away* (filtered, not failed) when absent.
+- **`Engine`** — needs the `phxEngine` MEX; gracefully *assumed away* (filtered, not failed) when absent.
 
 ## Next steps (not yet covered)
 

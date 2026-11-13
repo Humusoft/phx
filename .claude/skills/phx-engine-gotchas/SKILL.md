@@ -1,7 +1,7 @@
 ---
 name: phx-engine-gotchas
 description: >
-  Low-level PHX engine reference and pitfalls — the stringly-typed phx.engine.io
+  Low-level PHX engine reference and pitfalls — the stringly-typed phxEngine
   gateway (add/set/get/apply/remove/step) to the physics engine,
   phx.engine.Settings, the phx:Component:mnemonic error-ID convention, the
   matlab.unittest suite, known quirks (timestep stability, solver iterations), and
@@ -13,23 +13,23 @@ description: >
 
 # PHX engine gateway & gotchas
 
-## phx.engine.io — the single gateway
+## phxEngine — the single gateway
 
-All physics goes through one stringly-typed MEX dispatcher in `phx/+phx/+engine/`, a
+All physics goes through one stringly-typed MEX dispatcher, `phx/phxEngine`, a
 gateway to the physics engine (adapted for engineering use; its sources are not part
 of the toolbox).
 The first arg is a **verb**, then a world handle and/or object handle, then a field
 name and payload. Verbs and field names are raw strings — **typos surface only at
-runtime**, so prefer the high-level `phx.*` classes and only drop to `io` when
+runtime**, so prefer the high-level `phx.*` classes and only drop to `phxEngine` when
 implementing a new object.
 
 ```matlab
-world = phx.engine.io('step', world, dt);                                    % advance the world
-h = phx.engine.io('add', world, 'sphere', typeID, radius, T, mass, inertia); % create body/shape
-phx.engine.io('set', world, h, 'linvel', v);                                 % mutate a field
-v = phx.engine.io('get', world, h, 'linvel');                                % read a field (1x3 row)
-phx.engine.io('apply', world, h, 'centralforce', F, isLocal);                % apply force/torque
-phx.engine.io('remove', world, h);                                           % destroy
+world = phxEngine('step', world, dt);                                    % advance the world
+h = phxEngine('add', world, 'sphere', typeID, radius, T, mass, inertia); % create body/shape
+phxEngine('set', world, h, 'linvel', v);                                 % mutate a field
+v = phxEngine('get', world, h, 'linvel');                                % read a field (1x3 row)
+phxEngine('apply', world, h, 'centralforce', F, isLocal);                % apply force/torque
+phxEngine('remove', world, h);                                           % destroy
 ```
 
 Verbs: `add` / `set` / `get` / `apply` / `remove` / `step`. Bodies map to engine
@@ -47,10 +47,10 @@ argument, the full joint frames (4x4, in the body frames, joint axis = Z) and a 
 `obj.MutualCollisions`):
 
 ```matlab
-h = phx.engine.io('add', w, kind, [hA hB], TA, TB, mutualCollisions, extra...);
+h = phxEngine('add', w, kind, [hA hB], TA, TB, mutualCollisions, extra...);
 % kind: 'fixed' 'revolute' 'prismatic' 'spherical' 'generic' 'bushing'
 %       'gear' (extra: ratio), 'spring', 'torsionspring' (extra: their settings)
-% 'rope' keeps its own form: io('add', w, 'rope', hs, points, freeLength, k, c)
+% 'rope' keeps its own form: phxEngine('add', w, 'rope', hs, points, freeLength, k, c)
 ```
 
 A revolute joint turns about Z of its frames with the zero angle where their X axes
@@ -61,13 +61,13 @@ from both bodies) alongside the existing `'friction'`/`'collisions'`.
 **Joint fields** (all settable at any time):
 
 ```matlab
-phx.engine.io('set', w, h, 'motor', on, targetVel, maxEffort);  % revolute (N*m), prismatic (N)
-phx.engine.io('set', w, h, 'appliedtorque', T);                 % revolute, kept until 0
-phx.engine.io('set', w, h, 'appliedforce', F);                  % prismatic, kept until 0
-phx.engine.io('set', w, h, 'linlimits', lower, upper);          % generic, bushing
-phx.engine.io('set', w, h, 'anglimits', lower, upper);          % generic, bushing (right-handed)
-phx.engine.io('set', w, h, 'springs', kLin, kAng, cLin, cAng);  % bushing
-F = phx.engine.io('get', w, h, 'feedback');                     % 3x4 [fA tA fB tB]
+phxEngine('set', w, h, 'motor', on, targetVel, maxEffort);  % revolute (N*m), prismatic (N)
+phxEngine('set', w, h, 'appliedtorque', T);                 % revolute, kept until 0
+phxEngine('set', w, h, 'appliedforce', F);                  % prismatic, kept until 0
+phxEngine('set', w, h, 'linlimits', lower, upper);          % generic, bushing
+phxEngine('set', w, h, 'anglimits', lower, upper);          % generic, bushing (right-handed)
+phxEngine('set', w, h, 'springs', kLin, kAng, cLin, cAng);  % bushing
+F = phxEngine('get', w, h, 'feedback');                     % 3x4 [fA tA fB tB]
 ```
 
 The motor and the applied torque/force act together. `phx.base.Joint` works `Angle` and
@@ -82,9 +82,9 @@ getting it wrong silently applies a force in the wrong frame (this caused real b
 `Thruster`/`Dipole`, now locked in by `tForceApplication`):
 
 ```matlab
-io('apply', w, hs, 'centralforce', F, isLocalForce)              % at the COM
-io('apply', w, hs, 'force',        F, P, isLocalForce, isLocalPoint)
-io('apply', w, hs, 'torque',       T, isLocalTorque)
+phxEngine('apply', w, hs, 'centralforce', F, isLocalForce)       % at the COM
+phxEngine('apply', w, hs, 'force',        F, P, isLocalForce, isLocalPoint)
+phxEngine('apply', w, hs, 'torque',       T, isLocalTorque)
 % hs a 1xN row of body handles (one body: N = 1), F, P, T 3xN (one column
 % per body), the flags one for all or one per body
 ```
@@ -265,7 +265,7 @@ table current when adding a test file.
 
 Subclass `phx.base.Object` (or `Body`/`Joint`/`Shape`) and implement the four
 methods (`initObject`, `destroyObject`, static `resolveState`, static `updateView`).
-Route **all** engine access through `phx.engine.io`. Start from
+Route **all** engine access through `phxEngine`. Start from
 `phx.template.Interaction`.
 
 For per-step logic that does **not** need a new class, `phx.Function` (a callback in

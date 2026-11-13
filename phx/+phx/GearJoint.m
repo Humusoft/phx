@@ -76,7 +76,7 @@ classdef GearJoint < phx.base.Joint
                 % across pipeline rebuilds. Properties changed after that do not
                 % reach it.
                 obj.WorldHandle = world;
-                obj.ObjectHandle = phx.engine.io('add', world, 'gear', [obj.Parents{1}.ObjectHandle obj.Parents{2}.ObjectHandle], ...
+                obj.ObjectHandle = phxEngine('add', world, 'gear', [obj.Parents{1}.ObjectHandle obj.Parents{2}.ObjectHandle], ...
                     obj.TransformA, obj.TransformB, obj.MutualCollisions, obj.Ratio);
             end
         end

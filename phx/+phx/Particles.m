@@ -139,7 +139,7 @@ classdef Particles < phx.base.Object
             end
             phx.Particles.checkCount(obj.Count + size(positions, 1));
             if obj.isLive
-                phx.engine.io('add', obj.WorldHandle, obj.ObjectHandle, positions', velocities');
+                phxEngine('add', obj.WorldHandle, obj.ObjectHandle, positions', velocities');
             else
                 obj.StoredPositions = [obj.StoredPositions positions'];
                 obj.StoredVelocities = [obj.StoredVelocities velocities'];
@@ -170,7 +170,7 @@ classdef Particles < phx.base.Object
                 error("phx:Particles:badIndex", "Particle indices must be integers from 1 to %d.", n);
             end
             if obj.isLive
-                phx.engine.io('remove', obj.WorldHandle, obj.ObjectHandle, double(index));
+                phxEngine('remove', obj.WorldHandle, obj.ObjectHandle, double(index));
             else
                 obj.StoredPositions(:, index) = [];
                 obj.StoredVelocities(:, index) = [];
@@ -195,7 +195,7 @@ classdef Particles < phx.base.Object
             if ~obj.isLive
                 error("phx:Particles:notSimulated", "Forces act only on particles in a running simulation.");
             end
-            phx.engine.io('apply', obj.WorldHandle, obj.ObjectHandle, 'centralforce', forces', false);
+            phxEngine('apply', obj.WorldHandle, obj.ObjectHandle, 'centralforce', forces', false);
         end
 
         function bbox = boundingBox(objs)
@@ -226,7 +226,7 @@ classdef Particles < phx.base.Object
 
         function value = get.Positions(obj)
             if obj.isLive
-                value = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'positions')';
+                value = phxEngine('get', obj.WorldHandle, obj.ObjectHandle, 'positions')';
             else
                 value = obj.StoredPositions';
             end
@@ -238,7 +238,7 @@ classdef Particles < phx.base.Object
                     error("phx:Particles:sizeMismatch", ...
                         "Give one position per particle; add or remove particles to change their number.");
                 end
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'positions', value');
+                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'positions', value');
             else
                 phx.Particles.checkCount(size(value, 1));
                 % A new number of particles starts them at rest, in new shades
@@ -254,7 +254,7 @@ classdef Particles < phx.base.Object
 
         function value = get.Velocities(obj)
             if obj.isLive
-                value = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'velocities')';
+                value = phxEngine('get', obj.WorldHandle, obj.ObjectHandle, 'velocities')';
             else
                 value = obj.StoredVelocities';
             end
@@ -265,7 +265,7 @@ classdef Particles < phx.base.Object
                 error("phx:Particles:sizeMismatch", "Give one velocity per particle.");
             end
             if obj.isLive
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'velocities', value');
+                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'velocities', value');
             else
                 obj.StoredVelocities = value';
             end
@@ -273,7 +273,7 @@ classdef Particles < phx.base.Object
 
         function value = get.Count(obj)
             if obj.isLive
-                value = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'count');
+                value = phxEngine('get', obj.WorldHandle, obj.ObjectHandle, 'count');
             else
                 value = size(obj.StoredPositions, 2);
             end
@@ -352,7 +352,7 @@ classdef Particles < phx.base.Object
 
         function engineSet(obj, field, value)
             if obj.isLive
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, field, value);
+                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, field, value);
             end
         end
 
@@ -382,7 +382,7 @@ classdef Particles < phx.base.Object
             % Positions drawn outside the simulation steps
             if ~isempty(obj.hM) && isvalid(obj.hM)
                 if obj.isLive
-                    obj.hM.VertexData = single(phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'positions'));
+                    obj.hM.VertexData = single(phxEngine('get', obj.WorldHandle, obj.ObjectHandle, 'positions'));
                 else
                     obj.hM.VertexData = single(obj.StoredPositions);
                 end
@@ -394,10 +394,10 @@ classdef Particles < phx.base.Object
         function valid = initObject(obj, world)
             if isempty(obj.ObjectHandle)
                 obj.WorldHandle = world;
-                obj.ObjectHandle = phx.engine.io('add', world, 'particles', obj.StoredPositions, ...
+                obj.ObjectHandle = phxEngine('add', world, 'particles', obj.StoredPositions, ...
                     obj.Radius, obj.Mass, obj.Rotation);
                 if any(obj.StoredVelocities, "all")
-                    phx.engine.io('set', world, obj.ObjectHandle, 'velocities', obj.StoredVelocities);
+                    phxEngine('set', world, obj.ObjectHandle, 'velocities', obj.StoredVelocities);
                 end
                 obj.Friction = obj.Friction;
                 obj.Restitution = obj.Restitution;
@@ -411,7 +411,7 @@ classdef Particles < phx.base.Object
 
         function destroyObject(obj)
             if obj.isLive
-                phx.engine.io('remove', obj.WorldHandle, obj.ObjectHandle);
+                phxEngine('remove', obj.WorldHandle, obj.ObjectHandle);
                 obj.ObjectHandle = [];
             end
         end
@@ -424,7 +424,7 @@ classdef Particles < phx.base.Object
         function updateView(cellObjs, dt, time, world)
             for i = 1:numel(cellObjs)
                 obj = cellObjs{i};
-                obj.hM.VertexData = single(phx.engine.io('get', world, obj.ObjectHandle, 'positions'));
+                obj.hM.VertexData = single(phxEngine('get', world, obj.ObjectHandle, 'positions'));
             end
         end
     end

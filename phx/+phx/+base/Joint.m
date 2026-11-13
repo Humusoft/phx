@@ -201,7 +201,7 @@ classdef Joint < phx.base.Object
 
         function value = get.ForceA(obj)
             if ~isempty(obj.ObjectHandle)
-                F = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'feedback');
+                F = phxEngine('get', obj.WorldHandle, obj.ObjectHandle, 'feedback');
                 value = F(:, 1)';
             else
                 value = [NaN NaN NaN];
@@ -210,7 +210,7 @@ classdef Joint < phx.base.Object
 
         function value = get.TorqueA(obj)
             if ~isempty(obj.ObjectHandle)
-                F = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'feedback');
+                F = phxEngine('get', obj.WorldHandle, obj.ObjectHandle, 'feedback');
                 value = F(:, 2)';
             else
                 value = [NaN NaN NaN];
@@ -219,7 +219,7 @@ classdef Joint < phx.base.Object
 
         function value = get.ForceB(obj)
             if ~isempty(obj.ObjectHandle)
-                F = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'feedback');
+                F = phxEngine('get', obj.WorldHandle, obj.ObjectHandle, 'feedback');
                 value = F(:, 3)';
             else
                 value = [NaN NaN NaN];
@@ -228,7 +228,7 @@ classdef Joint < phx.base.Object
 
         function value = get.TorqueB(obj)
             if ~isempty(obj.ObjectHandle)
-                F = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'feedback');
+                F = phxEngine('get', obj.WorldHandle, obj.ObjectHandle, 'feedback');
                 value = F(:, 4)';
             else
                 value = [NaN NaN NaN];
@@ -247,7 +247,7 @@ classdef Joint < phx.base.Object
             % Every joint is a single engine constraint, so they all tear it
             % down the same way. Concrete joints only build it in initObject.
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('remove', obj.WorldHandle, obj.ObjectHandle);
+                phxEngine('remove', obj.WorldHandle, obj.ObjectHandle);
                 obj.ObjectHandle = [];
             end
         end

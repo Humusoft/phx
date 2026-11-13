@@ -151,7 +151,7 @@ classdef Rope < phx.base.Object
         function value = get.Force(obj)
             value = 0;
             if ~isempty(obj.ObjectHandle)
-                value = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'spring');
+                value = phxEngine('get', obj.WorldHandle, obj.ObjectHandle, 'spring');
             end
         end
 
@@ -193,13 +193,13 @@ classdef Rope < phx.base.Object
 
         function pushLength(obj)
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'lengths', obj.engineLength);
+                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'lengths', obj.engineLength);
             end
         end
 
         function pushSpring(obj)
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'spring', obj.Stiffness, obj.Damping);
+                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'spring', obj.Stiffness, obj.Damping);
             end
         end
 
@@ -234,14 +234,14 @@ classdef Rope < phx.base.Object
                 % update it
                 obj.WorldHandle = world;
                 handles = cellfun(@(p) p.ObjectHandle, obj.Parents);
-                obj.ObjectHandle = phx.engine.io('add', world, 'rope', handles, obj.Points', ...
+                obj.ObjectHandle = phxEngine('add', world, 'rope', handles, obj.Points', ...
                     obj.engineLength, obj.Stiffness, obj.Damping);
             end
         end
 
         function destroyObject(obj)
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('remove', obj.WorldHandle, obj.ObjectHandle);
+                phxEngine('remove', obj.WorldHandle, obj.ObjectHandle);
                 obj.ObjectHandle = [];
             end
         end

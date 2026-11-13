@@ -422,7 +422,7 @@ classdef Body < phx.base.Object
 
         function value = get.TotalForce(obj)
             if ~isempty(obj.ObjectHandle)
-                value = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'totalforce');
+                value = phxEngine('get', obj.WorldHandle, obj.ObjectHandle, 'totalforce');
             else
                 value = [0 0 0];
             end
@@ -430,7 +430,7 @@ classdef Body < phx.base.Object
 
         function value = get.TotalTorque(obj)
             if ~isempty(obj.ObjectHandle)
-                value = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'totaltorque');
+                value = phxEngine('get', obj.WorldHandle, obj.ObjectHandle, 'totaltorque');
             else
                 value = [0 0 0];
             end
@@ -438,7 +438,7 @@ classdef Body < phx.base.Object
 
         function value = get.LinearAcceleration(obj)
             if ~isempty(obj.ObjectHandle)
-                value = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'linacc');
+                value = phxEngine('get', obj.WorldHandle, obj.ObjectHandle, 'linacc');
             else
                 value = [0 0 0];
             end
@@ -446,7 +446,7 @@ classdef Body < phx.base.Object
 
         function value = get.AngularAcceleration(obj)
             if ~isempty(obj.ObjectHandle)
-                value = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'angacc');
+                value = phxEngine('get', obj.WorldHandle, obj.ObjectHandle, 'angacc');
             else
                 value = [0 0 0];
             end
@@ -466,7 +466,7 @@ classdef Body < phx.base.Object
                 obj.RedrawOrder = "after";
             end
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'type', obj.TypeID);
+                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'type', obj.TypeID);
             end
         end
 
@@ -477,21 +477,21 @@ classdef Body < phx.base.Object
         function set.Mass(obj, value)
             obj.Mass = value;
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'massprops', value, obj.Inertia);
+                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'massprops', value, obj.Inertia);
             end
         end
 
         function set.Inertia(obj, value)
             obj.Inertia = value;
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'massprops', obj.Mass, value);
+                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'massprops', obj.Mass, value);
             end
         end
 
         function set.CenterOfMass(obj, value)
             obj.CenterOfMass = value;
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'com', value);
+                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'com', value);
             end
         end
 
@@ -524,48 +524,48 @@ classdef Body < phx.base.Object
         function set.Restitution(obj, value)
             obj.Restitution = value;
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'restitution', value);
+                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'restitution', value);
             end
         end
 
         function set.Collisions(obj, enable)
             obj.Collisions = enable;
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'collisions', enable);
+                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'collisions', enable);
             end
         end
 
         function set.SurfaceVelocity(obj, value)
             obj.SurfaceVelocity = value;
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'surfacevelocity', value);
+                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'surfacevelocity', value);
             end
         end
 
         function set.AppliedForce(obj, value)
             obj.AppliedForce = value;
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'appliedforce', value);
+                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'appliedforce', value);
             end
         end
 
         function set.AppliedTorque(obj, value)
             obj.AppliedTorque = value;
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'appliedtorque', value);
+                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'appliedtorque', value);
             end
         end
 
         function set.AngularVelocity(obj, value)
             obj.AngularVelocity = value;
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'angvel', value);
+                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'angvel', value);
             end    
         end
 
         function value = get.AngularVelocity(obj)
             if ~isempty(obj.ObjectHandle)
-                value = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'angvel');
+                value = phxEngine('get', obj.WorldHandle, obj.ObjectHandle, 'angvel');
             else
                 value = obj.AngularVelocity;
             end    
@@ -574,13 +574,13 @@ classdef Body < phx.base.Object
         function set.LinearVelocity(obj, value)
             obj.LinearVelocity = value;
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'linvel', value);
+                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'linvel', value);
             end    
         end
 
         function value = get.LinearVelocity(obj)
             if ~isempty(obj.ObjectHandle)
-                value = phx.engine.io('get', obj.WorldHandle, obj.ObjectHandle, 'linvel');
+                value = phxEngine('get', obj.WorldHandle, obj.ObjectHandle, 'linvel');
             else
                 value = obj.LinearVelocity;
             end    
@@ -616,9 +616,9 @@ classdef Body < phx.base.Object
             % One engine batch of the same body, a force per row
             hs = repmat(obj.ObjectHandle, 1, size(Force, 1));
             if isempty(Point)
-                phx.engine.io('apply', obj.WorldHandle, hs, 'centralforce', Force', IsLocalForce);
+                phxEngine('apply', obj.WorldHandle, hs, 'centralforce', Force', IsLocalForce);
             else
-                phx.engine.io('apply', obj.WorldHandle, hs, 'force', Force', Point', IsLocalForce, IsLocalPoint);
+                phxEngine('apply', obj.WorldHandle, hs, 'force', Force', Point', IsLocalForce, IsLocalPoint);
             end
         end
 
@@ -640,7 +640,7 @@ classdef Body < phx.base.Object
             end
 
             hs = repmat(obj.ObjectHandle, 1, size(Torque, 1));
-            phx.engine.io('apply', obj.WorldHandle, hs, 'torque', Torque', IsLocalTorque);
+            phxEngine('apply', obj.WorldHandle, hs, 'torque', Torque', IsLocalTorque);
         end
 
         function groupTransform(objs, transforms)
@@ -900,7 +900,7 @@ classdef Body < phx.base.Object
     methods (Access = ?phx.base.Object)
         function matrixUpdated(obj)
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'transform', obj.Matrix);
+                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'transform', obj.Matrix);
             else
                 obj.Graphics.Matrix = obj.Matrix;
             end
@@ -962,7 +962,7 @@ classdef Body < phx.base.Object
 
         function destroyObject(obj)
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('remove', obj.WorldHandle, obj.ObjectHandle);
+                phxEngine('remove', obj.WorldHandle, obj.ObjectHandle);
                 obj.ObjectHandle = [];
             end
         end
@@ -972,7 +972,7 @@ classdef Body < phx.base.Object
         function pushFriction(obj)
             % Hands Friction, RollingResistance and SpinRadius to the engine
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'friction', ...
+                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'friction', ...
                     [obj.Friction obj.RollingResistance obj.SpinRadius]);
             end
         end

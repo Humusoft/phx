@@ -119,7 +119,7 @@ classdef Cone < phx.base.Shape
 
     methods (Access = {?phx.base.Shape, ?phx.base.Object})
         function eh = createBody(obj, body, primitive)
-            eh = phx.engine.io('add', body.WorldHandle, 'cone', body.TypeID, obj.Radius, obj.Height, char(obj.Axis), body.Transform, body.Mass, body.Inertia, body.CenterOfMass);
+            eh = phxEngine('add', body.WorldHandle, 'cone', body.TypeID, obj.Radius, obj.Height, char(obj.Axis), body.Transform, body.Mass, body.Inertia, body.CenterOfMass);
         end
     end
 

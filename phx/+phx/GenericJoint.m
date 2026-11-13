@@ -129,9 +129,9 @@ classdef GenericJoint < phx.base.Joint
         %pushLimits Writes the linear or angular limits through to the engine.
             if ~isempty(obj.ObjectHandle)
                 if field == "linlimits"
-                    phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'linlimits', obj.LowerLinearLimits, obj.UpperLinearLimits);
+                    phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'linlimits', obj.LowerLinearLimits, obj.UpperLinearLimits);
                 else
-                    phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'anglimits', obj.LowerAngularLimits, obj.UpperAngularLimits);
+                    phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'anglimits', obj.LowerAngularLimits, obj.UpperAngularLimits);
                 end
             end
         end
@@ -145,7 +145,7 @@ classdef GenericJoint < phx.base.Joint
                 % which is then kept across pipeline rebuilds; the limits
                 % write through from their setters at any time.
                 obj.WorldHandle = world;
-                obj.ObjectHandle = phx.engine.io('add', world, 'generic', [obj.Parents{1}.ObjectHandle obj.Parents{2}.ObjectHandle], ...
+                obj.ObjectHandle = phxEngine('add', world, 'generic', [obj.Parents{1}.ObjectHandle obj.Parents{2}.ObjectHandle], ...
                     obj.TransformA, obj.TransformB, obj.MutualCollisions);
                 obj.pushLimits("linlimits");
                 obj.pushLimits("anglimits");

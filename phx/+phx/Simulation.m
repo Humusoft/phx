@@ -336,7 +336,7 @@ classdef Simulation < phx.base.Object
 
                 time = time + dt;
                 if checkFirst && s == 1
-                    firstDiagnostics = phx.engine.io('get', world, uint64(0), 'diagnostics');
+                    firstDiagnostics = phxEngine('get', world, uint64(0), 'diagnostics');
                 end
 
                 % Pacing is checked at every requested redraw, also at one the
@@ -425,7 +425,7 @@ classdef Simulation < phx.base.Object
             obj.DiagnosticWarned = strings(1, 0);
             obj.DiagnosticReport = [];
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('set', obj.ObjectHandle, uint64(0), 'settings', struct('diagnostics', obj.DiagnosticLevel > 0));
+                phxEngine('set', obj.ObjectHandle, uint64(0), 'settings', struct('diagnostics', obj.DiagnosticLevel > 0));
             end
         end
 
@@ -437,7 +437,7 @@ classdef Simulation < phx.base.Object
         function set.Gravity(obj, value)
             obj.Gravity = value;
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('set', obj.ObjectHandle, uint64(0), 'gravity', value);
+                phxEngine('set', obj.ObjectHandle, uint64(0), 'gravity', value);
             end
         end
     end
@@ -495,7 +495,7 @@ classdef Simulation < phx.base.Object
         %   diagnostics of the first step of a new scene, read on their own
         %   ([] otherwise): its penetration is an initial overlap.
 
-            later = phx.engine.io('get', obj.ObjectHandle, uint64(0), 'diagnostics');
+            later = phxEngine('get', obj.ObjectHandle, uint64(0), 'diagnostics');
             if isempty(later) && isempty(first)
                 return
             end
@@ -729,7 +729,7 @@ classdef Simulation < phx.base.Object
                     hs(i) = c.ObjectHandle;
                 end
             end
-            phx.engine.io('set', obj.ObjectHandle, uint64(0), 'slots', hs);
+            phxEngine('set', obj.ObjectHandle, uint64(0), 'slots', hs);
 
             % Read everything the grouping below needs in a single pass. The
             % properties are named literally, so these are plain static reads;
@@ -771,16 +771,16 @@ classdef Simulation < phx.base.Object
     methods (Access = protected)
         function valid = initObject(obj, world)
             if isempty(obj.ObjectHandle)
-                obj.ObjectHandle = phx.engine.io('setup');
-                phx.engine.io('set', obj.ObjectHandle, uint64(0), 'gravity', obj.Gravity);
-                phx.engine.io('set', obj.ObjectHandle, uint64(0), 'settings', struct('sleeping', false));
+                obj.ObjectHandle = phxEngine('setup');
+                phxEngine('set', obj.ObjectHandle, uint64(0), 'gravity', obj.Gravity);
+                phxEngine('set', obj.ObjectHandle, uint64(0), 'settings', struct('sleeping', false));
 
                 % Apply engine-specific settings
                 if ~isempty(obj.EngineSettings)
                     obj.EngineSettings.apply(obj.ObjectHandle);
                 end
                 if obj.DiagnosticLevel > 0
-                    phx.engine.io('set', obj.ObjectHandle, uint64(0), 'settings', struct('diagnostics', true));
+                    phxEngine('set', obj.ObjectHandle, uint64(0), 'settings', struct('diagnostics', true));
                 end
             end
             valid = true;
@@ -798,7 +798,7 @@ classdef Simulation < phx.base.Object
                 state{i} = obj.Children{i}.stateTransfer;
             end
 
-            phx.engine.io('clear', obj.ObjectHandle);
+            phxEngine('clear', obj.ObjectHandle);
             obj.propagate('ObjectHandle', []);
 
             for i = 1:numel(obj.Children)
@@ -812,7 +812,7 @@ classdef Simulation < phx.base.Object
     methods (Static, Access = protected)
         function resolveState(cellObjs, dt, time, world)
             obj = cellObjs{1};
-            [~, T, slot] = phx.engine.io('step', world, dt);
+            [~, T, slot] = phxEngine('step', world, dt);
             % Indexing the property in place and slicing T linearly is faster
             % than a local copy of Children or T(:, :, i)
             for i = 1:numel(slot)

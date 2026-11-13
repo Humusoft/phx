@@ -115,11 +115,11 @@ classdef tEngineSettings < PhxTestCase
             % ContactIterations is the engine's iteration count; the angular
             % velocities enter the tolerances over a tenth of LengthScale
             tc.requireEngine;
-            w = phx.engine.io('setup');
-            tc.addTeardown(@() phx.engine.io('clear', w));
+            w = phxEngine('setup');
+            tc.addTeardown(@() phxEngine('clear', w));
             phx.engine.Settings("JointTolerance", 2e-3, "ContactTolerance", 5e-3, "JointIterations", 30, ...
                 "ContactIterations", 12, "PositionIterations", 3, "LengthScale", 0.01).apply(w);
-            s = phx.engine.io('get', w, uint64(0), 'settings');
+            s = phxEngine('get', w, uint64(0), 'settings');
             tc.verifyEqual([s.jointtolerance, s.contacttolerance], [2e-3 5e-3], "RelTol", 1e-6);
             tc.verifyEqual(s.tolerancelength, 1e-3, "RelTol", 1e-6);
             tc.verifyEqual([s.iterations, s.jointiterations, s.positioniterations], [12 30 3]);

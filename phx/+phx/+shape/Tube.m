@@ -156,7 +156,7 @@ classdef Tube < phx.base.Shape
             switch obj.Envelope
                 case "cylinder"
                     % Bounding cylinder (centered on the shape origin)
-                    eh = phx.engine.io('add', body.WorldHandle, 'cylinder', body.TypeID, max(obj.Radius), obj.Height, char(obj.Axis), body.Transform, body.Mass, body.Inertia, body.CenterOfMass);
+                    eh = phxEngine('add', body.WorldHandle, 'cylinder', body.TypeID, max(obj.Radius), obj.Height, char(obj.Axis), body.Transform, body.Mass, body.Inertia, body.CenterOfMass);
                 case "convex"
                     ph = phx.internal.PrimitiveHelper(primitive);
                     vertices = ph.Vertices';

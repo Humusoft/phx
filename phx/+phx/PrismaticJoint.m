@@ -87,7 +87,7 @@ classdef PrismaticJoint < phx.base.Joint
         function set.AppliedForce(obj, value)
             obj.AppliedForce = value;
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'appliedforce', value);
+                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'appliedforce', value);
             end
         end
 
@@ -128,7 +128,7 @@ classdef PrismaticJoint < phx.base.Joint
         % zero, so that the solver does not assemble its constraint row at all.
 
             if ~isempty(obj.ObjectHandle)
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'motor', ...
+                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'motor', ...
                     obj.MaxForce > 0, obj.TargetVelocity, obj.MaxForce);
             end
         end
@@ -145,13 +145,13 @@ classdef PrismaticJoint < phx.base.Joint
                 % other properties changed after that do not reach the
                 % constraint.
                 obj.WorldHandle = world;
-                obj.ObjectHandle = phx.engine.io('add', world, 'prismatic', [obj.Parents{1}.ObjectHandle obj.Parents{2}.ObjectHandle], ...
+                obj.ObjectHandle = phxEngine('add', world, 'prismatic', [obj.Parents{1}.ObjectHandle obj.Parents{2}.ObjectHandle], ...
                     obj.TransformA, obj.TransformB, obj.MutualCollisions);
                 % Seed the fresh constraint with the current settings; later
                 % changes reach the engine from the setters
                 obj.applyMotor;
                 if obj.AppliedForce ~= 0
-                    phx.engine.io('set', world, obj.ObjectHandle, 'appliedforce', obj.AppliedForce);
+                    phxEngine('set', world, obj.ObjectHandle, 'appliedforce', obj.AppliedForce);
                 end
             end
         end

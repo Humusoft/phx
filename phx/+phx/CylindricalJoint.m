@@ -79,10 +79,10 @@ classdef CylindricalJoint < phx.base.Joint
                 % across pipeline rebuilds. Properties changed after that do not
                 % reach it.
                 obj.WorldHandle = world;
-                obj.ObjectHandle = phx.engine.io('add', world, 'generic', [obj.Parents{1}.ObjectHandle obj.Parents{2}.ObjectHandle], ...
+                obj.ObjectHandle = phxEngine('add', world, 'generic', [obj.Parents{1}.ObjectHandle obj.Parents{2}.ObjectHandle], ...
                     obj.TransformA, obj.TransformB, obj.MutualCollisions);
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'linlimits', [0 0 1], [0 0 -1]);
-                phx.engine.io('set', obj.WorldHandle, obj.ObjectHandle, 'anglimits', [0 0 1], [0 0 -1]);
+                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'linlimits', [0 0 1], [0 0 -1]);
+                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'anglimits', [0 0 1], [0 0 -1]);
             end
         end
     end
