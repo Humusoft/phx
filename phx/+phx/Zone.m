@@ -34,6 +34,13 @@ classdef Zone < phx.base.Object
         % initObject; only changes on a pipeline rebuild.
         Watched = phx.Body.empty
 
+        % Engine handles of Watched, for reading their positions in one
+        % call. Collected at the first stepped tick after a rebuild, when
+        % the bodies have their engine counterparts; left empty when some
+        % watched body has none (it is outside the simulation)
+        WatchedHandles = zeros(1, 0, 'uint64')
+        HandlesCollected = false
+
         % Membership mask over Watched (1-by-N logical) from the previous
         % step. Serves as the "prev" set for the enter/exit diff.
         Mask = false(1, 0)
@@ -187,17 +194,24 @@ classdef Zone < phx.base.Object
             % The anchor defines the zone frame and is never its own content.
             bs = bs(bs ~= obj.Parents{1});
             obj.Watched = reshape(bs, 1, []);
+            obj.WatchedHandles = zeros(1, 0, 'uint64');
+            obj.HandlesCollected = false;
             obj.Mask = false(1, numel(obj.Watched));
             obj.EnteredCount = 0;
             obj.ExitedCount = 0;
         end
 
-        function detect(obj)
+        function detect(obj, world)
             % One detection tick: recompute the mask, diff against the
             % previous one, update counters and fire callbacks. Shared by the
-            % stepped resolveState and the on-demand public update().
+            % stepped resolveState (with the world) and the on-demand public
+            % update() (without it).
             W = obj.Watched;
-            inside = obj.computeInside;
+            if nargin > 1
+                inside = obj.computeInside(world);
+            else
+                inside = obj.computeInside;
+            end
             prev = obj.Mask;
 
             % Entries and exits from the two logical masks - no set operations or maps
@@ -271,9 +285,10 @@ classdef Zone < phx.base.Object
                 'Layer', layer, 'PickableParts', 'none', 'HitTest', 'off');
         end
 
-        function mask = computeInside(obj)
-            % Returns the 1-by-N containment mask over obj.Watched.
-            % Reads only the cached Body.Matrix, so there are no engine round-trips.
+        function mask = computeInside(obj, world)
+            % Returns the 1-by-N containment mask over obj.Watched. With the
+            % world the positions come from the engine in one call, without
+            % it from the cached Body.Matrix.
             W = obj.Watched;
             n = numel(W);
             if n == 0
@@ -292,14 +307,25 @@ classdef Zone < phx.base.Object
 
             % Gather the watched positions once into a 3-by-N matrix, then test
             % them vectorized in the zone-local frame.
-            % (scalar indexing into a local copy of Matrix avoids the
-            % temporary of Matrix(13:15), see phx.Monopole.bodyPositions)
-            P = zeros(3, n);
-            for k = 1:n
-                m = W(k).Matrix;
-                P(1, k) = m(13);
-                P(2, k) = m(14);
-                P(3, k) = m(15);
+            if nargin > 1 && ~obj.HandlesCollected
+                hs = [W.ObjectHandle];
+                if numel(hs) == n
+                    obj.WatchedHandles = hs;
+                end
+                obj.HandlesCollected = true;
+            end
+            if nargin > 1 && numel(obj.WatchedHandles) == n
+                P = phxEngine('get', world, obj.WatchedHandles, 'position');
+            else
+                % (scalar indexing into a local copy of Matrix avoids the
+                % temporary of Matrix(13:15), see phx.Monopole.bodyPositions)
+                P = zeros(3, n);
+                for k = 1:n
+                    m = W(k).Matrix;
+                    P(1, k) = m(13);
+                    P(2, k) = m(14);
+                    P(3, k) = m(15);
+                end
             end
             Dl = Rz'*(P - cz);                      % into zone-local frame
             mask = all(abs(Dl) <= half, 1);        % 1-by-N logical
@@ -338,7 +364,7 @@ classdef Zone < phx.base.Object
     methods (Static, Access = protected)
         function resolveState(cellObjs, dt, time, world)
             for i = 1:numel(cellObjs)
-                cellObjs{i}.detect;
+                cellObjs{i}.detect(world);
             end
         end
 
