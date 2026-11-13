@@ -80,6 +80,7 @@ classdef FlexibleBody < phx.base.Object
         YoungsModulus (1, 1) double {mustBePositive} = 1e6
 
         % Poisson's ratio of the material, 0.5 for an incompressible one
+        % (quadratic tetrahedra take at most 0.49995)
         PoissonsRatio (1, 1) double {mustBeInRange(PoissonsRatio, 0, 0.5)} = 0.45
     end
 
@@ -97,12 +98,13 @@ classdef FlexibleBody < phx.base.Object
         VertexRadius (1, 1) double {mustBeNonnegative} = 0
 
         % Solver substeps per simulation step; the most Newton iterations
-        % per step for quadratic tetrahedra
+        % per step for quadratic tetrahedra, up to 4 more in a step whose
+        % contacts keep changing
         Iterations (1, 1) double {mustBeInteger, mustBePositive} = 10
 
         % Force left unbalanced at which a step of quadratic tetrahedra has
-        % converged, relative to the weight of the body; 0 always takes
-        % Iterations iterations
+        % converged, relative to the weight of the body; 0 takes Iterations
+        % iterations unless the force falls below 1e-10 of the weight
         Tolerance (1, 1) double {mustBeNonnegative} = 1e-4
 
         % Damping of the vertex velocities (1/s): dv/dt = -Damping*v
