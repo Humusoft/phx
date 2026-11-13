@@ -184,16 +184,19 @@ classdef Dipole < phx.base.Object
             end
         end
 
-        function pos = polePositions(obj)
+        function pos = polePositions(obj, M)
             % Both poles of every dipole as a 3x2n array: columns 1..n are
             % the +Axis poles, n+1..2n the -Axis poles of the same bodies.
-            % One property read per body, the transform is vectorised; the
+            % M (16xn) holds the poses of the bodies; without it they are
+            % read from Matrix body by body. The transform is vectorised; the
             % sums run in the order of phx.internal.transformPoint
-            P = obj.Parents;
-            n = numel(P);
-            M = zeros(16, n);
-            for a = 1:n
-                M(:, a) = P{a}.Matrix(:);
+            if nargin < 2
+                P = obj.Parents;
+                n = numel(P);
+                M = zeros(16, n);
+                for a = 1:n
+                    M(:, a) = P{a}.Matrix(:);
+                end
             end
             ax = obj.Axis';
             d = M(1:3, :).*ax(1, :) + M(5:7, :).*ax(2, :) + M(9:11, :).*ax(3, :);
@@ -224,7 +227,9 @@ classdef Dipole < phx.base.Object
             for i = 1:numel(cellObjs)
                 obj = cellObjs{i};
 
-                pos = polePositions(obj);
+                % All poses in one engine call, not Matrix body by body
+                M = phxEngine('get', world, obj.ehs, 'transform');
+                pos = polePositions(obj, reshape(M, 16, []));
                 Fp = phx.internal.computeDipoleForces(pos, obj.Charge, obj.Attractivity);
                 phxEngine('apply', world, [obj.ehs obj.ehs], 'force', Fp, [obj.Axis; -obj.Axis]', false, true);
             end

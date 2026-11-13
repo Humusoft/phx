@@ -205,7 +205,8 @@ classdef Monopole < phx.base.Object
             for i = 1:numel(cellObjs)
                 obj = cellObjs{i};
 
-                pos = bodyPositions(obj);
+                % All positions in one engine call, not Matrix body by body
+                pos = phxEngine('get', world, obj.ehs, 'position');
                 Fp = phx.internal.computeMonopoleForces(pos, obj.Charge, obj.Attractivity);
                 phxEngine('apply', world, obj.ehs, 'centralforce', Fp, false);
             end
