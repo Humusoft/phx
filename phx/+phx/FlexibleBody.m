@@ -111,7 +111,8 @@ classdef FlexibleBody < phx.base.Object
         % Friction coefficient; a contact combines the values of both bodies
         Friction (1, 1) double {mustBeNonnegative} = 0.5
 
-        % Restitution (bounciness) coefficient, 0 = no bounce
+        % Restitution (bounciness) coefficient, 0 = no bounce; linear
+        % tetrahedra only, the contacts of quadratic ones are inelastic
         Restitution (1, 1) double {mustBeNonnegative} = 0
 
         % Colormap (Nx3, RGB in 0-1) that colors the surface by the von

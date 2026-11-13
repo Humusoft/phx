@@ -90,7 +90,7 @@ body of linear tetrahedra from a K&times;4 mesh.</p>
 <tr><td class="name">Tolerance</td><td class="dflt">1e-4</td><td>Force left unbalanced at which a step of quadratic tetrahedra has converged, relative to the weight of the body; 0 always takes <code class="phx-inline">Iterations</code> iterations.</td></tr>
 <tr><td class="name">Damping</td><td class="dflt">0</td><td>Damping of the vertex velocities, dv/dt&nbsp;=&nbsp;&minus;Damping&middot;v, <span class="phx-unit">1/s</span>.</td></tr>
 <tr><td class="name">Friction</td><td class="dflt">0.5</td><td>Friction coefficient; a contact combines the values of both bodies.</td></tr>
-<tr><td class="name">Restitution</td><td class="dflt">0</td><td>Restitution (bounciness) coefficient, 0 = no bounce.</td></tr>
+<tr><td class="name">Restitution</td><td class="dflt">0</td><td>Restitution (bounciness) coefficient, 0 = no bounce; linear tetrahedra only, the contacts of quadratic ones are inelastic.</td></tr>
 <tr><td class="name">Colormap</td><td class="dflt">[]</td><td>Colormap (N&times;3 matrix, RGB in 0&ndash;1, e.g. <code class="phx-inline">turbo(64)</code>) that colors the surface by the von Mises stress. Empty draws the plain <code class="phx-inline">Color</code>, which the colormap leaves unchanged.</td></tr>
 <tr><td class="name">ColorRange</td><td class="dflt">[0 1e6]</td><td>Stress range mapped across the whole colormap, <span class="phx-unit">Pa</span>.</td></tr>
 <tr><td class="name">Color</td><td class="type">1&times;3 double</td><td>Color of the drawn surface.</td></tr>
