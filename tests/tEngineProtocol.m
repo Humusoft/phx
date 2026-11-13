@@ -397,6 +397,60 @@ classdef tEngineProtocol < PhxTestCase
             tc.verifyEqual(omega, [-0.5, 0.25, 2], "AbsTol", 1e-6);
         end
 
+        function posesComeInBulkAsStepReportsThem(tc)
+            w = tc.newWorld;
+            ground = tc.addBox(w, 0, [0 0 -10], [1 1 1]);
+            hs = zeros(1, 3, 'uint64');
+            for i = 1:3
+                hs(i) = tc.addBox(w, 2, [i 0 5], 0.2*[1 1 1]);
+                phxEngine('set', w, hs(i), 'angvel', [i 1 -0.5]);
+            end
+            for k = 1:5
+                [ids, T] = phxEngine('step', w, tc.Dt);
+            end
+            order = [hs(3) ground hs(1) hs(2)];
+            [~, at] = ismember(hs([3 1 2]), ids);
+            M = phxEngine('get', w, order, 'transform');
+            P = phxEngine('get', w, order, 'position');
+            tc.verifySize(M, [4 4 4]);
+            tc.verifySize(P, [3 4]);
+            tc.verifyEqual(M(:, :, [1 3 4]), T(:, :, at), "The moved bodies read what step reported, bit for bit.");
+            tc.verifyEqual(M(:, :, 2), tEngineProtocol.pose([0 0 -10]), "AbsTol", 1e-12, "A static body reads its pose.");
+            tc.verifyEqual(P, reshape(M(1:3, 4, :), 3, []), "The positions are the origins of the transforms.");
+        end
+
+        function poseReadsTakeAnyNumberOfBodies(tc)
+            w = tc.newWorld;
+            h = tc.addBox(w, 2, [1 2 3], 0.2*[1 1 1]);
+            tc.verifyEqual(phxEngine('get', w, h, 'position'), [1; 2; 3], "AbsTol", 1e-12);
+            tc.verifySize(phxEngine('get', w, h, 'transform'), [4 4]);
+            none = zeros(1, 0, 'uint64');
+            tc.verifySize(phxEngine('get', w, none, 'position'), [3 0]);
+            tc.verifySize(phxEngine('get', w, none, 'transform'), [4 4 0]);
+        end
+
+        function poseReadsRejectWhatIsNoBody(tc)
+            w = tc.newWorld;
+            a = tc.addBox(w, 2, [0 0 0], 0.2*[1 1 1]);
+            b = tc.addBox(w, 2, [1 0 0], 0.2*[1 1 1]);
+            j = phxEngine('add', w, 'fixed', [a b], eye(4), eye(4), false);
+            tc.verifyError(@() phxEngine('get', w, [a uint64(12345)], 'position'), "phx:engine:badHandle");
+            tc.verifyError(@() phxEngine('get', w, [a j], 'transform'), "phx:engine:badHandle");
+            tc.verifyError(@() phxEngine('get', w, double(a), 'position'), "phx:engine:badHandle");
+            tc.verifyError(@() phxEngine('get', w, [a; b], 'position'), "phx:engine:badArgument");
+        end
+
+        function kinematicBodyReadsItsPoseAfterTheStep(tc)
+            % A pose set on a kinematic body is reached by the end of the
+            % next step; until then the body reads where it is
+            w = tc.newWorld;
+            h = tc.addBox(w, 1, [0 0 0], 0.2*[1 1 1]);
+            phxEngine('set', w, h, 'transform', tEngineProtocol.pose([1 0 0]));
+            tc.verifyEqual(phxEngine('get', w, h, 'position'), [0; 0; 0], "AbsTol", 1e-12);
+            [~] = phxEngine('step', w, tc.Dt);
+            tc.verifyEqual(phxEngine('get', w, h, 'position'), [1; 0; 0], "AbsTol", 1e-6);
+        end
+
         function frictionOfTheTwoBodiesMultiplies(tc)
             % A box sliding on a floor decelerates by mu_box*mu_floor*g
             w = tc.newWorld;
