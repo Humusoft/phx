@@ -45,13 +45,15 @@ start empty and get its particles by <code class="phx-inline">add</code>.</p>
 <tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
 <tr><td class="name">Radius</td><td class="dflt">0.02</td><td>Radius of every particle, <span class="phx-unit">m</span>.</td></tr>
 <tr><td class="name">Density</td><td class="dflt">1000</td><td>Density of the particles, <span class="phx-unit">kg/m&sup3;</span>.</td></tr>
+<tr><td class="name">ParticleMass</td><td class="type">double</td><td>Mass of one particle, <span class="phx-unit">kg</span>; setting it sets <code class="phx-inline">Density</code> for the present <code class="phx-inline">Radius</code>.</td></tr>
+<tr><td class="name">Mass</td><td class="type">double</td><td>Total mass of the particles, <span class="phx-unit">kg</span>, <code class="phx-inline">Count*ParticleMass</code>; setting it sets <code class="phx-inline">Density</code> for the present <code class="phx-inline">Count</code> and <code class="phx-inline">Radius</code>, so particles added or removed later change it. Set one of <code class="phx-inline">Density</code>, <code class="phx-inline">ParticleMass</code> and <code class="phx-inline">Mass</code>; given to the constructor, the masses are taken after <code class="phx-inline">Positions</code> and <code class="phx-inline">Radius</code>.</td></tr>
 <tr><td class="name">Rotation</td><td class="dflt">false</td><td>Rotation of the particles: <code class="phx-inline">false</code> = they only slide, <code class="phx-inline">true</code> = they also rotate and roll.</td></tr>
 </table>
 
 <h3 class="phx-h3">Settings (apply at any time)</h3>
 <table class="phx-tbl">
 <tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
-<tr><td class="name">Friction</td><td class="dflt">0.5</td><td>Friction coefficient; a contact combines the values of both bodies.</td></tr>
+<tr><td class="name">Friction</td><td class="dflt">0.5</td><td>Friction coefficient; a contact combines the values of both bodies as their product.</td></tr>
 <tr><td class="name">Restitution</td><td class="dflt">0</td><td>Restitution (bounciness) coefficient, 0 = no bounce.</td></tr>
 <tr><td class="name">LinearDamping</td><td class="dflt">0</td><td>Damping of the linear velocities, dv/dt&nbsp;=&nbsp;&minus;LinearDamping&middot;v, <span class="phx-unit">1/s</span>.</td></tr>
 <tr><td class="name">AngularDamping</td><td class="dflt">0</td><td>Damping of the angular velocities of rotating particles, <span class="phx-unit">1/s</span>.</td></tr>
@@ -68,7 +70,6 @@ start empty and get its particles by <code class="phx-inline">add</code>.</p>
 <tr><td class="name">Positions</td><td class="type">N&times;3 double</td><td>Positions of the particle centres in the global frame, <span class="phx-unit">m</span>. Setting it during the simulation needs one row per particle; before it, any number of rows replaces the particles.</td></tr>
 <tr><td class="name">Velocities</td><td class="type">N&times;3 double</td><td>Velocities of the particles, <span class="phx-unit">m/s</span>.</td></tr>
 <tr><td class="name">Count</td><td class="type">double (read-only)</td><td>Number of particles.</td></tr>
-<tr><td class="name">Mass</td><td class="type">double (read-only)</td><td>Mass of one particle, <span class="phx-unit">kg</span>.</td></tr>
 </table>
 
 <h2 class="phx-h2">Object Functions</h2>
@@ -76,7 +77,7 @@ start empty and get its particles by <code class="phx-inline">add</code>.</p>
 <tr><th>Function</th><th>Description</th></tr>
 <tr><td class="name">add(p,P)<br>add(p,P,V)</td><td>Add particles at the rows of <code class="phx-inline">P</code> (N&times;3), at rest or with the velocities <code class="phx-inline">V</code>.</td></tr>
 <tr><td class="name">remove(p,index)</td><td>Remove the particles of the given indices or logical mask; the others keep their order.</td></tr>
-<tr><td class="name">applyForces(p,F)</td><td>Apply the forces <code class="phx-inline">F</code> (N&times;3, one row per particle, or 1&times;3 for all) at the particle centres during the next step; only in a running simulation.</td></tr>
+<tr><td class="name">applyForce(p,F)</td><td>Apply the force <code class="phx-inline">F</code>, <span class="phx-unit">N</span>, in the world frame: 1&times;3 acts on every particle of the group, each getting the whole <code class="phx-inline">F</code>; N&times;3 gives each particle its own row, in the order of <code class="phx-inline">Positions</code>. The forces act at the particle centres during the next engine step only, one substep of <code class="phx-inline">sim.step</code> (call it from a <a href="phx.Function.html">phx.Function</a> for a force in every substep); only in a running simulation.</td></tr>
 <tr><td class="name">boundingBox</td><td>Axis-aligned bounding box of all particles of one or more groups, their radius included, a 2&times;3 matrix [min; max].</td></tr>
 </table>
 

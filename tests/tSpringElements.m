@@ -54,7 +54,7 @@ classdef tSpringElements < PhxTestCase
         function torsionSpringAngleBeforeSimulation(tc)
             a = tc.spawnBody([0 0 0], "Type", "static");
             b = tc.spawnBody([0 0 0], "EulerAngles", [0 0 0.4]);
-            t = phx.TorsionSpring(a, b, "Stiffness", 2, "RestAngle", 0.1);
+            t = phx.TorsionSpring(a, b, "Stiffness", 2, "FreeAngle", 0.1);
             tc.verifyEqual(t.Angle, 0.4, "AbsTol", 1e-9);
             tc.verifyEqual(t.Torque, [0 0 0]);
             tc.verifyEqual(t.Energy, 0.5*2*(0.4 - 0.1)^2, "RelTol", 1e-9);

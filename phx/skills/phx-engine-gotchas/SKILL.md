@@ -92,8 +92,8 @@ phxEngine('apply', w, hs, 'torque',       T, isLocalTorque)
 Prefer passing the **local** force/torque and a **local** point and letting the engine
 rotate them (`Thruster` does this) over pre-rotating by `body.Matrix(1:3,1:3)` in
 MATLAB. A local point is taken relative to the body origin; the engine computes the
-moment arm about the centre of mass itself. Forces given by `apply` last **one step** and
-are cleared afterwards. The public wrappers are `Body.applyForce`/`Body.applyTorque`;
+moment arm about the centre of mass itself. Forces given by `apply` last **one engine step**
+(one substep of `sim.step`) and are cleared afterwards. The public wrappers are `Body.applyForce`/`Body.applyTorque`;
 for a load that should stay, set `Body.AppliedForce`/`AppliedTorque` instead.
 
 ## phx.engine.Settings — initial engine config

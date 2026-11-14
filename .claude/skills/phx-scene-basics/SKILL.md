@@ -119,7 +119,7 @@ b = phx.Body(ax, ...
   through the switch.
 - **Restitution (bounciness)**: `Restitution` (scalar ≥ 0, default **0** = dead contact),
   settable live mid-run. The bounce of a contact **combines the values of both colliding
-  bodies** (product-like): a bouncy ball dropped on a default floor does **not** bounce —
+  bodies** as their product: a bouncy ball dropped on a default floor does **not** bounce —
   give the floor nonzero `Restitution` too. Realized bounce heights come out noticeably
   below the ideal `e²·h` (solver losses at contact), so tune `e` empirically against the
   bounce you want rather than computing it.
@@ -165,7 +165,8 @@ b = phx.Body(ax, ...
   the orientation `e` set; a direction opposite to the axis flips the body 180° about
   its next axis (Y for X, Z for Y, X for Z).
 - **State you can read**: `LinearVelocity`, `AngularVelocity`, `TotalForce`,
-  `TotalTorque`, `Energy`, and `LinearAcceleration`/`AngularAcceleration` (mean over
+  `TotalTorque` (resultants of all forces in the last engine step, world axes, torque
+  about the centre of mass), `Energy`, and `LinearAcceleration`/`AngularAcceleration` (mean over
   the last step, world axes; gravity included, so a falling body reads g).
 - **`Mass` and `Inertia` are independent overrides (by design).** A shape computes
   *both* from its `Density` as defaults, but you may override either one on its own —
@@ -447,8 +448,11 @@ gravel.add(Pnew); gravel.remove(gravel.Positions(:, 3) < -1);   % any time, also
   softer than the material. Good for large rotations with strains up to some 10-20 %.
   It touches rigid bodies at its vertices only: keep them well closer together than the
   radius of a curved body it touches.
+- Masses: `FlexibleBody.Mass` (total) and `Particles.Mass` (total) / `ParticleMass` (one
+  particle) are settable views of `Density`; set one of them, not both.
 - `Particles`: at most 10 000 per group (use more groups); `Positions`/`Velocities` are
-  N×3 arrays, `applyForces(F)` acts in the next step of a running simulation. Set the
+  N×3 arrays, `applyForce(F)` (world frame; 1×3 = the whole F on every particle, N×3 = one row
+  each) acts in the next engine step (one substep) of a running simulation. Set the
   engine's `LengthScale` to the grain size class (`phx.engine.Settings("LengthScale",
   0.01)` for centimetre grains).
 

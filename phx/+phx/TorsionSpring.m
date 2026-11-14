@@ -55,7 +55,7 @@ classdef TorsionSpring < phx.base.Object
         TransformB (4, 4) double = eye(4)
 
         % Angle at which the spring is relaxed (rad)
-        RestAngle (1, 1) double {mustBeFinite} = 0
+        FreeAngle (1, 1) double {mustBeFinite} = 0
 
         % Torsional stiffness of the spring (N*m/rad)
         Stiffness (1, 1) double {mustBeNonnegative, mustBeFinite} = 1
@@ -118,11 +118,11 @@ classdef TorsionSpring < phx.base.Object
         end
 
         function value = get.Energy(obj)
-            value = obj.Stiffness*(obj.Angle - obj.RestAngle)^2/2;
+            value = obj.Stiffness*(obj.Angle - obj.FreeAngle)^2/2;
         end
 
-        function set.RestAngle(obj, value)
-            obj.RestAngle = value;
+        function set.FreeAngle(obj, value)
+            obj.FreeAngle = value;
             if ~isempty(obj.ObjectHandle)
                 phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'angle', value);
             end
@@ -177,7 +177,7 @@ classdef TorsionSpring < phx.base.Object
                 obj.WorldHandle = world;
                 obj.ObjectHandle = phxEngine('add', world, 'torsionspring', ...
                     [obj.Parents{1}.ObjectHandle obj.Parents{2}.ObjectHandle], obj.TransformA, obj.TransformB, true, ...
-                    obj.RestAngle, obj.Stiffness, obj.Damping);
+                    obj.FreeAngle, obj.Stiffness, obj.Damping);
                 if obj.Inertance > 0
                     phxEngine('set', world, obj.ObjectHandle, 'inertance', obj.Inertance);
                 end

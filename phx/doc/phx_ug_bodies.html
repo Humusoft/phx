@@ -120,11 +120,12 @@ read and written &mdash; even during the simulation (they read/write the engine 
 
 <p>A body can also be acted on directly with a force or a torque. <code class="phx-inline">AppliedForce</code>
 and <code class="phx-inline">AppliedTorque</code> stay until changed; <code class="phx-inline">applyForce</code>
-and <code class="phx-inline">applyTorque</code> act for the next step only:</p>
+and <code class="phx-inline">applyTorque</code> act for the next engine step only, which is one
+substep of <code class="phx-inline">sim.step</code>:</p>
 
 <pre class="phx-code">body.AppliedForce = [0 0 50];   <span class="cmt">% 50 N along the body z axis, in every step</span>
 body.AppliedTorque = [0 0 2];   <span class="cmt">% 2 N*m about the body z axis, in every step</span>
-body.applyForce([0 0 50]);      <span class="cmt">% a 50 N push for one step</span>
+body.applyForce([0 0 50]);      <span class="cmt">% a 50 N push for one substep</span>
 body.LinearVelocity = [2 0 0];  <span class="cmt">% set velocity at runtime</span></pre>
 <p>See <a href="phx_ug_forces.html">Forces, actuators and fields</a>.</p>
 

@@ -56,6 +56,7 @@ classdef Particles < phx.base.Object
     % Settings that apply at any time
     properties
         % Friction coefficient; a contact combines the values of both bodies
+        % as their product
         Friction (1, 1) double {mustBeNonnegative} = 0.5
 
         % Restitution (bounciness) coefficient, 0 = no bounce
@@ -90,12 +91,23 @@ classdef Particles < phx.base.Object
         Velocities (:, 3) double {mustBeFinite}
     end
 
+    % Views of Density, read when the simulation creates the particles.
+    % Given to the constructor, they are taken after Positions and Radius
+    % and override a Density given there.
+    properties (Dependent)
+        % Mass of one particle (kg); setting it sets the Density for the
+        % present Radius
+        ParticleMass (1, 1) double {mustBePositive, mustBeFinite}
+
+        % Total mass of the particles (kg), Count times ParticleMass;
+        % setting it sets the Density for the present Count and Radius,
+        % so particles added or removed later change it
+        Mass (1, 1) double {mustBePositive, mustBeFinite}
+    end
+
     properties (Dependent, SetAccess = private)
         % Number of particles
         Count (1, 1) double
-
-        % Mass of one particle (kg)
-        Mass (1, 1) double
     end
 
     methods
@@ -180,12 +192,20 @@ classdef Particles < phx.base.Object
             obj.applyTint;
         end
 
-        function applyForces(obj, forces)
-        %applyForces Applies forces to the particles for the next step.
+        function applyForce(obj, forces)
+        %applyForce Applies forces to the particles for the next engine step.
         %
-        %   applyForces(particles, F) applies the forces F (Nx3, one row per
-        %   particle, or 1x3 for all) at the particle centres during the next
-        %   simulation step.
+        %   applyForce(particles, F) applies the force F (1x3, N) to every
+        %   particle of the group, each particle getting the whole F.
+        %
+        %   applyForce(particles, F) with F of N rows (Nx3, one row per
+        %   particle, in the order of Positions) applies a force of its own
+        %   to each particle.
+        %
+        %   The forces are given in the world frame and act at the particle
+        %   centres during the next engine step only, which is one substep of
+        %   phx.Simulation.step; call it from a phx.Function for a force in
+        %   every substep. It works only in a running simulation.
 
             arguments
                 obj (1, 1)
@@ -279,8 +299,24 @@ classdef Particles < phx.base.Object
             end
         end
 
-        function value = get.Mass(obj)
+        function value = get.ParticleMass(obj)
             value = obj.Density*4/3*pi*obj.Radius^3;
+        end
+
+        function set.ParticleMass(obj, value)
+            obj.Density = value/(4/3*pi*obj.Radius^3);
+        end
+
+        function value = get.Mass(obj)
+            value = obj.Count*obj.ParticleMass;
+        end
+
+        function set.Mass(obj, value)
+            n = obj.Count;
+            if n == 0
+                error("phx:Particles:noParticles", "Mass needs the particles: give their Positions first.");
+            end
+            obj.ParticleMass = value/n;
         end
 
         function set.Friction(obj, value)
@@ -395,7 +431,7 @@ classdef Particles < phx.base.Object
             if isempty(obj.ObjectHandle)
                 obj.WorldHandle = world;
                 obj.ObjectHandle = phxEngine('add', world, 'particles', obj.StoredPositions, ...
-                    obj.Radius, obj.Mass, obj.Rotation);
+                    obj.Radius, obj.ParticleMass, obj.Rotation);
                 if any(obj.StoredVelocities, "all")
                     phxEngine('set', world, obj.ObjectHandle, 'velocities', obj.StoredVelocities);
                 end

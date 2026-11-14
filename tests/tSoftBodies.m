@@ -45,6 +45,16 @@ classdef tSoftBodies < PhxTestCase
             tc.verifyEqual(f.CurrentVertices, V, "AbsTol", 1e-12);
         end
 
+        function flexibleBodyMassSetsTheDensity(tc)
+            % Mass given before the mesh is still taken after it
+            V = tc.cube;
+            f = phx.FlexibleBody([], "Mass", 2, "Vertices", V, "Tetrahedra", delaunay(V));
+            tc.verifyEqual(f.Mass, 2, "RelTol", 1e-9);
+            tc.verifyEqual(f.Density, 2/(2*tc.Half)^3, "RelTol", 1e-9);
+            f.Vertices = 2*V;
+            tc.verifyEqual(f.Mass, 16, "RelTol", 1e-9, "A new mesh keeps the Density.");
+        end
+
         function quadraticElementsAddEdgeVertices(tc)
             V = tc.cube;
             T = delaunay(V);

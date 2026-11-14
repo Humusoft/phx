@@ -77,10 +77,12 @@ classdef Body < phx.base.Object
 
     % Read-only state computed by the engine
     properties (Dependent, SetAccess = private)
-        % Total force in the centre of the body
+        % Resultant of all forces on the body in the last engine step (N,
+        % world frame): applied loads, gravity, contacts and joint reactions
         TotalForce (1, 3) double
 
-        % Total torque in the centre of the body
+        % Resultant torque on the body in the last engine step about its
+        % centre of mass (N*m, world frame)
         TotalTorque (1, 3) double
 
         % Mean linear acceleration of the centre of mass over the last
@@ -148,6 +150,7 @@ classdef Body < phx.base.Object
 
         % Restitution (bounciness) coefficient, 0 = no bounce; the resulting
         % bounce of a contact combines the values of both colliding bodies
+        % as their product
         Restitution (1, 1) double {mustBeGreaterThanOrEqual(Restitution, 0)} = 0
 
         % Enable collision response for this body
@@ -587,14 +590,18 @@ classdef Body < phx.base.Object
         end
 
         function applyForce(obj, Force, Point, IsLocalForce, IsLocalPoint)
-        %applyForce Applies a force to the body acting during one subsequent
-        % simulation step. After this step, the applied force is reset.
+        %applyForce Applies a force to the body for the next engine step.
         %
-        %   applyForce(body, force) applies force in the point of origin of
+        %   The force acts during the next engine step only, which is one
+        %   substep of phx.Simulation.step: before step(sim, interval, n) it
+        %   acts for interval/n. A force that lasts is AppliedForce, or
+        %   applyForce called in every substep from a phx.Function.
+        %
+        %   applyForce(body, force) applies force at the centre of mass of
         %   the body.
         %
-        %   applyForce(body, force, point) applies force in the given point
-        %   in the local space of the body.
+        %   applyForce(body, force, point) applies force at the given point
+        %   in the local space of the body (relative to its origin).
         %
         %   applyForce(body, force, point, isLocalForce, isLocalPoint)
         %   specifies if the point and force are in the local (true, default)
@@ -623,8 +630,11 @@ classdef Body < phx.base.Object
         end
 
         function applyTorque(obj, Torque, IsLocalTorque)
-        %applyTorque Applies a torque to the body acting during one subsequent
-        % simulation step. After this step, the applied torque is reset.
+        %applyTorque Applies a torque to the body for the next engine step.
+        %
+        %   The torque acts during the next engine step only, one substep of
+        %   phx.Simulation.step, as for applyForce. A torque that lasts is
+        %   AppliedTorque.
         %
         %   applyTorque(body, torque) applies torque (in any point of the body).
         %

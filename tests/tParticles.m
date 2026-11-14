@@ -25,8 +25,22 @@ classdef tParticles < PhxTestCase
             tc.verifyEqual(p.Count, 3);
             tc.verifyEqual(p.Positions, P);
             tc.verifyEqual(p.Velocities, zeros(3));
-            tc.verifyEqual(p.Mass, 2000*4/3*pi*tc.R^3, "RelTol", 1e-12);
+            tc.verifyEqual(p.ParticleMass, 2000*4/3*pi*tc.R^3, "RelTol", 1e-12);
+            tc.verifyEqual(p.Mass, 3*p.ParticleMass, "RelTol", 1e-12);
             tc.verifyEqual(p.boundingBox, [min(P) - tc.R; max(P) + tc.R], "AbsTol", 1e-12);
+        end
+
+        function massesSetTheDensity(tc)
+            % Mass and ParticleMass are views of Density; given to the
+            % constructor before Positions and Radius they still count them
+            p = phx.Particles([], "Mass", 6, "Positions", [0 0 1; 1 0 1; 2 0 1], "Radius", tc.R);
+            tc.verifyEqual(p.Mass, 6, "RelTol", 1e-12);
+            tc.verifyEqual(p.Density, 2/(4/3*pi*tc.R^3), "RelTol", 1e-12);
+            p.ParticleMass = 0.5;
+            tc.verifyEqual(p.Mass, 1.5, "RelTol", 1e-12);
+            p.add([3 0 1]);
+            tc.verifyEqual(p.Mass, 2, "RelTol", 1e-12, "Density stays as particles come.");
+            tc.verifyError(@() set(phx.Particles([]), "Mass", 1), "phx:Particles:noParticles");
         end
 
         function emptyGroupHasNoBoundingBox(tc)
@@ -52,7 +66,7 @@ classdef tParticles < PhxTestCase
             tc.verifyError(@() p.remove(3), "phx:Particles:badIndex");
             tc.verifyError(@() p.remove([true false true]), "phx:Particles:sizeMismatch");
             tc.verifyError(@() set(p, "Velocities", [0 0 0]), "phx:Particles:sizeMismatch");
-            tc.verifyError(@() p.applyForces([0 0 1]), "phx:Particles:notSimulated");
+            tc.verifyError(@() p.applyForce([0 0 1]), "phx:Particles:notSimulated");
             tc.verifyError(@() phx.Particles([], "Positions", zeros(phx.Particles.MaxCount + 1, 3)), ...
                 "phx:Particles:tooMany");
         end
@@ -79,9 +93,9 @@ classdef tParticles < PhxTestCase
             p = phx.Particles([], "Positions", [0 0 1; 1 0 1], "Radius", tc.R);
             sim = tc.simulate({p}, [0 0 0]);
             F = [0.5 0 0; 0 0 0];
-            p.applyForces(F);
+            p.applyForce(F);
             sim.step(tc.Dt, 1, -1);
-            tc.verifyEqual(p.Velocities, F*tc.Dt/p.Mass, "AbsTol", 1e-6);
+            tc.verifyEqual(p.Velocities, F*tc.Dt/p.ParticleMass, "AbsTol", 1e-6);
         end
 
         function particlesComeToRestOnTheFloor(tc)

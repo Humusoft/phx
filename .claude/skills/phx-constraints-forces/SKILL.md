@@ -132,7 +132,7 @@ s.Energy                                   % elastic energy (J), dependent
 
 % Torsion spring about the z axis of TransformA (frames as for the joints)
 t = phx.TorsionSpring(frame, door, "TransformB", T, ...
-    "Stiffness", 50, "Damping", 10, "RestAngle", 0);   % N*m/rad, N*m*s/rad, rad
+    "Stiffness", 50, "Damping", 10, "FreeAngle", 0);   % N*m/rad, N*m*s/rad, rad
 t.Angle                                    % continuous over turns while running
 t.Torque                                   % torque on the first body (3-vector)
 ```
@@ -254,11 +254,12 @@ discrete equilibria — raise `Resolution` for them. Demos: `phxex_buoyancy`,
 ### One-step forces — `Body.applyForce` / `applyTorque`
 
 For a kick, or a force that needs a world-frame direction or point, push straight on
-the body. Both act during **one subsequent step only** and are reset afterwards, so
-call them every step (from a `phx.Function` or your control loop) to keep them acting:
+the body. Both act during **one engine step only** (one substep of `sim.step`: called
+before `sim.step(T, n)` they act for `T/n`) and are reset afterwards, so call them every
+substep (from a `phx.Function`) to keep them acting:
 
 ```matlab
-body.applyForce(F);                              % at the body origin, F in LOCAL space
+body.applyForce(F);                              % at the centre of mass, F in LOCAL space
 body.applyForce(F, p);                           % at local point p
 body.applyForce(F, p, isLocalForce, isLocalPoint);   % both default TRUE
 body.applyTorque(T);                             % T in local space

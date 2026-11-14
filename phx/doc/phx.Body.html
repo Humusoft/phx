@@ -99,7 +99,7 @@ a flat patch resists by its own extent; without friction nothing resists the spi
 adds the values of both bodies; about 2/3 of the radius of the real patch.</td></tr>
 <tr><td class="name">Restitution</td><td class="dflt">0</td>
 <td>Restitution (bounciness) coefficient (&ge;&nbsp;0); 0&nbsp;=&nbsp;no bounce. The resulting
-bounce of a contact combines the values of <em>both</em> colliding bodies, so both must be
+bounce of a contact combines the values of <em>both</em> colliding bodies as their product, so both must be
 nonzero for the contact to bounce.</td></tr>
 <tr><td class="name">Collisions</td><td class="dflt">true</td>
 <td>Enable or disable collisions for this body.</td></tr>
@@ -115,7 +115,7 @@ because the value describes the <em>relative</em> motion of the contacting surfa
 <td>Force at the centre of mass, <span class="phx-unit">N</span>, given in the <em>body</em> frame.
 It acts in every simulation step, turning with the body, until it is changed; set it to
 <code class="phx-inline">[0 0 0]</code> to stop it. (<code class="phx-inline">applyForce</code>
-acts for the next step only.) Driven from Simulink as an input of the
+acts for the next engine step only.) Driven from Simulink as an input of the
 <a href="PhxModel.html">PHX Model</a> block, it follows the input at every sample.</td></tr>
 <tr><td class="name">AppliedTorque</td><td class="dflt">[0 0 0]</td>
 <td>Torque, <span class="phx-unit">N&middot;m</span>, given in the <em>body</em> frame; it acts like
@@ -144,8 +144,8 @@ constructor, it turns the orientation set by the arguments before it, for exampl
 <code class="phx-inline">phx.Body(ax, "EulerAngles", [0 0 pi/4], "ZAxis", [1 0 1])</code>.</td></tr>
 <tr><td class="name">LinearVelocity</td><td class="type">1&times;3 double</td><td>Linear velocity of the centre of mass, <span class="phx-unit">m/s</span>.</td></tr>
 <tr><td class="name">AngularVelocity</td><td class="type">1&times;3 double</td><td>Angular velocity, <span class="phx-unit">rad/s</span>.</td></tr>
-<tr><td class="name">TotalForce</td><td class="type">1&times;3 double (read-only)</td><td>Total force at the body centre, <span class="phx-unit">N</span> (dependent).</td></tr>
-<tr><td class="name">TotalTorque</td><td class="type">1&times;3 double (read-only)</td><td>Total torque at the body centre, <span class="phx-unit">N&middot;m</span> (dependent).</td></tr>
+<tr><td class="name">TotalForce</td><td class="type">1&times;3 double (read-only)</td><td>Resultant of all forces on the body in the last engine step, <span class="phx-unit">N</span>: applied loads, gravity, contacts and joint reactions (dependent).</td></tr>
+<tr><td class="name">TotalTorque</td><td class="type">1&times;3 double (read-only)</td><td>Resultant torque on the body in the last engine step, about its centre of mass, <span class="phx-unit">N&middot;m</span> (dependent).</td></tr>
 <tr><td class="name">LinearAcceleration</td><td class="type">1&times;3 double (read-only)</td><td>Mean acceleration of the centre of mass over the last step, <span class="phx-unit">m/s&sup2;</span>; gravity included, so a falling body reads it (dependent).</td></tr>
 <tr><td class="name">AngularAcceleration</td><td class="type">1&times;3 double (read-only)</td><td>Mean angular acceleration over the last step, <span class="phx-unit">rad/s&sup2;</span> (dependent).</td></tr>
 <tr><td class="name">Energy</td><td class="type">double (read-only)</td><td>Kinetic energy of the body, <span class="phx-unit">J</span> (dependent).</td></tr>
@@ -154,8 +154,8 @@ constructor, it turns the orientation set by the arguments before it, for exampl
 <h2 class="phx-h2">Object Functions</h2>
 <table class="phx-tbl">
 <tr><th>Function</th><th>Description</th></tr>
-<tr><td class="name">applyForce</td><td>Apply a force for the next simulation step (then reset).</td></tr>
-<tr><td class="name">applyTorque</td><td>Apply a torque for the next simulation step (then reset).</td></tr>
+<tr><td class="name">applyForce</td><td>Apply a force for the next engine step, one substep (then reset).</td></tr>
+<tr><td class="name">applyTorque</td><td>Apply a torque for the next engine step, one substep (then reset).</td></tr>
 <tr><td class="name">offset</td><td>Transformation matrix relative to the body's own pose.</td></tr>
 <tr><td class="name">groupTransform</td><td>Rigidly transform a group of bodies about the first body.</td></tr>
 <tr><td class="name">boundingBox</td><td>Axis-aligned world bounding box of one or more bodies.</td></tr>
@@ -170,8 +170,14 @@ constructor, it turns the orientation set by the arguments before it, for exampl
 <span class="phx-syntax">applyForce(body,force,point,isLocalForce,isLocalPoint)</span>
 <div class="phx-desc">
 <p>Applies <code class="phx-inline">force</code> (<span class="phx-unit">N</span>) acting during the
-next simulation step only. Without <code class="phx-inline">point</code> the force acts at the body
-origin; otherwise it acts at <code class="phx-inline">point</code> (local space by default). The two
+next engine step only, which is one substep of <code class="phx-inline">step</code> of
+<a href="phx.Simulation.html">phx.Simulation</a>: called before
+<code class="phx-inline">step(sim,interval,n)</code>, it acts for <code class="phx-inline">interval/n</code>.
+For a force that lasts, set <code class="phx-inline">AppliedForce</code>, or call
+<code class="phx-inline">applyForce</code> in every substep from a
+<a href="phx.Function.html">phx.Function</a>. Without <code class="phx-inline">point</code> the force
+acts at the centre of mass; otherwise it acts at <code class="phx-inline">point</code> (local space by
+default, relative to the body origin). The two
 logical flags select local (<code class="phx-inline">true</code>, default) or world space for the
 force and the point respectively. To drive a body with a force from Simulink, use the
 <code class="phx-inline">AppliedForce</code> and <code class="phx-inline">AppliedTorque</code>
@@ -183,7 +189,8 @@ properties as block inputs.</p>
 <span class="phx-syntax">applyTorque(body,torque,isLocalTorque)</span>
 <div class="phx-desc">
 <p>Applies <code class="phx-inline">torque</code> (<span class="phx-unit">N&middot;m</span>) during the
-next step. <code class="phx-inline">isLocalTorque</code> selects local (default) or world space.</p>
+next engine step only, one substep, as <code class="phx-inline">applyForce</code>; for a torque
+that lasts, set <code class="phx-inline">AppliedTorque</code>. <code class="phx-inline">isLocalTorque</code> selects local (default) or world space.</p>
 </div>
 
 <h3 class="phx-h3">offset</h3>

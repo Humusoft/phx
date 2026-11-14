@@ -90,6 +90,12 @@ classdef FlexibleBody < phx.base.Object
         % fegeometry or femodel, or one of these whose Mesh is used; sets
         % Vertices and Tetrahedra, and reads them back in this form
         Mesh
+
+        % Mass of the body (kg), the Density times the volume of the mesh;
+        % setting it sets the Density for the present mesh, which a later
+        % change of the mesh keeps. Given to the constructor, it is taken
+        % after the mesh and overrides a Density given there.
+        Mass (1, 1) double {mustBePositive, mustBeFinite}
     end
 
     % Settings that apply at any time
@@ -111,6 +117,7 @@ classdef FlexibleBody < phx.base.Object
         Damping (1, 1) double {mustBeNonnegative} = 0
 
         % Friction coefficient; a contact combines the values of both bodies
+        % as their product
         Friction (1, 1) double {mustBeNonnegative} = 0.5
 
         % Restitution (bounciness) coefficient, 0 = no bounce; linear
@@ -135,9 +142,6 @@ classdef FlexibleBody < phx.base.Object
         % Boundary triangles of the mesh, wound outwards (Mx3); a face of a
         % quadratic tetrahedron is split into four at its edge vertices
         Faces (:, 3) double
-
-        % Mass of the body (kg)
-        Mass (1, 1) double
 
         % Present vertex positions in the global frame (Nx3, with the added
         % edge vertices of quadratic tetrahedra)
@@ -309,10 +313,15 @@ classdef FlexibleBody < phx.base.Object
         end
 
         function value = get.Mass(obj)
-            % Of the straight-edged tetrahedra between the corners
-            [V, T] = obj.mesh;
-            [~, volume] = obj.positiveTetrahedra(V, T);
-            value = obj.Density*sum(volume);
+            value = obj.Density*obj.volume;
+        end
+
+        function set.Mass(obj, value)
+            V = obj.volume;
+            if V == 0
+                error("phx:FlexibleBody:noMesh", "Mass needs the mesh: give its Vertices and Tetrahedra first.");
+            end
+            obj.Density = value/V;
         end
 
         function value = get.CurrentVertices(obj)
@@ -343,6 +352,13 @@ classdef FlexibleBody < phx.base.Object
     end
 
     methods (Access = private)
+        function value = volume(obj)
+            % Of the straight-edged tetrahedra between the corners
+            [V, T] = obj.mesh;
+            [~, volume] = obj.positiveTetrahedra(V, T);
+            value = sum(volume);
+        end
+
         function [V, T] = mesh(obj)
             % The vertices and tetrahedra handed to the engine: Kx4 linear
             % ones as given, or Kx10 quadratic ones, a Kx4 mesh refined by

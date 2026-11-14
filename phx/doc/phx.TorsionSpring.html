@@ -21,7 +21,7 @@
 torsion spring, an ideal rotary damper and, with a nonzero <code class="phx-inline">Inertance</code>,
 an ideal rotary inerter in parallel. It acts about the z axis of <code class="phx-inline">TransformA</code>
 with the torque
-<code class="phx-inline">M = Stiffness&middot;(Angle - RestAngle) + Damping&middot;rate + Inertance&middot;acceleration</code>,
+<code class="phx-inline">M = Stiffness&middot;(Angle - FreeAngle) + Damping&middot;rate + Inertance&middot;acceleration</code>,
 where rate and acceleration are those of the angle. It only turns the bodies about the axis: put it
 on a hinge (<a href="phx.RevoluteJoint.html">phx.RevoluteJoint</a>) with the same frames to spring
 the hinge.</p>
@@ -55,7 +55,7 @@ joints.</p>
 <tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
 <tr><td class="name">TransformA</td><td class="dflt">eye(4)</td><td>Frame of the spring in the local space of body A; the spring acts about its z axis.</td></tr>
 <tr><td class="name">TransformB</td><td class="dflt">eye(4)</td><td>Frame of the spring in the local space of body B.</td></tr>
-<tr><td class="name">RestAngle</td><td class="dflt">0</td><td>Angle at which the spring is relaxed, <span class="phx-unit">rad</span>.</td></tr>
+<tr><td class="name">FreeAngle</td><td class="dflt">0</td><td>Angle at which the spring is relaxed, <span class="phx-unit">rad</span>.</td></tr>
 <tr><td class="name">Stiffness</td><td class="dflt">1</td><td>Torsional stiffness, <span class="phx-unit">N&middot;m/rad</span>.</td></tr>
 <tr><td class="name">Damping</td><td class="dflt">0</td><td>Rotary damping coefficient, <span class="phx-unit">N&middot;m&middot;s/rad</span>.</td></tr>
 <tr><td class="name">Inertance</td><td class="dflt">0</td><td>Rotary inertance of an inerter in parallel, <span class="phx-unit">kg&middot;m&sup2;</span>: a torque proportional to the relative angular acceleration about the axis.</td></tr>
@@ -76,7 +76,7 @@ door  = phx.Body(<span class="str">"Position"</span>, [0.5 0 0], <span class="st
 T = [eye(3) [-0.5 0 0]'; 0 0 0 1];           <span class="cmt">% hinge axis at the door edge</span>
 phx.RevoluteJoint(frame, door, <span class="str">"TransformB"</span>, T);
 phx.TorsionSpring(frame, door, <span class="str">"TransformB"</span>, T, ...
-    <span class="str">"Stiffness"</span>, 50, <span class="str">"Damping"</span>, 10, <span class="str">"RestAngle"</span>, 0);
+    <span class="str">"Stiffness"</span>, 50, <span class="str">"Damping"</span>, 10, <span class="str">"FreeAngle"</span>, 0);
 
 door.AngularVelocity = [0 0 3];                <span class="cmt">% push it open</span>
 sim = phx.Simulation(<span class="str">"Gravity"</span>, [0 0 0]);

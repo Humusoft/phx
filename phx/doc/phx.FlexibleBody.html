@@ -78,6 +78,7 @@ body of linear tetrahedra from a K&times;4 mesh.</p>
 <tr><td class="name">Position</td><td class="dflt">[0 0 0]</td><td>Position of the rest shape when the body is created, <span class="phx-unit">m</span>.</td></tr>
 <tr><td class="name">Orientation</td><td class="dflt">eye(3)</td><td>Orientation of the rest shape when the body is created.</td></tr>
 <tr><td class="name">Density</td><td class="dflt">1000</td><td>Density of the material, <span class="phx-unit">kg/m&sup3;</span>.</td></tr>
+<tr><td class="name">Mass</td><td class="type">double</td><td>Mass of the body, <span class="phx-unit">kg</span>: <code class="phx-inline">Density</code> times the volume of the mesh. Set either one: setting <code class="phx-inline">Mass</code> sets <code class="phx-inline">Density</code> for the present mesh, which a later change of the mesh keeps (as <code class="phx-inline">Radius</code> and <code class="phx-inline">Diameter</code> of the shapes). Given to the constructor, it is taken after the mesh.</td></tr>
 <tr><td class="name">YoungsModulus</td><td class="dflt">1e6</td><td>Young's modulus of the material, <span class="phx-unit">Pa</span>.</td></tr>
 <tr><td class="name">PoissonsRatio</td><td class="dflt">0.45</td><td>Poisson's ratio of the material, from 0 to 0.5 for an incompressible one (quadratic tetrahedra take at most 0.49995).</td></tr>
 </table>
@@ -89,7 +90,7 @@ body of linear tetrahedra from a K&times;4 mesh.</p>
 <tr><td class="name">Iterations</td><td class="dflt">10</td><td>Solver substeps per simulation step; for quadratic tetrahedra the most Newton iterations per step, up to 4 more in a step whose contacts keep changing.</td></tr>
 <tr><td class="name">Tolerance</td><td class="dflt">1e-4</td><td>Force left unbalanced at which a step of quadratic tetrahedra has converged, relative to the weight of the body; 0 takes <code class="phx-inline">Iterations</code> iterations unless the force falls below 1e-10 of the weight.</td></tr>
 <tr><td class="name">Damping</td><td class="dflt">0</td><td>Damping of the vertex velocities, dv/dt&nbsp;=&nbsp;&minus;Damping&middot;v, <span class="phx-unit">1/s</span>.</td></tr>
-<tr><td class="name">Friction</td><td class="dflt">0.5</td><td>Friction coefficient; a contact combines the values of both bodies.</td></tr>
+<tr><td class="name">Friction</td><td class="dflt">0.5</td><td>Friction coefficient; a contact combines the values of both bodies as their product.</td></tr>
 <tr><td class="name">Restitution</td><td class="dflt">0</td><td>Restitution (bounciness) coefficient, 0 = no bounce; linear tetrahedra only, the contacts of quadratic ones are inelastic.</td></tr>
 <tr><td class="name">Colormap</td><td class="dflt">[]</td><td>Colormap (N&times;3 matrix, RGB in 0&ndash;1, e.g. <code class="phx-inline">turbo(64)</code>) that colors the surface by the von Mises stress. Empty draws the plain <code class="phx-inline">Color</code>, which the colormap leaves unchanged.</td></tr>
 <tr><td class="name">ColorRange</td><td class="dflt">[0 1e6]</td><td>Stress range mapped across the whole colormap, <span class="phx-unit">Pa</span>.</td></tr>
@@ -100,7 +101,6 @@ body of linear tetrahedra from a K&times;4 mesh.</p>
 <table class="phx-tbl">
 <tr><th>Property</th><th>Type</th><th>Description</th></tr>
 <tr><td class="name">Faces</td><td class="type">M&times;3 double</td><td>Boundary triangles of the mesh, wound outwards; a face of a quadratic tetrahedron is split into four at its edge vertices.</td></tr>
-<tr><td class="name">Mass</td><td class="type">double</td><td>Mass of the body, <span class="phx-unit">kg</span>.</td></tr>
 <tr><td class="name">CurrentVertices</td><td class="type">N&times;3 double</td><td>Present vertex positions in the global frame, with the added edge vertices of quadratic tetrahedra.</td></tr>
 <tr><td class="name">VonMisesStress</td><td class="type">N&times;1 double</td><td>Von Mises stress at the vertices, averaged over the tetrahedra around each, <span class="phx-unit">Pa</span>; zero before the simulation starts.</td></tr>
 </table>
