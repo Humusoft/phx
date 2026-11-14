@@ -1748,6 +1748,86 @@ classdef tEngineProtocol < PhxTestCase
             end
         end
 
+        function revoluteLimitsBoundTheAngleRightHanded(tc)
+            % A hinge about z bounded to [0.1 0.3] rad, a range without the
+            % zero, driven by a persistent torque about z, no gravity:
+            % turned positively it stops at +0.3, negatively at +0.1
+            for s = [1 -1]
+                [w, b, j] = tc.hingeRig;
+                phxEngine('set', w, j, 'anglimits', 0.1, 0.3);
+                phxEngine('set', w, b, 'appliedtorque', [0 0 5*s]);
+                tc.settle(w, 1);
+                tc.verifyEqual(tEngineProtocol.zAngleOf(w, b), 0.2 + 0.1*s, "AbsTol", 0.01, ...
+                    sprintf("Turned %+d", s));
+            end
+        end
+
+        function revoluteLimitsLockFreeAndChangeWhileRunning(tc)
+            % Equal limits lock the hinge at that angle against the torque;
+            % lower > upper and infinite limits free it; a limit clamped to
+            % pi with the other one inside stops it at the back point
+            [w, b, j] = tc.hingeRig;
+            phxEngine('set', w, b, 'appliedtorque', [0 0 5]);
+            phxEngine('set', w, j, 'anglimits', 0.5, 0.5);
+            tc.settle(w, 1);
+            tc.verifyEqual(tEngineProtocol.zAngleOf(w, b), 0.5, "AbsTol", 0.01, "Locked at 0.5");
+            for free = {[1 -1], [-Inf Inf]}
+                phxEngine('set', w, j, 'anglimits', 0.5, 0.5);
+                tc.settle(w, 0.2);
+                phxEngine('set', w, j, 'anglimits', free{1}(1), free{1}(2));
+                tc.settle(w, 0.4);
+                om = phxEngine('get', w, b, 'angvel');
+                tc.verifyEqual(om(3), 5*0.4, "RelTol", 0.05, "Freed by " + mat2str(free{1}));
+            end
+            [w, b, j] = tc.hingeRig;
+            phxEngine('set', w, j, 'anglimits', -Inf, 0.5);
+            phxEngine('set', w, b, 'appliedtorque', [0 0 -5]);
+            tc.settle(w, 2);
+            tc.verifyEqual(abs(tEngineProtocol.zAngleOf(w, b)), pi, "AbsTol", 0.02, "Stopped at the back point");
+        end
+
+        function prismaticLimitsBoundTheTravel(tc)
+            % A slider along world z hanging under gravity, bounded to
+            % [-0.3 -0.1] m (a range without the zero): it drops onto the
+            % lower stop, which carries its weight; locked at -0.2 it holds
+            % there; with no lower stop it falls away
+            m = 2;
+            w = tc.newWorld;
+            a = tc.addBox(w, 0, [0 0 2], 0.2*[1 1 1]);
+            b = tc.addBox(w, 2, [0 0 1], 0.2*[1 1 1], m);
+            j = phxEngine('add', w, 'prismatic', [a b], tEngineProtocol.pose([0 0 -1]), eye(4), false);
+            phxEngine('set', w, j, 'linlimits', -0.3, -0.1);
+            tc.settle(w, 1);
+            tc.verifyEqual(tEngineProtocol.positionOf(w, b)', [0 0 0.7], "AbsTol", 2e-3, "On the lower stop");
+            F = phxEngine('get', w, j, 'feedback');
+            tc.verifyEqual(F(:, 3)', [0 0 m*tc.G], "AbsTol", 0.01*m*tc.G, "The stop carries the weight.");
+            phxEngine('set', w, j, 'linlimits', -0.2, -0.2);
+            tc.settle(w, 1);
+            tc.verifyEqual(tEngineProtocol.positionOf(w, b)', [0 0 0.8], "AbsTol", 2e-3, "Locked at -0.2");
+            phxEngine('set', w, j, 'linlimits', -Inf, 0);
+            tc.settle(w, 0.5);
+            p = tEngineProtocol.positionOf(w, b);
+            tc.verifyLessThan(p(3), 0, "No lower stop, it falls away.");
+        end
+
+        function jointLimitsRejectNaNAndOtherKinds(tc)
+            w = tc.newWorld;
+            a = tc.addBox(w, 0, [0 0 2], 0.2*[1 1 1]);
+            b = tc.addBox(w, 2, [0 0 1], 0.2*[1 1 1]);
+            hinge = phxEngine('add', w, 'revolute', [a b], eye(4), eye(4), false);
+            slider = phxEngine('add', w, 'prismatic', [a b], eye(4), eye(4), false);
+            generic = phxEngine('add', w, 'generic', [a b], eye(4), eye(4), false);
+            tc.verifyError(@() phxEngine('set', w, hinge, 'anglimits', NaN, 1), "phx:engine:badArgument");
+            tc.verifyError(@() phxEngine('set', w, slider, 'linlimits', 0, NaN), "phx:engine:badArgument");
+            tc.verifyError(@() phxEngine('set', w, generic, 'linlimits', [0 NaN 0], [0 0 0]), "phx:engine:badArgument");
+            tc.verifyError(@() phxEngine('set', w, generic, 'anglimits', [0 0 0], [NaN 0 0]), "phx:engine:badArgument");
+            % Each joint has the limits of its own axis only
+            tc.verifyError(@() phxEngine('set', w, hinge, 'linlimits', 0, 1), "phx:engine:unsupported");
+            tc.verifyError(@() phxEngine('set', w, slider, 'anglimits', 0, 1), "phx:engine:unsupported");
+            point = phxEngine('add', w, 'spherical', [a b], eye(4), eye(4), false);
+            tc.verifyError(@() phxEngine('set', w, point, 'anglimits', 0, 1), "phx:engine:unsupported");
+        end
+
         function springJointDeflectsByWeightOverStiffness(tc)
             m = 1;
             k = 1000;
@@ -2346,6 +2426,15 @@ classdef tEngineProtocol < PhxTestCase
             h = tc.addBox(w, 0, [0 0 -0.5], [10 10 1], 0, [0 0 0]);
         end
 
+        function [w, b, j] = hingeRig(tc)
+            % A hinge about world z from a static body to a free one of
+            % unit inertia at the same place, no gravity
+            w = tc.newWorld([0 0 0]);
+            a = tc.addBox(w, 0, [0 0 0], 0.2*[1 1 1]);
+            b = tc.addBox(w, 2, [0 0 0], 0.2*[1 1 1], 1, [1 1 1]);
+            j = phxEngine('add', w, 'revolute', [a b], eye(4), eye(4), false);
+        end
+
         function T = lastPose(tc, w, h, duration)
             % Steps for the given time; returns the last pose reported for
             % the body (a body standing still is not reported)
@@ -2453,6 +2542,12 @@ classdef tEngineProtocol < PhxTestCase
             % (negligibly short) step, as PHX reads it
             [ids, T] = phxEngine('step', w, 1e-6);
             p = T(1:3, 4, ids == h);
+        end
+
+        function a = zAngleOf(w, h)
+            % Rotation of a body about world z, read from its pose
+            T = phxEngine('get', w, h, 'transform');
+            a = atan2(T(2, 1), T(1, 1));
         end
 
         function restorePath(oldPath)
