@@ -221,7 +221,11 @@ new code, follow the same namespace.
   stacked/contact-heavy scenes want `dt = interval/substeps ≤ 5 ms` for stability —
   raise `substeps` (or lower `interval`) rather than taking big steps. Springs, ropes
   and torsion springs are the exception: the engine solves them stably at any
-  stiffness, so a stiff spring alone is no reason for a smaller `dt`.
+  stiffness, so a stiff spring alone is no reason for a smaller `dt`. Accuracy, not
+  stability, sets two finer limits: `ω·dt ≤ 0.1` for a fast-turning part whose speed or
+  bearing forces are the result, and about 1 ms for impacts or rocking whose outcome is
+  the result — only for those, not for a whole scene where they are a bulk or secondary
+  motion (**phx-scene-basics**, "Finer steps only for what the scene is about").
 - **Remedy for a scene that stays soft at a sane `dt`: the solver settings.** Leave
   `phx.engine.Settings` alone in ordinary scenes. Reach for it only when, already at
   `dt ≤ 5 ms`, a stack sinks and drifts (raise `ContactIterations`, default 20) or a

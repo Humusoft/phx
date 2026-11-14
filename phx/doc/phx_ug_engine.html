@@ -40,6 +40,25 @@ bodies pass through thin walls, and more solver iterations do not make up for it
 the table as a starting point and check a result that matters by halving the substep: if the
 result changes, the step was too long.</p>
 
+<p>Two kinds of motion ask for a shorter step than the table, but only when they are what the
+scene is about:</p>
+<ul>
+<li><b>Fast rotation.</b> A part should turn by no more than about 0.1&nbsp;rad
+(6&deg;) in one substep, <code class="phx-inline">&omega;&middot;dt &le; 0.1</code>, if its speed,
+the forces in its bearings or the motion of what it drives should be right to about 1&nbsp;%: a
+rotor at 3000&nbsp;rpm (314&nbsp;rad/s) wants a substep of 0.3&nbsp;ms. At 0.3&nbsp;rad per substep
+the errors reach several per cent, beyond 0.5&nbsp;rad they grow large, although the motion stays
+stable.</li>
+<li><b>Impacts and rocking.</b> Where the height of a rebound, the amplitude of a rocking or
+toppling body or the momentum passed on by a collision is the result, use about 1&nbsp;ms. At
+5&ndash;10&nbsp;ms each impact falls somewhere inside a step and takes a little more energy than
+it should: a block rocking on its edges keeps about 70&ndash;85&nbsp;% of the energy it should
+keep per impact at 5&ndash;10&nbsp;ms, and within 2&nbsp;% at 1&nbsp;ms.</li>
+</ul>
+<p>Neither is a reason to shorten the step of the whole scene when such motions are only a part of
+it: parts tumbling in a hopper, a pile being poured, debris, wheels of a vehicle whose path is the
+result. There the default step gives plausible motion, and a shorter one only costs time.</p>
+
 <h2 class="phx-h2">Length scale and collision tolerances</h2>
 <p>The engine keeps small tolerances around every contact: shapes are slightly rounded
 (<code class="phx-inline">Margin</code>), resting bodies may sink into each other by a tiny depth
@@ -47,7 +66,10 @@ result changes, the step was too long.</p>
 (<code class="phx-inline">SpeculativeDistance</code>). By default these suit parts of about a metre.
 For smaller or larger parts, set one value, the <code class="phx-inline">LengthScale</code> of
 <a href="phx.engine.Settings.html">phx.engine.Settings</a>: the typical size of the parts whose
-contacts matter, as an order of magnitude. The tolerances then follow from it.</p>
+contacts matter, as an order of magnitude. The tolerances then follow from it. Centimetre parts
+left at the default slip where they should roll and creep where they should rest (a ball of
+1&nbsp;cm rolling down a slope slips about eight times less with <code class="phx-inline">LengthScale</code>
+0.01), so set the scale whenever the small parts are what the scene is about.</p>
 
 <table class="phx-tbl">
 <tr><th>Parts</th><th>LengthScale</th><th>Example</th></tr>

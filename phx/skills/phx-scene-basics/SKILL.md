@@ -690,6 +690,21 @@ building a scene from scratch:
   `Mass` (see the note above) or the lever will feel wrong even with the right masses.
 - **Stability.** Keep `dt = interval/substeps ≤ 5 ms` for contact-heavy or tightly
   constrained scenes; raise `substeps` rather than taking bigger steps.
+- **Finer steps only for what the scene is about.** Two motions need a shorter `dt` than
+  the 5 ms above, but only when they are the point of the scene (what it measures, plots
+  or shows off):
+  - a part whose spin, bearing forces or driven motion is the result: at most about
+    0.1 rad per substep, `ω·dt ≤ 0.1`, for ~1 % (a rotor at 3000 rpm wants 0.3 ms);
+  - an impact, rebound height, rocking or toppling amplitude that is the result: about
+    1 ms (at 5–10 ms each impact takes some 15–30 % too much energy).
+
+  Do **not** lower `dt` of a whole scene because such motions occur in a bulk process or
+  in secondary parts (parts tumbling in a hopper, a poured pile, debris, the wheels of a
+  vehicle whose path is the result): the default step keeps them plausible and a finer one
+  only costs run time.
+- **Small parts.** For parts of a few centimetres whose contacts matter (rolling,
+  resting, stacking), set `phx.engine.Settings("LengthScale", 0.01)` (0.1 for
+  decimetres) as `EngineSettings`; at the default scale of 1 m they slip and creep.
 - **A scene that misbehaves** (joints stretch, bodies sink or tunnel, jitter): measure
   first with `phx.Simulation(..., "DiagnosticInfo", "warnings")` and
   `sim.getDiagnosticReport` — warnings with remedies, residuals, penetration, joint gaps
