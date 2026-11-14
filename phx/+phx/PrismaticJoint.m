@@ -39,8 +39,14 @@ classdef PrismaticJoint < phx.base.Joint
 %   reversed, on the first one until changed. It is independent of the motor:
 %   the two act together, so a motor can regulate against an applied load.
 %
-%   The motor properties and AppliedForce can be changed while the simulation
-%   runs or set from Simulink.
+%   Limits bounds the travel to a range [lower upper] of the Distance (m),
+%   with hard end stops that do not bounce; their reaction is part of
+%   ForceA, TorqueA, ForceB and TorqueB. Equal limits lock the joint at that
+%   distance, -Inf or Inf leaves out the stop on that side, and [-Inf Inf],
+%   the default, leaves the joint free.
+%
+%   The motor properties, AppliedForce and Limits can be changed while the
+%   simulation runs or set from Simulink.
 %
 %   See also phx.RevoluteJoint, phx.CylindricalJoint, phx.FixedJoint
 
@@ -71,6 +77,11 @@ classdef PrismaticJoint < phx.base.Joint
         % Acts on the second body and, reversed, on the first one, until
         % changed, together with the motor if there is one.
         AppliedForce (1, 1) double {mustBeFinite} = 0
+
+        % Range of the joint distance [lower upper] (m, hard stops)
+        % Equal to lock the joint at that distance, -Inf or Inf for no stop
+        % on that side, [-Inf Inf] to leave it free (default).
+        Limits (1, 2) double {phx.internal.mustBeLinearLimits} = [-Inf Inf]
     end
 
     methods
@@ -88,6 +99,13 @@ classdef PrismaticJoint < phx.base.Joint
             obj.AppliedForce = value;
             if ~isempty(obj.ObjectHandle)
                 phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'appliedforce', value);
+            end
+        end
+
+        function set.Limits(obj, value)
+            obj.Limits = value;
+            if ~isempty(obj.ObjectHandle)
+                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'linlimits', value(1), value(2));
             end
         end
 
@@ -141,9 +159,9 @@ classdef PrismaticJoint < phx.base.Joint
                 % The engine takes the frames only as it creates the
                 % constraint, so the constraint is built once and then kept
                 % across pipeline rebuilds. Only the motor (TargetVelocity,
-                % MaxForce) and AppliedForce write through from their setters;
-                % other properties changed after that do not reach the
-                % constraint.
+                % MaxForce), AppliedForce and Limits write through from their
+                % setters; other properties changed after that do not reach
+                % the constraint.
                 obj.WorldHandle = world;
                 obj.ObjectHandle = phxEngine('add', world, 'prismatic', [obj.Parents{1}.ObjectHandle obj.Parents{2}.ObjectHandle], ...
                     obj.TransformA, obj.TransformB, obj.MutualCollisions);
@@ -152,6 +170,9 @@ classdef PrismaticJoint < phx.base.Joint
                 obj.applyMotor;
                 if obj.AppliedForce ~= 0
                     phxEngine('set', world, obj.ObjectHandle, 'appliedforce', obj.AppliedForce);
+                end
+                if any(isfinite(obj.Limits))
+                    phxEngine('set', world, obj.ObjectHandle, 'linlimits', obj.Limits(1), obj.Limits(2));
                 end
             end
         end

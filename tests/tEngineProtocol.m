@@ -1790,7 +1790,10 @@ classdef tEngineProtocol < PhxTestCase
             % A slider along world z hanging under gravity, bounded to
             % [-0.3 -0.1] m (a range without the zero): it drops onto the
             % lower stop, which carries its weight; locked at -0.2 it holds
-            % there; with no lower stop it falls away
+            % there; with no lower stop it falls away. A stop engages only
+            % at or beyond it, so a body resting on it leaves it now and
+            % then for a step and is caught with twice the impulse: the
+            % reaction is averaged over steps
             m = 2;
             w = tc.newWorld;
             a = tc.addBox(w, 0, [0 0 2], 0.2*[1 1 1]);
@@ -1798,9 +1801,13 @@ classdef tEngineProtocol < PhxTestCase
             j = phxEngine('add', w, 'prismatic', [a b], tEngineProtocol.pose([0 0 -1]), eye(4), false);
             phxEngine('set', w, j, 'linlimits', -0.3, -0.1);
             tc.settle(w, 1);
+            F = zeros(3, 40);
+            for k = 1:size(F, 2)
+                phxEngine('step', w, tc.Dt);
+                F(:, k) = phxEngine('get', w, j, 'feedback') * [0; 0; 1; 0];
+            end
+            tc.verifyEqual(mean(F, 2)', [0 0 m*tc.G], "AbsTol", 0.02*m*tc.G, "The stop carries the weight.");
             tc.verifyEqual(tEngineProtocol.positionOf(w, b)', [0 0 0.7], "AbsTol", 2e-3, "On the lower stop");
-            F = phxEngine('get', w, j, 'feedback');
-            tc.verifyEqual(F(:, 3)', [0 0 m*tc.G], "AbsTol", 0.01*m*tc.G, "The stop carries the weight.");
             phxEngine('set', w, j, 'linlimits', -0.2, -0.2);
             tc.settle(w, 1);
             tc.verifyEqual(tEngineProtocol.positionOf(w, b)', [0 0 0.8], "AbsTol", 2e-3, "Locked at -0.2");

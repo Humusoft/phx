@@ -25,7 +25,16 @@ classdef RevoluteJoint < phx.base.Joint
 %   reversed, on the first one until changed. It is independent of the motor:
 %   the two act together, so a motor can regulate against an applied load.
 %
-%   The motor properties and AppliedTorque can be changed while the
+%   Limits bounds the rotation to a range [lower upper] of the Angle (rad),
+%   with hard end stops that do not bounce; their reaction is part of
+%   ForceA, TorqueA, ForceB and TorqueB. Equal limits lock the joint at that
+%   angle, and [-Inf Inf], the default, leaves it free. As Angle, the limits
+%   lie within (-pi, pi), and both are finite unless the joint is free: the
+%   rotation is bounded on both sides. A body that passes a stop by more
+%   than half the gap behind the stops within one step comes out at the
+%   other stop, so a fast joint needs that gap.
+%
+%   The motor properties, AppliedTorque and Limits can be changed while the
 %   simulation runs or set from Simulink.
 %
 %   See also phx.SphericalJoint, phx.CylindricalJoint
@@ -57,6 +66,11 @@ classdef RevoluteJoint < phx.base.Joint
         % Acts on the second body and, reversed, on the first one, until
         % changed, together with the motor if there is one.
         AppliedTorque (1, 1) double {mustBeFinite} = 0
+
+        % Range of the joint angle [lower upper] (rad, hard stops)
+        % Both within (-pi, pi), equal to lock the joint at that angle, or
+        % [-Inf Inf] to leave it free (default).
+        Limits (1, 2) double {phx.internal.mustBeAngularLimits} = [-Inf Inf]
     end
 
     methods
@@ -105,6 +119,13 @@ classdef RevoluteJoint < phx.base.Joint
                 phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'appliedtorque', value);
             end
         end
+
+        function set.Limits(obj, value)
+            obj.Limits = value;
+            if ~isempty(obj.ObjectHandle)
+                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'anglimits', value(1), value(2));
+            end
+        end
     end
 
     methods (Access = private)
@@ -127,9 +148,9 @@ classdef RevoluteJoint < phx.base.Joint
                 % The engine takes the frames only as it creates the
                 % constraint, so the constraint is built once and then kept
                 % across pipeline rebuilds. Only the motor (TargetVelocity,
-                % MaxTorque) and AppliedTorque write through from their
-                % setters; other properties changed after that do not reach
-                % the constraint.
+                % MaxTorque), AppliedTorque and Limits write through from
+                % their setters; other properties changed after that do not
+                % reach the constraint.
                 obj.WorldHandle = world;
                 obj.ObjectHandle = phxEngine('add', world, 'revolute', [obj.Parents{1}.ObjectHandle obj.Parents{2}.ObjectHandle], ...
                     obj.TransformA, obj.TransformB, obj.MutualCollisions);
@@ -138,6 +159,9 @@ classdef RevoluteJoint < phx.base.Joint
                 obj.applyMotor;
                 if obj.AppliedTorque ~= 0
                     phxEngine('set', world, obj.ObjectHandle, 'appliedtorque', obj.AppliedTorque);
+                end
+                if any(isfinite(obj.Limits))
+                    phxEngine('set', world, obj.ObjectHandle, 'anglimits', obj.Limits(1), obj.Limits(2));
                 end
             end
         end
