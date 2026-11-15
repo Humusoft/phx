@@ -660,6 +660,11 @@ classdef Viewer < handle
             else
                 body = [];
             end
+            % Only a phx.Body is selected and moved; other objects drawn
+            % there (soft and flexible bodies) keep their context menu
+            if ~isa(body, 'phx.Body')
+                body = [];
+            end
 
             % Perform actions by a mouse button
             onSelected = ~isempty(obj.SelectedBody) && isequal(obj.SelectedBody, body);

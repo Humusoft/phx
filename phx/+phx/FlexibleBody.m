@@ -10,15 +10,13 @@ classdef FlexibleBody < phx.base.Object
 %   directly: a body welded into it with phx.IntersectionWeld holds and
 %   loads it instead.
 %
-%   ElementOrder selects the elements. Quadratic tetrahedra, the default,
-%   have a vertex in the middle of each edge, bend without the stiffening
-%   of linear ones on a coarse mesh and are solved implicitly by Newton
-%   iterations until the force left unbalanced falls below Tolerance, so
-%   their stiffness does not depend on Iterations, which only limits the
-%   iterations per step; two are usually enough, more only in a step with a
-%   sudden load such as an impact. Linear tetrahedra are cheaper but solved
-%   with as many solver substeps as Iterations gives, so a stiff material on
-%   a fine mesh needs more of them and still comes out softer than it is.
+%   The tetrahedra are quadratic: each has a vertex in the middle of each
+%   edge, so that it bends without the stiffening of linear tetrahedra on a
+%   coarse mesh. A step is solved implicitly by Newton iterations until the
+%   force left unbalanced falls below Tolerance, so the stiffness does not
+%   depend on Iterations, which only limits the iterations per step; two are
+%   usually enough, more only in a step with a sudden load such as an
+%   impact.
 %
 %   phx.FlexibleBody(axes, Vertices=V, Tetrahedra=T) creates a flexible body
 %   of the tetrahedral mesh V (Nx3, in the body frame) and T (vertex
@@ -46,9 +44,6 @@ classdef FlexibleBody < phx.base.Object
 %
 %       flex = phx.FlexibleBody(gca, Shape={"Box", "Size", [1 0.1 0.1]});
 %
-%   phx.FlexibleBody(___, ElementOrder="linear") creates a body of linear
-%   tetrahedra from a Kx4 mesh, or from the corners of a Kx10 one.
-%
 %   phx.FlexibleBody(___, Name, Value, ...) sets properties values according
 %   to given name-value pairs.
 %
@@ -64,6 +59,15 @@ classdef FlexibleBody < phx.base.Object
 
     properties (Access = private)
         hP
+
+        % Drawn as a TriangleStrip of the surface (in the Viewer), with its
+        % vertices (indices into the mesh), its triangles (Mx3, numbered as
+        % its vertices) and the map that sums the face normals into vertex
+        % normals (faces x vertices); else as a patch
+        Strip (1, 1) logical = false
+        Surface (:, 1) double
+        SurfaceFaces (:, 3) double
+        NormalMap
     end
 
     % Declared before the mesh and the material, so that given to the
@@ -83,10 +87,6 @@ classdef FlexibleBody < phx.base.Object
         % Tetrahedra as vertex indices (Kx4, or Kx10 quadratic ones)
         Tetrahedra (:, :) double {mustBeInteger, mustBePositive} = zeros(0, 4)
 
-        % Order of the elements: "quadratic" or "linear" (the corners of
-        % Kx10 tetrahedra)
-        ElementOrder (1, 1) string {mustBeMember(ElementOrder, ["linear", "quadratic"])} = "quadratic"
-
         % Position of the rest shape when the body is created
         Position (1, 3) double {mustBeFinite} = [0 0 0]
 
@@ -100,7 +100,7 @@ classdef FlexibleBody < phx.base.Object
         YoungsModulus (1, 1) double {mustBePositive} = 1e6
 
         % Poisson's ratio of the material, 0.5 for an incompressible one
-        % (quadratic tetrahedra take at most 0.49995)
+        % (taken as at most 0.49995)
         PoissonsRatio (1, 1) double {mustBeInRange(PoissonsRatio, 0, 0.5)} = 0.45
     end
 
@@ -123,14 +123,13 @@ classdef FlexibleBody < phx.base.Object
         % Radius (m) of the spheres the vertices collide as
         VertexRadius (1, 1) double {mustBeNonnegative} = 0
 
-        % Solver substeps per simulation step; the most Newton iterations
-        % per step for quadratic tetrahedra, up to 4 more in a step whose
+        % Most Newton iterations per step, up to 4 more in a step whose
         % contacts keep changing
         Iterations (1, 1) double {mustBeInteger, mustBePositive} = 10
 
-        % Force left unbalanced at which a step of quadratic tetrahedra has
-        % converged, relative to the weight of the body; 0 takes Iterations
-        % iterations unless the force falls below 1e-10 of the weight
+        % Force left unbalanced at which a step has converged, relative to
+        % the weight of the body; 0 takes Iterations iterations unless the
+        % force falls below 1e-10 of the weight
         Tolerance (1, 1) double {mustBeNonnegative} = 1e-4
 
         % Damping of the vertex velocities (1/s): dv/dt = -Damping*v
@@ -139,10 +138,6 @@ classdef FlexibleBody < phx.base.Object
         % Friction coefficient; a contact combines the values of both bodies
         % as their product
         Friction (1, 1) double {mustBeNonnegative} = 0.5
-
-        % Restitution (bounciness) coefficient, 0 = no bounce; linear
-        % tetrahedra only, the contacts of quadratic ones are inelastic
-        Restitution (1, 1) double {mustBeNonnegative} = 0
 
         % Colormap (Nx3, RGB in 0-1) that colors the surface by the von
         % Mises stress over ColorRange, e.g. turbo(64); empty for the
@@ -154,17 +149,17 @@ classdef FlexibleBody < phx.base.Object
     end
 
     properties (Dependent, SetAccess = private)
-        % von Mises stress (Pa) at the vertices (Nx1, with the added edge
-        % vertices of quadratic tetrahedra), averaged over the tetrahedra
-        % around each; zero before the simulation starts
+        % von Mises stress (Pa) at the vertices (Nx1, with the vertices
+        % added in the middles of the edges of a Kx4 mesh), averaged over
+        % the tetrahedra around each; zero before the simulation starts
         VonMisesStress (:, 1) double
 
         % Boundary triangles of the mesh, wound outwards (Mx3); a face of a
-        % quadratic tetrahedron is split into four at its edge vertices
+        % tetrahedron is split into four at the vertices of its edges
         Faces (:, 3) double
 
-        % Present vertex positions in the global frame (Nx3, with the added
-        % edge vertices of quadratic tetrahedra)
+        % Present vertex positions in the global frame (Nx3, with the
+        % vertices added in the middles of the edges of a Kx4 mesh)
         CurrentVertices (:, 3) double
     end
 
@@ -190,8 +185,20 @@ classdef FlexibleBody < phx.base.Object
                 error("phx:FlexibleBody:noMesh", "A flexible body needs a mesh: give its Vertices and Tetrahedra, a Mesh or a Shape.");
             end
 
-            obj.hP = patch(obj.Graphics, "Faces", obj.Faces, "Vertices", obj.CurrentVertices, ...
-                "FaceColor", obj.Color, "EdgeColor", "none", "FaceLighting", "gouraud");
+            % In the Viewer a TriangleStrip, which redraws faster than a
+            % patch; its material is the "plastic" of the shapes there
+            parent = obj.Graphics.Parent;
+            obj.Strip = ~isempty(parent) && isappdata(parent, "phxAxes");
+            if obj.Strip
+                obj.hP = matlab.graphics.primitive.world.TriangleStrip("Parent", obj.Graphics, ...
+                    "ColorData", uint8([obj.Color 1]*255)', "ColorBinding", "object", ...
+                    "NormalBinding", "interpolated", "HitTest", "on", ...
+                    "AmbientStrength", 0.32, "DiffuseStrength", 0.68, "SpecularStrength", 0.4, ...
+                    "SpecularExponent", 10, "SpecularColorReflectance", 1);
+            else
+                obj.hP = patch(obj.Graphics, "FaceColor", obj.Color, "EdgeColor", "none", "FaceLighting", "gouraud");
+            end
+            obj.redrawRestShape;
             obj.recolor;
         end
 
@@ -227,11 +234,6 @@ classdef FlexibleBody < phx.base.Object
                 error("phx:FlexibleBody:badTetrahedra", "The tetrahedra must be Kx4, or Kx10 quadratic ones.");
             end
             obj.Tetrahedra = value;
-            obj.redrawRestShape;
-        end
-
-        function set.ElementOrder(obj, value)
-            obj.ElementOrder = value;
             obj.redrawRestShape;
         end
 
@@ -300,9 +302,7 @@ classdef FlexibleBody < phx.base.Object
 
         function set.Tolerance(obj, value)
             obj.Tolerance = value;
-            if obj.ElementOrder == "quadratic"
-                obj.engineSet('tolerance', value);
-            end
+            obj.engineSet('tolerance', value);
         end
 
         function set.Damping(obj, value)
@@ -313,11 +313,6 @@ classdef FlexibleBody < phx.base.Object
         function set.Friction(obj, value)
             obj.Friction = value;
             obj.engineSet('friction', value);
-        end
-
-        function set.Restitution(obj, value)
-            obj.Restitution = value;
-            obj.engineSet('restitution', value);
         end
 
         function set.Colormap(obj, map)
@@ -344,17 +339,15 @@ classdef FlexibleBody < phx.base.Object
             [V, T] = obj.mesh;
             [corner, ~, k] = unique(obj.positiveTetrahedra(V, T));
             value = corner(freeBoundary(triangulation(reshape(k, [], 4), V(corner, :))));
-            if size(T, 2) == 10
-                % Each corner triangle split at the vertices of its edges,
-                % found by the corners they join
-                ends = obj.edgeEnds(T);
-                middle = reshape(T(:, 5:10), [], 1);
-                [~, i] = ismember(sort(value(:, [1 2]), 2), ends, "rows");
-                [~, j] = ismember(sort(value(:, [2 3]), 2), ends, "rows");
-                [~, k] = ismember(sort(value(:, [3 1]), 2), ends, "rows");
-                six = [value middle(i) middle(j) middle(k)];
-                value = [six(:, [1 4 6]); six(:, [4 2 5]); six(:, [6 5 3]); six(:, [4 5 6])];
-            end
+            % Each corner triangle split at the vertices of its edges, found
+            % by the corners they join
+            ends = obj.edgeEnds(T);
+            middle = reshape(T(:, 5:10), [], 1);
+            [~, i] = ismember(sort(value(:, [1 2]), 2), ends, "rows");
+            [~, j] = ismember(sort(value(:, [2 3]), 2), ends, "rows");
+            [~, k] = ismember(sort(value(:, [3 1]), 2), ends, "rows");
+            six = [value middle(i) middle(j) middle(k)];
+            value = [six(:, [1 4 6]); six(:, [4 2 5]); six(:, [6 5 3]); six(:, [4 5 6])];
         end
 
         function value = get.Mass(obj)
@@ -391,33 +384,24 @@ classdef FlexibleBody < phx.base.Object
             if isempty(state)
                 state.Vertices = obj.CurrentVertices;
             elseif isvalid(obj.hP)
-                obj.hP.Vertices = state.Vertices;
+                obj.showVertices(state.Vertices');
             end
         end
     end
 
     methods (Access = private)
         function value = volume(obj)
-            % Of the tetrahedra handed to the engine, curved quadratic ones
-            % included
+            % Of the tetrahedra handed to the engine, curved ones included
             [V, T] = obj.mesh;
             value = sum(phx.internal.Geometry.tetrahedraVolumes(V, T));
         end
 
         function [V, T] = mesh(obj)
-            % The vertices and tetrahedra handed to the engine: Kx4 linear
-            % ones as given or the corners of a Kx10 mesh, numbered anew, or
-            % Kx10 quadratic ones as given or a Kx4 mesh refined by the
-            % middles of its edges
+            % The vertices and tetrahedra handed to the engine: a Kx10 mesh
+            % as given, or a Kx4 one refined by the middles of its edges
             V = obj.Vertices;
             T = obj.Tetrahedra;
-            if obj.ElementOrder == "linear"
-                if size(T, 2) == 10
-                    [used, ~, k] = unique(T(:, 1:4));
-                    V = V(used, :);
-                    T = reshape(k, [], 4);
-                end
-            elseif size(T, 2) == 4
+            if size(T, 2) == 4
                 [V, T] = phx.internal.Geometry.quadraticTetrahedra(V, T);
             end
         end
@@ -430,19 +414,59 @@ classdef FlexibleBody < phx.base.Object
             end
             ph = phx.internal.PrimitiveHelper(obj.hP);
             if isempty(obj.Colormap)
+                if obj.Strip
+                    obj.hP.ColorBinding = "object";
+                end
                 ph.releaseColor;
             else
                 ph.holdColor;
-                set(obj.hP, "FaceVertexCData", obj.stressColors(obj.VonMisesStress), "FaceColor", "interp");
+                if obj.Strip
+                    obj.showStress(obj.VonMisesStress');
+                else
+                    set(obj.hP, "FaceVertexCData", obj.stressColors(obj.VonMisesStress), "FaceColor", "interp");
+                end
             end
         end
 
         function rgb = stressColors(obj, stress)
+            % Colors of the stresses (Nx1) on the colormap, Nx3 for a patch
             map = obj.Colormap;
             r = obj.ColorRange;
             id = round(1 + (stress - r(1))/(r(2) - r(1))*(size(map, 1) - 1));
             id = min(max(id, 1), size(map, 1));
             rgb = map(id, :);
+        end
+
+        function showVertices(obj, X)
+            % The mesh at the vertices X (3xN, all of them): a patch takes
+            % them as they are, the strip those of its surface with the
+            % vertex normals, sums of the normals of the faces around (their
+            % length twice the face area, which weights them)
+            if ~obj.Strip
+                obj.hP.Vertices = X';
+                return
+            end
+            X = X(:, obj.Surface);
+            F = obj.SurfaceFaces;
+            a = X(:, F(:, 1));
+            e1 = X(:, F(:, 2)) - a;
+            e2 = X(:, F(:, 3)) - a;
+            n = [e1(2, :).*e2(3, :) - e1(3, :).*e2(2, :); e1(3, :).*e2(1, :) - e1(1, :).*e2(3, :); ...
+                e1(1, :).*e2(2, :) - e1(2, :).*e2(1, :)]*obj.NormalMap;
+            n = n./max(sqrt(sum(n.^2, 1)), realmin);
+            obj.hP.VertexData = single(X);
+            obj.hP.NormalData = single(n);
+        end
+
+        function showStress(obj, stress)
+            % The stress (1xN, at all vertices) on the colormap, per vertex
+            % of the strip
+            map = obj.Colormap;
+            r = obj.ColorRange;
+            id = round(1 + (stress(obj.Surface) - r(1))/(r(2) - r(1))*(size(map, 1) - 1));
+            id = min(max(id, 1), size(map, 1));
+            rgba = [uint8(255*map'); repmat(uint8(255), 1, size(map, 1))];
+            set(obj.hP, "ColorData", rgba(:, id), "ColorBinding", "interpolated");
         end
 
         function engineSet(obj, field, value)
@@ -453,13 +477,27 @@ classdef FlexibleBody < phx.base.Object
 
         function redrawRestShape(obj)
             % The mesh drawn before the simulation creates the body; the
-            % vertices, tetrahedra and order are set one after the other,
-            % so the patch takes them only once they fit together
+            % vertices and tetrahedra are set one after the other, so the
+            % patch takes them only once they fit together
             if isempty(obj.hP) || ~isempty(obj.ObjectHandle) || isempty(obj.Tetrahedra) ...
                     || any(obj.Tetrahedra > size(obj.Vertices, 1), "all")
                 return
             end
-            set(obj.hP, "Faces", obj.Faces, "Vertices", obj.CurrentVertices);
+            F = obj.Faces;
+            if obj.Strip
+                % Its own vertices numbered anew, and the normal map
+                [obj.Surface, ~, k] = unique(F);
+                obj.SurfaceFaces = reshape(k, [], 3);
+                m = size(F, 1);
+                obj.NormalMap = sparse(repmat((1:m)', 3, 1), k, 1, m, numel(obj.Surface));
+                obj.hP.VertexIndices = uint32(reshape(obj.SurfaceFaces', 1, []));
+                obj.showVertices(obj.CurrentVertices');
+            else
+                set(obj.hP, "Faces", F, "Vertices", obj.CurrentVertices);
+            end
+            if ~isempty(obj.Colormap)
+                obj.recolor;
+            end
         end
     end
 
@@ -470,14 +508,13 @@ classdef FlexibleBody < phx.base.Object
             ends = sort([reshape(T(:, [1 2 1 1 2 3]), [], 1) reshape(T(:, [2 3 3 4 4 4]), [], 1)], 2);
         end
 
-        function [T, volume] = positiveTetrahedra(V, T)
+        function T = positiveTetrahedra(V, T)
             % Corner tetrahedra turned to a positive volume, which the
-            % outward winding of the boundary relies on, and their volumes
+            % outward winding of the boundary relies on
             T = T(:, 1:4);
             a = V(T(:, 1), :);
-            volume = dot(cross(V(T(:, 2), :) - a, V(T(:, 3), :) - a, 2), V(T(:, 4), :) - a, 2)/6;
-            T(volume < 0, [2 3]) = T(volume < 0, [3 2]);
-            volume = abs(volume);
+            negative = dot(cross(V(T(:, 2), :) - a, V(T(:, 3), :) - a, 2), V(T(:, 4), :) - a, 2) < 0;
+            T(negative, [2 3]) = T(negative, [3 2]);
         end
     end
 
@@ -496,7 +533,6 @@ classdef FlexibleBody < phx.base.Object
                 obj.Tolerance = obj.Tolerance;
                 obj.Damping = obj.Damping;
                 obj.Friction = obj.Friction;
-                obj.Restitution = obj.Restitution;
             end
         end
 
@@ -515,9 +551,14 @@ classdef FlexibleBody < phx.base.Object
         function updateView(cellObjs, dt, time, world)
             for i = 1:numel(cellObjs)
                 obj = cellObjs{i};
-                obj.hP.Vertices = phxEngine('get', world, obj.ObjectHandle, 'vertices')';
+                obj.showVertices(phxEngine('get', world, obj.ObjectHandle, 'vertices'));
                 if ~isempty(obj.Colormap)
-                    obj.hP.FaceVertexCData = obj.stressColors(phxEngine('get', world, obj.ObjectHandle, 'stress')');
+                    stress = phxEngine('get', world, obj.ObjectHandle, 'stress');
+                    if obj.Strip
+                        obj.showStress(stress);
+                    else
+                        obj.hP.FaceVertexCData = obj.stressColors(stress');
+                    end
                 end
             end
         end

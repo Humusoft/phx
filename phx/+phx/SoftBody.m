@@ -37,6 +37,12 @@ classdef SoftBody < phx.base.Object
 
     properties (Access = private)
         hP
+
+        % Drawn as a TriangleStrip (in the Viewer), with the map that sums
+        % the face normals into vertex normals (faces x vertices); else as
+        % a patch
+        Strip (1, 1) logical = false
+        NormalMap
     end
 
     properties (Dependent, GetAccess = private)
@@ -123,8 +129,21 @@ classdef SoftBody < phx.base.Object
                 error("phx:SoftBody:noMesh", "A soft body needs a mesh: give its Vertices and Faces, or a Shape.");
             end
 
-            obj.hP = patch(obj.Graphics, "Faces", obj.Faces, "Vertices", obj.CurrentVertices, ...
-                "FaceColor", obj.Color, "EdgeColor", "none", "FaceLighting", "gouraud");
+            % In the Viewer a TriangleStrip, which redraws faster than a
+            % patch; its material is the "plastic" of the shapes there, and
+            % both sides of an open mesh are lit
+            parent = obj.Graphics.Parent;
+            obj.Strip = ~isempty(parent) && isappdata(parent, "phxAxes");
+            if obj.Strip
+                obj.hP = matlab.graphics.primitive.world.TriangleStrip("Parent", obj.Graphics, ...
+                    "ColorData", uint8([obj.Color 1]*255)', "ColorBinding", "object", ...
+                    "NormalBinding", "interpolated", "TwoSidedLighting", "on", "HitTest", "on", ...
+                    "AmbientStrength", 0.32, "DiffuseStrength", 0.68, "SpecularStrength", 0.4, ...
+                    "SpecularExponent", 10, "SpecularColorReflectance", 1);
+            else
+                obj.hP = patch(obj.Graphics, "FaceColor", obj.Color, "EdgeColor", "none", "FaceLighting", "gouraud");
+            end
+            obj.redrawRestShape;
         end
 
         function bbox = boundingBox(objs)
@@ -242,7 +261,7 @@ classdef SoftBody < phx.base.Object
             if isempty(state)
                 state.Vertices = obj.CurrentVertices;
             elseif isvalid(obj.hP)
-                obj.hP.Vertices = state.Vertices;
+                obj.showVertices(state.Vertices');
             end
         end
     end
@@ -261,7 +280,35 @@ classdef SoftBody < phx.base.Object
             if isempty(obj.hP) || ~isempty(obj.ObjectHandle) || any(obj.Faces > size(obj.Vertices, 1), "all")
                 return
             end
-            set(obj.hP, "Faces", obj.Faces, "Vertices", obj.CurrentVertices);
+            if obj.Strip
+                F = obj.Faces;
+                m = size(F, 1);
+                obj.NormalMap = sparse(repmat((1:m)', 3, 1), F(:), 1, m, size(obj.Vertices, 1));
+                obj.hP.VertexIndices = uint32(reshape(F', 1, []));
+                obj.showVertices(obj.CurrentVertices');
+            else
+                set(obj.hP, "Faces", obj.Faces, "Vertices", obj.CurrentVertices);
+            end
+        end
+
+        function showVertices(obj, X)
+            % The mesh at the vertices X (3xN): a patch takes them as they
+            % are, the strip with the vertex normals, sums of the normals of
+            % the faces around (their length twice the face area, which
+            % weights them)
+            if ~obj.Strip
+                obj.hP.Vertices = X';
+                return
+            end
+            F = obj.Faces;
+            a = X(:, F(:, 1));
+            e1 = X(:, F(:, 2)) - a;
+            e2 = X(:, F(:, 3)) - a;
+            n = [e1(2, :).*e2(3, :) - e1(3, :).*e2(2, :); e1(3, :).*e2(1, :) - e1(1, :).*e2(3, :); ...
+                e1(1, :).*e2(2, :) - e1(2, :).*e2(1, :)]*obj.NormalMap;
+            n = n./max(sqrt(sum(n.^2, 1)), realmin);
+            obj.hP.VertexData = single(X);
+            obj.hP.NormalData = single(n);
         end
     end
 
@@ -297,7 +344,7 @@ classdef SoftBody < phx.base.Object
         function updateView(cellObjs, dt, time, world)
             for i = 1:numel(cellObjs)
                 obj = cellObjs{i};
-                obj.hP.Vertices = phxEngine('get', world, obj.ObjectHandle, 'vertices')';
+                obj.showVertices(phxEngine('get', world, obj.ObjectHandle, 'vertices'));
             end
         end
     end

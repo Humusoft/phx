@@ -442,10 +442,10 @@ gravel.add(Pnew); gravel.remove(gravel.Positions(:, 3) < -1);   % any time, also
   time. `CurrentVertices` gives the deformed mesh; `FlexibleBody.VonMisesStress` the
   stress per vertex (colour it with `Colormap`, an N×3 matrix such as `turbo(64)`, and
   `ColorRange`).
-- `FlexibleBody` uses quadratic tetrahedra by default: implicit, stiffness right on a
-  coarse mesh (2-3 elements across a section to bend, 3-4 to twist), `Tolerance` sets
-  the convergence and `Iterations` caps it. `ElementOrder="linear"` is cheaper but gets
-  softer than the material. Good for large rotations with strains up to some 10-20 %.
+- `FlexibleBody` uses quadratic tetrahedra (a Kx4 mesh gets edge vertices): implicit,
+  stiffness right on a coarse mesh (2-3 elements across a section to bend, 3-4 to twist),
+  `Tolerance` sets the convergence and `Iterations` caps it. Its contacts are inelastic
+  (no `Restitution`). Good for large rotations with strains up to some 10-20 %.
   It touches rigid bodies at its vertices only: keep them well closer together than the
   radius of a curved body it touches.
 - Masses: `FlexibleBody.Mass` (total) and `Particles.Mass` (total) / `ParticleMass` (one

@@ -24,16 +24,14 @@ rotations; the vertices carry the mass of the tetrahedra around them. It collide
 (<a href="phx.Body.html">phx.Body</a>), not with soft or flexible bodies. No joint holds it directly:
 a body welded into it with <a href="phx.IntersectionWeld.html">phx.IntersectionWeld</a> holds and
 loads it instead.</p>
-<p><code class="phx-inline">ElementOrder</code> selects the elements. Quadratic tetrahedra, the
-default, have a vertex in the middle of each edge, bend without the stiffening of linear ones on a
-coarse mesh and are solved implicitly by Newton iterations until the force left unbalanced falls
-below <code class="phx-inline">Tolerance</code>, so their stiffness does not depend on
-<code class="phx-inline">Iterations</code>, which only limits the iterations per step; two are usually
-enough, more only in a step with a sudden load such as an impact. Linear tetrahedra are cheaper but
-solved with as many solver substeps as <code class="phx-inline">Iterations</code> gives, so a stiff
-material on a fine mesh needs more of them and still comes out softer than it is.</p>
+<p>The tetrahedra are quadratic: each has a vertex in the middle of each edge, so that it bends
+without the stiffening of linear tetrahedra on a coarse mesh. A step is solved implicitly by Newton
+iterations until the force left unbalanced falls below <code class="phx-inline">Tolerance</code>, so
+the stiffness does not depend on <code class="phx-inline">Iterations</code>, which only limits the
+iterations per step; two are usually enough, more only in a step with a sudden load such as an
+impact.</p>
 <p>The body touches rigid bodies at its vertices only: keep the vertices well closer together than
-the radius of a curved body it touches, or the body feels the spacing of the vertices. Quadratic
+the radius of a curved body it touches, or the body feels the spacing of the vertices. The
 tetrahedra suit large rotations with strains up to some 10-20&nbsp;%; the material is no calibrated
 rubber for larger strains.</p>
 <p>The mesh is the rest shape, placed at <code class="phx-inline">Position</code> and
@@ -45,7 +43,6 @@ simulation like a body.</p>
 <h3 class="phx-h3">Syntax</h3>
 <span class="phx-syntax">flex = phx.FlexibleBody(ax,"Vertices",V,"Tetrahedra",T)</span>
 <span class="phx-syntax">flex = phx.FlexibleBody(ax,"Mesh",mesh)</span>
-<span class="phx-syntax">flex = phx.FlexibleBody(___,"ElementOrder","linear")</span>
 <span class="phx-syntax">flex = phx.FlexibleBody(___,Name,Value)</span>
 
 <h3 class="phx-h3">Description</h3>
@@ -63,8 +60,6 @@ and <code class="phx-inline">VonMisesStress</code>.</p>
 tetrahedra that PDE Toolbox generates: the <code class="phx-inline">Mesh</code> of an
 <code class="phx-inline">fegeometry</code> or <code class="phx-inline">femodel</code>, or the geometry
 or model itself. PHX only reads the mesh and does not need PDE Toolbox.</p>
-<p><code class="phx-inline">flex = phx.FlexibleBody(___,"ElementOrder","linear")</code> creates a
-body of linear tetrahedra from a K&times;4 mesh.</p>
 </div>
 
 <h2 class="phx-h2">Properties</h2>
@@ -74,24 +69,22 @@ body of linear tetrahedra from a K&times;4 mesh.</p>
 <tr><td class="name">Vertices</td><td class="type">N&times;3 double</td><td>Vertices of the mesh in the body frame.</td></tr>
 <tr><td class="name">Tetrahedra</td><td class="type">K&times;4 or K&times;10 double</td><td>Tetrahedra as vertex indices.</td></tr>
 <tr><td class="name">Mesh</td><td class="type">mesh object or struct</td><td>Mesh of tetrahedra as PDE Toolbox gives it, with <code class="phx-inline">Nodes</code> (3&times;N) and <code class="phx-inline">Elements</code> (4&times;K or 10&times;K); an <code class="phx-inline">fegeometry</code> or <code class="phx-inline">femodel</code> gives its <code class="phx-inline">Mesh</code>. Sets <code class="phx-inline">Vertices</code> and <code class="phx-inline">Tetrahedra</code> and reads them back in this form.</td></tr>
-<tr><td class="name">ElementOrder</td><td class="dflt">"quadratic"</td><td>Order of the elements: <code class="phx-inline">"quadratic"</code> or <code class="phx-inline">"linear"</code>.</td></tr>
 <tr><td class="name">Position</td><td class="dflt">[0 0 0]</td><td>Position of the rest shape when the body is created, <span class="phx-unit">m</span>.</td></tr>
 <tr><td class="name">Orientation</td><td class="dflt">eye(3)</td><td>Orientation of the rest shape when the body is created.</td></tr>
 <tr><td class="name">Density</td><td class="dflt">1000</td><td>Density of the material, <span class="phx-unit">kg/m&sup3;</span>.</td></tr>
 <tr><td class="name">Mass</td><td class="type">double</td><td>Mass of the body, <span class="phx-unit">kg</span>: <code class="phx-inline">Density</code> times the volume of the mesh. Set either one: setting <code class="phx-inline">Mass</code> sets <code class="phx-inline">Density</code> for the present mesh, which a later change of the mesh keeps (as <code class="phx-inline">Radius</code> and <code class="phx-inline">Diameter</code> of the shapes). Given to the constructor, it is taken after the mesh.</td></tr>
 <tr><td class="name">YoungsModulus</td><td class="dflt">1e6</td><td>Young's modulus of the material, <span class="phx-unit">Pa</span>.</td></tr>
-<tr><td class="name">PoissonsRatio</td><td class="dflt">0.45</td><td>Poisson's ratio of the material, from 0 to 0.5 for an incompressible one (quadratic tetrahedra take at most 0.49995).</td></tr>
+<tr><td class="name">PoissonsRatio</td><td class="dflt">0.45</td><td>Poisson's ratio of the material, from 0 to 0.5 for an incompressible one (taken as at most 0.49995).</td></tr>
 </table>
 
 <h3 class="phx-h3">Settings (apply at any time)</h3>
 <table class="phx-tbl">
 <tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
 <tr><td class="name">VertexRadius</td><td class="dflt">0</td><td>Radius of the spheres the vertices collide as, <span class="phx-unit">m</span>.</td></tr>
-<tr><td class="name">Iterations</td><td class="dflt">10</td><td>Solver substeps per simulation step; for quadratic tetrahedra the most Newton iterations per step, up to 4 more in a step whose contacts keep changing.</td></tr>
-<tr><td class="name">Tolerance</td><td class="dflt">1e-4</td><td>Force left unbalanced at which a step of quadratic tetrahedra has converged, relative to the weight of the body; 0 takes <code class="phx-inline">Iterations</code> iterations unless the force falls below 1e-10 of the weight.</td></tr>
+<tr><td class="name">Iterations</td><td class="dflt">10</td><td>Most Newton iterations per step, up to 4 more in a step whose contacts keep changing.</td></tr>
+<tr><td class="name">Tolerance</td><td class="dflt">1e-4</td><td>Force left unbalanced at which a step has converged, relative to the weight of the body; 0 takes <code class="phx-inline">Iterations</code> iterations unless the force falls below 1e-10 of the weight.</td></tr>
 <tr><td class="name">Damping</td><td class="dflt">0</td><td>Damping of the vertex velocities, dv/dt&nbsp;=&nbsp;&minus;Damping&middot;v, <span class="phx-unit">1/s</span>.</td></tr>
 <tr><td class="name">Friction</td><td class="dflt">0.5</td><td>Friction coefficient; a contact combines the values of both bodies as their product.</td></tr>
-<tr><td class="name">Restitution</td><td class="dflt">0</td><td>Restitution (bounciness) coefficient, 0 = no bounce; linear tetrahedra only, the contacts of quadratic ones are inelastic.</td></tr>
 <tr><td class="name">Colormap</td><td class="dflt">[]</td><td>Colormap (N&times;3 matrix, RGB in 0&ndash;1, e.g. <code class="phx-inline">turbo(64)</code>) that colors the surface by the von Mises stress. Empty draws the plain <code class="phx-inline">Color</code>, which the colormap leaves unchanged.</td></tr>
 <tr><td class="name">ColorRange</td><td class="dflt">[0 1e6]</td><td>Stress range mapped across the whole colormap, <span class="phx-unit">Pa</span>.</td></tr>
 <tr><td class="name">Color</td><td class="type">1&times;3 double</td><td>Color of the drawn surface.</td></tr>
@@ -100,8 +93,8 @@ body of linear tetrahedra from a K&times;4 mesh.</p>
 <h3 class="phx-h3">Derived (read-only)</h3>
 <table class="phx-tbl">
 <tr><th>Property</th><th>Type</th><th>Description</th></tr>
-<tr><td class="name">Faces</td><td class="type">M&times;3 double</td><td>Boundary triangles of the mesh, wound outwards; a face of a quadratic tetrahedron is split into four at its edge vertices.</td></tr>
-<tr><td class="name">CurrentVertices</td><td class="type">N&times;3 double</td><td>Present vertex positions in the global frame, with the added edge vertices of quadratic tetrahedra.</td></tr>
+<tr><td class="name">Faces</td><td class="type">M&times;3 double</td><td>Boundary triangles of the mesh, wound outwards; a face of a tetrahedron is split into four at the vertices of its edges.</td></tr>
+<tr><td class="name">CurrentVertices</td><td class="type">N&times;3 double</td><td>Present vertex positions in the global frame, with the vertices added in the middles of the edges of a K&times;4 mesh.</td></tr>
 <tr><td class="name">VonMisesStress</td><td class="type">N&times;1 double</td><td>Von Mises stress at the vertices, averaged over the tetrahedra around each, <span class="phx-unit">Pa</span>; zero before the simulation starts.</td></tr>
 </table>
 

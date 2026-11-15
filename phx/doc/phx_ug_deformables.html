@@ -74,12 +74,10 @@ Toolbox generates (<code class="phx-inline">"Mesh"</code>, PHX only reads it). T
 material that also holds for large rotations, and colors its surface by the von Mises stress when you
 choose a <code class="phx-inline">Colormap</code>.</p>
 
-<p>By default the elements are quadratic tetrahedra: they add a vertex in the middle of each edge,
-bend without stiffening on a coarse mesh, and are solved by Newton iterations until the force left
-unbalanced falls below <code class="phx-inline">Tolerance</code>, so their stiffness does not depend
-on <code class="phx-inline">Iterations</code>. Linear tetrahedra
-(<code class="phx-inline">"ElementOrder", "linear"</code>) are cheaper but come out softer than the
-material on a coarse mesh.</p>
+<p>The elements are quadratic tetrahedra: a K&times;4 mesh gets a vertex in the middle of each edge.
+They bend without stiffening on a coarse mesh and are solved by Newton iterations until the force
+left unbalanced falls below <code class="phx-inline">Tolerance</code>, so their stiffness does not
+depend on <code class="phx-inline">Iterations</code>, which only limits the iterations per step.</p>
 
 <pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
 
@@ -93,7 +91,7 @@ sim = phx.Simulation(gca);
 sim.step(3, 600);                    <span class="cmt">% the beam sags under its weight, stressed most at the wall</span></pre>
 
 <p>The body touches rigid bodies at its vertices only, so keep them well closer together than the
-radius of a curved body it touches. Quadratic tetrahedra suit strains up to some 10&ndash;20&nbsp;%.</p>
+radius of a curved body it touches. The tetrahedra suit strains up to some 10&ndash;20&nbsp;%.</p>
 
 <h2 class="phx-h2">Holding and loading a deformable body</h2>
 <p>No joint, spring or force acts on a soft or flexible body directly. Instead, place a rigid body so

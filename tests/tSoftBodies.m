@@ -39,10 +39,10 @@ classdef tSoftBodies < PhxTestCase
 
         function flexibleBodyDerivesSurfaceAndMass(tc)
             V = tc.cube;
-            f = phx.FlexibleBody([], "Vertices", V, "Tetrahedra", delaunay(V), "Density", 500, "ElementOrder", "linear");
-            tc.verifySize(f.Faces, [12 3], "The surface of a cube is 12 triangles.");
+            f = phx.FlexibleBody([], "Vertices", V, "Tetrahedra", delaunay(V), "Density", 500);
+            tc.verifySize(f.Faces, [48 3], "The surface of a cube is 12 triangles, each split into four.");
             tc.verifyEqual(f.Mass, 500*(2*tc.Half)^3, "RelTol", 1e-9);
-            tc.verifyEqual(f.CurrentVertices, V, "AbsTol", 1e-12);
+            tc.verifyEqual(f.CurrentVertices(1:size(V, 1), :), V, "AbsTol", 1e-12);
         end
 
         function flexibleBodyMassSetsTheDensity(tc)
@@ -55,12 +55,11 @@ classdef tSoftBodies < PhxTestCase
             tc.verifyEqual(f.Mass, 16, "RelTol", 1e-9, "A new mesh keeps the Density.");
         end
 
-        function quadraticElementsAddEdgeVertices(tc)
+        function linearMeshGetsEdgeVertices(tc)
             V = tc.cube;
             T = delaunay(V);
             edges = unique(sort([T(:, [1 2]); T(:, [2 3]); T(:, [1 3]); T(:, [1 4]); T(:, [2 4]); T(:, [3 4])], 2), "rows");
             f = phx.FlexibleBody([], "Vertices", V, "Tetrahedra", T);
-            tc.verifyEqual(f.ElementOrder, "quadratic", "Quadratic tetrahedra are the default.");
             tc.verifySize(f.CurrentVertices, [size(V, 1) + size(edges, 1) 3]);
             tc.verifyEqual(f.CurrentVertices(1:size(V, 1), :), V, "AbsTol", 1e-12, ...
                 "The corner vertices come first.");
@@ -114,17 +113,10 @@ classdef tSoftBodies < PhxTestCase
         end
 
         function curvedMeshGivesTheMass(tc)
-            % Quadratic tetrahedra count the volume of their curved edges;
-            % linear ones take only the corners of a Kx10 mesh
+            % The tetrahedra count the volume of their curved edges
             sphere = phx.shape.Sphere("Diameter", 0.5, "Density", 1000);
-            [V, T] = sphere.generateVolumetricMesh;
             q = phx.FlexibleBody([], "Shape", sphere);
             tc.verifyEqual(q.Mass, sphere.computeMass, "RelTol", 0.005);
-            l = phx.FlexibleBody([], "Shape", sphere, "ElementOrder", "linear");
-            corners = unique(T(:, 1:4));
-            tc.verifySize(l.CurrentVertices, [numel(corners) 3]);
-            tc.verifyEqual(l.CurrentVertices, V(corners, :));
-            tc.verifyEqual(l.Mass, 1000*sum(phx.internal.Geometry.tetrahedraVolumes(V, T(:, 1:4))), "RelTol", 1e-12);
         end
 
         function shapeMustGenerateAMesh(tc)
@@ -164,7 +156,7 @@ classdef tSoftBodies < PhxTestCase
             % both survive save and load, and an emptied colormap gives the
             % surface its Color back
             V = tc.cube;
-            f = phx.FlexibleBody([], "Vertices", V, "Tetrahedra", delaunay(V), "ElementOrder", "linear", ...
+            f = phx.FlexibleBody([], "Vertices", V, "Tetrahedra", delaunay(V), ...
                 "Color", [0 1 0], "Colormap", turbo(8));
             tc.verifyEqual(f.Color, [0 1 0]);
 
