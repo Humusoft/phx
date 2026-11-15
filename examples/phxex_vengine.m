@@ -63,9 +63,8 @@ function phxex_vengine(opts)
     Lpos   = phx.Logger(block, "Parameters", "Position", "Frequency", 500);
     Lreact = phx.Logger(mount, "Parameters", "ForceA", "Frequency", 500);
 
-    % Centimetre-scale parts -> zero the default collision margin, as in
-    % phxex_camvalve (the jointed parts pass through each other anyway).
-    sim = phx.Simulation(ax, "EngineSettings", phx.engine.Settings("Margin", 0));
+    % Simulation
+    sim = phx.Simulation(ax);
 
     % --- Run: the bearing motor holds the crankshaft at the target rpm -----
     dt = 1e-3; subFrame = 10;

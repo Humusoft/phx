@@ -62,8 +62,8 @@ function phxex_delta(opts)
         deltaIK(geo, path.W(k, :));
     end
 
-    [~, ax] = phx.extra.Viewer("clear", "DefaultCameraPosition", [1.8 -0.45 0.75], ...
-        "DefaultCameraTarget", [0 0 0.5], "Texture", "checker");
+    [~, ax] = phx.extra.Viewer("clear", "DefaultCameraPosition", [2.0 -0.45 0.6], ...
+        "DefaultCameraTarget", [0 0 0.6], "Texture", "checker");
 
     robot = buildRobot(ax, geo, [0 0 zSafe], maxTorque);
     phx.Body(ax, "Type", "static", "Position", [0 yP hP/2], ...
@@ -122,7 +122,7 @@ function phxex_delta(opts)
     bar(1:4, [margin4' margin5']*1e3);
     yline(0, "-", "edge", "LabelHorizontalAlignment", "left");
     grid on; ylim([-10 10]);
-    legend("four blocks", "with the fifth on top", "Location", "eastoutside");
+    legend("four blocks", "with the fifth on top");
     xlabel("block, with all above it"); ylabel("beyond the edge [mm]");
     if any(fell)
         outcome = "blocks " + strjoin(string(find(fell)'), ", ") + " fell";
@@ -139,7 +139,7 @@ function phxex_delta(opts)
     plot(t, torque, "LineWidth", 1); grid on;
     yline([-1 1]*maxTorque, ":", "limit", "LabelHorizontalAlignment", "left");
     ylabel("motor torque [N m]"); xlabel("time [s]");
-    legend("arm 1", "arm 2", "arm 3", "Location", "eastoutside");
+    legend("arm 1", "arm 2", "arm 3");
     linkaxes([tCup tMotor], "x");
 end
 

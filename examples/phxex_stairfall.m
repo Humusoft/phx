@@ -4,21 +4,21 @@ function phxex_stairfall(pushSpeed, duration)
 % A simple humanoid described in a standard URDF file (res/human.urdf:
 % box pelvis, torso and feet, a sphere head and capsule limbs, connected
 % by twelve passive revolute joints) is imported with phx.assembly.import,
-% placed at the top of a staircase, leaned forward and given a small push.
+% placed at the top of a staircase and given a small push at the torso.
 %
 % Every part of the fall is contact-driven - which step the shin catches
 % on, how the shoulder slams into an edge, whether the body cartwheels or
 % slides the last few steps - so the motion cannot be scripted or computed
-% in closed form. It emerges from the interplay of thirteen rigid bodies,
-% twelve joint constraints and dozens of transient contacts.
+% in closed form. It emerges from the interplay of the humanoid's thirteen
+% rigid bodies, twelve joint constraints and dozens of transient contacts.
 %
 % Trace draws the trajectory of the head and a phx.Logger records its
-% velocity, from which the demo reports the peak head speed and the
-% largest impact deceleration of the ride.
+% height and velocity, plotted after the run with the hardest impact of
+% the ride marked.
 %
 % Input Arguments:
-%     pushSpeed - initial forward speed of the whole body in m/s
-%     duration  - maximum simulated time in seconds
+%     pushSpeed - initial forward speed of the torso in m/s
+%     duration  - simulated time in seconds
 %
 % Example:
 %     phxex_stairfall          % default gentle push
@@ -27,7 +27,7 @@ function phxex_stairfall(pushSpeed, duration)
 %   Copyright 2026 HUMUSOFT s.r.o.
 
     arguments
-        pushSpeed (1, 1) double = 1.2
+        pushSpeed (1, 1) double = 1.5
         duration (1, 1) double {mustBePositive} = 6
     end
 
@@ -43,7 +43,7 @@ function phxex_stairfall(pushSpeed, duration)
 
     % Figure setup
     figure(1);
-    [viewer, ax] = phx.extra.Viewer("clear", "DefaultCameraTarget", [1.1 0 0.9], ...
+    [~, ax] = phx.extra.Viewer("clear", "DefaultCameraTarget", [1.1 0 0.9], ...
         "DefaultCameraPosition", [4.6 -5.2 2.7]);
 
     % Top landing, the flight of steps and the floor at the bottom. The
@@ -62,69 +62,32 @@ function phxex_stairfall(pushSpeed, duration)
         "Shape", {"Box", "Size", [(nSteps - 1)*run*4, (nSteps - 1)*run*4, 0.2], ...
         "Color", [0.75 0.73 0.7], "Texture", "tiles"}, "Friction", 0.7);
 
+    % A cat on the landing, at the humanoid's feet
     phx.Body(ax, "Position", [-0.2 0 H+0.2], "Shape", {"Mesh", "Source", resdir+"cat.stl", "Scale", 0.01, "Envelope", "box", "Color", 1});
 
-    % Import the humanoid right at the edge of the landing, leaning over it
-    lean = 0.529;
-    [bodies, joints] = phx.assembly.import(resdir + "human.urdf", ...
-        "Position", [-0.16 0 H + 1.01], "EulerAngles", [0 lean 0]);
-
-    % Bodies connected by a joint do not collide by default (the URDF
-    % convention); let the head and feet knock against their counterparts.
-    set([joints.neck joints.ankle_l joints.ankle_r], "MutualCollisions", true);
-
-    human = struct2cell(bodies);
-    human = [human{:}];                 % pelvis first (the root link)
-
-    % Give the whole body a forward push
-    set(human, "LinearVelocity", [pushSpeed 0 0]);
+    % Import the humanoid upright at the edge of the landing and push its
+    % torso over the edge
+    lean = 0.0;
+    bodies = phx.assembly.import(resdir + "human.urdf", "Position", [-0.2 0 H + 1.01], "EulerAngles", [0 lean 0]);
+    bodies.torso.LinearVelocity = [pushSpeed 0 0];
 
     phx.Camera(ground, bodies.torso, "PointA", [4.6 -5.2 2.7], "TrackingLag", 0.2);
-
-    % A mild velocity-proportional drag on every body part stands in for the
-    % energy dissipation of soft tissue
-    phx.Resistance(human, "VelocityFactors", [0 4]);
 
     % Trajectory of the head and its velocity record
     head = bodies.head;
     phx.Trace(head, "TracePoints", 600, "Color", [1 0.35 0.2], "Overlay", true);
     logHead = phx.Logger(head, "Frequency", 400, "Parameters", ["LinearVelocity" "Position"]);
 
-    % Simulation - dt = 2.5 ms for the joint chain and the step contacts
-    sim = phx.Simulation(ax);
-    frame = 0.02;
-    subSteps = 8;
-    calm = 0;
-    while sim.Time < duration
-        sim.step(frame, subSteps);
-
-        % Stop once the whole body has come to rest
-        vmax = max(vecnorm(vertcat(human.LinearVelocity), 2, 2));
-        if vmax < 0.25
-            calm = calm + 1;
-            if calm > 50      % a second of stillness
-                break
-            end
-        else
-            calm = 0;
-        end
-
-        viewer.displayText(sprintf("t = %4.2f s   head z = %.2f m", sim.Time, head.Position(3)));
-    end
-    tEnd = sim.Time;
-    pelvisEnd = bodies.pelvis.Position;
+    % Simulation - 10 ms steps, paced to real time
+    sim = phx.Simulation(ax, "PacingRate", 1);
+    sim.step(duration, duration/0.01);
     delete(sim);
 
-    % Ride statistics from the head velocity record
+    % The hardest head impact from the velocity record
     t = logHead.Time;
     speed = vecnorm(logHead.getChannel(1), 2, 2);
-    [vPeak, iPeak] = max(speed);
     decel = max(0, -diff(speed)./diff(t(:)));
-    [aPeak, iDecel] = max(decel);
-    fprintf("Tumble over after %.2f s; the pelvis ended %.2f m from the edge, %.2f m below the landing.\n", ...
-        tEnd, pelvisEnd(1), H - pelvisEnd(3));
-    fprintf("Peak head speed %.2f m/s at t = %.2f s; hardest head impact ~%.0f g at t = %.2f s.\n", ...
-        vPeak, t(iPeak), aPeak/9.81, t(iDecel));
+    [~, iDecel] = max(decel);
 
     % Head height and speed during the fall
     clf(figure(2));

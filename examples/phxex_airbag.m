@@ -1,12 +1,14 @@
 function phxex_airbag(withAirbag)
 % PHXEX_AIRBAG Sled crash test - a belted dummy thrown into an airbag
 %
-% A sled carrying a seat, a dashboard and a URDF dummy (res/human.urdf,
-% seated by bending its hips and knees) is pushed along the floor into a
+% A URDF dummy (res/human.urdf) stands in front of the seat on a sled;
+% the retractor spring of its lap belt pulls it into the seat. The sled,
+% carrying the seat and a dashboard, is then pushed along the floor into a
 % wall at about 30 km/h. Its bumper rides on a slide braked by a damper,
 % the crumple zone. On contact the airbag, a soft body welded into the
-% dashboard by phx.IntersectionWeld, inflates within 25 ms; the lap belt
-% holds the pelvis while the torso and head swing into the bag.
+% dashboard by phx.IntersectionWeld, inflates within 25 ms; the elastic
+% belt holds the dummy back at the waist while its torso and head swing
+% into the bag.
 %
 % Input Arguments:
 %     withAirbag - false runs the same crash without the airbag
@@ -27,9 +29,10 @@ function phxex_airbag(withAirbag)
     figure(1);
     [viewer, ax] = phx.extra.Viewer("clear");
 
-    % Floor and wall
+    % Floor and wall; the floor is slippery, the sled's deck is not (the
+    % friction of a contact is the product of the two bodies' values)
     wallX = 8;
-    phx.Body(ax, "Type", "static", "Position", [4 0 -0.1], ...
+    phx.Body(ax, "Type", "static", "Position", [4 0 -0.1], "Friction", 0.02, ...
         "Shape", {"Box", "Size", [20 4 0.2], "Color", [0.7 0.7 0.7], "Texture", "tiles"});
     phx.Body(ax, "Type", "static", "Position", [wallX + 0.25 0 1], ...
         "Shape", {"Box", "Size", [0.5 3 2], "Color", [0.55 0.5 0.45]});
@@ -38,10 +41,10 @@ function phxex_airbag(withAirbag)
     sledSize = [2.4 1.2 0.15];
     z0 = sledSize(3)/2 + 0.002;
     sled = phx.Body(ax, "Position", [0 0 z0], "Shape", {"Box", "Size", sledSize, "Color", [0.3 0.3 0.35]}, ...
-        "Mass", 300, "Inertia", boxInertia(300, sledSize), "Friction", 0.02);
+        "Mass", 300, "Inertia", boxInertia(300, sledSize));
     bumperSize = [0.1 1.2 0.15];
     bumper = phx.Body(ax, "Position", [1.75 0 z0], "Shape", {"Box", "Size", bumperSize, "Color", [0.8 0.2 0.2]}, ...
-        "Mass", 20, "Inertia", boxInertia(20, bumperSize), "Friction", 0.02);
+        "Mass", 20, "Inertia", boxInertia(20, bumperSize));
     phx.PrismaticJoint(sled, bumper, "AxisA", [1 0 0], "AxisB", [1 0 0], "MutualCollisions", true);
     phx.Spring(sled, bumper, "PointA", [1.2 0 0], "PointB", [-0.05 0 0], "Stiffness", 0, "Damping", 6000);
 
@@ -62,29 +65,14 @@ function phxex_airbag(withAirbag)
         end
     end
 
-    % The dummy, seated: hips and knees bent by 90 deg and the arms down,
-    % in a copy of the URDF
-    urdf = fileread(fullfile(resdir, "human.urdf"));
-    bend = @(u, joint, rpy) regexprep(u, "(<joint name=""" + joint + """[^>]*>\s*<origin xyz=""[^""]*"")", ...
-        "$1 rpy=""" + rpy + """");
-    urdf = bend(urdf, "hip_(l|r)", "0 -1.5708 0");
-    urdf = bend(urdf, "knee_(l|r)", "0 1.5708 0");
-    urdf = bend(urdf, "shoulder_l", "-1.5708 0 0");
-    urdf = bend(urdf, "shoulder_r", "1.5708 0 0");
-    seated = fullfile(tempdir, "phxex_airbag_human.urdf");
-    writelines(urdf, seated);
-    [dummy, joint] = phx.assembly.import(ax, seated, "Position", [-0.5 0 top + 0.59]);
+    % The dummy, standing in front of the seat
+    dummy = phx.assembly.import(ax, fullfile(resdir, "human.urdf"), "Position", [0.0 0 top + 1.002]);
 
-    % Bodies connected by a joint do not collide by default (the URDF
-    % convention); let those whose shapes do not overlap in the seat knock
-    % against each other
-    for name = ["neck" "shoulder_l" "shoulder_r" "elbow_l" "elbow_r" "ankle_l" "ankle_r"]
-        joint.(name).MutualCollisions = true;
-    end
-
-    % Lap belt from anchors behind the seat over the pelvis
-    phx.Rope([sled, dummy.pelvis, sled], "Points", [-0.85 0.3 0.2; 0.12 0 -0.02; -0.85 -0.3 0.2], ...
-        "Stiffness", 3e5, "Damping", 3000);
+    % Lap belt from anchors behind the seat over the waist (the bottom of
+    % the torso). Its retractor spring winds it in (a free length of zero),
+    % pulls the dummy into the seat and holds it back in the crash
+    phx.Rope([sled, dummy.torso, sled], "Points", [-0.85 0.3 0.45; 0.12 0 -0.05; -0.85 -0.3 0.45], ...
+        "InitialLength", 0, "Stiffness", 250, "Damping", 300);
 
     % The airbag, welded into the back of the dashboard and kept slack until
     % the bumper touches the wall
@@ -97,9 +85,9 @@ function phxex_airbag(withAirbag)
         phx.Function({bag, bumper}, @(o, p, dt, t) inflate(o, p, t, wallX));
     end
 
-    % Push the sled up to speed, then let it run into the wall
-    pushForce = 2500;
-    phx.Function(sled, @(o, p, dt, t) set(p{1}, "AppliedForce", [pushForce*(p{1}.Position(1) < wallX - 2) 0 0]));
+    % Once the dummy sits, push the sled up to speed, then let it run into
+    % the wall
+    phx.Function(sled, @(o, p, dt, t) drive(o, p, t, wallX));
 
     % On-board camera and the head's velocity record
     phx.Camera(sled, sled, "PointA", [-2.4 3.5 2.4], "PointB", [-0.1 0 0.9]);
@@ -108,7 +96,7 @@ function phxex_airbag(withAirbag)
 
     % Simulation - 2 ms steps for the impact
     sim = phx.Simulation(ax);
-    while sim.Time < 3
+    while sim.Time < 4.5
         sim.step(0.02, 10);
         viewer.displayText(sprintf("t = %4.2f s   %3.0f km/h", sim.Time, 3.6*sled.LinearVelocity(1)));
     end
@@ -127,6 +115,15 @@ function phxex_airbag(withAirbag)
     fprintf("Impact at %.0f km/h, t = %.2f s; peak sled deceleration %.0f g, peak head deceleration %.0f g (10 ms).\n", ...
         3.6*vMax, t(iMax), sledDecel/9.81, headDecel/9.81);
 
+end
+
+function drive(~, parents, t, wallX)
+% Pushes the sled with 2500 N from 1.5 s on, until 2 m before the wall
+    sled = parents{1};
+    if t < 1.5
+        return
+    end
+    sled.AppliedForce = [2500*(sled.Position(1) < wallX - 2) 0 0];
 end
 
 function inflate(obj, parents, t, wallX)
