@@ -3,8 +3,8 @@ classdef tGenericJoint < PhxTestCase
 %
 %   These pin down what the limits of phx.GenericJoint mean: an axis with both
 %   limits equal is locked at that value - which, with the all-zero defaults,
-%   makes a bare joint rigid - an axis whose lower limit exceeds its upper one
-%   is free, and anything in between bounds the travel. The
+%   makes a bare joint rigid - an axis limited to [-Inf Inf] is free, and
+%   anything in between bounds the travel. The
 %   angular limits are checked in both directions, as a sign slip in the
 %   chain to the engine would silently mirror every bounded rotation. The
 %   limits write through to a running simulation.
@@ -21,8 +21,7 @@ classdef tGenericJoint < PhxTestCase
     properties (Constant, Access = private)
         G = 9.81
         % Every axis free, i.e. the opposite of the all-locked default
-        FREE = {"LowerLinearLimits", [1 1 1], "UpperLinearLimits", [-1 -1 -1], ...
-                "LowerAngularLimits", [1 1 1], "UpperAngularLimits", [-1 -1 -1]}
+        FREE = {"LinearLimits", repmat([-Inf Inf], 3, 1), "AngularLimits", repmat([-Inf Inf], 3, 1)}
     end
 
     methods (TestClassSetup)
@@ -43,8 +42,8 @@ classdef tGenericJoint < PhxTestCase
             tc.verifyEqual(norm(j.ForceA), b.Mass*tc.G, "RelTol", 0.02);
         end
 
-        function reversedLimitsFreeEveryAxis(tc)
-            % lower > upper on every axis leaves the body unconstrained
+        function infiniteLimitsFreeEveryAxis(tc)
+            % [-Inf Inf] on every axis leaves the body unconstrained
             [~, b, ~, sim] = tc.scene(tc.FREE{:});
             sim.step(1, 500, -1);
             tc.verifyEqual(b.Position(3), -0.5*tc.G, "RelTol", 0.02);
@@ -53,8 +52,8 @@ classdef tGenericJoint < PhxTestCase
 
         function equalLimitsLockTheAxisAtThatValue(tc)
             [~, b, ~, sim] = tc.scene(...
-                "LowerLinearLimits", [0 0 -0.3], "UpperLinearLimits", [0 0 -0.3], ...
-                "LowerAngularLimits", [0 0 0.3], "UpperAngularLimits", [0 0 0.3]);
+                "LinearLimits", [0 0; 0 0; -0.3 -0.3], ...
+                "AngularLimits", [0 0; 0 0; 0.3 0.3]);
             sim.step(1, 1000, -1);
             tc.verifyEqual(b.Position(3), -0.3, "AbsTol", 1e-3);
             tc.verifyEqual(b.EulerAngles(3), 0.3, "AbsTol", 1e-3);
@@ -62,7 +61,7 @@ classdef tGenericJoint < PhxTestCase
 
         function linearStopBoundsTheTravel(tc)
             [~, b, ~, sim] = tc.scene(...
-                "LowerLinearLimits", [0 0 -0.5], "UpperLinearLimits", [0 0 0]);
+                "LinearLimits", [0 0; 0 0; -0.5 0]);
             sim.step(0.3, 300, -1);
             tc.verifyGreaterThan(b.Position(3), -0.5, ...
                 "The body should still be travelling between the stops.");
@@ -76,10 +75,10 @@ classdef tGenericJoint < PhxTestCase
             % driving the body either way parks it on one of the two stops.
             for ax = 1:3
                 for s = [1 -1]
-                    lo = [0 0 0]; hi = [0 0 0];
-                    lo(ax) = 0.2; hi(ax) = 0.5;
+                    limits = zeros(3, 2);
+                    limits(ax, :) = [0.2 0.5];
                     [~, b, ~, sim] = tc.scene(...
-                        "LowerAngularLimits", lo, "UpperAngularLimits", hi);
+                        "AngularLimits", limits);
                     torque = [0 0 0];
                     torque(ax) = s*50;
                     for k = 1:100
@@ -98,7 +97,7 @@ classdef tGenericJoint < PhxTestCase
             % Pivot at the origin, bob one metre away: the arm swings under
             % gravity and the joint keeps it on its circle.
             [~, b, ~, sim] = tc.pendulum(...
-                "LowerAngularLimits", [1 0 0], "UpperAngularLimits", [-1 0 0]);
+                "AngularLimits", [-Inf Inf; 0 0; 0 0]);
             sim.step(0.4, 400, -1);
             p = b.Position;
             tc.verifyEqual(norm(p), 1, "AbsTol", 1e-3, "The pivot must hold.");
@@ -110,7 +109,7 @@ classdef tGenericJoint < PhxTestCase
             % Gravity drives the arm towards a negative rotation about +X, so
             % it comes to rest against the lower stop.
             [~, b, ~, sim] = tc.pendulum(...
-                "LowerAngularLimits", [-0.2 0 0], "UpperAngularLimits", [1.5 0 0]);
+                "AngularLimits", [-0.2 1.5; 0 0; 0 0]);
             sim.step(3, 3000, -1);
             p = b.Position;
             tc.verifyEqual(atan2(-p(3), p(2)), 0.2, "AbsTol", 0.02);
@@ -123,19 +122,16 @@ classdef tGenericJoint < PhxTestCase
             sim.step(0.5, 250, -1);
             tc.verifyEqual(b.Position, [0 0 0], "AbsTol", 1e-3);
 
-            j.LowerLinearLimits = [0 0 -0.3];
+            j.LinearLimits(3, 1) = -0.3;
             sim.step(1, 500, -1);
             tc.verifyEqual(b.Position(3), -0.3, "AbsTol", 2e-3, ...
                 "The stop opened during the run did not take effect.");
 
-            j.LowerLinearLimits = [0 0 -0.5];
+            j.LinearLimits(3, 1) = -0.5;
             sim.step(1, 500, -1);
             tc.verifyEqual(b.Position(3), -0.5, "AbsTol", 2e-3);
 
-            j.LowerAngularLimits = [1 1 1];
-            j.UpperAngularLimits = [-1 -1 -1];
-            j.LowerLinearLimits = [1 1 1];
-            j.UpperLinearLimits = [-1 -1 -1];
+            set(j, tc.FREE{:});
             sim.step(0.5, 250, -1);
             tc.verifyLessThan(b.Position(3), -1, "The freed body did not fall.");
         end
@@ -145,7 +141,7 @@ classdef tGenericJoint < PhxTestCase
             % along world -Z; the freed axis then lets the body sink.
             [~, b, ~, sim] = tc.scene(...
                 "EulerAnglesA", [0 pi/2 0], "EulerAnglesB", [0 pi/2 0], ...
-                "LowerLinearLimits", [0 0 0], "UpperLinearLimits", [0.5 0 0]);
+                "LinearLimits", [0 0.5; 0 0; 0 0]);
             sim.step(1, 1000, -1);
             tc.verifyEqual(b.Position(3), -0.5, "AbsTol", 0.02);
             tc.verifyEqual(b.Position(1:2), [0 0], "AbsTol", 1e-3);

@@ -1,14 +1,16 @@
 classdef tJointLimits < PhxTestCase
-%tJointLimits The limits of the revolute, prismatic and cylindrical joint.
+%tJointLimits The limits of the joints, under one set of rules.
 %
 %   The classes promise the same thing in two units: a pair [lower upper]
 %   bounds a joint coordinate (Angle in rad, Distance in m) with hard end
-%   stops, equal limits lock the joint at that value and [-Inf Inf], the
-%   default, leaves it free. phx.RevoluteJoint and phx.PrismaticJoint name
-%   it Limits, phx.CylindricalJoint AngularLimits and LinearLimits. These
-%   tests pin that down:
+%   stops, equal limits lock the joint at that value and [-Inf Inf] leaves
+%   it free. phx.RevoluteJoint and phx.PrismaticJoint name it Limits,
+%   phx.CylindricalJoint AngularLimits and LinearLimits, and
+%   phx.GenericJoint and phx.BushingJoint hold one such pair per axis in the
+%   rows of 3-by-2 AngularLimits and LinearLimits. These tests pin that down:
 %
-%     * the default is free, a scalar locks at that value;
+%     * the default is free, except for the rigid generic joint; a scalar
+%       locks at that value;
 %     * reversed or NaN limits are an error; angular limits are both finite
 %       within (-pi, pi) or [-Inf Inf], linear ones may leave out a side;
 %     * a driven joint stops at whichever limit it is driven against, also
@@ -20,8 +22,10 @@ classdef tJointLimits < PhxTestCase
 %   caught again with twice the impulse (the engine engages a stop only at
 %   or beyond it), so the reaction is averaged over several steps.
 %
+%   What the six rows of a generic joint mean in motion is in tGenericJoint.
+%
 %   See also phx.RevoluteJoint, phx.PrismaticJoint, phx.CylindricalJoint,
-%   tJointMotors
+%   phx.GenericJoint, phx.BushingJoint, tGenericJoint, tJointMotors
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 
@@ -75,6 +79,48 @@ classdef tJointLimits < PhxTestCase
                 [joint, name] = linear{k, :};
                 joint.(name) = [-Inf 0.5];
                 tc.verifyEqual(joint.(name), [-Inf 0.5]);
+            end
+        end
+
+        function sixAxisLimitsAreRowsPerAxis(tc)
+            % The generic joint is rigid by default, the bushing free; a
+            % scalar locks all three axes at that value
+            [base, arm] = tc.pair;
+            gen = phx.GenericJoint(base, arm);
+            bus = phx.BushingJoint(base, arm);
+            tc.verifyEqual(gen.LinearLimits, zeros(3, 2));
+            tc.verifyEqual(gen.AngularLimits, zeros(3, 2));
+            tc.verifyEqual(bus.LinearLimits, repmat([-Inf Inf], 3, 1));
+            tc.verifyEqual(bus.AngularLimits, repmat([-Inf Inf], 3, 1));
+            gen.AngularLimits = 0.2;
+            tc.verifyEqual(gen.AngularLimits, repmat(0.2, 3, 2));
+            % Each row on its own: free, locked, bounded, one-sided linear
+            bus.LinearLimits = [-Inf Inf; 0 0; -Inf 0.5];
+            bus.AngularLimits = [-Inf Inf; 0.1 0.1; -3.1 3.1];
+            tc.verifyEqual(bus.LinearLimits, [-Inf Inf; 0 0; -Inf 0.5]);
+            tc.verifyEqual(bus.AngularLimits, [-Inf Inf; 0.1 0.1; -3.1 3.1]);
+        end
+
+        function sixAxisLimitsRejectAnyBadRow(tc)
+            % One bad row is enough, whichever axis it is on
+            [base, arm] = tc.pair;
+            for joint = {phx.GenericJoint(base, arm), phx.BushingJoint(base, arm)}
+                for ax = 1:3
+                    for name = ["LinearLimits" "AngularLimits"]
+                        for bad = {[0.3 0.1], [NaN 0]}
+                            L = zeros(3, 2);
+                            L(ax, :) = bad{1};
+                            tc.verifyError(@() set(joint{1}, name, L), "phx:Joint:invalidLimits", ...
+                                sprintf("%s row %d %s", name, ax, mat2str(bad{1})));
+                        end
+                    end
+                    L = zeros(3, 2);
+                    L(ax, :) = [-Inf 0.5];
+                    tc.verifyError(@() set(joint{1}, "AngularLimits", L), "phx:Joint:invalidLimits", ...
+                        sprintf("One-sided angular row %d", ax));
+                end
+                tc.verifyError(@() set(joint{1}, "LinearLimits", [0 1]), "MATLAB:validation:IncompatibleSize", ...
+                    "A single pair is not three rows");
             end
         end
     end
@@ -163,6 +209,23 @@ classdef tJointLimits < PhxTestCase
             sim.step(0.4, 0.4/tc.Dt, -1);
             tc.verifyEqual(body.LinearVelocity(3), -tc.G*0.4, "RelTol", 0.05, "Linear freed");
             tc.verifyEqual(body.AngularVelocity(3), 5*0.4, "RelTol", 0.05, "Angular freed");
+        end
+
+        function bushingStopBoundsTheSpringTravel(tc)
+            % A bushing with no spring along z, bounded there to [-0.2 Inf]
+            % m by the third row: the body drops onto the stop, which then
+            % carries its weight; with the row freed it falls away
+            m = 2;
+            [sim, joint, body] = tc.hangRig(m, @phx.BushingJoint, ...
+                "LinearStiffness", [1e4 1e4 0], "LinearDamping", [1e3 1e3 0], ...
+                "LinearLimits", [-Inf Inf; -Inf Inf; -0.2 Inf]);
+            sim.step(1, 1/tc.Dt, -1);
+            tc.verifyEqual(body.Position, [0 0 0.8], "AbsTol", 2e-3, "On the stop");
+            F = tc.meanForceB(sim, joint);
+            tc.verifyEqual(F(3), m*tc.G, "AbsTol", 0.02*m*tc.G, "The stop carries the weight");
+            joint.LinearLimits(3, :) = [-Inf Inf];
+            sim.step(0.5, 0.5/tc.Dt, -1);
+            tc.verifyLessThan(body.Position(3), 0, "Freed");
         end
     end
 

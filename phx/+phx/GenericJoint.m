@@ -6,17 +6,24 @@ classdef GenericJoint < phx.base.Joint
 %   locked or bounded by a pair of hard end stops.
 %
 %   The degrees of freedom are the axes of the joint coordinate system of body
-%   A: LowerLinearLimits and UpperLinearLimits (m) bound the translation of
-%   body B along them, LowerAngularLimits and UpperAngularLimits (rad) bound
-%   its rotation about them, measured in the right-handed sense. On each axis:
+%   A: LinearLimits (m) bounds the translation of body B along them,
+%   AngularLimits (rad) its rotation about them, measured in the right-handed
+%   sense. Both are 3-by-2 matrices with one row [lower upper] per axis X, Y
+%   and Z. On each axis:
 %
-%     lower == upper  the axis is locked at that value - this is the default
-%     lower < upper   the motion is bounded to that range
-%     lower > upper   the axis is free (no constraint)
+%     [v v]           the axis is locked at v - [0 0] is the default
+%     [lower upper]   the motion is bounded to that range by hard end stops
+%     [-Inf Inf]      the axis is free (no constraint)
+%
+%   A linear limit of -Inf or Inf leaves out the stop on that side. The
+%   angular limits of an axis lie within (-pi, pi), and both are finite
+%   unless the axis is free. Reversed or NaN limits are an error.
 %
 %   All limits default to zero, so a joint created without them is rigid, like
-%   phx.FixedJoint; open only the axes that are meant to move. The limits can
-%   be changed at any time, also while the simulation runs.
+%   phx.FixedJoint; open only the axes that are meant to move. The stops do
+%   not bounce, and their reaction is part of ForceA, TorqueA, ForceB and
+%   TorqueB. The limits can be changed at any time, also while the simulation
+%   runs, or set from Simulink.
 %
 %   The rotation is split into a twist and a swing: the rotation about the Z
 %   axis of the joint coordinate system is the twist, those about its X and Y
@@ -52,25 +59,17 @@ classdef GenericJoint < phx.base.Joint
     end
 
     properties
-        % Lower linear limits along the joint axes (hard stop, m)
-        % Set lower == upper to lock the axis at that value (default),
-        % lower > upper to leave it free
-        LowerLinearLimits(1, 3) double = [0 0 0]
+        % Ranges of the translation along the joint axes (m, hard stops)
+        % One row [lower upper] per axis X, Y, Z: equal to lock the axis at
+        % that value (default zeros), -Inf or Inf for no stop on that side,
+        % [-Inf Inf] to leave it free.
+        LinearLimits (3, 2) double {phx.internal.mustBeLinearLimits} = zeros(3, 2)
 
-        % Upper linear limits along the joint axes (hard stop, m)
-        % Set lower == upper to lock the axis at that value (default),
-        % lower > upper to leave it free
-        UpperLinearLimits(1, 3) double = [0 0 0]
-
-        % Lower angular limits about the joint axes (hard stop, rad)
-        % Set lower == upper to lock the axis at that value (default),
-        % lower > upper to leave it free
-        LowerAngularLimits(1, 3) double = [0 0 0]
-
-        % Upper angular limits about the joint axes (hard stop, rad)
-        % Set lower == upper to lock the axis at that value (default),
-        % lower > upper to leave it free
-        UpperAngularLimits(1, 3) double = [0 0 0]
+        % Ranges of the rotation about the joint axes (rad, hard stops)
+        % One row [lower upper] per axis X, Y, Z: both within (-pi, pi),
+        % equal to lock the axis at that angle (default zeros), or [-Inf Inf]
+        % to leave it free.
+        AngularLimits (3, 2) double {phx.internal.mustBeAngularLimits} = zeros(3, 2)
     end
 
     methods
@@ -103,36 +102,22 @@ classdef GenericJoint < phx.base.Joint
             phx.GenericJoint.updateView({obj});
         end
 
-        function set.LowerLinearLimits(obj, value)
-            obj.LowerLinearLimits = value;
-            obj.pushLimits("linlimits");
+        function set.LinearLimits(obj, value)
+            obj.LinearLimits = value;
+            obj.pushLimits('linlimits', value);
         end
 
-        function set.UpperLinearLimits(obj, value)
-            obj.UpperLinearLimits = value;
-            obj.pushLimits("linlimits");
-        end
-
-        function set.LowerAngularLimits(obj, value)
-            obj.LowerAngularLimits = value;
-            obj.pushLimits("anglimits");
-        end
-
-        function set.UpperAngularLimits(obj, value)
-            obj.UpperAngularLimits = value;
-            obj.pushLimits("anglimits");
+        function set.AngularLimits(obj, value)
+            obj.AngularLimits = value;
+            obj.pushLimits('anglimits', value);
         end
     end
 
     methods (Access = private)
-        function pushLimits(obj, field)
+        function pushLimits(obj, field, value)
         %pushLimits Writes the linear or angular limits through to the engine.
             if ~isempty(obj.ObjectHandle)
-                if field == "linlimits"
-                    phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'linlimits', obj.LowerLinearLimits, obj.UpperLinearLimits);
-                else
-                    phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'anglimits', obj.LowerAngularLimits, obj.UpperAngularLimits);
-                end
+                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, field, value(:, 1)', value(:, 2)');
             end
         end
     end
@@ -147,8 +132,8 @@ classdef GenericJoint < phx.base.Joint
                 obj.WorldHandle = world;
                 obj.ObjectHandle = phxEngine('add', world, 'generic', [obj.Parents{1}.ObjectHandle obj.Parents{2}.ObjectHandle], ...
                     obj.TransformA, obj.TransformB, obj.MutualCollisions);
-                obj.pushLimits("linlimits");
-                obj.pushLimits("anglimits");
+                obj.pushLimits('linlimits', obj.LinearLimits);
+                obj.pushLimits('anglimits', obj.AngularLimits);
             end
         end
     end

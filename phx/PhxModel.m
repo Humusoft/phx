@@ -138,8 +138,12 @@ function Start(block, BB)
         object = BB.Sim.findBy("Name", BB.InputRefs(i).ObjectName);
         if ~isempty(object)
             BB.InputRefs(i).Object = object{1};
-            if isequal(BB.InputRefs(i).Indices, 1:numel(object{1}.(BB.InputRefs(i).Property)))
-                BB.InputRefs(i).Indices = []; % optimization
+            % Optimization: a whole vector property is written in one go; a
+            % matrix one (e.g. the 3x2 joint limits) keeps its indices, since
+            % the port's vector does not take its size
+            value = object{1}.(BB.InputRefs(i).Property);
+            if isvector(value) && isequal(BB.InputRefs(i).Indices, 1:numel(value))
+                BB.InputRefs(i).Indices = [];
             end
             BB.InputRefs(i) = BB.InputRefs(i).bindGetter();
         else
@@ -152,8 +156,9 @@ function Start(block, BB)
         object = BB.Sim.findBy("Name", BB.OutputRefs(i).ObjectName);
         if ~isempty(object)
             BB.OutputRefs(i).Object = object{1};
-            if isequal(BB.OutputRefs(i).Indices, 1:numel(object{1}.(BB.OutputRefs(i).Property)))
-                BB.OutputRefs(i).Indices = []; % optimization
+            value = object{1}.(BB.OutputRefs(i).Property);
+            if isvector(value) && isequal(BB.OutputRefs(i).Indices, 1:numel(value))
+                BB.OutputRefs(i).Indices = []; % optimization, as for the inputs
             end
             BB.OutputRefs(i) = BB.OutputRefs(i).bindGetter();
         else

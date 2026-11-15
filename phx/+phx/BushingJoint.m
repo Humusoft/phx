@@ -12,12 +12,12 @@ classdef BushingJoint < phx.base.Joint
 %   implicit step damps a little of its own, the more the coarser the time
 %   step is compared to the period of the spring.
 %
-%   Optional hard end stops bound the travel: LowerLinearLimits and
-%   UpperLinearLimits (m) for translation, LowerAngularLimits and
-%   UpperAngularLimits (rad) for rotation. On each axis, setting lower > upper
-%   disables the stop, leaving the axis free (spring only) - this is the
-%   default; lower == upper locks the axis rigidly at that value; lower < upper
-%   limits the travel to that range while the spring acts inside it.
+%   Optional hard end stops bound the travel: LinearLimits (m) for
+%   translation, AngularLimits (rad) for rotation, each a 3-by-2 matrix with
+%   one row [lower upper] per axis X, Y and Z, with the rules of
+%   phx.GenericJoint. On each axis, [-Inf Inf] leaves the axis to the spring
+%   alone - this is the default; [v v] locks the axis rigidly at v; a range
+%   [lower upper] limits the travel to it while the spring acts inside it.
 %
 %   The stiffness, damping and limits all act along and about the axes of the
 %   joint coordinate system of body A, the angles being measured in the
@@ -64,21 +64,17 @@ classdef BushingJoint < phx.base.Joint
         % Angular damping about the joint axes (N*m*s/rad)
         AngularDamping(1, 3) double {mustBeFinite, mustBeNonnegative} = [1e2 1e2 1e2]
 
-        % Lower linear limits (hard stop)
-        % Set lower > upper to completely disable limits (default)
-        LowerLinearLimits(1, 3) double = [1 1 1]
+        % Ranges of the translation along the joint axes (m, hard stops)
+        % One row [lower upper] per axis X, Y, Z: [-Inf Inf] for no stop
+        % (default), -Inf or Inf for no stop on that side, equal to lock the
+        % axis at that value.
+        LinearLimits (3, 2) double {phx.internal.mustBeLinearLimits} = repmat([-Inf Inf], 3, 1)
 
-        % Upper linear limits (hard stop)
-        % Set lower > upper to completely disable limits (default)
-        UpperLinearLimits(1, 3) double = [-1 -1 -1]
-
-        % Lower angular limits (hard stop)
-        % Set lower > upper to completely disable limits (default)
-        LowerAngularLimits(1, 3) double = [1 1 1]
-
-        % Upper angular limits (hard stop)
-        % Set lower > upper to completely disable limits (default)
-        UpperAngularLimits(1, 3) double = [-1 -1 -1]
+        % Ranges of the rotation about the joint axes (rad, hard stops)
+        % One row [lower upper] per axis X, Y, Z: [-Inf Inf] for no stop
+        % (default), or both within (-pi, pi), equal to lock the axis at
+        % that angle.
+        AngularLimits (3, 2) double {phx.internal.mustBeAngularLimits} = repmat([-Inf Inf], 3, 1)
     end
 
     methods
@@ -131,24 +127,14 @@ classdef BushingJoint < phx.base.Joint
             obj.pushSprings;
         end
 
-        function set.LowerLinearLimits(obj, value)
-            obj.LowerLinearLimits = value;
-            obj.pushLimits("linlimits");
+        function set.LinearLimits(obj, value)
+            obj.LinearLimits = value;
+            obj.pushLimits('linlimits', value);
         end
 
-        function set.UpperLinearLimits(obj, value)
-            obj.UpperLinearLimits = value;
-            obj.pushLimits("linlimits");
-        end
-
-        function set.LowerAngularLimits(obj, value)
-            obj.LowerAngularLimits = value;
-            obj.pushLimits("anglimits");
-        end
-
-        function set.UpperAngularLimits(obj, value)
-            obj.UpperAngularLimits = value;
-            obj.pushLimits("anglimits");
+        function set.AngularLimits(obj, value)
+            obj.AngularLimits = value;
+            obj.pushLimits('anglimits', value);
         end
     end
 
@@ -161,14 +147,10 @@ classdef BushingJoint < phx.base.Joint
             end
         end
 
-        function pushLimits(obj, field)
+        function pushLimits(obj, field, value)
         %pushLimits Writes the linear or angular limits through to the engine.
             if ~isempty(obj.ObjectHandle)
-                if field == "linlimits"
-                    phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'linlimits', obj.LowerLinearLimits, obj.UpperLinearLimits);
-                else
-                    phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'anglimits', obj.LowerAngularLimits, obj.UpperAngularLimits);
-                end
+                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, field, value(:, 1)', value(:, 2)');
             end
         end
     end
@@ -184,8 +166,8 @@ classdef BushingJoint < phx.base.Joint
                 obj.ObjectHandle = phxEngine('add', world, 'bushing', [obj.Parents{1}.ObjectHandle obj.Parents{2}.ObjectHandle], ...
                     obj.TransformA, obj.TransformB, obj.MutualCollisions);
                 obj.pushSprings;
-                obj.pushLimits("linlimits");
-                obj.pushLimits("anglimits");
+                obj.pushLimits('linlimits', obj.LinearLimits);
+                obj.pushLimits('anglimits', obj.AngularLimits);
             end
         end
     end
