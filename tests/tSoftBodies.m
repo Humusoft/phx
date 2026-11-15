@@ -172,6 +172,27 @@ classdef tSoftBodies < PhxTestCase
             tc.verifyEqual(surface.FaceColor, [0 1 0]);
         end
 
+        function restOrientationHasTheViewsOfABody(tc)
+            % EulerAngles, AxisAngle and Quaternion set and read the
+            % Orientation of the rest shape, as they do on phx.Body
+            [V, F] = tc.cube;
+            bodies = {phx.SoftBody([], "Vertices", V, "Faces", F, "EulerAngles", [0.1 0.2 0.3]), ...
+                phx.FlexibleBody([], "Vertices", V, "Tetrahedra", delaunay(V), "EulerAngles", [0.1 0.2 0.3])};
+            for i = 1:2
+                b = bodies{i};
+                tc.verifyEqual(b.Orientation, phx.internal.Math.rot321([0.1 0.2 0.3]), "AbsTol", 1e-12);
+                tc.verifyEqual(b.EulerAngles, [0.1 0.2 0.3], "AbsTol", 1e-12);
+                b.AxisAngle = [0 0 1 pi/2];
+                tc.verifyEqual(b.Orientation, [0 -1 0; 1 0 0; 0 0 1], "AbsTol", 1e-12);
+                tc.verifyEqual(b.AxisAngle, [0 0 1 pi/2], "AbsTol", 1e-12);
+                b.Quaternion = [cos(pi/8) sin(pi/8) 0 0];
+                tc.verifyEqual(b.Orientation, phx.internal.Math.rotAA([1 0 0], pi/4), "AbsTol", 1e-12);
+                tc.verifyEqual(b.Quaternion, [cos(pi/8) sin(pi/8) 0 0], "AbsTol", 1e-12);
+                tc.verifyEqual(b.CurrentVertices(1:size(V, 1), :), V*b.Orientation', "AbsTol", 1e-12, ...
+                    "The rest shape is turned.");
+            end
+        end
+
         function weldJoinsASoftBodyAndABody(tc)
             [V, F] = tc.cube;
             s = phx.SoftBody([], "Vertices", V, "Faces", F);

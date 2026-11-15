@@ -50,6 +50,9 @@ nothing. A soft body without a mesh is an error.</p>
 <tr><td class="name">Faces</td><td class="type">M&times;3 double</td><td>Triangles of the mesh as vertex indices. A closed mesh holding a <code class="phx-inline">Pressure</code> lists them counter-clockwise seen from outside.</td></tr>
 <tr><td class="name">Position</td><td class="dflt">[0 0 0]</td><td>Position of the rest shape when the soft body is created, <span class="phx-unit">m</span>.</td></tr>
 <tr><td class="name">Orientation</td><td class="dflt">eye(3)</td><td>Orientation of the rest shape when the soft body is created.</td></tr>
+<tr><td class="name">AxisAngle</td><td class="type">1&times;4 double</td><td>Axis-angle rotation <code class="phx-inline">[x y z angle]</code> of the rest shape (dependent, a view of <code class="phx-inline">Orientation</code>).</td></tr>
+<tr><td class="name">EulerAngles</td><td class="type">1&times;3 double</td><td>Euler angles of the rest shape for z&rarr;y&rarr;x order, as <a href="phx.Body.html">phx.Body</a> takes them (dependent).</td></tr>
+<tr><td class="name">Quaternion</td><td class="type">1&times;4 double</td><td>Quaternion <code class="phx-inline">[w x y z]</code> of the rest shape (dependent).</td></tr>
 <tr><td class="name">Mass</td><td class="dflt">1</td><td>Total mass, spread evenly over the vertices, <span class="phx-unit">kg</span>.</td></tr>
 <tr><td class="name">Compliance</td><td class="dflt">0</td><td>Compliance of the edges, the inverse of their stiffness, <span class="phx-unit">m/N</span>; 0 keeps them at their rest length.</td></tr>
 <tr><td class="name">BendCompliance</td><td class="dflt">Inf</td><td>Compliance of the bend edges across each pair of adjacent triangles, <span class="phx-unit">m/N</span>; <code class="phx-inline">Inf</code> leaves them out.</td></tr>

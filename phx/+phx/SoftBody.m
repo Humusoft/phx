@@ -79,6 +79,18 @@ classdef SoftBody < phx.base.Object
         BendCompliance (1, 1) double {mustBeNonnegative} = Inf
     end
 
+    % The orientation of the rest shape in other forms, views of Orientation
+    properties (Dependent)
+        % Axis-angle rotation [x y z angle] of the rest shape
+        AxisAngle (1, 4) double {mustBeFinite}
+
+        % Euler angles [x y z] of the rest shape for z->y->x order
+        EulerAngles (1, 3) double {mustBeFinite}
+
+        % Quaternion [w x y z] of the rest shape
+        Quaternion (1, 4) double {mustBeFinite}
+    end
+
     % Settings that apply at any time
     properties
         % Gas pressure inside a closed mesh, as n*R*T (J): it pushes on the
@@ -207,6 +219,30 @@ classdef SoftBody < phx.base.Object
         function set.Orientation(obj, value)
             obj.Orientation = value;
             obj.redrawRestShape;
+        end
+
+        function value = get.AxisAngle(obj)
+            value = phx.internal.Math.decompAA(obj.Orientation);
+        end
+
+        function set.AxisAngle(obj, value)
+            obj.Orientation = phx.internal.Math.rotAA(value(1:3), value(4));
+        end
+
+        function value = get.EulerAngles(obj)
+            value = phx.internal.Math.decomp321(obj.Orientation);
+        end
+
+        function set.EulerAngles(obj, value)
+            obj.Orientation = phx.internal.Math.rot321(value);
+        end
+
+        function value = get.Quaternion(obj)
+            value = phx.internal.Math.decompQ(obj.Orientation);
+        end
+
+        function set.Quaternion(obj, value)
+            obj.Orientation = phx.internal.Math.rotQ(value);
         end
 
         function set.Pressure(obj, value)

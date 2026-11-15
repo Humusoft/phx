@@ -104,6 +104,18 @@ classdef FlexibleBody < phx.base.Object
         PoissonsRatio (1, 1) double {mustBeInRange(PoissonsRatio, 0, 0.5)} = 0.45
     end
 
+    % The orientation of the rest shape in other forms, views of Orientation
+    properties (Dependent)
+        % Axis-angle rotation [x y z angle] of the rest shape
+        AxisAngle (1, 4) double {mustBeFinite}
+
+        % Euler angles [x y z] of the rest shape for z->y->x order
+        EulerAngles (1, 3) double {mustBeFinite}
+
+        % Quaternion [w x y z] of the rest shape
+        Quaternion (1, 4) double {mustBeFinite}
+    end
+
     properties (Dependent)
         % Mesh of tetrahedra as PDE Toolbox gives it: an object or struct
         % with Nodes (3xN) and Elements (4xK or 10xK), such as the Mesh of
@@ -288,6 +300,30 @@ classdef FlexibleBody < phx.base.Object
         function set.Orientation(obj, value)
             obj.Orientation = value;
             obj.redrawRestShape;
+        end
+
+        function value = get.AxisAngle(obj)
+            value = phx.internal.Math.decompAA(obj.Orientation);
+        end
+
+        function set.AxisAngle(obj, value)
+            obj.Orientation = phx.internal.Math.rotAA(value(1:3), value(4));
+        end
+
+        function value = get.EulerAngles(obj)
+            value = phx.internal.Math.decomp321(obj.Orientation);
+        end
+
+        function set.EulerAngles(obj, value)
+            obj.Orientation = phx.internal.Math.rot321(value);
+        end
+
+        function value = get.Quaternion(obj)
+            value = phx.internal.Math.decompQ(obj.Orientation);
+        end
+
+        function set.Quaternion(obj, value)
+            obj.Orientation = phx.internal.Math.rotQ(value);
         end
 
         function set.VertexRadius(obj, value)
