@@ -89,9 +89,7 @@ function phxex_airbag(withAirbag)
     % The airbag, welded into the back of the dashboard and kept slack until
     % the bumper touches the wall
     if withAirbag
-        [V, ~, F] = phx.internal.Geometry.icosphere(5);
-        [V, ~, id] = uniquetol(V, 1e-9, "ByRows", true);
-        F = id(F(:, [1 3 2]));          % merged vertices, faces wound outwards
+        [V, F] = phx.shape.Sphere("Diameter", 2, "ElementResolution", 30).generateSurfaceMesh;
         bag = phx.SoftBody(ax, "Vertices", V.*[0.16 0.3 0.3], "Faces", F, "Position", [0.27 0 1.15], ...
             "Mass", 0.3, "Compliance", 1e-5, "Pressure", 0.3, "Iterations", 10, "VertexRadius", 0.01, ...
             "Color", [0.95 0.95 0.9]);

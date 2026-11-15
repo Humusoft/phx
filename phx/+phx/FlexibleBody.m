@@ -26,9 +26,11 @@ classdef FlexibleBody < phx.base.Object
 %   nothing. T is either Kx4, as delaunayTriangulation gives it, and the
 %   vertices in the middles of the edges are added to V, or Kx10, a
 %   quadratic mesh (the corners, then the vertices of the edges 12 23 13 14
-%   24 34). The added vertices follow V in CurrentVertices and
-%   VonMisesStress. The mesh is the rest shape, placed at Position and
-%   Orientation when the simulation creates the body.
+%   24 34), whose edges are curved when the vertices are off their middles.
+%   The added vertices follow V in CurrentVertices and VonMisesStress. The
+%   mesh is the rest shape, placed at Position and Orientation when the
+%   simulation creates the body; its volume, curved edges included, gives
+%   the Mass.
 %
 %   phx.FlexibleBody(axes, Mesh=mesh) takes the mesh of tetrahedra that PDE
 %   Toolbox generates, for example of an STL file:
@@ -45,7 +47,7 @@ classdef FlexibleBody < phx.base.Object
 %       flex = phx.FlexibleBody(gca, Shape={"Box", "Size", [1 0.1 0.1]});
 %
 %   phx.FlexibleBody(___, ElementOrder="linear") creates a body of linear
-%   tetrahedra from a Kx4 mesh.
+%   tetrahedra from a Kx4 mesh, or from the corners of a Kx10 one.
 %
 %   phx.FlexibleBody(___, Name, Value, ...) sets properties values according
 %   to given name-value pairs.
@@ -81,7 +83,8 @@ classdef FlexibleBody < phx.base.Object
         % Tetrahedra as vertex indices (Kx4, or Kx10 quadratic ones)
         Tetrahedra (:, :) double {mustBeInteger, mustBePositive} = zeros(0, 4)
 
-        % Order of the elements: "quadratic" or "linear"
+        % Order of the elements: "quadratic" or "linear" (the corners of
+        % Kx10 tetrahedra)
         ElementOrder (1, 1) string {mustBeMember(ElementOrder, ["linear", "quadratic"])} = "quadratic"
 
         % Position of the rest shape when the body is created
@@ -257,14 +260,14 @@ classdef FlexibleBody < phx.base.Object
                     shape = feval("phx.shape." + shape{1}, shape{2:end});
                 end
             end
-            if ~isa(shape, "phx.base.Shape") || ~ismethod(shape, "generateMesh")
+            if ~isa(shape, "phx.base.Shape")
                 error("phx:FlexibleBody:badShape", ...
-                    "The shape of a flexible body must generate a mesh of tetrahedra, which %s does not; give its Vertices and Tetrahedra or a Mesh.", class(shape));
+                    "The Shape of a flexible body must be a phx.shape.* object or a cell array of its name and arguments.");
             end
 
             % The tetrahedra are cleared first, so that the drawing waits
             % until the new vertices and tetrahedra fit together
-            [V, T] = shape.generateMesh;
+            [V, T] = shape.generateVolumetricMesh;
             obj.Tetrahedra = zeros(0, size(T, 2));
             obj.Vertices = V;
             obj.Tetrahedra = T;
@@ -395,27 +398,27 @@ classdef FlexibleBody < phx.base.Object
 
     methods (Access = private)
         function value = volume(obj)
-            % Of the straight-edged tetrahedra between the corners
+            % Of the tetrahedra handed to the engine, curved quadratic ones
+            % included
             [V, T] = obj.mesh;
-            [~, volume] = obj.positiveTetrahedra(V, T);
-            value = sum(volume);
+            value = sum(phx.internal.Geometry.tetrahedraVolumes(V, T));
         end
 
         function [V, T] = mesh(obj)
             % The vertices and tetrahedra handed to the engine: Kx4 linear
-            % ones as given, or Kx10 quadratic ones, a Kx4 mesh refined by
-            % the middles of its edges
+            % ones as given or the corners of a Kx10 mesh, numbered anew, or
+            % Kx10 quadratic ones as given or a Kx4 mesh refined by the
+            % middles of its edges
             V = obj.Vertices;
             T = obj.Tetrahedra;
             if obj.ElementOrder == "linear"
                 if size(T, 2) == 10
-                    error("phx:FlexibleBody:badTetrahedra", ...
-                        "Quadratic tetrahedra (Kx10) need the ElementOrder ""quadratic"".");
+                    [used, ~, k] = unique(T(:, 1:4));
+                    V = V(used, :);
+                    T = reshape(k, [], 4);
                 end
             elseif size(T, 2) == 4
-                [ends, ~, j] = unique(phx.FlexibleBody.edgeEnds(T), "rows");
-                T = [T size(V, 1) + reshape(j, [], 6)];
-                V = [V; (V(ends(:, 1), :) + V(ends(:, 2), :))/2];
+                [V, T] = phx.internal.Geometry.quadraticTetrahedra(V, T);
             end
         end
 
@@ -453,8 +456,7 @@ classdef FlexibleBody < phx.base.Object
             % vertices, tetrahedra and order are set one after the other,
             % so the patch takes them only once they fit together
             if isempty(obj.hP) || ~isempty(obj.ObjectHandle) || isempty(obj.Tetrahedra) ...
-                    || any(obj.Tetrahedra > size(obj.Vertices, 1), "all") ...
-                    || (obj.ElementOrder == "linear" && size(obj.Tetrahedra, 2) == 10)
+                    || any(obj.Tetrahedra > size(obj.Vertices, 1), "all")
                 return
             end
             set(obj.hP, "Faces", obj.Faces, "Vertices", obj.CurrentVertices);

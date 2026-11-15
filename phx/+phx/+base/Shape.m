@@ -140,6 +140,56 @@ classdef Shape
 
             obj.Color = phx.base.Shape.newColor;
         end
+
+        function [V, T] = generateVolumetricMesh(obj) %#ok<STOUT> shapes that generate it override this
+        %generateVolumetricMesh Returns a mesh of tetrahedra that fills the shape.
+        %
+        %   [V, T] = generateVolumetricMesh(shape) returns a mesh of
+        %   tetrahedra that fills the shape, as phx.FlexibleBody takes it: its
+        %   vertices V (Nx3, in the shape frame) and its tetrahedra T (Kx4
+        %   vertex indices, of positive volume, or Kx10 quadratic ones whose
+        %   vertices in the middles of the edges follow a curved surface).
+        %   The ElementResolution of the shape sets how fine it is. A shape
+        %   that cannot generate the mesh raises an error.
+        %
+        % See also phx.base.Shape.generateSurfaceMesh, phx.FlexibleBody
+
+            error("phx:Shape:noVolumetricMesh", "%s cannot generate a volumetric mesh.", class(obj));
+        end
+
+        function [V, F] = generateSurfaceMesh(obj)
+        %generateSurfaceMesh Returns a triangle mesh of the surface of the shape.
+        %
+        %   [V, F] = generateSurfaceMesh(shape) returns a triangle mesh of the
+        %   surface of the shape, as phx.SoftBody takes it: its vertices V
+        %   (Nx3, in the shape frame) and its triangles F (Mx3 vertex indices,
+        %   counter-clockwise seen from outside). Unlike the mesh the shape
+        %   draws, its vertices are spaced about evenly, as the
+        %   ElementResolution of the shape sets. It is the boundary of the
+        %   volumetric mesh unless the shape generates its own. A shape that
+        %   cannot generate the mesh raises an error.
+        %
+        % See also phx.base.Shape.generateVolumetricMesh, phx.SoftBody
+
+            try
+                [V, T] = obj.generateVolumetricMesh;
+            catch err
+                if err.identifier == "phx:Shape:noVolumetricMesh"
+                    error("phx:Shape:noSurfaceMesh", "%s cannot generate a surface mesh.", class(obj));
+                end
+                rethrow(err);
+            end
+
+            % The boundary of the corner tetrahedra of positive volume faces
+            % outwards; the inner vertices are left out and the rest
+            % numbered anew (triangulation warns about unused vertices)
+            [used, ~, k] = unique(T(:, 1:4));
+            V = V(used, :);
+            F = freeBoundary(triangulation(reshape(k, [], 4), V));
+            [used, ~, k] = unique(F);
+            V = V(used, :);
+            F = reshape(k, [], 3);
+        end
     end
 
     methods (Access = protected)

@@ -14,10 +14,18 @@ classdef SoftBody < phx.base.Object
 %   The mesh is the rest shape, placed at Position and Orientation when the
 %   simulation creates the soft body.
 %
+%   phx.SoftBody(axes, Shape=shape) covers a shape with the surface mesh it
+%   generates, its vertices spaced about evenly as the ElementResolution of
+%   the shape sets; the shape is a phx.shape.* object or a cell array of a
+%   shape name and its arguments, as phx.Body takes it. Only the geometry
+%   is taken: the Mass stays that of the soft body.
+%
+%       cushion = phx.SoftBody(gca, Shape={"Box", "Size", [0.4 0.4 0.1]}, Pressure=100);
+%
 %   phx.SoftBody(___, Name, Value, ...) sets properties values according to
 %   given name-value pairs.
 %
-%   See also phx.Body, phx.IntersectionWeld, phx.Simulation
+%   See also phx.Body, phx.IntersectionWeld, phx.Simulation, phx.shape.Box
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 %   SPDX-License-Identifier: LicenseRef-PHX-Preview-1.0
@@ -29,6 +37,13 @@ classdef SoftBody < phx.base.Object
 
     properties (Access = private)
         hP
+    end
+
+    properties (Dependent, GetAccess = private)
+        % Shape covered with a surface mesh, which sets Vertices and Faces: a
+        % phx.shape.* object that can generate the mesh, or a cell array of
+        % its name and constructor arguments
+        Shape
     end
 
     % Rest shape, read when the simulation creates the soft body
@@ -100,9 +115,12 @@ classdef SoftBody < phx.base.Object
 
             % Process input arguments
             obj.ParentAxes = ParentAxes;
+            if isfield(Options, "Shape") && any(isfield(Options, ["Vertices", "Faces"]))
+                error("phx:SoftBody:shapeAndMesh", "Give a soft body either a Shape or a mesh (Vertices and Faces), not both.");
+            end
             phx.internal.applyArguments(Options, obj);
             if isempty(obj.Faces)
-                error("phx:SoftBody:noMesh", "A soft body needs a mesh: give its Vertices and Faces.");
+                error("phx:SoftBody:noMesh", "A soft body needs a mesh: give its Vertices and Faces, or a Shape.");
             end
 
             obj.hP = patch(obj.Graphics, "Faces", obj.Faces, "Vertices", obj.CurrentVertices, ...
@@ -129,6 +147,27 @@ classdef SoftBody < phx.base.Object
                 [vmin, vmax] = bounds(obj.CurrentVertices, 1);
                 bbox = [min(bbox(1, :), vmin); max(bbox(2, :), vmax)];
             end
+        end
+
+        function set.Shape(obj, shape)
+            if iscell(shape)
+                if endsWith(lower(shape{1}), [".stl", ".obj", ".ply"])
+                    shape = phx.shape.Mesh("Source", shape{:});
+                else
+                    shape = feval("phx.shape." + shape{1}, shape{2:end});
+                end
+            end
+            if ~isa(shape, "phx.base.Shape")
+                error("phx:SoftBody:badShape", ...
+                    "The Shape of a soft body must be a phx.shape.* object or a cell array of its name and arguments.");
+            end
+
+            % The faces are cleared first, so that the drawing waits until
+            % the new vertices and faces fit together
+            [V, F] = shape.generateSurfaceMesh;
+            obj.Faces = zeros(0, 3);
+            obj.Vertices = V;
+            obj.Faces = F;
         end
 
         function set.Vertices(obj, value)

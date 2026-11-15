@@ -6,7 +6,9 @@ classdef Box < phx.base.Shape
 %   Collision shape and mass properties are modeled as an ideal block.
 %
 %   As the Shape of a phx.FlexibleBody, the box is filled with a mesh of
-%   tetrahedra (generateMesh) as fine as ElementResolution sets.
+%   tetrahedra (generateVolumetricMesh); as the Shape of a phx.SoftBody, it
+%   is covered with the surface of that mesh (generateSurfaceMesh). The
+%   ElementResolution sets how fine they are.
 %
 %   phx.shape.Box() creates a shape with default parameters.
 %
@@ -29,7 +31,7 @@ classdef Box < phx.base.Shape
         % Volumetric density (kg/m^3)
         Density (1, 1) double = 1000
 
-        % Resolution of the mesh of tetrahedra of a flexible body: the
+        % Resolution of the meshes of flexible and soft bodies: the
         % number of cells across the smallest side, the other sides cut
         % into cells as close to cubes as possible, or the numbers of cells
         % along X, Y and Z (1x3)
@@ -86,17 +88,18 @@ classdef Box < phx.base.Shape
             end
         end
 
-        function [V, T] = generateMesh(obj)
-        %generateMesh Returns a mesh of tetrahedra that fills the box.
+        function [V, T] = generateVolumetricMesh(obj)
+        %generateVolumetricMesh Returns a mesh of tetrahedra that fills the box.
         %
-        %   [V, T] = generateMesh(box) returns a mesh of tetrahedra that
-        %   fills the box: its vertices V (Mx3, in the shape frame) and its
-        %   tetrahedra T (Kx4 vertex indices, of positive volume). The box
-        %   is cut into a grid of ElementDivisions cells, which
-        %   ElementResolution sets; each cell is split into six tetrahedra
-        %   along its main diagonal.
+        %   [V, T] = generateVolumetricMesh(box) returns a mesh of
+        %   tetrahedra that fills the box: its vertices V (Mx3, in the shape
+        %   frame) and its tetrahedra T (Kx4 vertex indices, of positive
+        %   volume). The box is cut into a grid of ElementDivisions cells,
+        %   which ElementResolution sets; each cell is split into six
+        %   tetrahedra along its main diagonal.
         %
-        %   See also phx.FlexibleBody, phx.shape.Box.ElementResolution
+        %   See also phx.FlexibleBody, phx.shape.Box.ElementResolution,
+        %   phx.base.Shape.generateSurfaceMesh
 
             % Grid vertices, X running fastest
             s = obj.Size;
@@ -104,19 +107,7 @@ classdef Box < phx.base.Shape
             [x, y, z] = ndgrid(linspace(-s(1)/2, s(1)/2, n(1) + 1), ...
                 linspace(-s(2)/2, s(2)/2, n(2) + 1), linspace(-s(3)/2, s(3)/2, n(3) + 1));
             V = [x(:) y(:) z(:)];
-
-            % The first corner of each cell, and the index offsets of its
-            % eight corners numbered as the bits of their x, y, z steps + 1
-            [i, j, k] = ndgrid(1:n(1), 1:n(2), 1:n(3));
-            first = sub2ind(n + 1, i(:), j(:), k(:));
-            dy = n(1) + 1;
-            dz = dy*(n(2) + 1);
-            offset = [0, 1, dy, 1 + dy, dz, 1 + dz, dy + dz, 1 + dy + dz];
-
-            % Six tetrahedra around the diagonal from corner 1 to corner 8,
-            % the same in every cell, so the faces of neighbours match
-            split = [1 2 4 8; 1 6 2 8; 1 4 3 8; 1 3 7 8; 1 5 6 8; 1 7 5 8];
-            T = reshape(first + permute(offset(split), [3 1 2]), [], 4);
+            T = phx.internal.Geometry.hexTetrahedra(phx.internal.Geometry.gridHexes(n));
         end
     end
 

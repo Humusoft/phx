@@ -197,6 +197,172 @@ classdef Geometry
             N = V;
         end
 
+        function [V, F] = geodesicSphere(Frequency)
+            % Unit sphere of the regular icosahedron with each edge cut into
+            % Frequency parts and each face into Frequency^2 triangles,
+            % projected on the sphere; the vertices are shared and the faces
+            % counter-clockwise seen from outside
+            fi = (1 + sqrt(5))/2;
+            C = [0 +1 +fi; 0 +1 -fi; 0 -1 +fi; 0 -1 -fi];
+            C = [C; circshift(C, [0 -1]); circshift(C, [0 -2])];
+            T = [1 9 3; 9 6 3; 6 8 3; 8 10 3; 10 1 3; ...
+                 7 2 5; 5 2 11; 11 2 4; 4 2 12; 12 2 7; ...
+                 1 7 5; 5 9 1; 9 5 11; 11 6 9; 6 11 4; ...
+                 4 8 6; 8 4 12; 12 10 8; 10 12 7; 7 1 10];
+
+            % Grid of one face, point (i, j) at A + i/n*(B - A) + j/n*(C - A),
+            % and its triangles pointing up and down, wound as the face
+            n = Frequency;
+            [i, j] = ndgrid(0:n);
+            in = i + j <= n;
+            id = zeros(n + 1);
+            id(in) = 1:nnz(in);
+            i = i(in);
+            j = j(in);
+            [a, b] = ndgrid(0:n - 1);
+            up = a + b <= n - 1;
+            down = a + b <= n - 2;
+            at = @(p, q) reshape(id(sub2ind([n + 1, n + 1], p + 1, q + 1)), [], 1);
+            G = [at(a(up), b(up)) at(a(up) + 1, b(up)) at(a(up), b(up) + 1); ...
+                at(a(down) + 1, b(down)) at(a(down) + 1, b(down) + 1) at(a(down), b(down) + 1)];
+
+            % Each face of the icosahedron turned outwards and filled with
+            % the grid; the vertices on its edges are merged afterwards
+            m = numel(i);
+            g = size(G, 1);
+            V = zeros(20*m, 3);
+            F = zeros(20*g, 3);
+            for k = 1:20
+                P = C(T(k, :), :);
+                if dot(cross(P(2, :) - P(1, :), P(3, :) - P(1, :)), sum(P, 1)) < 0
+                    P = P([1 3 2], :);
+                end
+                V((k - 1)*m + (1:m), :) = P(1, :) + i/n.*(P(2, :) - P(1, :)) + j/n.*(P(3, :) - P(1, :));
+                F((k - 1)*g + (1:g), :) = (k - 1)*m + G;
+            end
+            [V, ~, map] = uniquetol(V, 1e-9, "ByRows", true);
+            F = map(F);
+            V = V./sqrt(sum(V.^2, 2));
+        end
+
+        function H = gridHexes(n)
+            % Corner indices of the cells of a grid of n(1) x n(2) x n(3)
+            % cells whose points are numbered with the first axis fastest;
+            % the corners of a cell are numbered as the bits of their steps
+            % along the three axes, plus 1
+            [i, j, k] = ndgrid(1:n(1), 1:n(2), 1:n(3));
+            first = sub2ind(n + 1, i(:), j(:), k(:));
+            dy = n(1) + 1;
+            dz = dy*(n(2) + 1);
+            H = first + [0, 1, dy, 1 + dy, dz, 1 + dz, dy + dz, 1 + dy + dz];
+        end
+
+        function T = hexTetrahedra(H)
+            % Six tetrahedra of each hexahedron (rows of H, corners numbered
+            % as gridHexes does) around its diagonal from corner 1 to corner
+            % 8, of positive volume when the axes of the numbering are
+            % right-handed. Every face is cut along the diagonal from its
+            % lowest to its highest corner, so neighbours numbered along the
+            % same directions share their face diagonals.
+            split = [1 2 4 8; 1 6 2 8; 1 4 3 8; 1 3 7 8; 1 5 6 8; 1 7 5 8];
+            T = reshape(H(:, split), [], 4);
+        end
+
+        function [V, T, ends] = quadraticTetrahedra(V, T)
+            % Kx10 quadratic tetrahedra of Kx4 ones: a vertex in the middle
+            % of each edge, appended to V, the corners first and then the
+            % edges 12 23 13 14 24 34; ends lists the corners of the edges in
+            % the order of the appended vertices
+            ends = sort([reshape(T(:, [1 2 1 1 2 3]), [], 1) reshape(T(:, [2 3 3 4 4 4]), [], 1)], 2);
+            [ends, ~, j] = unique(ends, "rows");
+            T = [T size(V, 1) + reshape(j, [], 6)];
+            V = [V; (V(ends(:, 1), :) + V(ends(:, 2), :))/2];
+        end
+
+        function volume = tetrahedraVolumes(V, T)
+            % Volumes of Kx4 tetrahedra, or of Kx10 quadratic ones (corners,
+            % then the edges 12 23 13 14 24 34) whose edges may be curved,
+            % integrated exactly by a rule of degree 3; positive whatever
+            % the order of the corners
+            if size(T, 2) == 4
+                a = V(T(:, 1), :);
+                volume = abs(dot(cross(V(T(:, 2), :) - a, V(T(:, 3), :) - a, 2), V(T(:, 4), :) - a, 2))/6;
+                return
+            end
+            points = [1/4 1/4 1/4; 1/6 1/6 1/6; 1/2 1/6 1/6; 1/6 1/2 1/6; 1/6 1/6 1/2];
+            weights = [-2/15 3/40 3/40 3/40 3/40];
+            pairs = [1 2; 2 3; 1 3; 1 4; 2 4; 3 4];
+            dL = [-1 -1 -1; eye(3)];
+            volume = zeros(size(T, 1), 1);
+            for p = 1:5
+                % Derivatives of the ten shape functions at the point
+                L = [1 - sum(points(p, :)), points(p, :)];
+                dN = zeros(10, 3);
+                for c = 1:4
+                    dN(c, :) = (4*L(c) - 1)*dL(c, :);
+                end
+                for e = 1:6
+                    dN(4 + e, :) = 4*(L(pairs(e, 2))*dL(pairs(e, 1), :) + L(pairs(e, 1))*dL(pairs(e, 2), :));
+                end
+                J = zeros(size(T, 1), 3, 3);
+                for n = 1:10
+                    J = J + V(T(:, n), :).*reshape(dN(n, :), 1, 1, 3);
+                end
+                d = J(:, 1, 1).*(J(:, 2, 2).*J(:, 3, 3) - J(:, 2, 3).*J(:, 3, 2)) ...
+                    - J(:, 1, 2).*(J(:, 2, 1).*J(:, 3, 3) - J(:, 2, 3).*J(:, 3, 1)) ...
+                    + J(:, 1, 3).*(J(:, 2, 1).*J(:, 3, 2) - J(:, 2, 2).*J(:, 3, 1));
+                volume = volume + weights(p)*d;
+            end
+            volume = abs(volume);
+        end
+
+        function [V, T] = cubedBall(nc, m, a)
+            % Ball of unit radius filled with tetrahedra: a cube core of half
+            % side a with nc cells along each edge, and six blocks of m
+            % layers of cells between its faces and the sphere, whose
+            % surface points form an equiangular cubed sphere. The cells are
+            % split by hexTetrahedra; in each block the two directions along
+            % the face follow the global axes and the third points outwards,
+            % so the faces of all neighbouring cells match. The tetrahedra
+            % are turned to a positive volume.
+            g = linspace(-1, 1, nc + 1);
+            [x, y, z] = ndgrid(g, g, g);
+            P = cell(1, 7);
+            H = cell(1, 7);
+            P{1} = a*[x(:) y(:) z(:)];
+            H{1} = phx.internal.Geometry.gridHexes([nc nc nc]);
+
+            % Blocks on the faces +-x, +-y, +-z: the normal axis, then the
+            % two along the face
+            [u, v, w] = ndgrid(g, g, linspace(0, 1, m + 1));
+            hexes = phx.internal.Geometry.gridHexes([nc nc m]);
+            order = [1 2 3; 2 1 3; 3 1 2];
+            offset = size(P{1}, 1);
+            b = 1;
+            for k = 1:3
+                for side = [-1 1]
+                    inner = zeros(numel(u), 3);
+                    inner(:, order(k, :)) = [repmat(side, numel(u), 1) u(:) v(:)];
+                    outer = zeros(numel(u), 3);
+                    outer(:, order(k, :)) = [repmat(side, numel(u), 1) tan(pi/4*u(:)) tan(pi/4*v(:))];
+                    outer = outer./sqrt(sum(outer.^2, 2));
+                    b = b + 1;
+                    P{b} = (1 - w(:)).*a.*inner + w(:).*outer;
+                    H{b} = offset + hexes;
+                    offset = offset + numel(u);
+                end
+            end
+            V = vertcat(P{:});
+            T = phx.internal.Geometry.hexTetrahedra(vertcat(H{:}));
+
+            % The points the core and the blocks share merged
+            [V, ~, map] = uniquetol(V, 1e-12, "ByRows", true, "DataScale", 1);
+            T = map(T);
+            e = V(T(:, 1), :);
+            negative = dot(cross(V(T(:, 2), :) - e, V(T(:, 3), :) - e, 2), V(T(:, 4), :) - e, 2) < 0;
+            T(negative, [2 3]) = T(negative, [3 2]);
+        end
+
         function [V, N, F, T] = rock(ASize, Roundness)
             % Basic geometry
             fi = (1 + sqrt(5))/2;

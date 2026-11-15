@@ -94,7 +94,7 @@ classdef tSoftBodies < PhxTestCase
             % A shape object and the cell shorthand give the mesh the shape
             % generates, and the density of the shape
             box = phx.shape.Box("Size", [0.4 0.2 0.1], "Density", 1100, "ElementResolution", 1);
-            [V, T] = box.generateMesh;
+            [V, T] = box.generateVolumetricMesh;
             f = phx.FlexibleBody([], "Shape", box);
             tc.verifyEqual(f.Vertices, V);
             tc.verifyEqual(f.Tetrahedra, T);
@@ -113,14 +113,50 @@ classdef tSoftBodies < PhxTestCase
             tc.verifyEqual(phx.FlexibleBody([], "Mass", 2, "Shape", box).Mass, 2, "RelTol", 1e-9);
         end
 
+        function curvedMeshGivesTheMass(tc)
+            % Quadratic tetrahedra count the volume of their curved edges;
+            % linear ones take only the corners of a Kx10 mesh
+            sphere = phx.shape.Sphere("Diameter", 0.5, "Density", 1000);
+            [V, T] = sphere.generateVolumetricMesh;
+            q = phx.FlexibleBody([], "Shape", sphere);
+            tc.verifyEqual(q.Mass, sphere.computeMass, "RelTol", 0.005);
+            l = phx.FlexibleBody([], "Shape", sphere, "ElementOrder", "linear");
+            corners = unique(T(:, 1:4));
+            tc.verifySize(l.CurrentVertices, [numel(corners) 3]);
+            tc.verifyEqual(l.CurrentVertices, V(corners, :));
+            tc.verifyEqual(l.Mass, 1000*sum(phx.internal.Geometry.tetrahedraVolumes(V, T(:, 1:4))), "RelTol", 1e-12);
+        end
+
         function shapeMustGenerateAMesh(tc)
             V = tc.cube;
             tc.verifyError(@() phx.FlexibleBody([], "Shape", {"Box"}, "Vertices", V, "Tetrahedra", delaunay(V)), ...
                 "phx:FlexibleBody:shapeAndMesh");
             tc.verifyError(@() phx.FlexibleBody([], "Shape", {"Box"}, "Mesh", struct("Nodes", V', "Elements", delaunay(V)')), ...
                 "phx:FlexibleBody:shapeAndMesh");
-            tc.verifyError(@() phx.FlexibleBody([], "Shape", {"Cylinder"}), "phx:FlexibleBody:badShape");
+            tc.verifyError(@() phx.FlexibleBody([], "Shape", {"Cylinder"}), "phx:Shape:noVolumetricMesh");
             tc.verifyError(@() phx.FlexibleBody([], "Shape", V), "phx:FlexibleBody:badShape");
+        end
+
+        function softBodyShapeSetsTheSurfaceNotTheMass(tc)
+            % A shape object and the cell shorthand give the surface mesh the
+            % shape generates; the mass stays that of the soft body
+            box = phx.shape.Box("Size", [0.4 0.2 0.1], "Density", 1100, "ElementResolution", 1);
+            [V, F] = box.generateSurfaceMesh;
+            s = phx.SoftBody([], "Shape", box, "Mass", 3);
+            tc.verifyEqual(s.Vertices, V);
+            tc.verifyEqual(s.Faces, F);
+            tc.verifyEqual(s.Mass, 3);
+            g = phx.SoftBody([], "Shape", {"Box", "Size", [0.4 0.2 0.1], "ElementResolution", 1});
+            tc.verifyEqual(g.Faces, F);
+            tc.verifyEqual(g.Mass, 1, "The default mass, not the density of the shape.");
+        end
+
+        function softBodyShapeMustGenerateAMesh(tc)
+            [V, F] = tc.cube;
+            tc.verifyError(@() phx.SoftBody([], "Shape", {"Box"}, "Vertices", V, "Faces", F), ...
+                "phx:SoftBody:shapeAndMesh");
+            tc.verifyError(@() phx.SoftBody([], "Shape", {"Cylinder"}), "phx:Shape:noSurfaceMesh");
+            tc.verifyError(@() phx.SoftBody([], "Shape", V), "phx:SoftBody:badShape");
         end
 
         function flexibleBodyColormapKeepsColorAcrossSaveAndLoad(tc)
