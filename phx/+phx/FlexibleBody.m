@@ -36,13 +36,21 @@ classdef FlexibleBody < phx.base.Object
 %       gm = generateMesh(fegeometry("part.stl"), Hmax=0.01);
 %       flex = phx.FlexibleBody(gca, Mesh=gm.Mesh);
 %
+%   phx.FlexibleBody(axes, Shape=shape) fills a shape with the mesh of
+%   tetrahedra it generates and takes its Density; the shape is a
+%   phx.shape.* object or a cell array of a shape name and its arguments,
+%   as phx.Body takes it. The ElementResolution of the shape sets how fine
+%   the mesh is:
+%
+%       flex = phx.FlexibleBody(gca, Shape={"Box", "Size", [1 0.1 0.1]});
+%
 %   phx.FlexibleBody(___, ElementOrder="linear") creates a body of linear
 %   tetrahedra from a Kx4 mesh.
 %
 %   phx.FlexibleBody(___, Name, Value, ...) sets properties values according
 %   to given name-value pairs.
 %
-%   See also phx.SoftBody, phx.IntersectionWeld, phx.Body
+%   See also phx.SoftBody, phx.IntersectionWeld, phx.Body, phx.shape.Box
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 %   SPDX-License-Identifier: LicenseRef-PHX-Preview-1.0
@@ -54,6 +62,15 @@ classdef FlexibleBody < phx.base.Object
 
     properties (Access = private)
         hP
+    end
+
+    % Declared before the mesh and the material, so that given to the
+    % constructor, a Density or Mass overrides the one of the shape
+    properties (Dependent, GetAccess = private)
+        % Shape filled with a mesh of tetrahedra, which sets Vertices,
+        % Tetrahedra and Density: a phx.shape.* object that can generate
+        % the mesh, or a cell array of its name and constructor arguments
+        Shape
     end
 
     % Rest shape and material, read when the simulation creates the body
@@ -162,9 +179,12 @@ classdef FlexibleBody < phx.base.Object
 
             % Process input arguments
             obj.ParentAxes = ParentAxes;
+            if isfield(Options, "Shape") && any(isfield(Options, ["Vertices", "Tetrahedra", "Mesh"]))
+                error("phx:FlexibleBody:shapeAndMesh", "Give a flexible body either a Shape or a mesh (Vertices and Tetrahedra, or Mesh), not both.");
+            end
             phx.internal.applyArguments(Options, obj);
             if isempty(obj.Tetrahedra)
-                error("phx:FlexibleBody:noMesh", "A flexible body needs a mesh: give its Vertices and Tetrahedra.");
+                error("phx:FlexibleBody:noMesh", "A flexible body needs a mesh: give its Vertices and Tetrahedra, a Mesh or a Shape.");
             end
 
             obj.hP = patch(obj.Graphics, "Faces", obj.Faces, "Vertices", obj.CurrentVertices, ...
@@ -227,6 +247,28 @@ classdef FlexibleBody < phx.base.Object
             end
             obj.Vertices = double(mesh.Nodes)';
             obj.Tetrahedra = double(mesh.Elements)';
+        end
+
+        function set.Shape(obj, shape)
+            if iscell(shape)
+                if endsWith(lower(shape{1}), [".stl", ".obj", ".ply"])
+                    shape = phx.shape.Mesh("Source", shape{:});
+                else
+                    shape = feval("phx.shape." + shape{1}, shape{2:end});
+                end
+            end
+            if ~isa(shape, "phx.base.Shape") || ~ismethod(shape, "generateMesh")
+                error("phx:FlexibleBody:badShape", ...
+                    "The shape of a flexible body must generate a mesh of tetrahedra, which %s does not; give its Vertices and Tetrahedra or a Mesh.", class(shape));
+            end
+
+            % The tetrahedra are cleared first, so that the drawing waits
+            % until the new vertices and tetrahedra fit together
+            [V, T] = shape.generateMesh;
+            obj.Tetrahedra = zeros(0, size(T, 2));
+            obj.Vertices = V;
+            obj.Tetrahedra = T;
+            obj.Density = shape.Density;
         end
 
         function mesh = get.Mesh(obj)

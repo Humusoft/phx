@@ -111,8 +111,8 @@ function phxex_plow(Options)
         "Mass", 5, "Inertia", [5 5 5]);
     holder = phx.FixedJoint(shank, clamp, "TransformA", makehgtform("translate", [0 0 -0.225]));
 
-    [V, T] = boxTetrahedra([b h L + 2*e], 0.02);
-    tine = phx.FlexibleBody(ax, "Vertices", V, "Tetrahedra", T, "Position", [Rm 0 zStart - 0.25 - L/2], "Orientation", turn, ...
+    tine = phx.FlexibleBody(ax, "Shape", {"Box", "Size", [b h L + 2*e], "ElementResolution", 1}, ...
+        "Position", [Rm 0 zStart - 0.25 - L/2], "Orientation", turn, ...
         "Density", 1800, "YoungsModulus", Options.YoungsModulus, "PoissonsRatio", 0.3, "Damping", 2, ...
         "Colormap", turbo(64), "ColorRange", [0 10e6]);
     shift = (turn*[Options.Offset; 0; 0])';
@@ -248,27 +248,4 @@ function driveShank(fcn, ~, dt, time)
         end
     end
     fcn.UserData = p;
-end
-
-function [V, T] = boxTetrahedra(sz, cell)
-% Box centred at the origin, cut into cells of about the given size, each
-% split into six tetrahedra
-    n = max(1, round(sz/cell));
-    [x, y, z] = ndgrid(linspace(-sz(1)/2, sz(1)/2, n(1) + 1), linspace(-sz(2)/2, sz(2)/2, n(2) + 1), ...
-        linspace(-sz(3)/2, sz(3)/2, n(3) + 1));
-    V = [x(:) y(:) z(:)];
-    corner = @(i, j, k) sub2ind(n + 1, i, j, k);
-    split = [1 2 4 8; 1 2 6 8; 1 3 4 8; 1 3 7 8; 1 5 6 8; 1 5 7 8];
-    T = zeros(6*prod(n), 4);
-    m = 0;
-    for i = 1:n(1)
-        for j = 1:n(2)
-            for k = 1:n(3)
-                c = [corner(i, j, k) corner(i + 1, j, k) corner(i, j + 1, k) corner(i + 1, j + 1, k) ...
-                    corner(i, j, k + 1) corner(i + 1, j, k + 1) corner(i, j + 1, k + 1) corner(i + 1, j + 1, k + 1)];
-                T(m + (1:6), :) = c(split);
-                m = m + 6;
-            end
-        end
-    end
 end

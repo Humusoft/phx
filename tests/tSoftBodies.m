@@ -90,6 +90,39 @@ classdef tSoftBodies < PhxTestCase
             tc.verifyEqual(f.Mass, 1000*0.4*0.2*0.1, "RelTol", 1e-9);
         end
 
+        function shapeSetsTheMeshAndDensity(tc)
+            % A shape object and the cell shorthand give the mesh the shape
+            % generates, and the density of the shape
+            box = phx.shape.Box("Size", [0.4 0.2 0.1], "Density", 1100, "ElementResolution", 1);
+            [V, T] = box.generateMesh;
+            f = phx.FlexibleBody([], "Shape", box);
+            tc.verifyEqual(f.Vertices, V);
+            tc.verifyEqual(f.Tetrahedra, T);
+            tc.verifyEqual(f.Density, 1100);
+            tc.verifyEqual(f.Mass, 1100*0.4*0.2*0.1, "RelTol", 1e-9);
+            g = phx.FlexibleBody([], "Shape", {"Box", "Size", [0.4 0.2 0.1], "Density", 1100, "ElementResolution", 1});
+            tc.verifyEqual(g.Tetrahedra, T);
+            tc.verifyEqual(g.Density, 1100);
+        end
+
+        function densityOrMassOverridesTheShape(tc)
+            % Given to the constructor, before or after the shape
+            box = phx.shape.Box("Size", [0.4 0.2 0.1], "Density", 1100);
+            tc.verifyEqual(phx.FlexibleBody([], "Density", 500, "Shape", box).Density, 500);
+            tc.verifyEqual(phx.FlexibleBody([], "Shape", box, "Density", 500).Density, 500);
+            tc.verifyEqual(phx.FlexibleBody([], "Mass", 2, "Shape", box).Mass, 2, "RelTol", 1e-9);
+        end
+
+        function shapeMustGenerateAMesh(tc)
+            V = tc.cube;
+            tc.verifyError(@() phx.FlexibleBody([], "Shape", {"Box"}, "Vertices", V, "Tetrahedra", delaunay(V)), ...
+                "phx:FlexibleBody:shapeAndMesh");
+            tc.verifyError(@() phx.FlexibleBody([], "Shape", {"Box"}, "Mesh", struct("Nodes", V', "Elements", delaunay(V)')), ...
+                "phx:FlexibleBody:shapeAndMesh");
+            tc.verifyError(@() phx.FlexibleBody([], "Shape", {"Cylinder"}), "phx:FlexibleBody:badShape");
+            tc.verifyError(@() phx.FlexibleBody([], "Shape", V), "phx:FlexibleBody:badShape");
+        end
+
         function flexibleBodyColormapKeepsColorAcrossSaveAndLoad(tc)
             % The colormap paints the surface while Color keeps its value;
             % both survive save and load, and an emptied colormap gives the

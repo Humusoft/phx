@@ -21,9 +21,8 @@ function phxex_cantilever
 
     % The beam, 1 m out of the wall, its root 6 cm deep in it
     L = 1; embed = 0.06;
-    [V, T] = boxTetrahedra([L + embed, 0.12, 0.1], 0.06);
-    V(:, 1) = V(:, 1) + (L + embed)/2 - embed;
-    beam = phx.FlexibleBody(ax, "Vertices", V, "Tetrahedra", T, "Position", [0 0 1], ...
+    beam = phx.FlexibleBody(ax, "Shape", {"Box", "Size", [L + embed, 0.12, 0.1], "ElementResolution", 2}, ...
+        "Position", [(L - embed)/2 0 1], ...
         "Density", 1100, "YoungsModulus", 20e6, "PoissonsRatio", 0.45, "Damping", 3, "Colormap", turbo(64), "ColorRange", [0 6e5]);
     plate = phx.Body(ax, "Position", [L - 0.12 0 1.05], ...
         "Shape", {"Box", "Size", [0.24 0.3 0.04], "Color", [0.85 0.65 0.2]}, ...
@@ -35,6 +34,7 @@ function phxex_cantilever
         "Mass", 4, "Inertia", 0.4*4*0.07^2*[1 1 1]);
 
     sim = phx.Simulation(ax);
+    V = beam.Vertices;
     tip = abs(V(:, 1) - max(V(:, 1))) < 1e-9;
     lowest = 0;
     while sim.Time < 4
@@ -47,27 +47,4 @@ function phxex_cantilever
     fprintf("The tip sagged by up to %.0f mm; the ball ended at z = %.2f m.\n", 1e3*lowest, ball.Position(3));
     delete(sim);
 
-end
-
-function [V, T] = boxTetrahedra(sz, cell)
-% Box centred at the origin, cut into cells of about the given size, each
-% split into six tetrahedra
-    n = max(1, round(sz/cell));
-    [x, y, z] = ndgrid(linspace(-sz(1)/2, sz(1)/2, n(1) + 1), linspace(-sz(2)/2, sz(2)/2, n(2) + 1), ...
-        linspace(-sz(3)/2, sz(3)/2, n(3) + 1));
-    V = [x(:) y(:) z(:)];
-    corner = @(i, j, k) sub2ind(n + 1, i, j, k);
-    split = [1 2 4 8; 1 2 6 8; 1 3 4 8; 1 3 7 8; 1 5 6 8; 1 5 7 8];
-    T = zeros(6*prod(n), 4);
-    m = 0;
-    for i = 1:n(1)
-        for j = 1:n(2)
-            for k = 1:n(3)
-                c = [corner(i, j, k) corner(i + 1, j, k) corner(i, j + 1, k) corner(i + 1, j + 1, k) ...
-                    corner(i, j, k + 1) corner(i + 1, j, k + 1) corner(i, j + 1, k + 1) corner(i + 1, j + 1, k + 1)];
-                T(m + (1:6), :) = c(split);
-                m = m + 6;
-            end
-        end
-    end
 end
