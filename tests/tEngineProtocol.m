@@ -1894,6 +1894,105 @@ classdef tEngineProtocol < PhxTestCase
             tc.verifyError(@() phxEngine('set', w, j, 'anglimits', NaN, 0), "phx:engine:badArgument");
         end
 
+        function cylindricalLeavesOnlySlideAndTurnFree(tc)
+            % A body on a cylindrical joint along world z, no gravity, pushed
+            % along and turned about the axis and loaded across it: it moves
+            % and turns along the axis only, for the joint the block solves
+            % and for the six-DOF construction of before
+            for newJoint = [true false]
+                w = tc.newWorld([0 0 0]);
+                phxEngine('set', w, uint64(0), 'joltfix', struct('cylindrical', newJoint));
+                a = tc.addBox(w, 0, [0 0 0], 0.2*[1 1 1]);
+                b = tc.addBox(w, 2, [0 0 0], 0.2*[1 1 1], 1, [1 1 1]);
+                phxEngine('add', w, 'cylindrical', [a b], eye(4), eye(4), false);
+                phxEngine('set', w, b, 'appliedforce', [3 -2 1]);
+                phxEngine('set', w, b, 'appliedtorque', [2 1 1]);
+                T = tc.settle(w, 1);
+                label = sprintf("joltfix.cylindrical %d", newJoint);
+                tc.verifyEqual(T(1:2, 4)', [0 0], "AbsTol", 1e-4, label + ": stays on the axis");
+                tc.verifyEqual(T(3, 4), 0.5, "RelTol", 0.02, label + ": slides by F t^2/(2 m)");
+                tc.verifyEqual(T(1:3, 3)', [0 0 1], "AbsTol", 1e-4, label + ": the axis stays put");
+                tc.verifyEqual(atan2(T(2, 1), T(1, 1)), 0.5, "AbsTol", 0.01, label + ": turns by M t^2/(2 I)");
+            end
+        end
+
+        function cylindricalLimitsBoundTravelAndAngle(tc)
+            % Hanging along z on [-0.3 -0.1] m and turned on [0.1 0.3] rad by
+            % a torque about z: the lower stop carries the weight, the angle
+            % stops at whichever limit the torque drives it against; equal
+            % limits lock both. Both constructions
+            m = 2;
+            for newJoint = [true false]
+                label = sprintf("joltfix.cylindrical %d", newJoint);
+                for s = [1 -1]
+                    w = tc.newWorld;
+                    phxEngine('set', w, uint64(0), 'joltfix', struct('cylindrical', newJoint));
+                    a = tc.addBox(w, 0, [0 0 2], 0.1*[1 1 1]);
+                    b = tc.addBox(w, 2, [0 0 1], 0.1*[1 1 1], m, [1 1 1]);
+                    j = phxEngine('add', w, 'cylindrical', [a b], tEngineProtocol.pose([0 0 -1]), eye(4), false);
+                    phxEngine('set', w, j, 'linlimits', -0.3, -0.1);
+                    phxEngine('set', w, j, 'anglimits', 0.1, 0.3);
+                    phxEngine('set', w, b, 'appliedtorque', [0 0 5*s]);
+                    T = tc.settle(w, 1);
+                    tc.verifyEqual(T(3, 4), 0.7, "AbsTol", 2e-3, label + ": on the lower stop");
+                    tc.verifyEqual(atan2(T(2, 1), T(1, 1)), 0.2 + 0.1*s, "AbsTol", 0.01, sprintf("%s: turned %+d", label, s));
+                    F = zeros(3, 40);
+                    for k = 1:size(F, 2)
+                        phxEngine('step', w, tc.Dt);
+                        F(:, k) = phxEngine('get', w, j, 'feedback') * [0; 0; 1; 0];
+                    end
+                    tc.verifyEqual(mean(F(3, :)), m*tc.G, "AbsTol", 0.02*m*tc.G, label + ": the stop carries the weight");
+                end
+                phxEngine('set', w, j, 'linlimits', -0.2, -0.2);
+                phxEngine('set', w, j, 'anglimits', 0.2, 0.2);
+                T = tc.settle(w, 1);
+                tc.verifyEqual(T(3, 4), 0.8, "AbsTol", 2e-3, label + ": locked travel");
+                tc.verifyEqual(atan2(T(2, 1), T(1, 1)), 0.2, "AbsTol", 0.01, label + ": locked angle");
+            end
+            tc.verifyError(@() phxEngine('set', w, j, 'linlimits', NaN, 0), "phx:engine:badArgument");
+            tc.verifyError(@() phxEngine('set', w, j, 'cone', [1 1]), "phx:engine:unsupported");
+        end
+
+        function cylindricalChainSwingsLikeAHingeChain(tc)
+            % A chain of 20 links hanging from 30 deg on cylindrical joints
+            % across the swing plane keeps its joints closed and its energy
+            % as the same chain on revolute joints does, and slides nowhere
+            dt = 0.005; L = 0.2; n = 20; m = 0.1;
+            E = zeros(1, 2); gap = zeros(1, 2); spread = 0;
+            kinds = ["revolute" "cylindrical"];
+            for k = 1:2
+                w = tc.newWorld;
+                phxEngine('set', w, uint64(0), 'settings', struct('diagnostics', true));
+                half = [0.02 0.02 L/2];
+                inertia = m*(sum((2*half).^2) - (2*half).^2)/12;
+                R = [cos(pi/6) 0 sin(pi/6); 0 1 0; -sin(pi/6) 0 cos(pi/6)];
+                Ry = [1 0 0 0; 0 0 -1 0; 0 1 0 0; 0 0 0 1];
+                prev = tc.addBox(w, 0, [0 0 5], 0.02*[1 1 1]);
+                TA = [R zeros(3, 1); 0 0 0 1]*Ry;
+                bodies = zeros(1, n, 'uint64');
+                for i = 1:n
+                    c = [0 0 5] + ((i - 0.5)*L*R*[0; 0; -1])';
+                    bodies(i) = phxEngine('add', w, 'box', 2, half, [R c'; 0 0 0 1], m, inertia);
+                    phxEngine('add', w, char(kinds(k)), [prev bodies(i)], TA, [eye(3) [0; 0; L/2]; 0 0 0 1]*Ry, false);
+                    prev = bodies(i);
+                    TA = [eye(3) [0; 0; -L/2]; 0 0 0 1]*Ry;
+                end
+                E0 = tEngineProtocol.chainEnergy(w, bodies, m, L);
+                phxEngine('get', w, uint64(0), 'diagnostics');
+                for s = 1:1000
+                    phxEngine('step', w, dt);
+                end
+                D = phxEngine('get', w, uint64(0), 'diagnostics');
+                gap(k) = D.jointgap;
+                E(k) = tEngineProtocol.chainEnergy(w, bodies, m, L)/E0 - 1;
+                P = phxEngine('get', w, bodies, 'position');
+                spread = max(P(2, :)) - min(P(2, :));
+            end
+            tc.verifyLessThan(gap(2), 1e-4, "Joint gap of the cylindrical chain");
+            tc.verifyEqual(E(2), E(1), "AbsTol", 0.01, "Energy kept as the hinge chain keeps it");
+            tc.verifyLessThan(spread, 1e-6, "The cylindrical chain slid along its joint axes");
+        end
+
         function springJointDeflectsByWeightOverStiffness(tc)
             m = 1;
             k = 1000;
@@ -2608,6 +2707,18 @@ classdef tEngineProtocol < PhxTestCase
             % (negligibly short) step, as PHX reads it
             [ids, T] = phxEngine('step', w, 1e-6);
             p = T(1:3, 4, ids == h);
+        end
+
+        function E = chainEnergy(w, bodies, m, L)
+            % Potential and kinetic energy of a chain of links of mass m and
+            % length L (thin rods), from the engine
+            P = phxEngine('get', w, bodies, 'position');
+            E = 0;
+            for i = 1:numel(bodies)
+                v = phxEngine('get', w, bodies(i), 'linvel');
+                om = phxEngine('get', w, bodies(i), 'angvel');
+                E = E + m*tEngineProtocol.G*P(3, i) + 0.5*m*(v*v') + 0.5*(m*L^2/12)*(om*om');
+            end
         end
 
         function a = tiltOf(w, h)
