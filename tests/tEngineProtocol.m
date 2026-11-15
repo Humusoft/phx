@@ -1831,8 +1831,67 @@ classdef tEngineProtocol < PhxTestCase
             % Each joint has the limits of its own axis only
             tc.verifyError(@() phxEngine('set', w, hinge, 'linlimits', 0, 1), "phx:engine:unsupported");
             tc.verifyError(@() phxEngine('set', w, slider, 'anglimits', 0, 1), "phx:engine:unsupported");
-            point = phxEngine('add', w, 'spherical', [a b], eye(4), eye(4), false);
-            tc.verifyError(@() phxEngine('set', w, point, 'anglimits', 0, 1), "phx:engine:unsupported");
+            ball = phxEngine('add', w, 'spherical', [a b], eye(4), eye(4), false);
+            tc.verifyError(@() phxEngine('set', w, ball, 'linlimits', 0, 1), "phx:engine:unsupported");
+            tc.verifyError(@() phxEngine('set', w, hinge, 'cone', [1 1]), "phx:engine:unsupported");
+        end
+
+        function sphericalConeBoundsTheSwingElliptically(tc)
+            % An arm 1 m long held horizontally along x by a ball joint whose
+            % frame A has its Z axis along the arm, under gravity: the arm
+            % swings down until the cone stops it. With the cone [0.6 0.3]
+            % the stop is at 0.3 rad when the fall turns the arm about Y of
+            % frame A and at 0.6 rad when it turns it about X; a cone of
+            % [Inf Inf] frees it again
+            RA = {[0 0 1; 0 -1 0; 1 0 0], 0.3    % X_A up: the fall turns about Y_A
+                  [0 0 1; 1 0 0; 0 1 0], 0.6};   % Y_A up: the fall turns about X_A
+            for k = 1:2
+                w = tc.newWorld;
+                a = tc.addBox(w, 0, [0 0 0], 0.1*[1 1 1]);
+                b = tc.addBox(w, 2, [1 0 0], 0.1*[1 1 1]);
+                TA = eye(4); TA(1:3, 1:3) = RA{k, 1};
+                TB = TA; TB(1:3, 4) = [-1 0 0];
+                j = phxEngine('add', w, 'spherical', [a b], TA, TB, false);
+                phxEngine('set', w, j, 'cone', [0.6 0.3]);
+                tc.settle(w, 2);
+                tc.verifyEqual(tEngineProtocol.tiltOf(w, b), RA{k, 2}, "AbsTol", 0.01, sprintf("Frame %d", k));
+                phxEngine('set', w, j, 'cone', [Inf Inf]);
+                tc.settle(w, 0.3);
+                tc.verifyGreaterThan(tEngineProtocol.tiltOf(w, b), RA{k, 2} + 0.2, sprintf("Freed, frame %d", k));
+            end
+        end
+
+        function sphericalTwistLimitsBoundTheTwist(tc)
+            % A ball joint at the centre of a free body of unit inertia, its
+            % swing locked by a cone of [0 0], no gravity, turned about z by
+            % a persistent torque: the twist limits [0.1 0.3] stop it at
+            % +0.3 or +0.1 as for a hinge; lower > upper frees the twist
+            for s = [1 -1]
+                w = tc.newWorld([0 0 0]);
+                a = tc.addBox(w, 0, [0 0 0], 0.2*[1 1 1]);
+                b = tc.addBox(w, 2, [0 0 0], 0.2*[1 1 1], 1, [1 1 1]);
+                j = phxEngine('add', w, 'spherical', [a b], eye(4), eye(4), false);
+                phxEngine('set', w, j, 'cone', [0 0]);
+                phxEngine('set', w, j, 'anglimits', 0.1, 0.3);
+                phxEngine('set', w, b, 'appliedtorque', [0 0 5*s]);
+                tc.settle(w, 1);
+                tc.verifyEqual(tEngineProtocol.zAngleOf(w, b), 0.2 + 0.1*s, "AbsTol", 0.01, sprintf("Turned %+d", s));
+                phxEngine('set', w, j, 'anglimits', 1, -1);
+                tc.settle(w, 0.4);
+                om = phxEngine('get', w, b, 'angvel');
+                tc.verifyEqual(om, [0 0 5*s*0.4], "AbsTol", 0.1, sprintf("Freed, turned %+d", s));
+            end
+        end
+
+        function sphericalLimitsRejectBadValues(tc)
+            w = tc.newWorld;
+            a = tc.addBox(w, 0, [0 0 2], 0.2*[1 1 1]);
+            b = tc.addBox(w, 2, [0 0 1], 0.2*[1 1 1]);
+            j = phxEngine('add', w, 'spherical', [a b], eye(4), eye(4), false);
+            for bad = {[NaN 0.5], [-0.1 0.5], 0.5, [0.1 0.2 0.3]}
+                tc.verifyError(@() phxEngine('set', w, j, 'cone', bad{1}), "phx:engine:badArgument", mat2str(bad{1}));
+            end
+            tc.verifyError(@() phxEngine('set', w, j, 'anglimits', NaN, 0), "phx:engine:badArgument");
         end
 
         function springJointDeflectsByWeightOverStiffness(tc)
@@ -2549,6 +2608,12 @@ classdef tEngineProtocol < PhxTestCase
             % (negligibly short) step, as PHX reads it
             [ids, T] = phxEngine('step', w, 1e-6);
             p = T(1:3, 4, ids == h);
+        end
+
+        function a = tiltOf(w, h)
+            % Angle between the x axis of a body and the world x axis
+            T = phxEngine('get', w, h, 'transform');
+            a = acos(min(1, T(1, 1)));
         end
 
         function a = zAngleOf(w, h)
