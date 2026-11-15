@@ -7,7 +7,9 @@ classdef tJointLimits < PhxTestCase
 %   it free. phx.RevoluteJoint and phx.PrismaticJoint name it Limits,
 %   phx.CylindricalJoint AngularLimits and LinearLimits, and
 %   phx.GenericJoint and phx.BushingJoint hold one such pair per axis in the
-%   rows of 3-by-2 AngularLimits and LinearLimits. These tests pin that down:
+%   rows of 3-by-2 AngularLimits and LinearLimits, and phx.SphericalJoint
+%   bounds its twist by TwistLimits and its swing by the half-angles of an
+%   elliptic cone, ConeAngle. These tests pin that down:
 %
 %     * the default is free, except for the rigid generic joint; a scalar
 %       locks at that value;
@@ -16,7 +18,9 @@ classdef tJointLimits < PhxTestCase
 %     * a driven joint stops at whichever limit it is driven against, also
 %       for a range without the zero, in the sense Angle measures;
 %     * limits change a running simulation;
-%     * a stop carries the load, and its reaction is part of the feedback.
+%     * a stop carries the load, and its reaction is part of the feedback;
+%     * the cone stops the swing at the half-angle of the axis it turns
+%       about, and a locked twist makes a constant-velocity joint.
 %
 %   A body resting on a stop leaves it now and then for one step and is
 %   caught again with twice the impulse (the engine engages a stop only at
@@ -25,7 +29,8 @@ classdef tJointLimits < PhxTestCase
 %   What the six rows of a generic joint mean in motion is in tGenericJoint.
 %
 %   See also phx.RevoluteJoint, phx.PrismaticJoint, phx.CylindricalJoint,
-%   phx.GenericJoint, phx.BushingJoint, tGenericJoint, tJointMotors
+%   phx.GenericJoint, phx.BushingJoint, phx.SphericalJoint, tGenericJoint,
+%   tJointMotors
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 
@@ -42,6 +47,9 @@ classdef tJointLimits < PhxTestCase
             cyl = phx.CylindricalJoint(base, arm);
             tc.verifyEqual(cyl.LinearLimits, [-Inf Inf]);
             tc.verifyEqual(cyl.AngularLimits, [-Inf Inf]);
+            ball = phx.SphericalJoint(base, arm);
+            tc.verifyEqual(ball.ConeAngle, [pi pi]);
+            tc.verifyEqual(ball.TwistLimits, [-Inf Inf]);
         end
 
         function scalarLocksAtThatValue(tc)
@@ -53,6 +61,24 @@ classdef tJointLimits < PhxTestCase
             tc.verifyEqual(pri.Limits, [-0.5 -0.5]);
             tc.verifyEqual(cyl.LinearLimits, [-0.5 -0.5]);
             tc.verifyEqual(cyl.AngularLimits, [0.2 0.2]);
+            % A scalar cone is circular
+            ball = phx.SphericalJoint(base, arm, "TwistLimits", 0.2, "ConeAngle", 0.4);
+            tc.verifyEqual(ball.TwistLimits, [0.2 0.2]);
+            tc.verifyEqual(ball.ConeAngle, [0.4 0.4]);
+        end
+
+        function coneAngleIsValidated(tc)
+            % Half-angles within [0, pi]; the twist follows the angular rules
+            [base, arm] = tc.pair;
+            ball = phx.SphericalJoint(base, arm);
+            for bad = {-0.1, [0.2 4], NaN, Inf}
+                tc.verifyError(@() set(ball, "ConeAngle", bad{1}), "phx:Joint:invalidLimits", mat2str(bad{1}));
+            end
+            ball.ConeAngle = [0 pi];
+            tc.verifyEqual(ball.ConeAngle, [0 pi]);
+            for bad = {[0.3 0.1], [0 pi], [-Inf 0.5]}
+                tc.verifyError(@() set(ball, "TwistLimits", bad{1}), "phx:Joint:invalidLimits", mat2str(bad{1}));
+            end
         end
 
         function invalidLimitsAreRejected(tc)
@@ -227,6 +253,81 @@ classdef tJointLimits < PhxTestCase
             sim.step(0.5, 0.5/tc.Dt, -1);
             tc.verifyLessThan(body.Position(3), 0, "Freed");
         end
+
+        function sphericalConeStopsTheSwingElliptically(tc)
+            % An arm 1 m long held horizontally along x, the Z axis of frame
+            % A along it, swings down under gravity until the cone [0.6 0.3]
+            % stops it: at 0.3 rad when the fall turns it about Y of frame A,
+            % at 0.6 rad when about X; a cone of pi frees it again
+            frames = {[0 0 1; 0 -1 0; 1 0 0], 0.3    % X of frame A up
+                      [0 0 1; 1 0 0; 0 1 0], 0.6};   % Y of frame A up
+            for k = 1:2
+                tc.requireEngine;
+                base = tc.spawnBody([0 0 0], "Type", "static");
+                arm = tc.spawnBody([1 0 0], "Mass", 1, "Inertia", 0.01*[1 1 1]);
+                tc.addTeardown(@() delete([base arm]));
+                TA = eye(4); TA(1:3, 1:3) = frames{k, 1};
+                TB = TA; TB(1:3, 4) = [-1 0 0];
+                joint = phx.SphericalJoint(base, arm, "TransformA", TA, "TransformB", TB, "ConeAngle", [0.6 0.3]);
+                sim = phx.Simulation([base arm], "Gravity", [0 0 -tc.G]);
+                tc.addTeardown(@() delete(sim));
+                sim.step(2, 2/tc.Dt, -1);
+                tc.verifyEqual(tc.tilt(arm), frames{k, 2}, "AbsTol", 0.01, sprintf("Frame %d", k));
+                joint.ConeAngle = pi;
+                sim.step(0.3, 0.3/tc.Dt, -1);
+                tc.verifyGreaterThan(tc.tilt(arm), frames{k, 2} + 0.2, sprintf("Freed, frame %d", k));
+            end
+        end
+
+        function sphericalTwistStopsAndChangesWhileRunning(tc)
+            % The swing locked by a cone of 0, the twist bounded to [0.1 0.3]
+            % rad: turned by a torque about z it stops at either limit as a
+            % hinge does; freed, it spins up
+            for s = [1 -1]
+                tc.requireEngine;
+                base = tc.spawnBody([0 0 0], "Type", "static");
+                body = tc.spawnBody([0 0 0], "Mass", 1, "Inertia", [1 1 1]);
+                tc.addTeardown(@() delete([base body]));
+                joint = phx.SphericalJoint(base, body, "ConeAngle", 0, "TwistLimits", [0.1 0.3]);
+                sim = phx.Simulation([base body], "Gravity", [0 0 0]);
+                tc.addTeardown(@() delete(sim));
+                body.AppliedTorque = [0 0 5*s];
+                sim.step(1, 1/tc.Dt, -1);
+                tc.verifyEqual(joint.Angle, 0.2 + 0.1*s, "AbsTol", 0.01, sprintf("Turned %+d", s));
+                joint.TwistLimits = [-Inf Inf];
+                sim.step(0.4, 0.4/tc.Dt, -1);
+                tc.verifyEqual(body.AngularVelocity(3), 5*s*0.4, "AbsTol", 0.1, sprintf("Freed, turned %+d", s));
+            end
+        end
+
+        function lockedTwistIsAConstantVelocityJoint(tc)
+            % Shaft A driven at 2 rad/s about z, shaft B in a bearing whose
+            % axis is tilted by 30 deg, joined by a ball joint with the twist
+            % locked and the cone free: B turns about its axis exactly as
+            % fast as A about its own, in every step
+            tc.requireEngine;
+            beta = pi/6;
+            zB = [sin(beta) 0 cos(beta)];
+            ground = tc.spawnBody([0 0 0], "Type", "static");
+            shaftA = tc.spawnBody([0 0 -0.5], "Mass", 1, "Inertia", [0.1 0.1 0.01]);
+            shaftB = tc.spawnBody(0.5*zB, "Mass", 1, "Inertia", [0.1 0.1 0.01], ...
+                "Orientation", [cos(beta) 0 sin(beta); 0 1 0; -sin(beta) 0 cos(beta)]);
+            tc.addTeardown(@() delete([ground shaftA shaftB]));
+            phx.RevoluteJoint(ground, shaftA, "PointA", [0 0 -0.5], "TargetVelocity", 2, "MaxTorque", 1e3);
+            phx.RevoluteJoint(ground, shaftB, "PointA", 0.5*zB, "AxisA", zB);
+            phx.SphericalJoint(shaftA, shaftB, "PointA", [0 0 0.5], "PointB", [0 0 -0.5], "TwistLimits", 0);
+            sim = phx.Simulation([ground shaftA shaftB], "Gravity", [0 0 0]);
+            tc.addTeardown(@() delete(sim));
+            sim.step(0.25, 0.25/tc.Dt, -1);
+            n = 100;
+            w = zeros(n, 2);
+            for k = 1:n
+                sim.step(tc.Dt, 1, -1);
+                w(k, :) = [shaftA.AngularVelocity(3), shaftB.AngularVelocity*zB'];
+            end
+            tc.verifyEqual(w(:, 1), 2*ones(n, 1), "AbsTol", 1e-3, "Shaft A at its motor's speed");
+            tc.verifyEqual(w(:, 2), w(:, 1), "AbsTol", 1e-3, "Shaft B as fast as shaft A");
+        end
     end
 
     methods (Access = private)
@@ -259,6 +360,12 @@ classdef tJointLimits < PhxTestCase
             joint = makeJoint(base, body, "PointA", [0 0 -1], "PointB", [0 0 0], varargin{:});
             sim = phx.Simulation([base body], "Gravity", [0 0 -tc.G]);
             tc.addTeardown(@() delete(sim));
+        end
+
+        function a = tilt(~, body)
+            % Angle between the x axis of a body and the world x axis.
+            R = body.Orientation;
+            a = acos(min(1, R(1, 1)));
         end
 
         function F = meanForceB(tc, sim, joint)
