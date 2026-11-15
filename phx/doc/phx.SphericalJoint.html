@@ -20,6 +20,10 @@
 <p><code class="phx-inline">phx.SphericalJoint</code> realizes a kinematic constraint with three
 degrees of freedom: free rotation about the X, Y and Z axes (a ball joint). The two bodies are
 pinned together at the given connection points but may rotate freely relative to one another.</p>
+<p>The rotation can be bounded with hard end stops: a cone, possibly elliptic, bounds how far the
+joint may swing off its axis (<code class="phx-inline">ConeAngle</code>), and a range bounds the
+twist about that axis (<code class="phx-inline">TwistLimits</code>) &mdash; a shoulder, a hip, a
+tow hitch. With the twist locked the joint is a constant-velocity joint.</p>
 
 <h2 class="phx-h2">Creation</h2>
 <h3 class="phx-h3">Syntax</h3>
@@ -44,6 +48,8 @@ bodies attached at their origins. Use <code class="phx-inline">PointA</code> and
 <tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
 <tr><td class="name">PointA</td><td class="dflt">[0 0 0]</td><td>Connection point in the local space of body A.</td></tr>
 <tr><td class="name">PointB</td><td class="dflt">[0 0 0]</td><td>Connection point in the local space of body B.</td></tr>
+<tr><td class="name">ConeAngle</td><td class="dflt">[pi pi]</td><td>Largest swing <code class="phx-inline">[angleX angleY]</code>, <span class="phx-unit">rad</span>, hard stops: the half-angles of a cone about the Z axis of joint frame A, within [0, &pi;]. A scalar makes the cone circular, 0 locks the swing in that direction, &pi; leaves it free. See <a href="#limits">Limits</a>.</td></tr>
+<tr><td class="name">TwistLimits</td><td class="dflt">[-Inf Inf]</td><td>Range of the twist about the Z axis <code class="phx-inline">[lower upper]</code>, <span class="phx-unit">rad</span>, hard stops, as <code class="phx-inline">Limits</code> of <a href="phx.RevoluteJoint.html">phx.RevoluteJoint</a>: both within (&minus;&pi;, &pi;), equal values (or a scalar) to lock the twist, or <code class="phx-inline">[-Inf Inf]</code> for no stop.</td></tr>
 <tr><td class="name">Overlay</td><td class="dflt">false</td><td>Draw the joint as an overlay (always on top).</td></tr>
 </table>
 <p>Reaction feedback (<code class="phx-inline">ForceA</code>, <code class="phx-inline">TorqueA</code>,
@@ -55,10 +61,32 @@ default <code class="phx-inline">false</code>) are inherited from
 <code class="phx-inline">Distance</code> are inherited from there too &mdash; the rotation
 about the joint axis and the offset along it, both measured from the first joint frame to
 the second. This joint leaves all three rotations free, so <code class="phx-inline">Angle</code> reports only the turn about the joint axis and ignores the tilt off it.</p>
-<p>The joint constrains the two connection points only and leaves all three rotations free, so it
-reads no orientation at all: the inherited <code class="phx-inline">AxisA</code>/<code class="phx-inline">AxisB</code>
-and the rotation part of the joint frames (<code class="phx-inline">EulerAngles*</code>,
-<code class="phx-inline">AxisAngle*</code>) have <b>no effect</b> here.</p>
+<p>Without limits the joint constrains the two connection points only, so it reads no orientation at
+all: the inherited <code class="phx-inline">AxisA</code>/<code class="phx-inline">AxisB</code> and the
+rotation part of the joint frames (<code class="phx-inline">EulerAngles*</code>,
+<code class="phx-inline">AxisAngle*</code>) have <b>no effect</b> then. With limits they matter: the
+Z axis of joint frame A is the axis of the cone and of the twist, its X and Y axes the axes of the
+two half-angles, and the X axes of the two frames give the zero of the twist.</p>
+
+<h2 class="phx-h2" id="limits">Limits</h2>
+<p><code class="phx-inline">ConeAngle</code> bounds the swing: the Z axis of joint frame B may turn
+by at most <i>angleX</i> about the X axis and <i>angleY</i> about the Y axis of joint frame A, and
+in between by the ellipse through those two. A circular cone (a scalar) is exact; an elliptic one is
+exact on its axes and close to an elliptic cone between them. Any half-angle above about
+179.5&deg; bounds nothing, and &pi;, the default, leaves the swing free.</p>
+<p><code class="phx-inline">TwistLimits</code> bounds the rotation about the Z axis as
+<code class="phx-inline">Limits</code> of a revolute joint does. The twist is measured after the
+swing, so at zero swing it is the <code class="phx-inline">Angle</code> of the joint. Near a swing of
+&pi; the twist is undefined, so bound it only with a cone well inside that. The stops do not bounce,
+their reaction is part of the reaction feedback, and both properties can be changed at any time, also
+while the simulation runs or from Simulink. Values out of range are an error
+(<code class="phx-inline">phx:Joint:invalidLimits</code>).</p>
+<div class="phx-note">
+<span class="lbl">Constant-velocity joint.</span> <code class="phx-inline">TwistLimits = 0</code> with a
+free cone makes a homokinetic joint: body B turns about its Z axis by exactly the angle body A turns
+about its own, whatever the angle between the two axes &mdash; unlike a Cardan joint, whose output
+speed varies over every turn.
+</div>
 
 <h2 class="phx-h2">Examples</h2>
 <h4 class="phx-h4">Chain two arms with a ball joint</h4>
@@ -77,6 +105,21 @@ delete(sim);</pre>
 <img src="img/sphericaljoint.png" alt="Two boxes linked by a spherical joint">
 <figcaption>The falling pair of boxes stays connected through the ball joint drawn between them.</figcaption>
 </figure>
+
+<h4 class="phx-h4">Limit the swing of an arm with an elliptic cone</h4>
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+base = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>);
+arm  = phx.Body(<span class="str">"Position"</span>, [1 0 0], <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [2 0.2 0.2]});
+
+<span class="cmt">% The cone axis (Z of frame A) along the arm, frame A's X axis up</span>
+TA = [0 0 1 0; 0 -1 0 0; 1 0 0 0; 0 0 0 1];
+TB = TA;  TB(1:3, 4) = [-1 0 0];
+phx.SphericalJoint(base, arm, <span class="str">"TransformA"</span>, TA, <span class="str">"TransformB"</span>, TB, <span class="str">"ConeAngle"</span>, [0.6 0.3]);
+
+sim = phx.Simulation;
+sim.step(3, 600, 5);      <span class="cmt">% the arm drops 0.3 rad (about Y of frame A) and stays</span>
+delete(sim);</pre>
 
 <div class="phx-seealso">
 <span class="lbl">See also</span>

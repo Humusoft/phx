@@ -69,6 +69,7 @@ each other; an offset along the sliding axis merely shifts the zero of the free 
 <tr><td class="name">TargetVelocity</td><td class="dflt">0</td><td>Target motor velocity along the joint axis, <span class="phx-unit">m/s</span>. The sign gives the direction of travel.</td></tr>
 <tr><td class="name">MaxForce</td><td class="dflt">0</td><td>Maximal force the motor can deliver, <span class="phx-unit">N</span>. Must be non-negative; 0 means no motor.</td></tr>
 <tr><td class="name">AppliedForce</td><td class="dflt">0</td><td>Force applied along the joint axis, <span class="phx-unit">N</span>, on body B and, reversed, on body A; it acts until changed. It is independent of the motor: both act at once, the motor regulating against the applied force like against any other load.</td></tr>
+<tr><td class="name">Limits</td><td class="dflt">[-Inf Inf]</td><td>Range of the joint travel <code class="phx-inline">[lower upper]</code>, <span class="phx-unit">m</span>, hard stops. Equal values (or a scalar) lock the joint at that distance, <code class="phx-inline">-Inf</code> or <code class="phx-inline">Inf</code> leave out the stop on that side. See <a href="#endstops">End stops</a>.</td></tr>
 <tr><td class="name">Overlay</td><td class="dflt">false</td><td>Draw the joint as an overlay (always on top).</td></tr>
 </table>
 <p>Reaction feedback (<code class="phx-inline">ForceA</code>, <code class="phx-inline">TorqueA</code>,
@@ -116,6 +117,17 @@ cubic metre of default density already weighs a tonne. Like the motor of a
 <a href="phx.RevoluteJoint.html">phx.RevoluteJoint</a>, this one and <code class="phx-inline">AppliedForce</code> act between the two
 bodies, so their reaction lands on the other body: a carriage driven along a rail pushes back on whatever holds the
 rail.</div>
+
+<h2 class="phx-h2" id="endstops">End stops</h2>
+<p><code class="phx-inline">Limits</code> bounds the travel to a range of
+<code class="phx-inline">Distance</code> with hard end stops that do not bounce; their reaction is
+part of the reaction feedback, so a carriage resting on its lower stop reports its weight there. The
+range need not contain the zero, either side may be left open with <code class="phx-inline">-Inf</code>
+or <code class="phx-inline">Inf</code>, and equal limits lock the joint at that distance &mdash; a
+scalar does the same. The limits can be changed at any time, also while the simulation runs or from
+Simulink. Reversed or NaN limits are an error (<code class="phx-inline">phx:Joint:invalidLimits</code>).</p>
+<pre class="phx-code">lift = phx.PrismaticJoint(mast, fork, <span class="str">"Limits"</span>, [0 2.5]);  <span class="cmt">% 0 to 2.5 m of travel</span>
+lift.Limits = [-Inf 2.5];                                       <span class="cmt">% no lower stop</span></pre>
 
 <h2 class="phx-h2">Examples</h2>
 <h4 class="phx-h4">Bounce a slider down an inclined rail</h4>

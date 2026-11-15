@@ -2,8 +2,9 @@
 name: phx-constraints-forces
 description: >
   Connect and actuate PHX bodies — joints (Fixed/Bushing/Revolute/Prismatic/
-  Cylindrical/Spherical/Gear/Generic), springs and ropes (Spring/Rope/TorsionSpring), the
-  persistent body loads AppliedForce/AppliedTorque, force/field elements
+  Cylindrical/Spherical/Gear/Generic) and their end stops (limits, swing cone), springs and
+  ropes (Spring/Rope/TorsionSpring), the persistent body loads
+  AppliedForce/AppliedTorque, force/field elements
   (Thruster, Buoyancy, Resistance, Dipole, Monopole) and one-step
   applyForce/applyTorque. Also covers driving parameters over time with phx.Script,
   per-step control laws with phx.Function, and the read-state / set-actuator / step
@@ -38,14 +39,15 @@ Joint classes:
   or the dependent `PointA/B` + `EulerAnglesA/B` (z→y→x) views into them.
 - `phx.BushingJoint` — compliant counterpart of `phx.FixedJoint`; an elastic bushing
   holding both bodies with per-axis `LinearStiffness/Damping` + `AngularStiffness/Damping`
-  across all 6 DOF. Optional hard end stops via `Lower/UpperLinearLimits` (m) and
-  `Lower/UpperAngularLimits` (rad): per axis, lower>upper = free (default), lower==upper =
-  locked, lower<upper = limited travel. Springs and limits can be changed at any time, also
-  mid-run. The springs are solved implicitly: stable at any stiffness (a very stiff one
-  holds almost like `FixedJoint`), with a little numerical damping at coarse steps.
+  across all 6 DOF. Optional hard end stops via `LinearLimits` (m) and `AngularLimits`
+  (rad), 3×2, one row `[lower upper]` per axis X, Y, Z; default `[-Inf Inf]` in every row
+  (spring only), `[v v]` locks the axis rigidly, a range limits the travel while the spring
+  acts inside it. Springs and limits can be changed at any time, also mid-run. The springs
+  are solved implicitly: stable at any stiffness (a very stiff one holds almost like
+  `FixedJoint`), with a little numerical damping at coarse steps.
 - `phx.RevoluteJoint` — hinge; 1 rotational DOF (`PointA/B`, `AxisA/B`). **Motorized:**
   `TargetVelocity` (rad/s) + `MaxTorque` (N·m), or a plain torque `AppliedTorque` (N·m)
-  — see the motor section below.
+  — see the motor section below. End stops: `Limits` (rad), e.g. `[0 pi/2]` for a door.
 - `phx.PrismaticJoint` — slider; 1 translational DOF along `AxisA/B`, i.e. the **local Z
   axis of the joint frame** — the same axis convention as the hinge, so the default frames
   slide along world Z. Mind that this joint also **locks the rotation about** that axis,
@@ -53,23 +55,41 @@ Joint classes:
   otherwise set the frames in full via `TransformA/B` (4×4) or the dependent `PointA/B` +
   `EulerAnglesA/B` (z→y→x) views, so both frames coincide in *every* axis.
   **Motorized:** `TargetVelocity` (m/s) + `MaxForce` (N), or a plain force `AppliedForce` (N).
+  End stops: `Limits` (m), one side may be open (`[-Inf 0.5]`).
   See `phxex_camvalve` (valve train), `phxex_vengine`, `phxex_cartpendulum`.
 - `phx.CylindricalJoint` — shaft in a sleeve; 2 DOF, translation along **and** rotation about
   `AxisA/B` (the joint frame's local Z). A prismatic and a revolute joint on one axis. Unlike
   the prismatic joint it leaves the rotation about the axis free, so `AxisA/B` alone fully
   describe it — the frames need not agree on their roll about the axis. `Angle` and
-  `Distance` report both of its coordinates. No limits (for end stops use
-  `phx.GenericJoint` with the Z axes bounded) and **no motor** — it is built on the 6DOF
+  `Distance` report both of its coordinates. End stops: `LinearLimits` (m) and
+  `AngularLimits` (rad), each 1×2. It has **no motor** — it is built on the 6DOF
   constraint, not on the slider that carries the motor.
-- `phx.SphericalJoint` — ball; 3 rotational DOF.
+- `phx.SphericalJoint` — ball; 3 rotational DOF. Optional limits for shoulders and hips:
+  `ConeAngle = [angleX angleY]` (rad, default `[pi pi]` = free) bounds the swing of frame
+  B's Z axis by an elliptic cone about frame A's Z axis (half-angles about A's X and Y; a
+  scalar is a circular cone, 0 locks that direction); `TwistLimits` (rad) bounds the twist
+  about Z. With limits the **joint frames matter** (`AxisA/B`, `TransformA/B`): Z is the
+  cone and twist axis. `"TwistLimits", 0` with a free cone is a **constant-velocity
+  (homokinetic) joint** — B turns about its axis by exactly A's angle at any shaft angle.
 - `phx.GearJoint` — couples the rotation of two bodies by a ratio.
 - `phx.GenericJoint` — 6 DOF, each axis of the joint frame independently locked, bounded
-  or free via `Lower/UpperLinearLimits` (m) and `Lower/UpperAngularLimits` (rad): per axis,
-  lower==upper = locked at that value (**all default to 0, so a bare joint is rigid** —
-  open only what should move), lower<upper = bounded travel, lower>upper = free. Angles are
-  right-handed. The rotation is split into a **twist** about the frame's Z axis and a
-  **swing** about X and Y, each limited separately; give a freely rotating axis Z (the
-  twist), as `CylindricalJoint` does. Limits can be changed at any time, also mid-run.
+  or free via `LinearLimits` (m) and `AngularLimits` (rad), each 3×2 with one row
+  `[lower upper]` per axis X, Y, Z: `[v v]` = locked at v (**the default is `zeros(3,2)`,
+  so a bare joint is rigid** — open only what should move), a range = bounded travel,
+  `[-Inf Inf]` = free. E.g. a slider on x bounded to ±1 m:
+  `"LinearLimits", [-1 1; 0 0; 0 0]`. Angles are right-handed. The rotation is split into
+  a **twist** about the frame's Z axis and a **swing** about X and Y, each limited
+  separately; give a freely rotating axis Z (the twist), as `CylindricalJoint` does.
+
+**End stops — one set of rules for every joint.** A limit is a pair `[lower upper]` of the
+joint coordinate (`Angle` rad, `Distance` m); equal values or a scalar lock the joint
+there, `[-Inf Inf]` (the default except `GenericJoint`) leaves it free, a linear pair may
+open one side with `-Inf`/`Inf`. Angular pairs are both within (-π, π) or `[-Inf Inf]` —
+the angle wraps, so there are no one-sided angular stops. Reversed or NaN limits error with
+`phx:Joint:invalidLimits`. Stops are hard and do not bounce; their reaction is in
+`ForceA`…`TorqueB`, so a body resting on a stop reports its weight there (it chatters
+step to step: average over a few steps). All limits can be changed mid-run or driven from
+Simulink — move a stop, lock a joint and release it again.
 
 Axes default to local Z (`AxisA = AxisB = [0 0 1]`); set them when the hinge isn't
 on Z. `Overlay` (logical) draws the joint glyph on top of geometry.

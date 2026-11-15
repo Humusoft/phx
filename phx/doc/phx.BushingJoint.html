@@ -55,18 +55,18 @@ period of the spring; use more substeps where an undamped bushing has to keep it
 <tr><td class="name">LinearDamping</td><td class="dflt">[1e3 1e3 1e3]</td><td>Linear damping per axis (1&times;3), <span class="phx-unit">N&middot;s/m</span>.</td></tr>
 <tr><td class="name">AngularStiffness</td><td class="dflt">[1e3 1e3 1e3]</td><td>Angular stiffness per axis (1&times;3), <span class="phx-unit">N&middot;m/rad</span>.</td></tr>
 <tr><td class="name">AngularDamping</td><td class="dflt">[1e2 1e2 1e2]</td><td>Angular damping per axis (1&times;3), <span class="phx-unit">N&middot;m&middot;s/rad</span>.</td></tr>
-<tr><td class="name">LowerLinearLimits</td><td class="dflt">[1 1 1]</td><td>Lower translational end stop per axis (1&times;3), <span class="phx-unit">m</span>.</td></tr>
-<tr><td class="name">UpperLinearLimits</td><td class="dflt">[-1 -1 -1]</td><td>Upper translational end stop per axis (1&times;3), <span class="phx-unit">m</span>.</td></tr>
-<tr><td class="name">LowerAngularLimits</td><td class="dflt">[1 1 1]</td><td>Lower rotational end stop per axis (1&times;3), <span class="phx-unit">rad</span>.</td></tr>
-<tr><td class="name">UpperAngularLimits</td><td class="dflt">[-1 -1 -1]</td><td>Upper rotational end stop per axis (1&times;3), <span class="phx-unit">rad</span>.</td></tr>
+<tr><td class="name">LinearLimits</td><td class="dflt">[-Inf Inf] per row</td><td>Range of the translation along each axis, one row <code class="phx-inline">[lower upper]</code> per axis X, Y, Z (3&times;2), <span class="phx-unit">m</span>, hard stops.</td></tr>
+<tr><td class="name">AngularLimits</td><td class="dflt">[-Inf Inf] per row</td><td>Range of the rotation about each axis, one row per axis (3&times;2), <span class="phx-unit">rad</span>, hard stops.</td></tr>
 <tr><td class="name">Overlay</td><td class="dflt">false</td><td>Draw the joint as an overlay (always on top).</td></tr>
 </table>
-<p>The end-stop limits bound the relative travel on each axis. Setting <b>lower &gt; upper</b>
-disables the stop, leaving the axis free (spring only) &mdash; this is the default; <b>lower ==
-upper</b> locks the axis rigidly at that value; <b>lower &lt; upper</b> limits the travel to that
-range while the spring acts inside it. The angles are measured in the right-handed sense; the
-rotation is split into a twist about the Z axis and a swing about the X and Y axes, as for
-<a href="phx.GenericJoint.html">phx.GenericJoint</a>.</p>
+<p>The end-stop limits bound the relative travel on each axis, with the rules of
+<a href="phx.GenericJoint.html">phx.GenericJoint</a>. A row of <b>[-Inf Inf]</b> has no stop,
+leaving the axis to the spring alone &mdash; this is the default; <b>[v v]</b> locks the axis
+rigidly at <i>v</i>; <b>[lower upper]</b> limits the travel to that range while the spring acts
+inside it, and a linear row may leave out one side with <code class="phx-inline">-Inf</code> or
+<code class="phx-inline">Inf</code>. The angles are measured in the right-handed sense, each angular
+row both within (&minus;&pi;, &pi;) unless free; the rotation is split into a twist about the Z axis
+and a swing about the X and Y axes, as for <a href="phx.GenericJoint.html">phx.GenericJoint</a>.</p>
 <p>The stiffness, the damping and the limits can all be changed at any time, also while the
 simulation runs. An axis whose stiffness and damping are both zero has no spring.</p>
 <p>Reaction feedback and the <code class="phx-inline">MutualCollisions</code> switch (collisions
@@ -98,7 +98,7 @@ delete(sim);</pre>
 
 <h4 class="phx-h4">Bushing with a hard end stop</h4>
 <p>A soft silent-block that bottoms out: the vertical (Z) travel is limited to
-&plusmn;5&nbsp;mm while X and Y stay free (lower&nbsp;&gt;&nbsp;upper). The body's weight would
+&plusmn;5&nbsp;mm while X and Y keep no stop. The body's weight would
 sink far past that on so soft a spring, so the end stop catches it at 5&nbsp;mm.</p>
 <pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
 
@@ -107,8 +107,7 @@ b = phx.Body(<span class="str">"Position"</span>, [0 0 2]);
 
 phx.BushingJoint(a, b, ...
     <span class="str">"LinearStiffness"</span>, [1e3 1e3 1e3], ...
-    <span class="str">"LowerLinearLimits"</span>, [1 1 -0.005], ...   <span class="cmt">% X, Y free; Z lower stop</span>
-    <span class="str">"UpperLinearLimits"</span>, [-1 -1 0.005]);      <span class="cmt">% Z upper stop (+-5 mm)</span>
+    <span class="str">"LinearLimits"</span>, [-Inf Inf; -Inf Inf; -0.005 0.005]);   <span class="cmt">% Z stops at +-5 mm</span>
 
 sim = phx.Simulation;
 b.applyForce([0 0 -30]);

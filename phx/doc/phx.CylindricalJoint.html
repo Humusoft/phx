@@ -59,6 +59,8 @@ free translation, and a roll about it the zero of the free rotation.</p>
 <tr><td class="name">PointB</td><td class="dflt">[0 0 0]</td><td>Connection point in the local space of body B; the translation part of <code class="phx-inline">TransformB</code> (dependent).</td></tr>
 <tr><td class="name">EulerAnglesA</td><td class="dflt">[0 0 0]</td><td>Euler angles (z&rarr;y&rarr;x order) of the joint frame relative to body A; the rotation part of <code class="phx-inline">TransformA</code> (dependent).</td></tr>
 <tr><td class="name">EulerAnglesB</td><td class="dflt">[0 0 0]</td><td>Euler angles (z&rarr;y&rarr;x order) of the joint frame relative to body B; the rotation part of <code class="phx-inline">TransformB</code> (dependent).</td></tr>
+<tr><td class="name">LinearLimits</td><td class="dflt">[-Inf Inf]</td><td>Range of the travel along the axis <code class="phx-inline">[lower upper]</code>, <span class="phx-unit">m</span>, hard stops, as <code class="phx-inline">Limits</code> of <a href="phx.PrismaticJoint.html">phx.PrismaticJoint</a>: equal values (or a scalar) lock the travel, <code class="phx-inline">-Inf</code>/<code class="phx-inline">Inf</code> leave out the stop on that side.</td></tr>
+<tr><td class="name">AngularLimits</td><td class="dflt">[-Inf Inf]</td><td>Range of the rotation about the axis <code class="phx-inline">[lower upper]</code>, <span class="phx-unit">rad</span>, hard stops, as <code class="phx-inline">Limits</code> of <a href="phx.RevoluteJoint.html">phx.RevoluteJoint</a>: both within (&minus;&pi;, &pi;), or <code class="phx-inline">[-Inf Inf]</code> for no stop.</td></tr>
 <tr><td class="name">Overlay</td><td class="dflt">false</td><td>Draw the joint as an overlay (always on top).</td></tr>
 </table>
 <p>Reaction feedback (<code class="phx-inline">ForceA</code>, <code class="phx-inline">TorqueA</code>,
@@ -76,11 +78,14 @@ joint leaves the rotation about the axis free, so <code class="phx-inline">AxisA
 <code class="phx-inline">AxisB</code> alone fully describe it &mdash; the two frames need not agree
 on how they are rolled about the axis, and the solver does not twist the bodies into line.
 </div>
+<p><code class="phx-inline">LinearLimits</code> and <code class="phx-inline">AngularLimits</code>
+bound the two free motions with hard end stops that do not bounce, measured as
+<code class="phx-inline">Distance</code> and <code class="phx-inline">Angle</code>; their reaction is
+part of the reaction feedback. They follow the rules of the prismatic and the revolute joint and can
+be changed at any time, also while the simulation runs or from Simulink.</p>
 <div class="phx-note">
-<span class="lbl">Tip.</span> For end stops on the travel or on the rotation, use
-<a href="phx.GenericJoint.html">phx.GenericJoint</a> with the Z axes bounded instead of free; for a
-compliant version, <a href="phx.BushingJoint.html">phx.BushingJoint</a> with the Z stiffnesses set
-to zero.
+<span class="lbl">Tip.</span> For a compliant version, use
+<a href="phx.BushingJoint.html">phx.BushingJoint</a> with the Z stiffnesses set to zero.
 </div>
 
 <h2 class="phx-h2">Examples</h2>

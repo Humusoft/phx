@@ -61,6 +61,7 @@ axes with name-value arguments (<code class="phx-inline">PointA</code>, <code cl
 <tr><td class="name">TargetVelocity</td><td class="dflt">0</td><td>Target motor velocity about the joint axis, <span class="phx-unit">rad/s</span>. The sign gives the direction of rotation.</td></tr>
 <tr><td class="name">MaxTorque</td><td class="dflt">0</td><td>Maximal torque the motor can deliver, <span class="phx-unit">N&middot;m</span>. Must be non-negative; 0 means no motor.</td></tr>
 <tr><td class="name">AppliedTorque</td><td class="dflt">0</td><td>Torque applied about the joint axis, <span class="phx-unit">N&middot;m</span>, on body B and, reversed, on body A; it acts until changed. It is independent of the motor: both act at once, the motor regulating against the applied torque like against any other load.</td></tr>
+<tr><td class="name">Limits</td><td class="dflt">[-Inf Inf]</td><td>Range of the joint angle <code class="phx-inline">[lower upper]</code>, <span class="phx-unit">rad</span>, hard stops. Both within (&minus;&pi;, &pi;), equal values (or a scalar) to lock the joint at that angle, or <code class="phx-inline">[-Inf Inf]</code> for no stop. See <a href="#endstops">End stops</a>.</td></tr>
 <tr><td class="name">Overlay</td><td class="dflt">false</td><td>Draw the joint as an overlay (always on top).</td></tr>
 </table>
 <p>Reaction feedback (<code class="phx-inline">ForceA</code>, <code class="phx-inline">TorqueA</code>,
@@ -108,6 +109,20 @@ the other body</b>. Driving a wheel hinged to a
 chassis therefore pushes back on the chassis, which is what a real motor mounted on it does. With
 two free bodies both turn, in opposite directions, split inversely by their moments of inertia -
 the motor sets their relative velocity, not the absolute speed of either one.</div>
+
+<h2 class="phx-h2" id="endstops">End stops</h2>
+<p><code class="phx-inline">Limits</code> bounds the rotation to a range of
+<code class="phx-inline">Angle</code> with hard end stops that do not bounce; their reaction is part
+of the reaction feedback. The range need not contain the zero, and equal limits lock the hinge at that
+angle &mdash; a scalar does the same. The limits can be changed at any time, also while the simulation
+runs or from Simulink, so a stop can be moved, or the hinge locked and released again.</p>
+<p>The engine measures the angle wrapped to [&minus;&pi;, &pi;], so the limits lie within
+(&minus;&pi;, &pi;) and both are finite unless the hinge is free: the rotation is always bounded on
+both sides, and the rest of the circle is the gap behind the stops. A hinge that passes a stop by more
+than half that gap within one step comes out at the other stop, so a fast hinge needs room behind its
+stops. Reversed or NaN limits are an error (<code class="phx-inline">phx:Joint:invalidLimits</code>).</p>
+<pre class="phx-code">door = phx.RevoluteJoint(frame, leaf, <span class="str">"Limits"</span>, [0 pi/2]);  <span class="cmt">% opens to 90 deg</span>
+door.Limits = 0;                                                  <span class="cmt">% locked shut</span></pre>
 
 <h2 class="phx-h2">Examples</h2>
 <h4 class="phx-h4">Hinge a pendulum to a static base</h4>

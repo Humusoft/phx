@@ -24,22 +24,28 @@ locking all six axes gives a fixed joint, leaving one translation free a prismat
 rotation free a revolute joint.</p>
 
 <p>The degrees of freedom are the axes of the joint frame of body A. The translation of body B along
-them is bounded by <code class="phx-inline">LowerLinearLimits</code> and
-<code class="phx-inline">UpperLinearLimits</code>, its rotation about them by
-<code class="phx-inline">LowerAngularLimits</code> and <code class="phx-inline">UpperAngularLimits</code>,
-measured in the right-handed sense. On each axis independently:</p>
+them is bounded by <code class="phx-inline">LinearLimits</code>, its rotation about them by
+<code class="phx-inline">AngularLimits</code>, measured in the right-handed sense. Both are
+3&times;2 matrices with one row <code class="phx-inline">[lower upper]</code> per axis X, Y and Z.
+On each axis independently:</p>
 <table class="phx-tbl">
-<tr><th>Limits</th><th>Behaviour</th></tr>
-<tr><td class="name">lower == upper</td><td>The axis is locked at that value. This is the default.</td></tr>
-<tr><td class="name">lower &lt; upper</td><td>The motion is bounded to that range, free inside it.</td></tr>
-<tr><td class="name">lower &gt; upper</td><td>The axis is free, the joint does not constrain it.</td></tr>
+<tr><th>Row</th><th>Behaviour</th></tr>
+<tr><td class="name">[v v]</td><td>The axis is locked at <i>v</i>. <code class="phx-inline">[0 0]</code> is the default.</td></tr>
+<tr><td class="name">[lower upper]</td><td>The motion is bounded to that range by hard end stops, free inside it.</td></tr>
+<tr><td class="name">[-Inf Inf]</td><td>The axis is free, the joint does not constrain it.</td></tr>
 </table>
+<p>A linear row may leave out the stop on one side with <code class="phx-inline">-Inf</code> or
+<code class="phx-inline">Inf</code>. An angular row is either <code class="phx-inline">[-Inf Inf]</code>
+or two angles within (&minus;&pi;, &pi;). A scalar sets all six values, so
+<code class="phx-inline">"AngularLimits", 0</code> locks every rotation. Reversed or NaN limits are an
+error (<code class="phx-inline">phx:Joint:invalidLimits</code>). The stops do not bounce, and their
+reaction is part of the reaction feedback.</p>
 
 <div class="phx-note">
 <span class="lbl">Note.</span> All limits default to zero, so a joint created without them locks all
 six axes and behaves like a <a href="phx.FixedJoint.html">phx.FixedJoint</a> &mdash; open only the
-axes that are meant to move. The limits can be changed at any time, also while the simulation runs:
-an end stop can be moved, and an axis locked or released.
+axes that are meant to move. The limits can be changed at any time, also while the simulation runs
+or from Simulink: an end stop can be moved, and an axis locked or released.
 </div>
 
 <p>The rotation of body B is split into a <em>twist</em> and a <em>swing</em>: the rotation about the
@@ -78,10 +84,8 @@ name-value arguments.</p>
 <tr><td class="name">PointB</td><td class="dflt">[0 0 0]</td><td>Connection point in the local space of body B; the translation part of <code class="phx-inline">TransformB</code> (dependent).</td></tr>
 <tr><td class="name">EulerAnglesA</td><td class="dflt">[0 0 0]</td><td>Euler angles (z&rarr;y&rarr;x order) of the joint frame relative to body A; the rotation part of <code class="phx-inline">TransformA</code> (dependent).</td></tr>
 <tr><td class="name">EulerAnglesB</td><td class="dflt">[0 0 0]</td><td>Euler angles (z&rarr;y&rarr;x order) of the joint frame relative to body B; the rotation part of <code class="phx-inline">TransformB</code> (dependent).</td></tr>
-<tr><td class="name">LowerLinearLimits</td><td class="dflt">[0 0 0]</td><td>Lower translational end stop per axis (1&times;3), <span class="phx-unit">m</span>.</td></tr>
-<tr><td class="name">UpperLinearLimits</td><td class="dflt">[0 0 0]</td><td>Upper translational end stop per axis (1&times;3), <span class="phx-unit">m</span>.</td></tr>
-<tr><td class="name">LowerAngularLimits</td><td class="dflt">[0 0 0]</td><td>Lower rotational end stop per axis (1&times;3), <span class="phx-unit">rad</span>.</td></tr>
-<tr><td class="name">UpperAngularLimits</td><td class="dflt">[0 0 0]</td><td>Upper rotational end stop per axis (1&times;3), <span class="phx-unit">rad</span>.</td></tr>
+<tr><td class="name">LinearLimits</td><td class="dflt">zeros(3,2)</td><td>Range of the translation along each axis, one row <code class="phx-inline">[lower upper]</code> per axis X, Y, Z (3&times;2), <span class="phx-unit">m</span>, hard stops. Equal values lock the axis, <code class="phx-inline">-Inf</code>/<code class="phx-inline">Inf</code> leave out the stop on that side.</td></tr>
+<tr><td class="name">AngularLimits</td><td class="dflt">zeros(3,2)</td><td>Range of the rotation about each axis, one row per axis (3&times;2), <span class="phx-unit">rad</span>, hard stops. Each row both within (&minus;&pi;, &pi;), or <code class="phx-inline">[-Inf Inf]</code> for a free axis.</td></tr>
 <tr><td class="name">Overlay</td><td class="dflt">false</td><td>Draw the joint as an overlay (always on top).</td></tr>
 </table>
 <p>Reaction feedback (<code class="phx-inline">ForceA</code>, <code class="phx-inline">TorqueA</code>,
@@ -108,8 +112,7 @@ a = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>,
 b = phx.Body(<span class="str">"Position"</span>, [0 0 2], <span class="str">"LinearVelocity"</span>, [2 0 0]);
 
 <span class="cmt">% Open translation along x to [-1, 1]; the other five axes stay locked</span>
-phx.GenericJoint(a, b, ...
-    <span class="str">"LowerLinearLimits"</span>, [-1 0 0], <span class="str">"UpperLinearLimits"</span>, [1 0 0]);
+phx.GenericJoint(a, b, <span class="str">"LinearLimits"</span>, [-1 1; 0 0; 0 0]);
 
 sim = phx.Simulation;
 sim.step(2, 400, 5);          <span class="cmt">% slides to the +1 stop and rests against it</span>
@@ -122,8 +125,7 @@ a = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>,
 b = phx.Body(<span class="str">"Position"</span>, [0 1 2]);
 
 <span class="cmt">% Open rotation about x to [-0.4, 1.5] rad; the arm swings down and stops</span>
-phx.GenericJoint(a, b, <span class="str">"PointB"</span>, [0 -1 0], ...
-    <span class="str">"LowerAngularLimits"</span>, [-0.4 0 0], <span class="str">"UpperAngularLimits"</span>, [1.5 0 0]);
+phx.GenericJoint(a, b, <span class="str">"PointB"</span>, [0 -1 0], <span class="str">"AngularLimits"</span>, [-0.4 1.5; 0 0; 0 0]);
 
 sim = phx.Simulation;
 sim.step(3, 600, 5);          <span class="cmt">% swings down and stops at -0.4 rad</span>

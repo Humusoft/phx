@@ -38,7 +38,8 @@ are given in the local coordinates of each body (<code class="phx-inline">PointA
     <td>Shaft in a sleeve, telescopic strut (<code class="phx-inline">AxisA</code>,
     <code class="phx-inline">AxisB</code>).</td></tr>
 <tr><td class="name"><a href="phx.SphericalJoint.html">SphericalJoint</a></td>
-    <td>3 &mdash; rotation about all axes</td><td>Ball joint.</td></tr>
+    <td>3 &mdash; rotation about all axes</td><td>Ball joint, shoulder or hip (swing cone and
+    twist limits), constant-velocity joint (twist locked).</td></tr>
 <tr><td class="name"><a href="phx.GearJoint.html">GearJoint</a></td>
     <td>velocity coupling</td><td>Gear train with a <code class="phx-inline">Ratio</code>.</td></tr>
 <tr><td class="name"><a href="phx.GenericJoint.html">GenericJoint</a></td>
@@ -91,6 +92,33 @@ axis, leaving the rest of the coordinate system alone. Mind that a prismatic joi
 rotation <i>about</i> its sliding axis, which the axis alone does not describe: when the two bodies do
 not share an orientation, give that joint its coordinate systems in full rather than just their axes.
 </div>
+
+<h3 class="phx-h3">End stops</h3>
+<p>Every joint with a free degree of freedom can bound it with hard end stops, under one set of
+rules. A range is a pair <code class="phx-inline">[lower upper]</code> of the joint coordinate
+(<code class="phx-inline">Angle</code> in radians, <code class="phx-inline">Distance</code> in
+metres); equal limits, or a scalar, lock the joint at that value, and
+<code class="phx-inline">[-Inf Inf]</code> leaves it free.</p>
+<table class="phx-tbl">
+<tr><th>Joint</th><th>Limits</th><th>Default</th></tr>
+<tr><td class="name"><a href="phx.RevoluteJoint.html">RevoluteJoint</a></td><td><code class="phx-inline">Limits</code> (rad)</td><td class="dflt">[-Inf Inf]</td></tr>
+<tr><td class="name"><a href="phx.PrismaticJoint.html">PrismaticJoint</a></td><td><code class="phx-inline">Limits</code> (m)</td><td class="dflt">[-Inf Inf]</td></tr>
+<tr><td class="name"><a href="phx.CylindricalJoint.html">CylindricalJoint</a></td><td><code class="phx-inline">LinearLimits</code> (m), <code class="phx-inline">AngularLimits</code> (rad)</td><td class="dflt">[-Inf Inf]</td></tr>
+<tr><td class="name"><a href="phx.SphericalJoint.html">SphericalJoint</a></td><td><code class="phx-inline">ConeAngle</code> (half-angles of the swing cone, rad), <code class="phx-inline">TwistLimits</code> (rad)</td><td class="dflt">[pi pi], [-Inf Inf]</td></tr>
+<tr><td class="name"><a href="phx.GenericJoint.html">GenericJoint</a></td><td><code class="phx-inline">LinearLimits</code>, <code class="phx-inline">AngularLimits</code>: 3&times;2, one row per axis</td><td class="dflt">zeros(3,2) (rigid)</td></tr>
+<tr><td class="name"><a href="phx.BushingJoint.html">BushingJoint</a></td><td>the same, the spring acting inside the stops</td><td class="dflt">[-Inf Inf] per row</td></tr>
+</table>
+<p>Angular limits are both within (&minus;&pi;, &pi;) or <code class="phx-inline">[-Inf Inf]</code>:
+the engine measures the angle wrapped around the circle, so a stop on one side alone is not possible.
+A linear limit may leave out a side with <code class="phx-inline">-Inf</code> or
+<code class="phx-inline">Inf</code>. Reversed or NaN limits are an error
+(<code class="phx-inline">phx:Joint:invalidLimits</code>). The stops do not bounce, their reaction is
+part of the reaction feedback (<code class="phx-inline">ForceA</code> &hellip;
+<code class="phx-inline">TorqueB</code>), and every limit can be changed while the simulation runs or
+set from Simulink &mdash; a stop moved, a joint locked and released again.</p>
+<pre class="phx-code">knee = phx.RevoluteJoint(thigh, shin, <span class="str">"Limits"</span>, [0 2.4]);        <span class="cmt">% bends one way only</span>
+hip  = phx.SphericalJoint(pelvis, thigh, <span class="str">"ConeAngle"</span>, [1.2 0.6], ...
+    <span class="str">"TwistLimits"</span>, [-0.5 0.5]);                                   <span class="cmt">% elliptic swing, bounded twist</span></pre>
 
 <div class="phx-note">
 <span class="lbl">Tip.</span> Whole jointed chains &mdash; pendulums, hanging ropes of links &mdash;
