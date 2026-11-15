@@ -33,7 +33,6 @@ function phxbench(group)
     if g3, phxex_maglev; end
     if g2, phxex_multisim; end
     if g2, phxex_noview; end
-    if g3, phxex_optimize; end
     if g3, phxex_rocket; end
     if g1, phxex_rotmagdip; end
     if g3, phxex_segway; end
