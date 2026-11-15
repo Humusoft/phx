@@ -56,14 +56,14 @@ Joint classes:
   `EulerAnglesA/B` (z→y→x) views, so both frames coincide in *every* axis.
   **Motorized:** `TargetVelocity` (m/s) + `MaxForce` (N), or a plain force `AppliedForce` (N).
   End stops: `Limits` (m), one side may be open (`[-Inf 0.5]`).
-  See `phxex_camvalve` (valve train), `phxex_vengine`, `phxex_cartpendulum`.
+  See `phxex_camvalve` (valve train), `phxex_cartpendulum`.
 - `phx.CylindricalJoint` — shaft in a sleeve; 2 DOF, translation along **and** rotation about
   `AxisA/B` (the joint frame's local Z). A prismatic and a revolute joint on one axis. Unlike
   the prismatic joint it leaves the rotation about the axis free, so `AxisA/B` alone fully
   describe it — the frames need not agree on their roll about the axis. `Angle` and
   `Distance` report both of its coordinates. End stops: `LinearLimits` (m) and
-  `AngularLimits` (rad), each 1×2. It has **no motor** — it is built on the 6DOF
-  constraint, not on the slider that carries the motor.
+  `AngularLimits` (rad), each 1×2. It has **no motor**. See `phxex_vengine` (pistons and
+  wrist pins).
 - `phx.SphericalJoint` — ball; 3 rotational DOF. Optional limits for shoulders and hips:
   `ConeAngle = [angleX angleY]` (rad, default `[pi pi]` = free) bounds the swing of frame
   B's Z axis by an elliptic cone about frame A's Z axis (half-angles about A's X and Y; a

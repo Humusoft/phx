@@ -3,8 +3,8 @@ function phxex_vengine(opts)
 %
 % A motor-driven crankshaft (phx.shape.Extrusion) on its main bearing spins a
 % bank of slider-crank cylinders: crank pin -> rod (phx.RevoluteJoint) -> wrist
-% pin (phx.SphericalJoint) -> piston on a phx.PrismaticJoint, in two banks opened
-% by the bank angle. The block is dynamic, connected to a static pedestal by one
+% pin (phx.CylindricalJoint) -> piston on a phx.CylindricalJoint in its bore, in
+% two banks opened by the bank angle. The block is dynamic, connected to a static pedestal by one
 % compliant phx.BushingJoint, so the demo reads the engine's vibration from the
 % block motion and the joint reaction (mount.ForceA). Cylinder count, bank angle,
 % stroke, bore and rod length are settable.
@@ -14,7 +14,7 @@ function phxex_vengine(opts)
 %
 % phxex_vengine("NumCylinders", 6, "BankAngle", 60) runs a 60-degree V6.
 %
-% See also phx.RevoluteJoint, phx.SphericalJoint, phx.PrismaticJoint, phx.BushingJoint
+% See also phx.RevoluteJoint, phx.CylindricalJoint, phx.BushingJoint
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 
@@ -50,7 +50,7 @@ function phxex_vengine(opts)
     % --- Scene ----------------------------------------------------------
     [viewer, ax] = phx.extra.Viewer("clear", "DefaultCameraPosition", [0.9 0.6 0.3], "Texture", "Checker");
 
-    [crank, block, mount, cat, drive] = buildScene(ax, nPair, halfV, r, L, bore, zc, throwSpc, rodOff);
+    [crank, block, mount, ~, drive] = buildScene(ax, nPair, halfV, r, L, bore, zc, throwSpc, rodOff);
 
     reach = L + r;
     xL = (nPair-1)/2*throwSpc + rodOff + 1.5*bore;
@@ -254,14 +254,16 @@ function [crank, block, mount, cat, drive] = buildScene(ax, nPair, halfV, r, L, 
             phx.RevoluteJoint(crank, rod, "PointA", P0 - [0 0 zc], "PointB", [0 -L/2 0], ...
                 "AxisA", [1 0 0], "AxisB", [1 0 0], "Visible", false);
 
-            % Wrist pin: spherical (not revolute) so the closed loop is not
-            % over-constrained by redundant out-of-plane hinge locks.
-            phx.SphericalJoint(rod, piston, "PointA", [0 L/2 0], "PointB", [0 0 0], "Visible", false);
+            % Wrist pin: a floating pin, cylindrical along X, so the rod's
+            % small end may also slide along it.
+            phx.CylindricalJoint(rod, piston, "PointA", [0 L/2 0], "PointB", [0 0 0], ...
+                "AxisA", [1 0 0], "AxisB", [1 0 0], "Visible", false);
 
-            % Piston slides in its bore: prismatic vs the block, sliding axis
-            % aimed along the bore u. The piston was built with its own axis Z
-            % along the bore, so on its side the default axis already fits.
-            phx.PrismaticJoint(block, piston, "PointA", O - blkPos, "AxisA", u, ...
+            % Piston in its bore: cylindrical vs the block, axis aimed along
+            % the bore u; the wrist pin keeps it from spinning about it. The
+            % piston was built with its own axis Z along the bore, so on its
+            % side the default axis already fits.
+            phx.CylindricalJoint(block, piston, "PointA", O - blkPos, "AxisA", u, ...
                 "PointB", [0 0 0], "Visible", false);
         end
     end

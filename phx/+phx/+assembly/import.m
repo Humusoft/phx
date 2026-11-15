@@ -93,9 +93,8 @@ function [bodies, joints] = import(varargin)
 %     a joint whose <limit> lacks either of them stays free, and so does a
 %     continuous joint. A revolute range of a full turn or more (or a
 %     rounded one, up to 0.01 rad less) is free as well; one that reaches
-%     to or past +-pi otherwise (the engine wraps the angle)
-%     or a reversed one is left free with the warning
-%     phx:import:jointLimitsIgnored.
+%     to or past +-pi otherwise (the engine wraps the angle) or a reversed
+%     one is left free with the warning phx:import:jointLimitsIgnored.
 %   - Masses are taken from the inertial elements; the inertia tensor is
 %     expressed in the axes of the body frame and its diagonal is used as
 %     the Inertia property, and the origin of the inertial element becomes
@@ -132,18 +131,16 @@ function [bodies, joints] = import(varargin)
 %   - Masses come from the Mass, Inertia and CenterOfMass properties of each
 %     rigid body. A rigidBodyTree states the inertia about the origin of the
 %     body frame, so it is referred back to the centre of mass on the way in.
-%     The base of
-%     a tree carries no mass properties at all and borrows those of the
-%     lightest body of the tree, rather than the token ones a link without an
-%     inertial element gets: a gram at the root of a chain of kilograms is a
-%     mass ratio the solver answers with joints that visibly pull apart. It is
-%     only a stand-in - a robot standing on its own base wants a mass of its
-%     own, or a static base.
-%
+%     The base of a tree carries no mass properties at all and borrows those
+%     of the lightest body of the tree, rather than the token ones a link
+%     without an inertial element gets: a gram at the root of a chain of
+%     kilograms is a mass ratio the solver answers with joints that visibly
+%     pull apart. It is only a stand-in - a robot standing on its own base
+%     wants a mass of its own, or a static base.
 %   - The PositionLimits of a revolute or prismatic rigidBodyJoint become its
 %     Limits under the URDF rules above, so the [-pi pi] a revolute joint
 %     defaults to leaves it free. A prismatic joint defaults to [-0.5 0.5]
-%     m, which can not be told from limits set on purpose and is imported
+%     m, which cannot be told from limits set on purpose and is imported
 %     as such: set them, or import with JointLimits false.
 %
 %   Limitations of the importer:

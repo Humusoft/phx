@@ -1790,10 +1790,7 @@ classdef tEngineProtocol < PhxTestCase
             % A slider along world z hanging under gravity, bounded to
             % [-0.3 -0.1] m (a range without the zero): it drops onto the
             % lower stop, which carries its weight; locked at -0.2 it holds
-            % there; with no lower stop it falls away. A stop engages only
-            % at or beyond it, so a body resting on it leaves it now and
-            % then for a step and is caught with twice the impulse: the
-            % reaction is averaged over steps
+            % there; with no lower stop it falls away
             m = 2;
             w = tc.newWorld;
             a = tc.addBox(w, 0, [0 0 2], 0.2*[1 1 1]);
@@ -1801,12 +1798,7 @@ classdef tEngineProtocol < PhxTestCase
             j = phxEngine('add', w, 'prismatic', [a b], tEngineProtocol.pose([0 0 -1]), eye(4), false);
             phxEngine('set', w, j, 'linlimits', -0.3, -0.1);
             tc.settle(w, 1);
-            F = zeros(3, 40);
-            for k = 1:size(F, 2)
-                phxEngine('step', w, tc.Dt);
-                F(:, k) = phxEngine('get', w, j, 'feedback') * [0; 0; 1; 0];
-            end
-            tc.verifyEqual(mean(F, 2)', [0 0 m*tc.G], "AbsTol", 0.02*m*tc.G, "The stop carries the weight.");
+            tc.verifyEqual(tc.meanForceB(w, j), [0 0 m*tc.G], "AbsTol", 0.02*m*tc.G, "The stop carries the weight.");
             tc.verifyEqual(tEngineProtocol.positionOf(w, b)', [0 0 0.7], "AbsTol", 2e-3, "On the lower stop");
             phxEngine('set', w, j, 'linlimits', -0.2, -0.2);
             tc.settle(w, 1);
@@ -1920,7 +1912,7 @@ classdef tEngineProtocol < PhxTestCase
             % Hanging along z on [-0.3 -0.1] m and turned on [0.1 0.3] rad by
             % a torque about z: the lower stop carries the weight, the angle
             % stops at whichever limit the torque drives it against; equal
-            % limits lock both. Both constructions
+            % limits lock both. Checked for both constructions
             m = 2;
             for newJoint = [true false]
                 label = sprintf("joltfix.cylindrical %d", newJoint);
@@ -1936,12 +1928,8 @@ classdef tEngineProtocol < PhxTestCase
                     T = tc.settle(w, 1);
                     tc.verifyEqual(T(3, 4), 0.7, "AbsTol", 2e-3, label + ": on the lower stop");
                     tc.verifyEqual(atan2(T(2, 1), T(1, 1)), 0.2 + 0.1*s, "AbsTol", 0.01, sprintf("%s: turned %+d", label, s));
-                    F = zeros(3, 40);
-                    for k = 1:size(F, 2)
-                        phxEngine('step', w, tc.Dt);
-                        F(:, k) = phxEngine('get', w, j, 'feedback') * [0; 0; 1; 0];
-                    end
-                    tc.verifyEqual(mean(F(3, :)), m*tc.G, "AbsTol", 0.02*m*tc.G, label + ": the stop carries the weight");
+                    F = tc.meanForceB(w, j);
+                    tc.verifyEqual(F(3), m*tc.G, "AbsTol", 0.02*m*tc.G, label + ": the stop carries the weight");
                 end
                 phxEngine('set', w, j, 'linlimits', -0.2, -0.2);
                 phxEngine('set', w, j, 'anglimits', 0.2, 0.2);
@@ -1958,7 +1946,7 @@ classdef tEngineProtocol < PhxTestCase
             % across the swing plane keeps its joints closed and its energy
             % as the same chain on revolute joints does, and slides nowhere
             dt = 0.005; L = 0.2; n = 20; m = 0.1;
-            E = zeros(1, 2); gap = zeros(1, 2); spread = 0;
+            E = zeros(1, 2); gap = zeros(1, 2); spread = zeros(1, 2);
             kinds = ["revolute" "cylindrical"];
             for k = 1:2
                 w = tc.newWorld;
@@ -1986,11 +1974,11 @@ classdef tEngineProtocol < PhxTestCase
                 gap(k) = D.jointgap;
                 E(k) = tEngineProtocol.chainEnergy(w, bodies, m, L)/E0 - 1;
                 P = phxEngine('get', w, bodies, 'position');
-                spread = max(P(2, :)) - min(P(2, :));
+                spread(k) = max(P(2, :)) - min(P(2, :));
             end
             tc.verifyLessThan(gap(2), 1e-4, "Joint gap of the cylindrical chain");
             tc.verifyEqual(E(2), E(1), "AbsTol", 0.01, "Energy kept as the hinge chain keeps it");
-            tc.verifyLessThan(spread, 1e-6, "The cylindrical chain slid along its joint axes");
+            tc.verifyLessThan(spread(2), 1e-6, "The cylindrical chain slid along its joint axes");
         end
 
         function springJointDeflectsByWeightOverStiffness(tc)
@@ -2677,6 +2665,22 @@ classdef tEngineProtocol < PhxTestCase
             for k = 1:round(duration/tc.Dt)
                 [~, T] = phxEngine('step', w, tc.Dt);
             end
+        end
+
+        function F = meanForceB(tc, w, j)
+            % Steps 40 times and returns the force of joint j on its body B
+            % (third column of the feedback) averaged over those steps, as a
+            % row. A stop engages only at or beyond it, so a body resting on
+            % it leaves it now and then for a step and is caught with twice
+            % the impulse
+            n = 40;
+            F = zeros(n, 3);
+            for k = 1:n
+                phxEngine('step', w, tc.Dt);
+                fb = phxEngine('get', w, j, 'feedback');
+                F(k, :) = fb(:, 3)';
+            end
+            F = mean(F);
         end
     end
 

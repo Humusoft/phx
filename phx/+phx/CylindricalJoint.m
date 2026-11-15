@@ -107,11 +107,9 @@ classdef CylindricalJoint < phx.base.Joint
     methods (Access = private)
         function pushLimits(obj, field, value)
         %pushLimits Writes the linear or angular limits through to the engine.
-        % The joint is a 6-DOF constraint with the axes X and Y of frame A
-        % locked (0 to 0) and Z bounded by the limits.
 
             if ~isempty(obj.ObjectHandle)
-                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, field, [0 0 value(1)], [0 0 value(2)]);
+                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, field, value(1), value(2));
             end
         end
     end
@@ -126,12 +124,15 @@ classdef CylindricalJoint < phx.base.Joint
                 % AngularLimits write through from their setters; other
                 % properties changed after that do not reach the constraint.
                 obj.WorldHandle = world;
-                obj.ObjectHandle = phxEngine('add', world, 'generic', [obj.Parents{1}.ObjectHandle obj.Parents{2}.ObjectHandle], ...
+                obj.ObjectHandle = phxEngine('add', world, 'cylindrical', [obj.Parents{1}.ObjectHandle obj.Parents{2}.ObjectHandle], ...
                     obj.TransformA, obj.TransformB, obj.MutualCollisions);
-                % The engine creates it with every axis locked: free the
-                % axis within the current limits
-                obj.pushLimits('linlimits', obj.LinearLimits);
-                obj.pushLimits('anglimits', obj.AngularLimits);
+                % Seed the fresh constraint, created free, with the limits
+                if any(isfinite(obj.LinearLimits))
+                    obj.pushLimits('linlimits', obj.LinearLimits);
+                end
+                if any(isfinite(obj.AngularLimits))
+                    obj.pushLimits('anglimits', obj.AngularLimits);
+                end
             end
         end
     end
