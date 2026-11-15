@@ -144,6 +144,54 @@ classdef tShapeMesh < PhxTestCase
             tc.verifyLessThan(straight, 0.9*ball);
         end
 
+        function cylinderVolumetricMeshFillsTheCylinder(tc)
+            % Quadratic tetrahedra, positive and with matching faces, inside
+            % the cylinder; the middles of the edges on its curved side lie
+            % on it, the other middles halfway along their edges, and the
+            % curved tetrahedra have close to its volume
+            r = 0.2;
+            h = 0.5;
+            [V, T] = phx.shape.Cylinder("Diameter", 2*r, "Height", h, "ElementResolution", 3).generateVolumetricMesh;
+            tc.verifyEqual(size(T, 2), 10);
+            tc.verifyGreaterThan(min(tc.volumes(V, T)), 0);
+            F = sort([T(:, [1 2 3]); T(:, [1 2 4]); T(:, [1 3 4]); T(:, [2 3 4])], 2);
+            [~, ~, k] = unique(F, "rows");
+            tc.verifyLessThanOrEqual(max(accumarray(k, 1)), 2);
+            rho = vecnorm(V(:, 1:2), 2, 2);
+            tc.verifyLessThan(max(rho), r*(1 + 1e-12));
+            tc.verifyLessThan(max(abs(V(:, 3))), h/2*(1 + 1e-12));
+            ends = [1 2; 2 3; 1 3; 1 4; 2 4; 3 4];
+            E = [reshape(T(:, ends(:, 1)), [], 1) reshape(T(:, ends(:, 2)), [], 1)];
+            middle = reshape(T(:, 5:10), [], 1);
+            side = abs(rho(E(:, 1)) - r) < 1e-12 & abs(rho(E(:, 2)) - r) < 1e-12;
+            tc.verifyEqual(rho(middle(side)), repmat(r, nnz(side), 1), "AbsTol", 1e-12);
+            tc.verifyEqual(V(middle(~side), :), (V(E(~side, 1), :) + V(E(~side, 2), :))/2, "AbsTol", 1e-15);
+            tc.verifyEqual(sum(phx.internal.Geometry.tetrahedraVolumes(V, T)), pi*r^2*h, "RelTol", 0.005);
+        end
+
+        function cylinderResolutionCutsTheThinnerSize(tc)
+            % A scalar is the number of cells across the smaller of the
+            % diameter and the height, the other cut into cells about as
+            % long; a vector gives the cells across the diameter and along
+            % the height. Counted here by the layers along the axis.
+            tc.verifyEqual(tc.layers(phx.shape.Cylinder("Diameter", 0.1, "Height", 1, "ElementResolution", 2)), 20);
+            tc.verifyEqual(tc.layers(phx.shape.Cylinder("Diameter", 1, "Height", 0.1, "ElementResolution", 2)), 2);
+            tc.verifyEqual(tc.layers(phx.shape.Cylinder("Diameter", 0.5, "Height", 1, "ElementResolution", [4 6])), 6);
+        end
+
+        function cylinderMeshFollowsItsAxis(tc)
+            [V, T] = phx.shape.Cylinder("Diameter", 0.4, "Height", 1, "Axis", "x").generateVolumetricMesh;
+            [lo, hi] = bounds(V, 1);
+            tc.verifyEqual([lo; hi], [-0.5 -0.2 -0.2; 0.5 0.2 0.2], "AbsTol", 1e-12);
+            tc.verifyGreaterThan(min(tc.volumes(V, T)), 0, "Turned, not mirrored.");
+        end
+
+        function cylinderResolutionIsValidated(tc)
+            for bad = {[1 2 3], 0, 1.5, [2 0], NaN}
+                tc.verifyError(@() phx.shape.Cylinder("ElementResolution", bad{1}), "phx:Cylinder:badResolution");
+            end
+        end
+
         function sphereResolutionIsValidated(tc)
             for bad = {[1 2], 0, 1.5, NaN, []}
                 tc.verifyError(@() phx.shape.Sphere("ElementResolution", bad{1}), "phx:Sphere:badResolution");
@@ -151,12 +199,18 @@ classdef tShapeMesh < PhxTestCase
         end
 
         function shapesWithoutAMeshSayNo(tc)
-            tc.verifyError(@() phx.shape.Cylinder().generateVolumetricMesh, "phx:Shape:noVolumetricMesh");
-            tc.verifyError(@() phx.shape.Cylinder().generateSurfaceMesh, "phx:Shape:noSurfaceMesh");
+            tc.verifyError(@() phx.shape.Cone().generateVolumetricMesh, "phx:Shape:noVolumetricMesh");
+            tc.verifyError(@() phx.shape.Cone().generateSurfaceMesh, "phx:Shape:noSurfaceMesh");
         end
     end
 
     methods (Static, Access = private)
+        function n = layers(shape)
+            % Layers of cells along z: the distinct heights of the corners
+            [V, T] = shape.generateVolumetricMesh;
+            n = numel(uniquetol(V(unique(T(:, 1:4)), 3), 1e-9)) - 1;
+        end
+
         function v = volumes(V, T)
             a = V(T(:, 1), :);
             v = dot(cross(V(T(:, 2), :) - a, V(T(:, 3), :) - a, 2), V(T(:, 4), :) - a, 2)/6;
