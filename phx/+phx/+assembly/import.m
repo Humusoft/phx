@@ -57,6 +57,9 @@ function [bodies, joints] = import(varargin)
 %     default homeConfiguration(tree). It takes the data format of the tree
 %     (see rigidBodyTree.DataFormat); a plain vector of joint positions is
 %     accepted for the "struct" format as well.
+%   - JointLimits: whether revolute and prismatic joints take the position
+%     limits of the description as their Limits (URDF and rigidBodyTree),
+%     default true; false leaves every joint free.
 %
 %   To simulate the imported robot, pass the bodies to a simulation; the
 %   joints are collected automatically through the object hierarchy. All
@@ -83,7 +86,16 @@ function [bodies, joints] = import(varargin)
 %     "prismatic" joints become phx.PrismaticJoint (sliding along the joint
 %     axis) and "fixed" joints become phx.FixedJoint. Joint frames are derived
 %     from the initial link poses, so the assembled robot is in equilibrium
-%     at its zero configuration.
+%     at its zero configuration, and the Angle of a revolute joint (the
+%     Distance of a prismatic one) reads the joint position of the URDF.
+%   - The lower and upper attributes of the <limit> element become the
+%     Limits of a revolute or prismatic joint (see the JointLimits option);
+%     a joint whose <limit> lacks either of them stays free, and so does a
+%     continuous joint. A revolute range of a full turn or more (or a
+%     rounded one, up to 0.01 rad less) is free as well; one that reaches
+%     to or past +-pi otherwise (the engine wraps the angle)
+%     or a reversed one is left free with the warning
+%     phx:import:jointLimitsIgnored.
 %   - Masses are taken from the inertial elements; the inertia tensor is
 %     expressed in the axes of the body frame and its diagonal is used as
 %     the Inertia property, and the origin of the inertial element becomes
@@ -128,9 +140,13 @@ function [bodies, joints] = import(varargin)
 %     only a stand-in - a robot standing on its own base wants a mass of its
 %     own, or a static base.
 %
+%   - The PositionLimits of a revolute or prismatic rigidBodyJoint become its
+%     Limits under the URDF rules above, so the [-pi pi] a revolute joint
+%     defaults to leaves it free. A prismatic joint defaults to [-0.5 0.5]
+%     m, which can not be told from limits set on purpose and is imported
+%     as such: set them, or import with JointLimits false.
+%
 %   Limitations of the importer:
-%   - Joint limits of revolute and prismatic joints are ignored (including
-%     the PositionLimits of a rigidBodyTree).
 %   - Joints of type "planar" have no direct PHX equivalent yet and are
 %     approximated by a phx.GenericJoint that frees the two in-plane
 %     translations and the rotation about the plane normal; the warning
@@ -167,8 +183,8 @@ function [bodies, joints] = import(varargin)
     % an option belongs to instead of MATLAB's generic MATLAB:TooManyInputs.
     BASE = ["Position", "Orientation", "EulerAngles"];
     MESH = ["Scale", "Envelope", "FlipFaces", "Density"];
-    URDF = "MeshPath";
-    TREE = "Configuration";
+    URDF = ["MeshPath", "JointLimits"];
+    TREE = ["Configuration", "JointLimits"];
 
     % A rigidBodyTree arrives as an object, so it is dispatched before the file
     % name is read
@@ -234,6 +250,7 @@ function [bodies, joints] = importURDF(ax, file, Options)
         Options.Orientation (3, 3) double = eye(3)
         Options.EulerAngles (1, 3) double = [0 0 0]
         Options.MeshPath (1, 1) string = ""
+        Options.JointLimits (1, 1) logical = true
     end
 
     % Resolve the requested base pose
@@ -380,11 +397,18 @@ function [bodies, joints] = importURDF(ax, file, Options)
                 if ~any(def.axis)
                     error("phx:import:invalidAttribute", "Joint '%s' has a zero-length rotation axis.", def.name);
                 end
-                axis = def.axis/norm(def.axis);
+                % Both frames from one frame with its Z along the axis, so
+                % they coincide at the zero configuration and Angle reads
+                % the joint position the limits are given in
+                TR = axisAlignedFrame(TJ, def.axis/norm(def.axis));
+                limits = [-Inf Inf];
+                if Options.JointLimits && def.type == "revolute"
+                    limits = angularLimits(def.name, def.limits);
+                end
                 j = phx.RevoluteJoint(parentBody, childBody, ...
-                    "PointA", TA(1:3, 4)', "PointB", TB(1:3, 4)', ...
-                    "AxisA", (TA(1:3, 1:3)*axis')', "AxisB", (TB(1:3, 1:3)*axis')', ...
-                    "Name", def.name, "Visible", false);
+                    "TransformA", cleanTransform(TBody{parentID(k)}\TR), ...
+                    "TransformB", cleanTransform(TBody{childID(k)}\TR), ...
+                    "Limits", limits, "Name", def.name, "Visible", false);
             case "prismatic"
                 if ~any(def.axis)
                     error("phx:import:invalidAttribute", "Joint '%s' has a zero-length sliding axis.", def.name);
@@ -393,10 +417,14 @@ function [bodies, joints] = importURDF(ax, file, Options)
                 % frame is rebuilt with its Z along the joint axis (fixed
                 % joints, in contrast, only need the two frames to coincide)
                 TS = axisAlignedFrame(TJ, def.axis/norm(def.axis));
+                limits = [-Inf Inf];
+                if Options.JointLimits
+                    limits = linearLimits(def.name, def.limits);
+                end
                 j = phx.PrismaticJoint(parentBody, childBody, ...
                     "TransformA", cleanTransform(TBody{parentID(k)}\TS), ...
                     "TransformB", cleanTransform(TBody{childID(k)}\TS), ...
-                    "Name", def.name, "Visible", false);
+                    "Limits", limits, "Name", def.name, "Visible", false);
             case "fixed"
                 j = phx.FixedJoint(parentBody, childBody, ...
                     "TransformA", TA, "TransformB", TB, "Name", def.name, "Visible", false);
@@ -444,6 +472,7 @@ function [bodies, joints] = importTree(ax, tree, Options)
         Options.Orientation (3, 3) double = eye(3)
         Options.EulerAngles (1, 3) double = [0 0 0]
         Options.Configuration = []
+        Options.JointLimits (1, 1) logical = true
     end
 
     TBase = basePose(Options, "import");
@@ -552,13 +581,20 @@ function [bodies, joints] = importTree(ax, tree, Options)
         parentBody = bodyList{anchorID};
         childBody = bodyList{i};
 
+        limits = [-Inf Inf];
         switch string(joint.Type)
             case "revolute"
+                if Options.JointLimits
+                    limits = angularLimits(joint.Name, joint.PositionLimits);
+                end
                 j = phx.RevoluteJoint(parentBody, childBody, ...
-                    "TransformA", TA, "TransformB", TB, "Name", joint.Name, "Visible", false);
+                    "TransformA", TA, "TransformB", TB, "Limits", limits, "Name", joint.Name, "Visible", false);
             case "prismatic"
+                if Options.JointLimits
+                    limits = linearLimits(joint.Name, joint.PositionLimits);
+                end
                 j = phx.PrismaticJoint(parentBody, childBody, ...
-                    "TransformA", TA, "TransformB", TB, "Name", joint.Name, "Visible", false);
+                    "TransformA", TA, "TransformB", TB, "Limits", limits, "Name", joint.Name, "Visible", false);
             case "fixed"
                 j = phx.FixedJoint(parentBody, childBody, ...
                     "TransformA", TA, "TransformB", TB, "Name", joint.Name, "Visible", false);
@@ -1048,6 +1084,20 @@ function joint = parseJoint(el)
     if ~isempty(axisEl)
         joint.axis = numbers(attribute(axisEl, "xyz", "1 0 0"), 3, "axis xyz");
     end
+
+    % Position limits: NaN where the <limit> element or its attribute is
+    % missing (the joint then stays free)
+    joint.limits = [NaN NaN];
+    limitEl = firstElement(el, "limit");
+    if ~isempty(limitEl)
+        names = ["lower", "upper"];
+        for i = 1:2
+            value = attribute(limitEl, names(i), "");
+            if strlength(value) > 0
+                joint.limits(i) = numbers(value, 1, "limit " + names(i));
+            end
+        end
+    end
 end
 
 %% Object builders -------------------------------------------------------
@@ -1147,6 +1197,43 @@ end
 
 function T = cleanTransform(T)
     T(4, :) = [0 0 0 1];
+end
+
+function limits = angularLimits(name, range)
+% Limits of a revolute joint from a description's [lower upper] (rad): the
+% range itself when both ends lie within (-pi, pi); free when an end is
+% missing (NaN) or the range spans a full turn or more, up to 0.01 rad less
+% for a rounded one such as [-3.14 3.14] (also [-pi pi], the default of a
+% rigidBodyTree); free with a warning when it is reversed or reaches to or
+% past +-pi otherwise, which a PHX joint cannot bound (the engine wraps the
+% angle, so the other side would close at the back point).
+    limits = [-Inf Inf];
+    if any(isnan(range)) || range(2) - range(1) >= 2*pi - 0.01
+        return
+    end
+    if range(1) > range(2)
+        warning("phx:import:jointLimitsIgnored", "Joint '%s' has the reversed limits [%g %g]; it is left free.", name, range(1), range(2));
+    elseif all(abs(range) < pi)
+        limits = range;
+    else
+        warning("phx:import:jointLimitsIgnored", ...
+            "The limits [%g %g] of joint '%s' reach to or past +-pi, which a PHX revolute joint cannot bound; it is left free.", range(1), range(2), name);
+    end
+end
+
+function limits = linearLimits(name, range)
+% Limits of a prismatic joint from a description's [lower upper] (m): the
+% range itself, an infinite end leaving that side open; free when an end is
+% missing (NaN), and with a warning when the range is reversed.
+    limits = [-Inf Inf];
+    if any(isnan(range))
+        return
+    end
+    if range(1) > range(2)
+        warning("phx:import:jointLimitsIgnored", "Joint '%s' has the reversed limits [%g %g]; it is left free.", name, range(1), range(2));
+    else
+        limits = range;
+    end
 end
 
 function T = axisAlignedFrame(TJ, axis)

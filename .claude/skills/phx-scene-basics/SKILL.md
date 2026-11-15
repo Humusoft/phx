@@ -525,11 +525,16 @@ parts = phx.assembly.import("scene.obj", "Envelope", "convex");
 ```
 
 URDF mapping: revolute/continuous → `phx.RevoluteJoint`, **prismatic →
-`phx.PrismaticJoint`**, fixed → `phx.FixedJoint` (planar/floating are substituted
-by `FixedJoint` + a warning). The imported joints come with their motors off; drive
-them by setting `TargetVelocity` + `MaxTorque` (revolute) or `MaxForce` (prismatic) on
-the joints the importer returns — see the phx-constraints-forces skill. Nothing in the
-URDF sets those, so the limits are yours to size.
+`phx.PrismaticJoint`**, fixed → `phx.FixedJoint` (planar → `GenericJoint` + a
+warning, floating → no joint, the child left free). The `<limit lower upper>` of a
+joint (a rigidBodyTree's `PositionLimits`) becomes its `Limits` end stops; continuous
+joints, full-turn ranges and ranges a PHX hinge cannot bound (reaching past ±π) stay
+free, the last with a `phx:import:jointLimitsIgnored` warning; `"JointLimits", false`
+imports every joint free. `Angle`/`Distance` read the URDF joint position. The imported
+joints come with their motors off; drive them by setting `TargetVelocity` + `MaxTorque`
+(revolute) or `MaxForce` (prismatic) on the joints the importer returns — see the
+phx-constraints-forces skill. Nothing in the URDF sets those, so the motor limits are
+yours to size.
 Geometries map to `Box`/`Cylinder`/`Sphere`/`Capsule`/`Mesh`; `MeshPath`
 resolves `package://` URIs (the URDF's own folder is always searched too).
 

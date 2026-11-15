@@ -1,8 +1,9 @@
 classdef tImport < PhxTestCase
 %tImport Tests for the phx.assembly.import robot importer.
 %
-%   Untagged tests cover the file/XML-level error handling and need neither
-%   graphics nor the engine. Graphics-tagged tests verify the parsed object
+%   Untagged tests cover the file/XML-level error handling and the joint
+%   limits taken from a URDF or a rigidBodyTree, and need neither graphics
+%   nor the engine. Graphics-tagged tests verify the parsed object
 %   structure, name sanitization, the link world poses (pinning the URDF
 %   rpy convention against an independent rotation implementation) and the
 %   mesh path resolution. The Engine-tagged tests verify that an imported
@@ -83,6 +84,87 @@ classdef tImport < PhxTestCase
                 "<joint name='j2' type='fixed'><parent link='b'/><child link='a'/></joint>" + ...
                 "</robot>");
             tc.verifyError(@() phx.assembly.import(file), "phx:import:invalidTree");
+        end
+
+        function urdfLimitsBecomeJointLimits(tc)
+            % lower/upper of <limit> become Limits; a continuous joint, a
+            % full turn (also rounded to [-3.14 3.14]) and a <limit> without
+            % one of the two stay free, all without a warning
+            urdf = tc.chainURDF("limits.urdf", ...
+                "revolute", "<limit lower='-0.5' upper='1.2' effort='1' velocity='1'/>", ...
+                "continuous", "<limit lower='-1' upper='1' effort='1' velocity='1'/>", ...
+                "revolute", "<limit lower='-3.14' upper='3.14' effort='1' velocity='1'/>", ...
+                "revolute", "<limit upper='1' effort='1' velocity='1'/>", ...
+                "prismatic", "<limit lower='-0.1' upper='0.3' effort='1' velocity='1'/>");
+            joints = tc.verifyWarningFree(@() tc.importHeadless(urdf));
+            expected = {[-0.5 1.2], [-Inf Inf], [-Inf Inf], [-Inf Inf], [-0.1 0.3]};
+            for k = 1:numel(expected)
+                tc.verifyEqual(joints.("j" + k).Limits, expected{k}, "Joint j" + k);
+            end
+        end
+
+        function unrepresentableLimitsWarnAndStayFree(tc)
+            % A revolute range reaching past pi (not a full turn) and
+            % reversed ranges are left free with a warning
+            cases = {"revolute", "<limit lower='-1' upper='4' effort='1' velocity='1'/>"
+                     "revolute", "<limit lower='1' upper='-1' effort='1' velocity='1'/>"
+                     "prismatic", "<limit lower='0.2' upper='0.1' effort='1' velocity='1'/>"};
+            for k = 1:size(cases, 1)
+                urdf = tc.chainURDF("bad" + k + ".urdf", cases{k, :});
+                joints = tc.verifyWarning(@() tc.importHeadless(urdf), "phx:import:jointLimitsIgnored", ...
+                    "Case " + k);
+                tc.verifyEqual(joints.j1.Limits, [-Inf Inf], "Case " + k);
+            end
+        end
+
+        function jointLimitsOptionLeavesJointsFree(tc)
+            urdf = tc.chainURDF("limits.urdf", ...
+                "revolute", "<limit lower='-0.5' upper='1.2' effort='1' velocity='1'/>", ...
+                "prismatic", "<limit lower='-0.1' upper='0.3' effort='1' velocity='1'/>");
+            joints = tc.importHeadless(urdf, "JointLimits", false);
+            tc.verifyEqual(joints.j1.Limits, [-Inf Inf]);
+            tc.verifyEqual(joints.j2.Limits, [-Inf Inf]);
+        end
+
+        function urdfRevoluteAngleIsTheJointPosition(tc)
+            % The limits are given in the URDF joint position, which is zero
+            % at the imported pose: so is Angle, however the joint origin is
+            % turned and whatever its axis
+            urdf = tc.writeTextFile("turned.urdf", "<robot name='t'>" + ...
+                "<link name='a'><visual><origin rpy='0.4 0 0'/><geometry><box size='0.1 0.1 0.1'/></geometry></visual></link>" + ...
+                "<link name='b'><visual><origin rpy='0 0.7 0.2'/><geometry><box size='0.1 0.1 0.1'/></geometry></visual></link>" + ...
+                "<joint name='j' type='revolute'><parent link='a'/><child link='b'/>" + ...
+                "<origin xyz='0 0 0.5' rpy='0.3 0.2 0.1'/><axis xyz='0 1 1'/>" + ...
+                "<limit lower='-0.5' upper='0.5' effort='1' velocity='1'/></joint></robot>");
+            joints = tc.importHeadless(urdf);
+            tc.verifyEqual(joints.j.Angle, 0, "AbsTol", 1e-12);
+            tc.verifyEqual(joints.j.Limits, [-0.5 0.5]);
+        end
+
+        function treeLimitsBecomeJointLimits(tc)
+            % PositionLimits of a rigidBodyTree, under the same rules: the
+            % revolute default [-pi pi] is free
+            tc.assumeNotEmpty(ver("robotics"), "Robotics System Toolbox is not installed.");
+            tree = rigidBodyTree("DataFormat", "row");
+            parent = tree.BaseName;
+            spec = {"revolute", [-1 2]; "revolute", []; "prismatic", [-0.2 0.4]};
+            for k = 1:size(spec, 1)
+                body = rigidBody("b" + k);
+                body.Joint = rigidBodyJoint("j" + k, spec{k, 1});
+                if ~isempty(spec{k, 2})
+                    body.Joint.PositionLimits = spec{k, 2};
+                end
+                body.Mass = 1;
+                addVisual(body, "Box", [0.1 0.1 0.1]);
+                addBody(tree, body, parent);
+                parent = body.Name;
+            end
+            joints = tc.importHeadless(tree);
+            tc.verifyEqual(joints.j1.Limits, [-1 2]);
+            tc.verifyEqual(joints.j2.Limits, [-Inf Inf]);
+            tc.verifyEqual(joints.j3.Limits, [-0.2 0.4]);
+            joints = tc.importHeadless(tree, "JointLimits", false);
+            tc.verifyEqual(joints.j1.Limits, [-Inf Inf]);
         end
     end
 
@@ -365,6 +447,30 @@ classdef tImport < PhxTestCase
             ws = warning("off", "phx:import:substitutedJoint");
             tc.addTeardown(@() warning(ws));
             [bodies, joints] = phx.assembly.import(tc.fixtureFile);
+        end
+
+        function joints = importHeadless(tc, varargin)
+            % Imports without axes; the bodies are deleted at teardown.
+            [bodies, joints] = phx.assembly.import([], varargin{:});
+            b = struct2cell(bodies);
+            tc.addTeardown(@() delete([b{:}]));
+        end
+
+        function file = chainURDF(tc, name, varargin)
+            % A chain of links l0, l1, ... joined by joints j1, j2, ... of
+            % the given types along z, each with the given <limit> markup
+            % (type, limit pairs), its axis z.
+            n = numel(varargin)/2;
+            xml = "<robot name='c'>";
+            for k = 0:n
+                xml = xml + "<link name='l" + k + "'><visual><geometry><box size='0.1 0.1 0.1'/></geometry></visual></link>";
+            end
+            for k = 1:n
+                xml = xml + "<joint name='j" + k + "' type='" + varargin{2*k - 1} + "'>" + ...
+                    "<parent link='l" + (k - 1) + "'/><child link='l" + k + "'/>" + ...
+                    "<origin xyz='0 0 0.2'/><axis xyz='0 0 1'/>" + varargin{2*k} + "</joint>";
+            end
+            file = tc.writeTextFile(name, xml + "</robot>");
         end
 
         function rel = fixedRelativePoses(~, joints)

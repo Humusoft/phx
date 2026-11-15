@@ -78,6 +78,7 @@ mesh file, raises <code class="phx-inline">phx:import:unsupportedOption</code>.<
 <tr><td class="name">EulerAngles</td><td class="dflt">[0 0 0]</td><td>World rotation of the base as Euler angles (z&rarr;y&rarr;x order), an alternative to <code class="phx-inline">Orientation</code>.</td></tr>
 <tr><td class="name">MeshPath</td><td class="dflt">""</td><td><b>URDF only.</b> Root folder used to resolve <code class="phx-inline">package://</code> URIs and relative file names of mesh geometries. Meshes are always searched relative to the folder of the URDF file as well.</td></tr>
 <tr><td class="name">Configuration</td><td class="dflt">homeConfiguration(tree)</td><td><b>rigidBodyTree only.</b> Joint configuration the tree is imported at, in the data format of the tree (see <code class="phx-inline">DataFormat</code>); a plain vector of joint positions is accepted for the <code class="phx-inline">"struct"</code> format as well.</td></tr>
+<tr><td class="name">JointLimits</td><td class="dflt">true</td><td><b>URDF and rigidBodyTree.</b> Whether revolute and prismatic joints take the position limits of the description as their <code class="phx-inline">Limits</code>; <code class="phx-inline">false</code> leaves every joint free. See <a href="#limits">Joint limits</a>.</td></tr>
 <tr><td class="name">Scale</td><td class="dflt">[1 1 1]</td><td><b>Mesh files only.</b> Scale factor applied to the imported mesh.</td></tr>
 <tr><td class="name">Envelope</td><td class="dflt">"convex"</td><td><b>Mesh files only.</b> Collision envelope of every imported body: <code class="phx-inline">"box"</code>, <code class="phx-inline">"cylinder"</code>, <code class="phx-inline">"sphere"</code>, <code class="phx-inline">"convex"</code> or <code class="phx-inline">"concave"</code>. See <a href="phx.shape.Mesh.html">phx.shape.Mesh</a>.</td></tr>
 <tr><td class="name">FlipFaces</td><td class="dflt">false</td><td><b>Mesh files only.</b> Reverse the triangle winding of the <code class="phx-inline">"concave"</code> collision mesh when its solid side comes out wrong.</td></tr>
@@ -96,9 +97,32 @@ joints become <a href="phx.PrismaticJoint.html">phx.PrismaticJoint</a> (sliding 
 axis) and fixed joints become <a href="phx.FixedJoint.html">phx.FixedJoint</a>. Planar joints have
 no direct equivalent yet and are approximated by a
 <a href="phx.GenericJoint.html">phx.GenericJoint</a> with a warning; floating joints impose no
-constraint, so no joint is created and the child link is left free. Joint limits are ignored and
-all joints are passive &mdash; no motors are created. Masses come from the inertial elements; only the
-diagonal of the inertia tensor expressed in body axes is used.</p>
+constraint, so no joint is created and the child link is left free. Joints get the limits of the
+description as end stops (see <a href="#limits">Joint limits</a>) but are passive otherwise &mdash;
+no motors are created. Masses come from the inertial elements; only the diagonal of the inertia
+tensor expressed in body axes is used.</p>
+<p>Both frames of a revolute or prismatic joint coincide at the zero configuration, so the
+<code class="phx-inline">Angle</code> of a revolute joint (the <code class="phx-inline">Distance</code>
+of a prismatic one) reads the joint position of the URDF.</p>
+
+<h3 class="phx-h3" id="limits">Joint limits</h3>
+<p>Unless <code class="phx-inline">JointLimits</code> is <code class="phx-inline">false</code>, the
+<code class="phx-inline">lower</code> and <code class="phx-inline">upper</code> attributes of the
+<code class="phx-inline">&lt;limit&gt;</code> element (the <code class="phx-inline">PositionLimits</code>
+of a <code class="phx-inline">rigidBodyJoint</code>) become the <code class="phx-inline">Limits</code>
+of the revolute or prismatic joint:</p>
+<table class="phx-tbl">
+<tr><th>Description</th><th>Limits</th></tr>
+<tr><td class="name">a revolute range within (&minus;&pi;, &pi;), a prismatic range</td><td>the range itself (an infinite prismatic end leaves that side open)</td></tr>
+<tr><td class="name">continuous joint, <code class="phx-inline">&lt;limit&gt;</code> without <code class="phx-inline">lower</code> or <code class="phx-inline">upper</code></td><td>free</td></tr>
+<tr><td class="name">a revolute range of a full turn, or up to 0.01&nbsp;rad less (such as [&minus;3.14 3.14], or the [&minus;&pi; &pi;] a tree defaults to)</td><td>free</td></tr>
+<tr><td class="name">a revolute range reaching to or past &plusmn;&pi; otherwise, a reversed range</td><td>free, with the warning <code class="phx-inline">phx:import:jointLimitsIgnored</code></td></tr>
+</table>
+<p>The engine measures the angle of a revolute joint wrapped around the circle, so a range that
+crosses &plusmn;&pi; cannot be bounded. A prismatic <code class="phx-inline">rigidBodyJoint</code>
+defaults to [&minus;0.5 0.5]&nbsp;m, which cannot be told from limits set on purpose and is imported
+as such: set the limits, or import with <code class="phx-inline">JointLimits</code>
+<code class="phx-inline">false</code>.</p>
 
 <h2 class="phx-h2" id="rbt">rigidBodyTree to PHX mapping</h2>
 <p>A rigidBodyTree follows the URDF rules with these differences:</p>
@@ -125,8 +149,8 @@ mass properties and borrows those of the lightest body of the tree, so that the 
 face an extreme mass ratio. A robot standing on its own base wants a mass of its own, or a static
 base.</li>
 <li>The tree is imported at the <code class="phx-inline">Configuration</code> option, the home
-configuration by default. Joint limits (<code class="phx-inline">PositionLimits</code>) are
-ignored.</li>
+configuration by default. Joint limits come from <code class="phx-inline">PositionLimits</code>
+under the rules of <a href="#limits">Joint limits</a>.</li>
 </ul>
 
 <h2 class="phx-h2">Examples</h2>
