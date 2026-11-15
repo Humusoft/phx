@@ -21,6 +21,18 @@ classdef CylindricalJoint < phx.base.Joint
 %   free, so AxisA and AxisB alone fully describe it - the two coordinate
 %   systems need not agree on how they are rolled about the axis.
 %
+%   LinearLimits bounds the travel to a range [lower upper] of the Distance
+%   (m), AngularLimits the rotation to a range of the Angle (rad), with hard
+%   end stops that do not bounce; their reaction is part of ForceA, TorqueA,
+%   ForceB and TorqueB. Equal limits lock that motion at that value, and
+%   [-Inf Inf], the default, leaves it free. A linear limit of -Inf or Inf
+%   leaves out the stop on that side. As Angle, the angular limits lie
+%   within (-pi, pi), and both are finite unless the rotation is free. A
+%   body that passes an angular stop by more than half the gap behind the
+%   stops within one step comes out at the other stop, so a fast joint needs
+%   that gap. The limits can be changed while the simulation runs or set
+%   from Simulink.
+%
 %   phx.CylindricalJoint(___, name, value, ...) creates a joint and sets
 %   properties values according to given name-value pairs.
 %
@@ -39,7 +51,29 @@ classdef CylindricalJoint < phx.base.Joint
         hM
     end
 
+    properties
+        % Range of the joint distance [lower upper] (m, hard stops)
+        % Equal to lock the travel at that distance, -Inf or Inf for no stop
+        % on that side, [-Inf Inf] to leave it free (default).
+        LinearLimits (1, 2) double {phx.internal.mustBeLinearLimits} = [-Inf Inf]
+
+        % Range of the joint angle [lower upper] (rad, hard stops)
+        % Both within (-pi, pi), equal to lock the rotation at that angle, or
+        % [-Inf Inf] to leave it free (default).
+        AngularLimits (1, 2) double {phx.internal.mustBeAngularLimits} = [-Inf Inf]
+    end
+
     methods
+        function set.LinearLimits(obj, value)
+            obj.LinearLimits = value;
+            obj.pushLimits('linlimits', value);
+        end
+
+        function set.AngularLimits(obj, value)
+            obj.AngularLimits = value;
+            obj.pushLimits('anglimits', value);
+        end
+
         function obj = CylindricalJoint(ParentA, ParentB, Options)
             arguments
                 ParentA (1, 1) {mustBeA(ParentA, "phx.Body")}
@@ -70,19 +104,34 @@ classdef CylindricalJoint < phx.base.Joint
         end
     end
 
+    methods (Access = private)
+        function pushLimits(obj, field, value)
+        %pushLimits Writes the linear or angular limits through to the engine.
+        % The joint is a 6-DOF constraint with the axes X and Y of frame A
+        % locked (0 to 0) and Z bounded by the limits.
+
+            if ~isempty(obj.ObjectHandle)
+                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, field, [0 0 value(1)], [0 0 value(2)]);
+            end
+        end
+    end
+
     methods (Access = protected)
         function valid = initObject(obj, world)
             valid = obj.checkObject;
             if valid && isempty(obj.ObjectHandle)
-                % The engine takes the constraint parameters only as it creates
-                % the constraint, so the constraint is built once and then kept
-                % across pipeline rebuilds. Properties changed after that do not
-                % reach it.
+                % The engine takes the frames only as it creates the
+                % constraint, so the constraint is built once and then kept
+                % across pipeline rebuilds. Only LinearLimits and
+                % AngularLimits write through from their setters; other
+                % properties changed after that do not reach the constraint.
                 obj.WorldHandle = world;
                 obj.ObjectHandle = phxEngine('add', world, 'generic', [obj.Parents{1}.ObjectHandle obj.Parents{2}.ObjectHandle], ...
                     obj.TransformA, obj.TransformB, obj.MutualCollisions);
-                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'linlimits', [0 0 1], [0 0 -1]);
-                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'anglimits', [0 0 1], [0 0 -1]);
+                % The engine creates it with every axis locked: free the
+                % axis within the current limits
+                obj.pushLimits('linlimits', obj.LinearLimits);
+                obj.pushLimits('anglimits', obj.AngularLimits);
             end
         end
     end

@@ -1,10 +1,12 @@
 classdef tJointLimits < PhxTestCase
-%tJointLimits The Limits of phx.RevoluteJoint and phx.PrismaticJoint.
+%tJointLimits The limits of the revolute, prismatic and cylindrical joint.
 %
-%   Both classes promise the same thing in two units: Limits = [lower upper]
-%   bounds the joint coordinate (Angle in rad, Distance in m) with hard end
+%   The classes promise the same thing in two units: a pair [lower upper]
+%   bounds a joint coordinate (Angle in rad, Distance in m) with hard end
 %   stops, equal limits lock the joint at that value and [-Inf Inf], the
-%   default, leaves it free. These tests pin that down:
+%   default, leaves it free. phx.RevoluteJoint and phx.PrismaticJoint name
+%   it Limits, phx.CylindricalJoint AngularLimits and LinearLimits. These
+%   tests pin that down:
 %
 %     * the default is free, a scalar locks at that value;
 %     * reversed or NaN limits are an error; angular limits are both finite
@@ -18,7 +20,8 @@ classdef tJointLimits < PhxTestCase
 %   caught again with twice the impulse (the engine engages a stop only at
 %   or beyond it), so the reaction is averaged over several steps.
 %
-%   See also phx.RevoluteJoint, phx.PrismaticJoint, tJointMotors
+%   See also phx.RevoluteJoint, phx.PrismaticJoint, phx.CylindricalJoint,
+%   tJointMotors
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 
@@ -32,34 +35,47 @@ classdef tJointLimits < PhxTestCase
             [base, arm] = tc.pair;
             tc.verifyEqual(phx.RevoluteJoint(base, arm).Limits, [-Inf Inf]);
             tc.verifyEqual(phx.PrismaticJoint(base, arm).Limits, [-Inf Inf]);
+            cyl = phx.CylindricalJoint(base, arm);
+            tc.verifyEqual(cyl.LinearLimits, [-Inf Inf]);
+            tc.verifyEqual(cyl.AngularLimits, [-Inf Inf]);
         end
 
         function scalarLocksAtThatValue(tc)
             [base, arm] = tc.pair;
             rev = phx.RevoluteJoint(base, arm, "Limits", 0.2);
             pri = phx.PrismaticJoint(base, arm, "Limits", -0.5);
+            cyl = phx.CylindricalJoint(base, arm, "LinearLimits", -0.5, "AngularLimits", 0.2);
             tc.verifyEqual(rev.Limits, [0.2 0.2]);
             tc.verifyEqual(pri.Limits, [-0.5 -0.5]);
+            tc.verifyEqual(cyl.LinearLimits, [-0.5 -0.5]);
+            tc.verifyEqual(cyl.AngularLimits, [0.2 0.2]);
         end
 
         function invalidLimitsAreRejected(tc)
             [base, arm] = tc.pair;
             rev = phx.RevoluteJoint(base, arm);
             pri = phx.PrismaticJoint(base, arm);
-            for joint = {rev, pri}
-                tc.verifyError(@() set(joint{1}, "Limits", [0.3 0.1]), "phx:Joint:invalidLimits", "reversed");
-                tc.verifyError(@() set(joint{1}, "Limits", [NaN 0]), "phx:Joint:invalidLimits", "NaN");
+            cyl = phx.CylindricalJoint(base, arm);
+            angular = {rev, "Limits"; cyl, "AngularLimits"};
+            linear = {pri, "Limits"; cyl, "LinearLimits"};
+            for k = 1:2
+                for p = [angular(k, :); linear(k, :)]'
+                    tc.verifyError(@() set(p{1}, p{2}, [0.3 0.1]), "phx:Joint:invalidLimits", p{2} + " reversed");
+                    tc.verifyError(@() set(p{1}, p{2}, [NaN 0]), "phx:Joint:invalidLimits", p{2} + " NaN");
+                end
+                % The angle is wrapped to [-pi, pi]: a stop on one side alone
+                % would close the other one at the back point
+                [joint, name] = angular{k, :};
+                for bad = {[-Inf 0.5], [0 Inf], [0 pi], [-4 0]}
+                    tc.verifyError(@() set(joint, name, bad{1}), "phx:Joint:invalidLimits", name + " " + mat2str(bad{1}));
+                end
+                joint.(name) = [-3.1 3.1];
+                tc.verifyEqual(joint.(name), [-3.1 3.1]);
+                % A slide may leave out a side
+                [joint, name] = linear{k, :};
+                joint.(name) = [-Inf 0.5];
+                tc.verifyEqual(joint.(name), [-Inf 0.5]);
             end
-            % The angle is wrapped to [-pi, pi]: a stop on one side alone
-            % would close the other one at the back point
-            for bad = {[-Inf 0.5], [0 Inf], [0 pi], [-4 0]}
-                tc.verifyError(@() set(rev, "Limits", bad{1}), "phx:Joint:invalidLimits", mat2str(bad{1}));
-            end
-            rev.Limits = [-3.1 3.1];
-            tc.verifyEqual(rev.Limits, [-3.1 3.1]);
-            % A slider may leave out a side
-            pri.Limits = [-Inf 0.5];
-            tc.verifyEqual(pri.Limits, [-Inf 0.5]);
         end
     end
 
@@ -94,22 +110,16 @@ classdef tJointLimits < PhxTestCase
             % without the zero): it drops onto the lower stop, whose
             % reaction carries its weight
             m = 2;
-            [sim, joint] = tc.hangRig(m, "Limits", [-0.3 -0.1]);
+            [sim, joint] = tc.hangRig(m, @phx.PrismaticJoint, "Limits", [-0.3 -0.1]);
             sim.step(1, 1/tc.Dt, -1);
             tc.verifyEqual(joint.Distance, -0.3, "AbsTol", 1e-3);
-            n = 40;
-            F = zeros(n, 3);
-            for k = 1:n
-                sim.step(tc.Dt, 1, -1);
-                F(k, :) = joint.ForceB;
-            end
-            tc.verifyEqual(mean(F), [0 0 m*tc.G], "AbsTol", 0.02*m*tc.G);
+            tc.verifyEqual(tc.meanForceB(sim, joint), [0 0 m*tc.G], "AbsTol", 0.02*m*tc.G);
         end
 
         function prismaticLimitsChangeWhileRunning(tc)
             % Locked at -0.2 the slider holds there; with no lower stop it
             % falls away
-            [sim, joint] = tc.hangRig(2, "Limits", [-0.3 -0.1]);
+            [sim, joint] = tc.hangRig(2, @phx.PrismaticJoint, "Limits", [-0.3 -0.1]);
             sim.step(0.5, 0.5/tc.Dt, -1);
             joint.Limits = -0.2;
             sim.step(1, 1/tc.Dt, -1);
@@ -117,6 +127,42 @@ classdef tJointLimits < PhxTestCase
             joint.Limits = [-Inf 0];
             sim.step(0.5, 0.5/tc.Dt, -1);
             tc.verifyLessThan(joint.Distance, -1, "No lower stop");
+        end
+
+        function cylindricalStopsBothMotions(tc)
+            % Hanging along z on [-0.3 -0.1] m and turned on [0.1 0.3] rad
+            % (ranges without the zero): it drops onto the lower linear stop,
+            % which carries its weight, and turns to whichever angular stop
+            % the torque drives it against
+            m = 2;
+            for s = [1 -1]
+                [sim, joint, body] = tc.hangRig(m, @phx.CylindricalJoint, ...
+                    "LinearLimits", [-0.3 -0.1], "AngularLimits", [0.1 0.3]);
+                body.AppliedTorque = [0 0 5*s];
+                sim.step(1, 1/tc.Dt, -1);
+                tc.verifyEqual(joint.Distance, -0.3, "AbsTol", 1e-3, sprintf("Distance, turned %+d", s));
+                tc.verifyEqual(joint.Angle, 0.2 + 0.1*s, "AbsTol", 0.01, sprintf("Angle, turned %+d", s));
+                F = tc.meanForceB(sim, joint);
+                tc.verifyEqual(F(3), m*tc.G, "AbsTol", 0.02*m*tc.G, sprintf("Weight, turned %+d", s));
+            end
+        end
+
+        function cylindricalLimitsChangeWhileRunning(tc)
+            % Both motions locked by scalars hold against the weight and the
+            % torque; freed, the body falls and spins up
+            [sim, joint, body] = tc.hangRig(2, @phx.CylindricalJoint);
+            body.AppliedTorque = [0 0 5];
+            sim.step(0.2, 0.2/tc.Dt, -1);
+            joint.LinearLimits = -0.5;
+            joint.AngularLimits = 0.5;
+            sim.step(1, 1/tc.Dt, -1);
+            tc.verifyEqual(joint.Distance, -0.5, "AbsTol", 1e-3, "Linear locked");
+            tc.verifyEqual(joint.Angle, 0.5, "AbsTol", 0.01, "Angular locked");
+            joint.LinearLimits = [-Inf Inf];
+            joint.AngularLimits = [-Inf Inf];
+            sim.step(0.4, 0.4/tc.Dt, -1);
+            tc.verifyEqual(body.LinearVelocity(3), -tc.G*0.4, "RelTol", 0.05, "Linear freed");
+            tc.verifyEqual(body.AngularVelocity(3), 5*0.4, "RelTol", 0.05, "Angular freed");
         end
     end
 
@@ -132,7 +178,7 @@ classdef tJointLimits < PhxTestCase
             % Static base and a body of unit inertia hinged about z through
             % its own centre, no gravity.
             tc.requireEngine;
-            base =tc.spawnBody([0 0 -1], "Type", "static");
+            base = tc.spawnBody([0 0 -1], "Type", "static");
             arm = tc.spawnBody([0 0 0], "Mass", 1, "Inertia", [1 1 1]);
             tc.addTeardown(@() delete([base arm]));
             joint = phx.RevoluteJoint(base, arm, "PointA", [0 0 1], "PointB", [0 0 0], varargin{:});
@@ -140,16 +186,27 @@ classdef tJointLimits < PhxTestCase
             tc.addTeardown(@() delete(sim));
         end
 
-        function [sim, joint] = hangRig(tc, m, varargin)
-            % A body of mass m hanging 1 m below a static base on a slider
-            % along z, under gravity.
+        function [sim, joint, body] = hangRig(tc, m, makeJoint, varargin)
+            % A body of mass m and unit inertia hanging 1 m below a static
+            % base on a joint along z made by makeJoint, under gravity.
             tc.requireEngine;
-            base =tc.spawnBody([0 0 2], "Type", "static");
-            slider = tc.spawnBody([0 0 1], "Mass", m, "Inertia", m*[1 1 1]/150);
-            tc.addTeardown(@() delete([base slider]));
-            joint = phx.PrismaticJoint(base, slider, "PointA", [0 0 -1], "PointB", [0 0 0], varargin{:});
-            sim = phx.Simulation([base slider], "Gravity", [0 0 -tc.G]);
+            base = tc.spawnBody([0 0 2], "Type", "static");
+            body = tc.spawnBody([0 0 1], "Mass", m, "Inertia", [1 1 1]);
+            tc.addTeardown(@() delete([base body]));
+            joint = makeJoint(base, body, "PointA", [0 0 -1], "PointB", [0 0 0], varargin{:});
+            sim = phx.Simulation([base body], "Gravity", [0 0 -tc.G]);
             tc.addTeardown(@() delete(sim));
+        end
+
+        function F = meanForceB(tc, sim, joint)
+            % The reaction on body B averaged over 40 steps.
+            n = 40;
+            F = zeros(n, 3);
+            for k = 1:n
+                sim.step(tc.Dt, 1, -1);
+                F(k, :) = joint.ForceB;
+            end
+            F = mean(F);
         end
     end
 
