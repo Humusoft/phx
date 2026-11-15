@@ -177,11 +177,16 @@ classdef Object < matlab.mixin.SetGetExactNames
         %
         % See also phx.Simulation
 
+            % Follow the first live parent. Parents can be dead: in the middle
+            % of a delete cascade, a parent that is still in its destructor
+            % is no longer valid
             sim = obj;
-            while ~isempty(sim.Parents)
-                if isvalid(sim.Parents{1})
-                    sim = sim.Parents{1};
+            while true
+                k = find(cellfun(@isvalid, sim.Parents), 1);
+                if isempty(k)
+                    break
                 end
+                sim = sim.Parents{k};
             end
             if ~isa(sim, 'phx.Simulation') || obj == sim
                 sim = [];
@@ -309,6 +314,9 @@ classdef Object < matlab.mixin.SetGetExactNames
         function removeChild(objs, child)
             for i = 1:numel(objs)
                 obj = objs{i};
+                if ~isvalid(obj)
+                    continue % gone already, or in its own destructor
+                end
                 id = cellfun(@(c) c == child, obj.Children, "UniformOutput", 1);
                 obj.Children(id) = [];
             end
@@ -317,6 +325,11 @@ classdef Object < matlab.mixin.SetGetExactNames
         function removeParent(objs, parent)
             for i = 1:numel(objs)
                 obj = objs{i};
+                if ~isvalid(obj)
+                    % Deleted earlier in this cascade: a child that also hangs
+                    % on another child of the parent goes with that one
+                    continue
+                end
                 id = cellfun(@(c) c == parent, obj.Parents, "UniformOutput", 1);
                 obj.Parents(id) = [];
 

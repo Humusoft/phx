@@ -206,6 +206,33 @@ classdef tPipelineRebuild < PhxTestCase
                 "The pipeline hold outlived the delete that took it.");
         end
 
+        function deleteReachesObjectsHungOnABodyAndItsConstraint(tc)
+            % An object bound to a body and to a spring of that body is
+            % reached twice by the cascade: the spring takes it along while
+            % the body is still in its destructor, and the body then meets
+            % it again among its own children. The delete has to finish
+            % without warnings and take everything that needs the body,
+            % including children attached after the shared object.
+            tc.requireEngine;
+            a = tc.spawnBody([0 0 0]);
+            b = tc.spawnBody([0 0 2]);
+            spring = phx.Spring(a, b, "Stiffness", 100);
+            shared = phx.Function({a, spring}, @(o, p, dt, t) []);
+            later = phx.Spring(a, b, "Stiffness", 100);
+            sim = phx.Simulation([a b]);
+            tc.addTeardown(@() PhxTestCase.deleteIfValid(sim));
+            sim.step(0.1, 10, -1);
+
+            tc.verifyWarningFree(@() delete(a));
+
+            tc.verifyFalse(isvalid(spring));
+            tc.verifyFalse(isvalid(shared));
+            tc.verifyFalse(isvalid(later), "The body's destructor stopped before its later children.");
+            tc.verifyTrue(isvalid(b));
+            sim.step(0.1, 10, -1);
+            tc.verifyEqual(sim.Time, 0.2, "AbsTol", 1e-9);
+        end
+
         function deletingTheLastBodyEmptiesThePipelines(tc)
             % An emptied simulation still has to be steppable.
             tc.requireEngine;
