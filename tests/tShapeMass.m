@@ -122,6 +122,47 @@ classdef tShapeMass < PhxTestCase
             tc.verifyEqual(I, [io io Io(3) - Ii(3)], "RelTol", 1e-4);
         end
 
+        function revolutionClosesAnOpenProfileToTheAxis(tc)
+            % A profile with an end off the axis weighs as the solid closed
+            % there by a disc square to the axis, wherever the origin lies:
+            % the mantle of a cylinder as the cylinder, a cone without its
+            % base as the cone. Enough segments that the faceted mesh
+            % converges on the ideal solid.
+            rho = 1000;
+            revolution = @(p) phx.shape.Revolution("Profile", p, "Segments", 720, "Density", rho);
+            [m, I, c] = revolution([-0.5 0.5; 0.5 0.5]).computeMass;
+            [me, Ie] = phx.shape.Cylinder("Diameter", 1, "Height", 1, "Density", rho).computeMass;
+            tc.verifyEqual([m I], [me Ie], "RelTol", 1e-4);
+            tc.verifyEqual(c, [0 0 0], "AbsTol", 1e-9);
+
+            [m, ~, c] = revolution([0 0.5; 1 0.5]).computeMass;
+            tc.verifyEqual(m, me, "RelTol", 1e-4);
+            tc.verifyEqual(c, [0 0 0.5], "AbsTol", 1e-6, "The mantle moved up weighs where it is.");
+
+            [m, I, c] = revolution([-0.5 0.5; 0.5 0]).computeMass;
+            [me, Ie, ce] = phx.shape.Cone("Diameter", 1, "Height", 1, "Density", rho).computeMass;
+            tc.verifyEqual([m I], [me Ie], "RelTol", 1e-4);
+            tc.verifyEqual(c, ce, "AbsTol", 1e-6);
+        end
+
+        function revolutionLoopIsHollow(tc)
+            % A profile that returns to its first point keeps its bore: a
+            % pipe of radii 0.4 and 0.5, and a cup (a bottom 0.05 thick and
+            % a wall 0.05 thick, the loop running along the axis below)
+            rho = 1000;
+            pipe = phx.shape.Revolution("Profile", ...
+                [-0.5 0.5; 0.5 0.5; 0.5 0.4; -0.5 0.4; -0.5 0.5], "Segments", 720, "Density", rho);
+            [m, I] = pipe.computeMass;
+            ro = 0.5; ri = 0.4; h = 1;
+            tc.verifyEqual(m, rho*pi*(ro^2 - ri^2)*h, "RelTol", 1e-4);
+            tc.verifyEqual(I, m*[(3*(ro^2 + ri^2) + h^2)/12, (3*(ro^2 + ri^2) + h^2)/12, (ro^2 + ri^2)/2], ...
+                "RelTol", 1e-4);
+
+            cup = phx.shape.Revolution("Profile", [0.5 0; -0.5 0; -0.5 0.5; 0.5 0.5; ...
+                0.5 0.45; -0.45 0.45; -0.45 0; 0.5 0], "Segments", 720, "Density", rho);
+            tc.verifyEqual(cup.computeMass, rho*pi*(0.5^2*1 - 0.45^2*0.95), "RelTol", 1e-4);
+        end
+
         function coneSizeExpandsToTwoValues(tc)
             % A single diameter is a sharp cone, read back as [d 0]; the
             % radius follows; negative, three or all-zero values are refused

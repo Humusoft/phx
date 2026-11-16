@@ -398,8 +398,23 @@ the shape (grooves, waists, tapers). It needs one radius per height: a profile w
 axial coordinates turn back (a cup, a bore, `phx.shape.Tube`) raises
 `phx:Revolution:profileNotMonotonic`; use `"concave"` for those. Tens of profile points
 are cheap, hundreds cost like a concave mesh. Neither round envelope needs graphics.
-End the profile on the axis (radius 0): an open end draws an open surface and gives a
-wrong centre of mass, whatever the envelope.
+
+What the `Profile` encloses:
+- **Ends on the axis** (radius 0 at both ends): a solid body.
+- **Closed loop** (last row repeats the first): a **hollow** body — the loop is the wall's
+  cross-section. Run it up the outside and back down the inside to give the wall a
+  thickness, and use `Envelope = "concave"` (every other envelope fills the cavity). A
+  hollow vase with a bottom:
+  ```matlab
+  t = linspace(0, 1, 20)'; r = 0.3 + 0.2*sin(t*pi);
+  profile = [0 0; t r; flipud([t(2:end) r(2:end) - 0.03]); t(2) 0; 0 0];
+  phx.Body("Shape", phx.shape.Revolution("Profile", profile, "Envelope", "concave"));
+  ```
+- **An end off the axis, not a loop**: drawn as an open surface of no thickness, but
+  weighed as the solid closed there by a disc square to the axis — what `"convex"`,
+  `"cones"` and `"cylinder"` collide with. Not a way to make a hollow part: with
+  `"concave"` it collides as a paper-thin shell yet weighs as the solid. A plain straight
+  pipe is `phx.shape.Tube`.
 
 ## Deformable bodies and particles
 

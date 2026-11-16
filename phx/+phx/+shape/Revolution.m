@@ -11,7 +11,9 @@ classdef Revolution < phx.base.Shape
 %   axis, so a body rolls on them smoothly where a faceted hull or mesh
 %   would not; they need a profile with one radius per height (no bore, no
 %   overhang). Mass properties are always calculated from the actual
-%   triangular mesh.
+%   triangular mesh, an open profile closed to the axis first (see Profile).
+%   A hollow body takes a profile that returns to its first point, giving
+%   the wall a thickness, and Envelope "concave".
 %   
 %   phx.shape.Revolution() creates a shape with default parameters.
 %
@@ -31,8 +33,11 @@ classdef Revolution < phx.base.Shape
         % Revolution profile along modeling axis
         % Matrix Mx2 where each row is one point of the generatrix as
         % [axis radius]. The curve is reversed automatically when it runs the
-        % way that would turn the solid inside out; it is not closed, because a
-        % generatrix ending on the axis already closes the body by revolving.
+        % way that would turn the solid inside out. A generatrix ending on the
+        % axis closes the body by revolving; one that returns to its first
+        % point (a loop that leaves the axis) makes a hollow body, such as a
+        % pipe or a cup. An end left off the axis is drawn open, but the mass
+        % is that of the solid closed there by a disc square to the axis.
         Profile (:, 2) double
 
         % Modeling axis of the revolution
@@ -94,11 +99,35 @@ classdef Revolution < phx.base.Shape
         end
 
         function [mass, inertia, center] = computeMass(obj)
-            [V, ~, F] = phx.internal.Geometry.revolution((obj.Profile), obj.Segments, false, false);
+            % Weigh the solid the profile bounds; see solidProfile
+            [V, ~, F] = phx.internal.Geometry.revolution(obj.solidProfile, obj.Segments, false, false);
             V = phx.internal.Geometry.switchZAxis(obj.Axis, V);
 
             [mass, ~, Icm, center] = phx.internal.Geometry.meshMass(V, F, obj.Density);
             inertia = Icm([1 5 9]);
+        end
+    end
+
+    methods (Access = private)
+        function profile = solidProfile(obj)
+            % The profile closed into the boundary of a solid. A loop (last
+            % point back on the first) bounds one already, hollow or not, and
+            % so does a profile with both ends on the axis. An end off the
+            % axis would leave a hole in the revolved surface, which then
+            % bounds no volume (the mass came out as a fraction of the body
+            % that depended on where the origin lay); it is closed by a disc
+            % square to the axis, giving the solid the "convex", "cones" and
+            % "cylinder" envelopes collide with.
+            profile = obj.Profile;
+            if size(profile, 1) < 2 || isequal(profile(1, :), profile(end, :))
+                return
+            end
+            if profile(1, 2) ~= 0
+                profile = [profile(1, 1) 0; profile];
+            end
+            if profile(end, 2) ~= 0
+                profile = [profile; profile(end, 1) 0];
+            end
         end
     end
 
