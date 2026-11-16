@@ -333,6 +333,87 @@ classdef tShapeMesh < PhxTestCase
             end
         end
 
+        function tubeVolumetricMeshFillsTheWall(tc)
+            % Straight, tapered and closed at one end: positive tetrahedra
+            % with matching faces (across the seam too), inside the wall,
+            % the middles of the edges on the outside and on the bore on
+            % them, the others halfway, and close to the volume of the wall
+            t = 0.05;
+            h = 0.4;
+            for d = {[0.3 0.3], [0.2 0.4], [0 0.3]}
+                bore = d{1}/2;
+                [V, T] = phx.shape.Tube("InnerDiameter", d{1}, "WallThickness", t, "Height", h, ...
+                    "ElementResolution", [2 16 4]).generateVolumetricMesh;
+                tc.verifyEqual(size(T, 2), 10);
+                tc.verifyGreaterThan(min(tc.volumes(V, T)), 0);
+                F = sort([T(:, [1 2 3]); T(:, [1 2 4]); T(:, [1 3 4]); T(:, [2 3 4])], 2);
+                [~, ~, k] = unique(F, "rows");
+                tc.verifyLessThanOrEqual(max(accumarray(k, 1)), 2);
+                rho = vecnorm(V(:, 1:2), 2, 2);
+                inner = bore(1) + (bore(2) - bore(1))*(V(:, 3)/h + 0.5);
+                tc.verifyGreaterThan(min(rho - inner), -1e-12);
+                tc.verifyLessThan(max(rho - inner), t + 1e-12);
+                ends = [1 2; 2 3; 1 3; 1 4; 2 4; 3 4];
+                E = [reshape(T(:, ends(:, 1)), [], 1) reshape(T(:, ends(:, 2)), [], 1)];
+                middle = reshape(T(:, 5:10), [], 1);
+                onBore = @(i) abs(rho(i) - inner(i)) < 1e-12;
+                onOutside = @(i) abs(rho(i) - inner(i) - t) < 1e-12;
+                bores = onBore(E(:, 1)) & onBore(E(:, 2));
+                outsides = onOutside(E(:, 1)) & onOutside(E(:, 2));
+                tc.verifyTrue(all(onBore(middle(bores))) && all(onOutside(middle(outsides))));
+                rest = ~bores & ~outsides;
+                tc.verifyEqual(V(middle(rest), :), (V(E(rest, 1), :) + V(E(rest, 2), :))/2, "AbsTol", 1e-15);
+                outer = bore + t;
+                wall = pi*h/3*((outer(1)^2 + outer(1)*outer(2) + outer(2)^2) - (bore(1)^2 + bore(1)*bore(2) + bore(2)^2));
+                tc.verifyEqual(sum(phx.internal.Geometry.tetrahedraVolumes(V, T)), wall, "RelTol", 0.005);
+            end
+        end
+
+        function tubeResolutionCutsTheWall(tc)
+            % A scalar is the number of cells across the thinner of the wall
+            % and the height, the wall cut around and along into cells about
+            % as long; a vector gives the cells across, around and along.
+            % Counted by the layers along the axis and the corners per ring.
+            s = phx.shape.Tube("InnerDiameter", 0.3, "WallThickness", 0.1, "Height", 0.5, "ElementResolution", 2);
+            tc.verifyEqual(tc.layers(s), 10);
+            [V, T] = s.generateVolumetricMesh;
+            P = V(unique(T(:, 1:4)), :);
+            tc.verifyEqual(nnz(abs(P(:, 3) - 0.25) < 1e-12), 3*round(2*pi*0.2/0.05), "3 rings of 25 corners on the top.");
+            [V, T] = phx.shape.Tube("InnerDiameter", 0.3, "WallThickness", 0.1, "Height", 0.5, ...
+                "ElementResolution", [1 12 3]).generateVolumetricMesh;
+            P = V(unique(T(:, 1:4)), :);
+            tc.verifyEqual(nnz(abs(P(:, 3) - 0.25) < 1e-12), 2*12);
+            tc.verifyEqual(size(T, 1), 6*1*12*3);
+            [~, T] = phx.shape.Tube().generateVolumetricMesh;
+            tc.verifySize(T, [6*1*24*8 10], "One cell across the wall, 24 around, 8 along by default.");
+            tc.verifyError(@() phx.shape.Tube("ElementResolution", [1 2]), "phx:Tube:badResolution");
+        end
+
+        function tubeSurfaceMeshClosesAroundTheWall(tc)
+            % Open, tapered and closed at one end: a closed surface facing
+            % out, every vertex on the outside, the bore or an end
+            t = 0.05;
+            h = 0.4;
+            for d = {[0.3 0.3], [0 0.3]}
+                bore = d{1}/2;
+                s = phx.shape.Tube("InnerDiameter", d{1}, "WallThickness", t, "Height", h, "ElementResolution", [1 24 6]);
+                [V, F] = s.generateSurfaceMesh;
+                E = sort([F(:, [1 2]); F(:, [2 3]); F(:, [3 1])], 2);
+                [~, ~, k] = unique(E, "rows");
+                tc.verifyEqual(unique(accumarray(k, 1))', 2, "A closed surface.");
+                tc.verifyEqual(unique(F(:))', 1:size(V, 1));
+                enclosed = sum(dot(V(F(:, 1), :), cross(V(F(:, 2), :), V(F(:, 3), :), 2), 2))/6;
+                outer = bore + t;
+                wall = pi*h/3*((outer(1)^2 + outer(1)*outer(2) + outer(2)^2) - (bore(1)^2 + bore(1)*bore(2) + bore(2)^2));
+                tc.verifyEqual(enclosed, wall, "RelTol", 0.05, "Wound outwards, close to the wall.");
+                rho = vecnorm(V(:, 1:2), 2, 2);
+                inner = bore(1) + (bore(2) - bore(1))*(V(:, 3)/h + 0.5);
+                onWall = abs(rho - inner) < 1e-12 | abs(rho - inner - t) < 1e-12;
+                onEnd = abs(abs(V(:, 3)) - h/2) < 1e-12 & rho >= inner - 1e-12 & rho <= inner + t + 1e-12;
+                tc.verifyTrue(all(onWall | onEnd), "Every vertex on the wall.");
+            end
+        end
+
         function sphereResolutionIsValidated(tc)
             for bad = {[1 2], 0, 1.5, NaN, []}
                 tc.verifyError(@() phx.shape.Sphere("ElementResolution", bad{1}), "phx:Sphere:badResolution");

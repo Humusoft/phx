@@ -386,7 +386,8 @@ classdef Geometry
 
         function [V, F] = ringSurface(profile, spacing)
             % Closed triangle mesh of the surface of revolution about z of
-            % a profile of [r z] points, from the axis back to the axis and
+            % a profile of [r z] points, from the axis back to the axis, or a
+            % closed loop (its last point the first) for a hollow solid,
             % counter-clockwise in the (r, z) plane, so that the solid lies
             % on its left; its vertices spaced about evenly. Each segment of
             % the profile is cut into parts about spacing(1) long, each point
@@ -408,15 +409,26 @@ classdef Geometry
                 points = [points; part(~inner, :)]; %#ok<AGROW>
             end
 
+            % Neighbouring points, the last one joined to the first in a
+            % closed loop, but not two points on the axis
+            n = numel(points(:, 1));
+            pairs = [(1:n - 1)' (2:n)'];
+            if norm(points(end, :) - points(1, :)) <= 1e-12*max(abs(profile(:)))
+                n = n - 1;
+                points(end, :) = [];
+                pairs(end, 2) = 1;
+            end
+            onAxis = points(:, 1) < 1e-12*max(profile(:, 1));
+            pairs(all(onAxis(pairs), 2), :) = [];
+
             % A ring of vertices for each point, turned by half a step on
             % every other ring
-            n = numel(points(:, 1));
             rings = cell(n, 1);
             angles = cell(n, 1);
             V = zeros(0, 3);
             for k = 1:n
                 r = points(k, 1);
-                if r < 1e-12*max(profile(:, 1))
+                if onAxis(k)
                     a = 0;
                 else
                     c = max(3, round(2*pi*r/around));
@@ -429,9 +441,9 @@ classdef Geometry
 
             % Bands between neighbouring rings, merged by angle
             F = zeros(0, 3);
-            for k = 1:n - 1
-                A = rings{k};
-                B = rings{k + 1};
+            for p = 1:size(pairs, 1)
+                A = rings{pairs(p, 1)};
+                B = rings{pairs(p, 2)};
                 if isscalar(A) || isscalar(B)
                     % A fan to a vertex on the axis
                     ring = A;
@@ -443,8 +455,8 @@ classdef Geometry
                     F = [F; ring circshift(ring, -1) repmat(tip, numel(ring), 1)]; %#ok<AGROW>
                     continue
                 end
-                a = angles{k};
-                b = angles{k + 1};
+                a = angles{pairs(p, 1)};
+                b = angles{pairs(p, 2)};
                 [~, j0] = min(abs(angle(exp(1i*(b - a(1))))));
                 order = mod(j0 - 1 + (0:numel(b))', numel(b)) + 1;
                 bu = unwrap(b(order));
@@ -469,21 +481,59 @@ classdef Geometry
             % normal of its profile segment is the tangent turned clockwise
             segment = zeros(size(F, 1), 1);
             count = 0;
-            for k = 1:n - 1
-                m = numel(rings{k}) + numel(rings{k + 1});
-                if isscalar(rings{k}) || isscalar(rings{k + 1})
-                    m = max(numel(rings{k}), numel(rings{k + 1}));
+            for p = 1:size(pairs, 1)
+                A = rings{pairs(p, 1)};
+                B = rings{pairs(p, 2)};
+                m = numel(A) + numel(B);
+                if isscalar(A) || isscalar(B)
+                    m = max(numel(A), numel(B));
                 end
-                segment(count + (1:m)) = k;
+                segment(count + (1:m)) = p;
                 count = count + m;
             end
-            tangent = points(segment + 1, :) - points(segment, :);
+            tangent = points(pairs(segment, 2), :) - points(pairs(segment, 1), :);
             C = (V(F(:, 1), :) + V(F(:, 2), :) + V(F(:, 3), :))/3;
             radial = C(:, 1:2)./max(sqrt(sum(C(:, 1:2).^2, 2)), eps);
             outward = [tangent(:, 2).*radial, -tangent(:, 1)];
             normal = cross(V(F(:, 2), :) - V(F(:, 1), :), V(F(:, 3), :) - V(F(:, 1), :), 2);
             inward = dot(normal, outward, 2) < 0;
             F(inward, [2 3]) = F(inward, [3 2]);
+        end
+
+        function [V, T] = polarTube(nr, nt, nz, bore, thickness, height)
+            % Tube wall along z, centred at the origin, filled with
+            % tetrahedra: a polar grid of nr cells across the wall, nt around
+            % it and nz along it. The bore radius changes linearly from
+            % bore(1) at the bottom to bore(2) at the top, the wall keeps its
+            % thickness. The cells are split by hexTetrahedra with the
+            % directions around, along and outwards, the same in every cell,
+            % so neighbours share their face diagonals across the seam too. A
+            % bore closed at an end (radius 0) collapses its inner edge there
+            % onto the axis, where the tetrahedra left without volume are
+            % dropped. The tetrahedra are turned to a positive volume.
+            [i, j, k] = ndgrid(0:nt - 1, 0:nz, 0:nr);
+            angle = 2*pi*i(:)/nt;
+            z = height*(j(:)/nz - 0.5);
+            r = bore(1) + (bore(2) - bore(1))*(z/height + 0.5) + thickness*k(:)/nr;
+            V = [r.*cos(angle) r.*sin(angle) z];
+
+            % Corners of each cell, numbered as the bits of their steps
+            % around, along and outwards, plus 1; around wraps
+            [i, j, k] = ndgrid(0:nt - 1, 0:nz - 1, 0:nr - 1);
+            index = @(di, dj, dk) 1 + mod(i(:) + di, nt) + nt*((j(:) + dj) + (nz + 1)*(k(:) + dk));
+            H = [index(0, 0, 0) index(1, 0, 0) index(0, 1, 0) index(1, 1, 0) ...
+                index(0, 0, 1) index(1, 0, 1) index(0, 1, 1) index(1, 1, 1)];
+            T = phx.internal.Geometry.hexTetrahedra(H);
+
+            % A closed bore merges its points on the axis; the tetrahedra
+            % that lost a corner so are dropped
+            [V, ~, map] = uniquetol(V, 1e-12, "ByRows", true, "DataScale", max([bore + thickness, height]));
+            T = map(T);
+            S = sort(T, 2);
+            T = T(all(diff(S, 1, 2) > 0, 2), :);
+            e = V(T(:, 1), :);
+            negative = dot(cross(V(T(:, 2), :) - e, V(T(:, 3), :) - e, 2), V(T(:, 4), :) - e, 2) < 0;
+            T(negative, [2 3]) = T(negative, [3 2]);
         end
 
         function [V, T] = cubedHalfBall(nc, kc, m, a)
