@@ -70,6 +70,18 @@ it, towards the heavier end; the body gets it as its <code class="phx-inline">Ce
 about it.
 </div>
 
+<h3 class="phx-h3">Meshes for flexible and soft bodies</h3>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">ElementResolution</td><td class="dflt">[1 24 8]</td><td>How fine the meshes are: the numbers of cells across the wall, around it and along the height, <code class="phx-inline">[across around along]</code>, or a single number of cells across the thinner of the wall and the height, the wall cut around and along into cells as close to cubes as possible. The default cuts a thin wall into cells longer than it is thick, far fewer than cubes would take.</td></tr>
+</table>
+<p><code class="phx-inline">generateVolumetricMesh</code> fills the wall for a
+<a href="phx.FlexibleBody.html">phx.FlexibleBody</a> with a polar grid of cells, split into
+quadratic tetrahedra (K&times;10) whose middles of the edges on the outside and on the bore lie on
+them; a bore closed at an end closes onto the axis there. <code class="phx-inline">generateSurfaceMesh</code>
+covers the wall for a <a href="phx.SoftBody.html">phx.SoftBody</a> with rings of evenly spaced
+vertices. See <a href="phx_ug_deformables.html#shapes">Meshes from shapes</a>.</p>
+
 <h2 class="phx-h2">Examples</h2>
 <h4 class="phx-h4">Ball caught by a funnel</h4>
 <pre class="phx-code">phx.extra.Viewer(<span class="str">"clear"</span>, <span class="str">"DefaultCameraPosition"</span>, [3 3 2]);

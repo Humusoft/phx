@@ -58,6 +58,20 @@ mass, which lies closer to the wider end: a quarter of the height below the orig
 gets it as its <code class="phx-inline">CenterOfMass</code> and turns about it.
 </div>
 
+<h3 class="phx-h3">Meshes for flexible and soft bodies</h3>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">ElementResolution</td><td class="dflt">2</td><td>How fine the meshes are: the number of cells across the smaller of the larger diameter and the height, the other one cut into cells as close to cubes as possible, or the numbers of cells across the larger diameter and along the height, <code class="phx-inline">[diameter height]</code>.</td></tr>
+</table>
+<p><code class="phx-inline">generateVolumetricMesh</code> fills the cone for a
+<a href="phx.FlexibleBody.html">phx.FlexibleBody</a> as a cylinder whose layers narrow with the cone,
+split into quadratic tetrahedra (K&times;10) whose middles of the edges on the curved side lie on it.
+At the apex of a sharp cone the last layer closes into pyramids, whose tetrahedra are as slender as
+the cone. <code class="phx-inline">generateSurfaceMesh</code> covers the cone for a
+<a href="phx.SoftBody.html">phx.SoftBody</a> with rings of vertices, as many on each as its
+circumference takes, so that they are spaced about evenly. See
+<a href="phx_ug_deformables.html#shapes">Meshes from shapes</a>.</p>
+
 <h2 class="phx-h2">Examples</h2>
 <h4 class="phx-h4">Simple falling cone</h4>
 <pre class="phx-code">phx.extra.Viewer(<span class="str">"clear"</span>, <span class="str">"DefaultCameraPosition"</span>, [10 10 10]);

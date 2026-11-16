@@ -61,6 +61,13 @@ revolution from the given <code class="phx-inline">Profile</code>.</p>
 
 <p>Appearance properties are inherited from <a href="phx.base.Shape.html">phx.base.Shape</a>.</p>
 
+<h3 class="phx-h3">Meshes for flexible and soft bodies</h3>
+<p>A solid of revolution cannot yet generate meshes for a <a href="phx.FlexibleBody.html">phx.FlexibleBody</a>
+or a <a href="phx.SoftBody.html">phx.SoftBody</a>: <code class="phx-inline">generateVolumetricMesh</code>
+and <code class="phx-inline">generateSurfaceMesh</code> raise an error until a future release adds
+them. Until then, give the body a mesh of its own, for example one that PDE Toolbox generates. See
+<a href="phx_ug_deformables.html#shapes">Meshes from shapes</a>.</p>
+
 <h2 class="phx-h2">Examples</h2>
 <h4 class="phx-h4">Revolve a profile into a hollow vase</h4>
 <p>The loop starts on the axis, runs up the outside, back down the inside 3&nbsp;cm in, across

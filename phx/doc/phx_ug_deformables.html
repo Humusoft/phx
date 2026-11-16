@@ -48,15 +48,16 @@ evenly over the vertices of the mesh. Its edges keep their length up to their
 <code class="phx-inline">Compliance</code> (the inverse of stiffness; 0 makes them rigid), and
 <code class="phx-inline">BendCompliance</code> adds edges across adjacent triangles that resist
 bending. A closed mesh can hold a gas <code class="phx-inline">Pressure</code> that pushes on its
-faces, which turns it into a ball or an airbag; list its faces counter-clockwise seen from outside, as
+faces, which turns it into a ball or an airbag. The mesh comes from a shape
+(<code class="phx-inline">"Shape"</code>, see <a href="#shapes">Meshes from shapes</a>) or as
+<code class="phx-inline">Vertices</code> and <code class="phx-inline">Faces</code> of your own; list
+the faces of a closed mesh counter-clockwise seen from outside, as
 <code class="phx-inline">convhull</code> gives them.</p>
 
 <pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
 
 floor = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Position"</span>, [0 0 -0.1], <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [2 2 0.2]});
-[x, y, z] = sphere(16);
-V = unique([x(:) y(:) z(:)]*0.25, <span class="str">"rows"</span>);
-ball = phx.SoftBody(gca, <span class="str">"Vertices"</span>, V, <span class="str">"Faces"</span>, convhull(V), <span class="str">"Position"</span>, [0 0 1], ...
+ball = phx.SoftBody(gca, <span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>, <span class="str">"Diameter"</span>, 0.5, <span class="str">"ElementResolution"</span>, 16}, <span class="str">"Position"</span>, [0 0 1], ...
     <span class="str">"Mass"</span>, 0.5, <span class="str">"Compliance"</span>, 1e-3, <span class="str">"Pressure"</span>, 15, <span class="str">"Iterations"</span>, 10);
 sim = phx.Simulation(gca);
 sim.step(4, 800);                    <span class="cmt">% the ball bounces, squashes and settles</span></pre>
@@ -68,11 +69,13 @@ step: more of them bring stiff edges closer to their compliance.</p>
 <h2 class="phx-h2">Flexible bodies</h2>
 <p>A <a href="phx.FlexibleBody.html">phx.FlexibleBody</a> is an elastic solid. Give it a mesh of
 tetrahedra and a material (<code class="phx-inline">Density</code>,
-<code class="phx-inline">YoungsModulus</code>, <code class="phx-inline">PoissonsRatio</code>); the
-mesh can be a <code class="phx-inline">delaunay</code> triangulation of points or the mesh that PDE
-Toolbox generates (<code class="phx-inline">"Mesh"</code>, PHX only reads it). The body deforms as a
-material that also holds for large rotations, and colors its surface by the von Mises stress when you
-choose a <code class="phx-inline">Colormap</code>.</p>
+<code class="phx-inline">YoungsModulus</code>, <code class="phx-inline">PoissonsRatio</code>). The
+mesh can come from a shape (<code class="phx-inline">"Shape"</code>, see
+<a href="#shapes">Meshes from shapes</a>), from PDE Toolbox (<code class="phx-inline">"Mesh"</code>,
+PHX only reads it), for example for a part of any form in an STL file, or as
+<code class="phx-inline">Vertices</code> and <code class="phx-inline">Tetrahedra</code> of your own.
+The body deforms as a material that also holds for large rotations, and colors its surface by the von
+Mises stress when you choose a <code class="phx-inline">Colormap</code>.</p>
 
 <p>The elements are quadratic tetrahedra: a K&times;4 mesh gets a vertex in the middle of each edge.
 They bend without stiffening on a coarse mesh and are solved by Newton iterations until the force
@@ -82,9 +85,7 @@ depend on <code class="phx-inline">Iterations</code>, which only limits the iter
 <pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
 
 wall = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Position"</span>, [-0.05 0 0], <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [0.1 0.3 0.3]});
-[x, y, z] = ndgrid(-0.05:0.05:1, -0.05:0.05:0.05, -0.05:0.05:0.05);
-V = [x(:) y(:) z(:)];
-beam = phx.FlexibleBody(gca, <span class="str">"Vertices"</span>, V, <span class="str">"Tetrahedra"</span>, delaunay(V), ...
+beam = phx.FlexibleBody(gca, <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [1.05 0.1 0.1]}, <span class="str">"Position"</span>, [0.475 0 0], ...
     <span class="str">"YoungsModulus"</span>, 2e7, <span class="str">"Damping"</span>, 2, <span class="str">"Colormap"</span>, turbo(64), <span class="str">"ColorRange"</span>, [0 3e5]);
 phx.IntersectionWeld(beam, wall);    <span class="cmt">% the wall holds the end of the beam inside it</span>
 sim = phx.Simulation(gca);
@@ -92,6 +93,63 @@ sim.step(3, 600);                    <span class="cmt">% the beam sags under its
 
 <p>The body touches rigid bodies at its vertices only, so keep them well closer together than the
 radius of a curved body it touches. The tetrahedra suit strains up to some 10&ndash;20&nbsp;%.</p>
+
+<h2 class="phx-h2" id="shapes">Meshes from shapes</h2>
+<p>The simplest mesh comes from a shape, given to <code class="phx-inline">"Shape"</code> as an object
+or as the same cell array that <a href="phx.Body.html">phx.Body</a> takes. A flexible body fills the
+shape with tetrahedra and takes the <code class="phx-inline">Density</code> of the shape; a
+<code class="phx-inline">Density</code> or <code class="phx-inline">Mass</code> given to the
+constructor overrides it. A soft body covers the shape with triangles and takes only its geometry: a
+soft body is a skin, and its <code class="phx-inline">Mass</code> stays its own.</p>
+
+<p>How fine the mesh is, the <code class="phx-inline">ElementResolution</code> of the shape sets,
+just as <code class="phx-inline">Segments</code> sets how fine the shape is drawn: a number of cells
+across the shape, independent of its size in metres. A single number counts the cells across the
+thinnest section and cuts the rest of the shape into cells as close to cubes as possible; a vector
+gives the number of cells in each direction of the shape and lets the cells be longer in one of them.
+Each cell is split into six tetrahedra.</p>
+
+<table class="phx-tbl">
+<tr><th>Shape</th><th>A number counts the cells across</th><th>A vector</th><th>Default</th></tr>
+<tr><td class="name"><a href="phx.shape.Box.html">Box</a></td><td>the smallest side</td><td><code class="phx-inline">[nx ny nz]</code></td><td>2</td></tr>
+<tr><td class="name"><a href="phx.shape.Sphere.html">Sphere</a></td><td>the diameter</td><td>&mdash;</td><td>5</td></tr>
+<tr><td class="name"><a href="phx.shape.Cylinder.html">Cylinder</a></td><td>the smaller of the diameter and the height</td><td><code class="phx-inline">[diameter height]</code></td><td>2</td></tr>
+<tr><td class="name"><a href="phx.shape.Cone.html">Cone</a></td><td>the smaller of the larger diameter and the height</td><td><code class="phx-inline">[diameter height]</code></td><td>2</td></tr>
+<tr><td class="name"><a href="phx.shape.Capsule.html">Capsule</a></td><td>the diameter</td><td><code class="phx-inline">[diameter Height]</code></td><td>2</td></tr>
+<tr><td class="name"><a href="phx.shape.Tube.html">Tube</a></td><td>the smaller of the wall and the height</td><td><code class="phx-inline">[across around along]</code></td><td><code class="phx-inline">[1 24 8]</code></td></tr>
+</table>
+
+<p>The defaults are chosen for flexible bodies, which cost far more per step than soft ones; they
+bend a beam within a few percent of beam theory. A soft body usually wants a finer surface, which is
+cheap: a coarse one is easy to see, so raise <code class="phx-inline">ElementResolution</code> until
+the soft body looks smooth. Mind that a single number on a thin plate or a thin wall makes many small
+cubes; there a vector with longer cells costs far less, as the default of a tube does.</p>
+
+<p>The tetrahedra of the round shapes are curved: the vertices in the middles of their edges on the
+surface lie on the true surface, so even a coarse mesh has nearly the volume, and so the mass, of
+the shape. The surfaces for soft bodies space their vertices about evenly, so that a soft body
+spreads its mass evenly: a sphere is covered by a subdivided icosahedron, the other round shapes by
+rings of vertices.</p>
+
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+floor = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Position"</span>, [0 0 -0.1], <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [2 2 0.2]});
+bumper = phx.FlexibleBody(gca, <span class="str">"Shape"</span>, {<span class="str">"Cylinder"</span>, <span class="str">"Diameter"</span>, 0.3, <span class="str">"Height"</span>, 0.4, <span class="str">"Density"</span>, 1100}, ...
+    <span class="str">"Position"</span>, [-0.3 0 0.6], <span class="str">"YoungsModulus"</span>, 1e6);
+pillow = phx.SoftBody(gca, <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [0.4 0.4 0.1], <span class="str">"ElementResolution"</span>, 2}, ...
+    <span class="str">"Position"</span>, [0.3 0 0.6], <span class="str">"Mass"</span>, 0.3, <span class="str">"Compliance"</span>, 1e-4, <span class="str">"Pressure"</span>, 50);
+sim = phx.Simulation(gca);
+sim.step(2, 400);</pre>
+
+<p>The shapes generate the meshes with <code class="phx-inline">generateVolumetricMesh</code> and
+<code class="phx-inline">generateSurfaceMesh</code>, which you can also call yourself, for example to
+scale a sphere into an ellipsoid before handing its vertices to a soft body.
+<a href="phx.shape.Revolution.html">Revolution</a>, <a href="phx.shape.Extrusion.html">Extrusion</a>
+and <a href="phx.shape.Mesh.html">Mesh</a> generate their meshes in a future release; until then,
+mesh such a part with PDE Toolbox and give it as <code class="phx-inline">"Mesh"</code>:</p>
+
+<pre class="phx-code">gm = generateMesh(fegeometry(<span class="str">"part.stl"</span>), Hmax=0.01);    <span class="cmt">% STL in metres, or scale it first</span>
+part = phx.FlexibleBody(gca, <span class="str">"Mesh"</span>, gm, <span class="str">"YoungsModulus"</span>, 1e6);</pre>
 
 <h2 class="phx-h2">Holding and loading a deformable body</h2>
 <p>No joint, spring or force acts on a soft or flexible body directly. Instead, place a rigid body so

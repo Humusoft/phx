@@ -47,6 +47,21 @@ and right edges on the +x meridian, and longitude growing anticlockwise about +z
 
 <p>Appearance properties are inherited from <a href="phx.base.Shape.html">phx.base.Shape</a>.</p>
 
+<h3 class="phx-h3">Meshes for flexible and soft bodies</h3>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">ElementResolution</td><td class="dflt">5</td><td>How fine the meshes are: about the number of cells, or mesh edges, across the diameter. A single number only.</td></tr>
+</table>
+<p><code class="phx-inline">generateVolumetricMesh</code> fills the sphere for a
+<a href="phx.FlexibleBody.html">phx.FlexibleBody</a> with a cube core surrounded by six blocks of
+cells that reach the sphere, split into quadratic tetrahedra (K&times;10) whose middles of the
+surface edges lie on the sphere, so that even a coarse mesh has nearly its volume.
+<code class="phx-inline">generateSurfaceMesh</code> covers it for a
+<a href="phx.SoftBody.html">phx.SoftBody</a> with a subdivided icosahedron, its edges about
+<code class="phx-inline">Diameter/ElementResolution</code> long. The default suits a flexible body; a
+soft ball usually looks better with 16 or more. See
+<a href="phx_ug_deformables.html#shapes">Meshes from shapes</a>.</p>
+
 <h2 class="phx-h2">Examples</h2>
 <h4 class="phx-h4">Simple falling sphere</h4>
 <pre class="phx-code">phx.extra.Viewer(<span class="str">"clear"</span>, <span class="str">"DefaultCameraPosition"</span>, [10 10 10]);

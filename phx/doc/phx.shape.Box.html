@@ -48,6 +48,18 @@ as an object or as a cell array <code class="phx-inline">{"Box",Name,Value,&hell
 <a href="phx.base.Shape.html">phx.base.Shape</a>. <code class="phx-inline">Box</code> uses the
 <code class="phx-inline">"flat"</code> style by default.</p>
 
+<h3 class="phx-h3">Meshes for flexible and soft bodies</h3>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">ElementResolution</td><td class="dflt">2</td><td>How fine the meshes are: the number of cells across the smallest side, the other sides cut into cells as close to cubes as whole numbers allow, or the numbers of cells along X, Y and Z, <code class="phx-inline">[nx ny nz]</code>.</td></tr>
+<tr><td class="name">ElementDivisions</td><td class="type">1&times;3 double (read-only)</td><td>Numbers of cells along X, Y and Z that <code class="phx-inline">ElementResolution</code> gives.</td></tr>
+</table>
+<p><code class="phx-inline">generateVolumetricMesh</code> fills the box with the grid of cells, each
+split into six tetrahedra (K&times;4), for a <a href="phx.FlexibleBody.html">phx.FlexibleBody</a>;
+<code class="phx-inline">generateSurfaceMesh</code> gives its boundary for a
+<a href="phx.SoftBody.html">phx.SoftBody</a>. See
+<a href="phx_ug_deformables.html#shapes">Meshes from shapes</a>.</p>
+
 <h2 class="phx-h2">Examples</h2>
 <h4 class="phx-h4">A colored block as a body</h4>
 <pre class="phx-code">phx.extra.Viewer(<span class="str">"clear"</span>, <span class="str">"DefaultCameraPosition"</span>, [10 10 10]);

@@ -87,7 +87,12 @@ coordinates project the image onto each face along the axis closest to its norma
 <tr><th>Function</th><th>Description</th></tr>
 <tr><td class="name">nextColor</td><td>Assign the next color from the cyclic color order to the shape.</td></tr>
 <tr><td class="name">resetColorOrder</td><td><b>Static.</b> Reset the counter so <code class="phx-inline">nextColor</code> starts again from the first color.</td></tr>
+<tr><td class="name">[V,T] = generateVolumetricMesh(obj)</td><td>Mesh of tetrahedra that fills the shape, as <a href="phx.FlexibleBody.html">phx.FlexibleBody</a> takes it: vertices <code class="phx-inline">V</code> (N&times;3, shape frame) and tetrahedra <code class="phx-inline">T</code> (K&times;4, or K&times;10 quadratic ones whose middles of the surface edges follow a curved surface), as fine as the shape's <code class="phx-inline">ElementResolution</code> sets. A shape that generates none raises <code class="phx-inline">phx:Shape:noVolumetricMesh</code>.</td></tr>
+<tr><td class="name">[V,F] = generateSurfaceMesh(obj)</td><td>Triangle mesh of the surface, as <a href="phx.SoftBody.html">phx.SoftBody</a> takes it, its vertices spaced about evenly and its triangles counter-clockwise seen from outside. By default the boundary of the volumetric mesh; the round shapes generate their own. A shape that generates none raises <code class="phx-inline">phx:Shape:noSurfaceMesh</code>.</td></tr>
 </table>
+<p>Box, Sphere, Cylinder, Cone, Capsule and Tube generate both meshes; Revolution, Extrusion and Mesh
+will in a future release, and Rock and Terrain generate none. See
+<a href="phx_ug_deformables.html#shapes">Meshes from shapes</a>.</p>
 
 <h3 class="phx-h3" id="builtin">Built-in textures</h3>
 <p>Each built-in texture is a static function of the class that generates a <code class="phx-inline">uint8</code>

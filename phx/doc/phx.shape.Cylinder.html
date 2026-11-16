@@ -47,6 +47,18 @@ name-value arguments.</p>
 
 <p>Appearance properties are inherited from <a href="phx.base.Shape.html">phx.base.Shape</a>.</p>
 
+<h3 class="phx-h3">Meshes for flexible and soft bodies</h3>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">ElementResolution</td><td class="dflt">2</td><td>How fine the meshes are: the number of cells across the smaller of the diameter and the height, the other one cut into cells as close to cubes as possible, or the numbers of cells across the diameter and along the height, <code class="phx-inline">[diameter height]</code>.</td></tr>
+</table>
+<p><code class="phx-inline">generateVolumetricMesh</code> fills the cylinder for a
+<a href="phx.FlexibleBody.html">phx.FlexibleBody</a> with layers of a cross-section made of a square
+core and four blocks of cells that reach the circle, split into quadratic tetrahedra (K&times;10)
+whose middles of the edges on the curved side lie on it. <code class="phx-inline">generateSurfaceMesh</code>
+gives the boundary of that mesh for a <a href="phx.SoftBody.html">phx.SoftBody</a>. See
+<a href="phx_ug_deformables.html#shapes">Meshes from shapes</a>.</p>
+
 <h2 class="phx-h2">Examples</h2>
 <h4 class="phx-h4">Simple falling body</h4>
 <pre class="phx-code">phx.extra.Viewer(<span class="str">"clear"</span>, <span class="str">"DefaultCameraPosition"</span>, [10 10 10]);

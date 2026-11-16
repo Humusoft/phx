@@ -31,6 +31,7 @@ apply at any time. A soft body is a top-level object: hand it to the simulation 
 <h2 class="phx-h2">Creation</h2>
 <h3 class="phx-h3">Syntax</h3>
 <span class="phx-syntax">soft = phx.SoftBody(ax,"Vertices",V,"Faces",F)</span>
+<span class="phx-syntax">soft = phx.SoftBody(ax,"Shape",shape)</span>
 <span class="phx-syntax">soft = phx.SoftBody(___,Name,Value)</span>
 
 <h3 class="phx-h3">Description</h3>
@@ -40,6 +41,14 @@ of the triangle mesh <code class="phx-inline">V</code> (N&times;3, in the body f
 <code class="phx-inline">F</code> (M&times;3 vertex indices, as for <code class="phx-inline">patch</code>)
 and draws it into the axes <code class="phx-inline">ax</code>; <code class="phx-inline">[]</code> draws
 nothing. A soft body without a mesh is an error.</p>
+<p><code class="phx-inline">soft = phx.SoftBody(ax,"Shape",shape)</code> covers a shape with the
+surface mesh it generates (<code class="phx-inline">generateSurfaceMesh</code>), its vertices spaced
+about evenly so that the mass spreads evenly over the surface. The shape is a
+<code class="phx-inline">phx.shape.*</code> object or a cell array of a shape name and its arguments,
+as <a href="phx.Body.html">phx.Body</a> takes it; its <code class="phx-inline">ElementResolution</code>
+sets how fine the mesh is. Only the geometry is taken: the <code class="phx-inline">Mass</code> stays
+that of the soft body. Box, Sphere, Cylinder, Cone, Capsule and Tube generate meshes; see
+<a href="phx_ug_deformables.html#shapes">Meshes from shapes</a>.</p>
 </div>
 
 <h2 class="phx-h2">Properties</h2>
@@ -48,6 +57,7 @@ nothing. A soft body without a mesh is an error.</p>
 <tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
 <tr><td class="name">Vertices</td><td class="type">N&times;3 double</td><td>Vertices of the mesh in the body frame.</td></tr>
 <tr><td class="name">Faces</td><td class="type">M&times;3 double</td><td>Triangles of the mesh as vertex indices. A closed mesh holding a <code class="phx-inline">Pressure</code> lists them counter-clockwise seen from outside.</td></tr>
+<tr><td class="name">Shape</td><td class="type">shape object or cell array</td><td>Shape covered with a surface mesh (write-only, as for <a href="phx.Body.html">phx.Body</a>): sets <code class="phx-inline">Vertices</code> and <code class="phx-inline">Faces</code>, not the <code class="phx-inline">Mass</code>. Not together with a mesh in one constructor call.</td></tr>
 <tr><td class="name">Position</td><td class="dflt">[0 0 0]</td><td>Position of the rest shape when the soft body is created, <span class="phx-unit">m</span>.</td></tr>
 <tr><td class="name">Orientation</td><td class="dflt">eye(3)</td><td>Orientation of the rest shape when the soft body is created.</td></tr>
 <tr><td class="name">AxisAngle</td><td class="type">1&times;4 double</td><td>Axis-angle rotation <code class="phx-inline">[x y z angle]</code> of the rest shape (dependent, a view of <code class="phx-inline">Orientation</code>).</td></tr>
@@ -82,21 +92,23 @@ nothing. A soft body without a mesh is an error.</p>
 <pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
 
 floor = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Position"</span>, [0 0 -0.1], <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [3 3 0.2]});
-[x, y, z] = sphere(16);
-V = unique([x(:) y(:) z(:)]*0.3, <span class="str">"rows"</span>);
-F = convhull(V);                               <span class="cmt">% outward, counter-clockwise</span>
-ball = phx.SoftBody(gca, <span class="str">"Vertices"</span>, V, <span class="str">"Faces"</span>, F, <span class="str">"Position"</span>, [0 0 1], ...
-    <span class="str">"Compliance"</span>, 1e-4, <span class="str">"Pressure"</span>, 200);
+ball = phx.SoftBody(gca, <span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>, <span class="str">"Diameter"</span>, 0.6, <span class="str">"ElementResolution"</span>, 16}, ...
+    <span class="str">"Position"</span>, [0 0 1], <span class="str">"Compliance"</span>, 1e-4, <span class="str">"Pressure"</span>, 200);
 
 sim = phx.Simulation({floor, ball});
 sim.step(3, 600, 6);</pre>
+
+<h4 class="phx-h4">A mesh of your own: a sphere scaled into an ellipsoid</h4>
+<pre class="phx-code">[V, F] = phx.shape.Sphere(<span class="str">"Diameter"</span>, 2, <span class="str">"ElementResolution"</span>, 16).generateSurfaceMesh;
+bag = phx.SoftBody(gca, <span class="str">"Vertices"</span>, V.*[0.15 0.3 0.3], <span class="str">"Faces"</span>, F, <span class="str">"Pressure"</span>, 0.3);</pre>
 
 <div class="phx-seealso">
 <span class="lbl">See also</span>
 <a href="phx.FlexibleBody.html">phx.FlexibleBody</a>,
 <a href="phx.IntersectionWeld.html">phx.IntersectionWeld</a>,
 <a href="phx.Body.html">phx.Body</a>,
-<a href="phx.Simulation.html">phx.Simulation</a>
+<a href="phx.Simulation.html">phx.Simulation</a>,
+<a href="phx.base.Shape.html">phx.base.Shape</a>
 </div>
 
 <div class="phx-seealso">

@@ -43,6 +43,7 @@ simulation like a body.</p>
 <h3 class="phx-h3">Syntax</h3>
 <span class="phx-syntax">flex = phx.FlexibleBody(ax,"Vertices",V,"Tetrahedra",T)</span>
 <span class="phx-syntax">flex = phx.FlexibleBody(ax,"Mesh",mesh)</span>
+<span class="phx-syntax">flex = phx.FlexibleBody(ax,"Shape",shape)</span>
 <span class="phx-syntax">flex = phx.FlexibleBody(___,Name,Value)</span>
 
 <h3 class="phx-h3">Description</h3>
@@ -53,13 +54,22 @@ and <code class="phx-inline">T</code> (vertex indices) and draws its surface int
 <code class="phx-inline">ax</code>; <code class="phx-inline">[]</code> draws nothing.
 <code class="phx-inline">T</code> is either K&times;4, as <code class="phx-inline">delaunayTriangulation</code>
 gives it, and the vertices in the middles of the edges are added to <code class="phx-inline">V</code>,
-or K&times;10, a quadratic mesh (the corners, then the vertices of the edges 12 23 13 14 24 34). The
-added vertices follow <code class="phx-inline">V</code> in <code class="phx-inline">CurrentVertices</code>
-and <code class="phx-inline">VonMisesStress</code>.</p>
+or K&times;10, a quadratic mesh (the corners, then the vertices of the edges 12 23 13 14 24 34),
+whose edges are curved where those vertices lie off their middles. The added vertices follow
+<code class="phx-inline">V</code> in <code class="phx-inline">CurrentVertices</code> and
+<code class="phx-inline">VonMisesStress</code>.</p>
 <p><code class="phx-inline">flex = phx.FlexibleBody(ax,"Mesh",mesh)</code> takes the mesh of
 tetrahedra that PDE Toolbox generates: the <code class="phx-inline">Mesh</code> of an
 <code class="phx-inline">fegeometry</code> or <code class="phx-inline">femodel</code>, or the geometry
 or model itself. PHX only reads the mesh and does not need PDE Toolbox.</p>
+<p><code class="phx-inline">flex = phx.FlexibleBody(ax,"Shape",shape)</code> fills a shape with the
+mesh of tetrahedra it generates (<code class="phx-inline">generateVolumetricMesh</code>) and takes its
+<code class="phx-inline">Density</code>; a <code class="phx-inline">Density</code> or
+<code class="phx-inline">Mass</code> given to the constructor overrides it. The shape is a
+<code class="phx-inline">phx.shape.*</code> object or a cell array of a shape name and its arguments,
+as <a href="phx.Body.html">phx.Body</a> takes it; its <code class="phx-inline">ElementResolution</code>
+sets how fine the mesh is. Box, Sphere, Cylinder, Cone, Capsule and Tube generate meshes; see
+<a href="phx_ug_deformables.html#shapes">Meshes from shapes</a>.</p>
 </div>
 
 <h2 class="phx-h2">Properties</h2>
@@ -69,13 +79,14 @@ or model itself. PHX only reads the mesh and does not need PDE Toolbox.</p>
 <tr><td class="name">Vertices</td><td class="type">N&times;3 double</td><td>Vertices of the mesh in the body frame.</td></tr>
 <tr><td class="name">Tetrahedra</td><td class="type">K&times;4 or K&times;10 double</td><td>Tetrahedra as vertex indices.</td></tr>
 <tr><td class="name">Mesh</td><td class="type">mesh object or struct</td><td>Mesh of tetrahedra as PDE Toolbox gives it, with <code class="phx-inline">Nodes</code> (3&times;N) and <code class="phx-inline">Elements</code> (4&times;K or 10&times;K); an <code class="phx-inline">fegeometry</code> or <code class="phx-inline">femodel</code> gives its <code class="phx-inline">Mesh</code>. Sets <code class="phx-inline">Vertices</code> and <code class="phx-inline">Tetrahedra</code> and reads them back in this form.</td></tr>
+<tr><td class="name">Shape</td><td class="type">shape object or cell array</td><td>Shape filled with a mesh of tetrahedra (write-only, as for <a href="phx.Body.html">phx.Body</a>): sets <code class="phx-inline">Vertices</code>, <code class="phx-inline">Tetrahedra</code> and <code class="phx-inline">Density</code>. Not together with a mesh in one constructor call.</td></tr>
 <tr><td class="name">Position</td><td class="dflt">[0 0 0]</td><td>Position of the rest shape when the body is created, <span class="phx-unit">m</span>.</td></tr>
 <tr><td class="name">Orientation</td><td class="dflt">eye(3)</td><td>Orientation of the rest shape when the body is created.</td></tr>
 <tr><td class="name">AxisAngle</td><td class="type">1&times;4 double</td><td>Axis-angle rotation <code class="phx-inline">[x y z angle]</code> of the rest shape (dependent, a view of <code class="phx-inline">Orientation</code>).</td></tr>
 <tr><td class="name">EulerAngles</td><td class="type">1&times;3 double</td><td>Euler angles of the rest shape for z&rarr;y&rarr;x order, as <a href="phx.Body.html">phx.Body</a> takes them (dependent).</td></tr>
 <tr><td class="name">Quaternion</td><td class="type">1&times;4 double</td><td>Quaternion <code class="phx-inline">[w x y z]</code> of the rest shape (dependent).</td></tr>
 <tr><td class="name">Density</td><td class="dflt">1000</td><td>Density of the material, <span class="phx-unit">kg/m&sup3;</span>.</td></tr>
-<tr><td class="name">Mass</td><td class="type">double</td><td>Mass of the body, <span class="phx-unit">kg</span>: <code class="phx-inline">Density</code> times the volume of the mesh. Set either one: setting <code class="phx-inline">Mass</code> sets <code class="phx-inline">Density</code> for the present mesh, which a later change of the mesh keeps (as <code class="phx-inline">Radius</code> and <code class="phx-inline">Diameter</code> of the shapes). Given to the constructor, it is taken after the mesh.</td></tr>
+<tr><td class="name">Mass</td><td class="type">double</td><td>Mass of the body, <span class="phx-unit">kg</span>: <code class="phx-inline">Density</code> times the volume of the mesh, curved tetrahedra included. Set either one: setting <code class="phx-inline">Mass</code> sets <code class="phx-inline">Density</code> for the present mesh, which a later change of the mesh keeps (as <code class="phx-inline">Radius</code> and <code class="phx-inline">Diameter</code> of the shapes). Given to the constructor, it is taken after the mesh.</td></tr>
 <tr><td class="name">YoungsModulus</td><td class="dflt">1e6</td><td>Young's modulus of the material, <span class="phx-unit">Pa</span>.</td></tr>
 <tr><td class="name">PoissonsRatio</td><td class="dflt">0.45</td><td>Poisson's ratio of the material, from 0 to 0.5 for an incompressible one (taken as at most 0.49995).</td></tr>
 </table>
@@ -121,6 +132,10 @@ block = phx.FlexibleBody(gca, <span class="str">"Vertices"</span>, V, <span clas
 sim = phx.Simulation({floor, block});
 sim.step(2, 400, 4);</pre>
 
+<h4 class="phx-h4">A rubber cylinder meshed from its shape</h4>
+<pre class="phx-code">roller = phx.FlexibleBody(gca, <span class="str">"Shape"</span>, {<span class="str">"Cylinder"</span>, <span class="str">"Diameter"</span>, 0.3, <span class="str">"Height"</span>, 0.4, ...
+    <span class="str">"Axis"</span>, <span class="str">"y"</span>, <span class="str">"ElementResolution"</span>, 3}, <span class="str">"Density"</span>, 1100, <span class="str">"Position"</span>, [0 0 0.5]);</pre>
+
 <h4 class="phx-h4">A part meshed by PDE Toolbox</h4>
 <pre class="phx-code">gm = generateMesh(fegeometry(multicuboid(0.4, 0.2, 0.1)), Hmax=0.05);
 part = phx.FlexibleBody(gca, <span class="str">"Mesh"</span>, gm, <span class="str">"Position"</span>, [0 0 0.5], ...
@@ -130,7 +145,8 @@ part = phx.FlexibleBody(gca, <span class="str">"Mesh"</span>, gm, <span class="s
 <span class="lbl">See also</span>
 <a href="phx.SoftBody.html">phx.SoftBody</a>,
 <a href="phx.IntersectionWeld.html">phx.IntersectionWeld</a>,
-<a href="phx.Body.html">phx.Body</a>
+<a href="phx.Body.html">phx.Body</a>,
+<a href="phx.base.Shape.html">phx.base.Shape</a>
 </div>
 
 <div class="phx-seealso">

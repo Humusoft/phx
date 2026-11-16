@@ -282,20 +282,18 @@ still in progress: check the result visually, and prefer rigid bodies unless def
 or a bulk of grains is the point.
 
 ```matlab
-% Soft body: a triangle mesh whose vertices are particles held by its edges
-[x, y, z] = sphere(16); V = unique([x(:) y(:) z(:)]*0.3, "rows"); F = convhull(V);
-ball = phx.SoftBody(ax, "Vertices", V, "Faces", F, "Position", [0 0 1], ...
-    "Mass", 1, "Compliance", 1e-4, "Pressure", 200);   % closed mesh, inflated
+% Soft body: a triangle mesh whose vertices are particles held by its edges; the mesh
+% from a shape (evenly spaced vertices; the shape's geometry only, Mass stays its own)
+ball = phx.SoftBody(ax, "Shape", {"Sphere", "Diameter", 0.6, "ElementResolution", 16}, ...
+    "Position", [0 0 1], "Mass", 1, "Compliance", 1e-4, "Pressure", 200);   % closed, inflated
+% or your own closed mesh, faces counter-clockwise from outside: "Vertices", V, "Faces", convhull(V)
 
-% Flexible body: an elastic solid of quadratic tetrahedra (edge vertices added)
-[x, y, z] = ndgrid(-0.2:0.1:0.2); W = [x(:) y(:) z(:)];
-block = phx.FlexibleBody(ax, "Vertices", W, "Tetrahedra", delaunay(W), ...
+% Flexible body: an elastic solid of quadratic tetrahedra, here a shape filled with
+% tetrahedra as fine as its ElementResolution (takes the shape's Density)
+block = phx.FlexibleBody(ax, "Shape", {"Box", "Size", [0.4 0.4 0.4]}, ...
     "Position", [1 0 0.5], "YoungsModulus", 2e5, "PoissonsRatio", 0.45);
 % or a mesh of any shape from PDE Toolbox: "Mesh", generateMesh(fegeometry("part.stl"), Hmax=0.02)
-% or a shape filled with tetrahedra, as fine as its ElementResolution (takes its Density):
-beam = phx.FlexibleBody(ax, "Shape", {"Box", "Size", [1 0.1 0.1], "ElementResolution", 3});
-% the same for a soft body, which takes the shape's surface (its Mass stays its own):
-cushion = phx.SoftBody(ax, "Shape", {"Box", "Size", [0.4 0.4 0.1]}, "Pressure", 100);
+% or your own: "Vertices", W, "Tetrahedra", T (Kx4, edge vertices added, or Kx10)
 
 % A rigid body overlapping it holds it: vertices inside the body are welded to it
 plate = phx.Body(ax, "Type", "static", "Position", [1 0 0.7], ...
@@ -312,19 +310,34 @@ gravel.add(Pnew); gravel.remove(gravel.Positions(:, 3) < -1);   % any time, also
   bushing) collide with rigid bodies only, not with each other. **No joint attaches to
   them**: weld a `phx.Body` into them with `phx.IntersectionWeld` (it should overlap at
   least 3 vertices not on one line) and connect joints, springs and forces to that body.
-- `"Shape"` meshes a `phx.shape.*` object or a `{name, args...}` cell: `Box`, `Sphere` and
-  `Cylinder` generate meshes (other shapes raise an error; use `Mesh` or `Vertices` for
-  them). `ElementResolution` of the shape sets the fineness: for a Box the number of
-  cells across its smallest side (the others cut into near-cubic cells) or `[nx ny nz]`;
-  for a Cylinder the same across the smaller of diameter and height, or `[nDiameter
-  nHeight]`; for a Sphere about the number of edges across the diameter. `generateVolumetricMesh` /
-  `generateSurfaceMesh` of the shape return the mesh itself.
+- `"Shape"` meshes a `phx.shape.*` object or a `{name, args...}` cell (not together with
+  a mesh). `Box`, `Sphere`, `Cylinder`, `Cone`, `Capsule` and `Tube` generate meshes;
+  `Revolution`, `Extrusion` and `Mesh` raise `phx:Shape:noVolumetricMesh` /
+  `noSurfaceMesh` until a future release (`Rock`, `Terrain` too): give those a PDE Toolbox
+  `"Mesh"` or `Vertices` of your own. A FlexibleBody takes the shape's `Density` (a
+  `Density`/`Mass` given to the constructor wins), a SoftBody only its geometry.
+- `ElementResolution` of the shape (like `Segments` for drawing) sets the fineness as cell
+  counts, independent of the size. A scalar counts cells across the thinnest section, the
+  rest near-cubic: Box smallest side, Sphere the diameter, Cylinder/Cone the smaller of
+  (larger) diameter and height, Capsule the diameter, Tube the thinner of wall and height.
+  A vector gives the counts per direction: Box `[nx ny nz]` (read back by
+  `ElementDivisions`), Cylinder/Cone `[diameter height]`, Capsule `[diameter Height]`,
+  Tube `[across around along]`; Sphere takes a scalar only. Defaults suit a FlexibleBody
+  (cheap; a beam bends within ~5 % of beam theory): Box/Cylinder/Cone/Capsule 2, Sphere 5,
+  Tube `[1 24 8]`. A SoftBody usually wants finer (e.g. 16 for a ball); a scalar on a
+  thin plate or wall makes very many cubes, so give a vector there.
+- Round shapes give Kx10 tetrahedra whose surface edge middles lie on the true surface,
+  so even a coarse mesh has nearly the shape's volume and mass. Soft-body surfaces space
+  their vertices evenly (geodesic sphere, rings for the other round shapes).
+  `generateVolumetricMesh` / `generateSurfaceMesh` of the shape return `[V, T]` /
+  `[V, F]` themselves, e.g. to scale a sphere surface into an ellipsoid.
 - The mesh is the rest shape, placed at `Position`/`Orientation` (or `EulerAngles`,
   `AxisAngle`, `Quaternion`, as on `Body`) when the simulation starts; mesh and material
   are read then, the friction/damping/pressure settings at any time. `CurrentVertices`
   gives the deformed mesh; `FlexibleBody.VonMisesStress` the stress per vertex (colour it
   with `Colormap`, an N×3 matrix such as `turbo(64)`, and `ColorRange`).
-- `FlexibleBody` uses quadratic tetrahedra (a Kx4 mesh gets edge vertices): implicit,
+- `FlexibleBody` uses quadratic tetrahedra (a Kx4 mesh gets edge vertices; `ElementOrder
+  "linear"` takes the corners, also of a Kx10 mesh): implicit,
   stiffness right on a coarse mesh (2-3 elements across a section to bend, 3-4 to twist),
   `Tolerance` sets the convergence and `Iterations` caps it. Its contacts are inelastic
   (no `Restitution`). Good for large rotations with strains up to some 10-20 %.
