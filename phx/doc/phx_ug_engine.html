@@ -98,16 +98,17 @@ a body receives. A group that has not converged stops at <code class="phx-inline
 any other).</p>
 
 <p>The joints of a group are solved together, directly, in every iteration: fixed, revolute,
-prismatic and spherical joints, generic joints with all rotations or all translations locked, and
+prismatic, cylindrical and spherical joints, generic joints with all rotations or all translations locked, and
 the motors of revolute and prismatic joints while they stay below their
 <code class="phx-inline">MaxTorque</code> or <code class="phx-inline">MaxForce</code>, closed loops
 included (a crank, a linkage, an engine). A chain, a robot arm or a mechanism of such joints is
 therefore exact after a few iterations, at any mass ratio between its links, and the forces in its
 joints are the true reactions. The points of each contact face are solved together as well. What
-remains iterative is the interplay of the bodies with their contacts, motors working at their limit,
-the other joints (cylindrical, gear, bushing) and the springs and ropes. A group of more than about
-a hundred joints and contacts together, which the engine splits up to solve it in parallel
-(<code class="phx-inline">SplitIslands</code> in the diagnostics), is solved by iterations alone.</p>
+remains iterative is the interplay of the bodies with their contacts, the end stops of the joints,
+motors working at their limit, the other joints (gear, bushing, generic joints with only some axes
+locked) and the springs and ropes. A group of 128 or more joints and contacts together, which the
+engine splits up to solve it in parallel (<code class="phx-inline">SplitIslands</code> in the
+diagnostics), is solved by iterations alone, also on a single thread.</p>
 
 <p>The defaults suit most scenes. Groups that run to their cap are mostly mechanisms in contact:
 walking robots, vehicles, figures falling down stairs. A lower <code class="phx-inline">JointIterations</code>

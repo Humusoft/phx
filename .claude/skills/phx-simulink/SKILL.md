@@ -88,7 +88,7 @@ sample the vision loop coarsely), and works headless under `-batch`. The block e
 for this port. Ground-truth object properties remain available on the other ports for
 validating the vision estimate.
 
-## What to use as inputs / outputs (property-driven control)
+## What to use as inputs and outputs (property-driven control)
 
 Because ports are properties, choose them semantically:
 
@@ -116,7 +116,7 @@ Because ports are properties, choose them semantically:
   `TotalForce`, `Energy`, a `Spring.Length`, a joint angle, etc. (read-only ones like
   `TotalForce`/`Energy` are output-only).
 
-## Co-simulation execution & feedback loops
+## Co-simulation execution and feedback loops
 
 Per sample time the block does **read outputs** (`Outputs`), then **write inputs → step**
 (`Update`). The state advance lives in `Update` because Simulink calls it exactly once per
@@ -137,7 +137,7 @@ one. `phxex_sim_ballplate2` and `phxex_sim_sorter` close their loops this way.
 `Simulink:Engine:AlgLoopTroubleInFixedStepNoSolverSwitch`; the algebraic-loop solver also
 re-entered `Outputs` — and therefore `Sim.step` — several times per sample time.)
 
-## KINEMATIC control (the key gotcha)
+## Kinematic control needs a small sample time
 
 A pose written to a kinematic body is reached in the one engine step of the sample, so
 the body moves by the whole per-sample increment at once. **Use a small `SimulationStep`
@@ -237,4 +237,5 @@ divide the block's `SimulationStep` (equal, or e.g. 0.005 for a 0.01 block step 
 - **phx-scene-basics** — build the scene (`phx.Body`, shapes, `Name`, `Type`) the block loads,
   and save it to the `.mat` the `ModelSource` points at.
 - **phx-constraints-forces** — body loads, joints/springs/thrusters and the in-MATLAB control-loop analogue.
-- **phx-engine-gotchas** — `phxEngine`, pipeline rebuilds, `dt` stability, error IDs, tests.
+- **phx-engine-gotchas** — `phxEngine`, pipeline rebuilds, solver settings, accuracy diagnostics, error IDs.
+- **phx-upgrade-from-1x** — converting code, saved scenes and Simulink models written for PHX 1.x.

@@ -13,11 +13,17 @@ description: >
   thrust, floated or controlled.
 ---
 
-# PHX constraints & forces
+# PHX constraints and forces
 
 All of these are `phx.base.Object` subclasses that take parent bodies as the first
 positional argument(s) and then name-value pairs. Connection points (`PointA`,
 `PointB`) and axes (`AxisA`, `AxisB`) are given in the **local space** of each body.
+
+Sections: **Joints**, **Joint motors** (with the joint loads), **Springs and ropes**,
+**Force and field elements** (body loads, thrusters, buoyancy, drag, fields, one-step
+forces), then time-driven parameters (**phx.Script**), per-step logic
+(**phx.Function**) and **closed-loop and interactive control**. To drive a joint use its
+motor or joint load; to push a free body, its body loads.
 
 ## Joints (kinematic constraints)
 
@@ -99,10 +105,12 @@ on Z. `Overlay` (logical) draws the joint glyph on top of geometry.
 translation parts) **in coincidence, minus the DOFs it leaves free**. So pick them
 consistently with the bodies' initial poses:
 
-- A mismatch in a **constrained** direction is not an error — the solver quietly drags
-  the bodies together over the next steps (not a teleport: measured ~0.08 m in the
-  first 5 ms substep, ~0.4 m after 1 s for a 0.4 m offset). That is why the hinge
-  example above uses `[1.5 0 0]` and `[-1.5 0 0]` on bodies 3 m apart.
+- A mismatch in a **constrained** direction is not an error, but the solver snaps the
+  bodies together at once, violently: a hinge whose frames were 0.4 m apart moved its
+  arm the whole 0.4 m in the first 5 ms substep (the gap then 0.16 m as the arm swung,
+  closed within 1 s). So make the frames coincide in the
+  initial poses; that is why the hinge example above uses `[1.5 0 0]` and `[-1.5 0 0]`
+  on bodies 3 m apart.
 - A mismatch in a **free** direction is harmless; it only shifts the zero of that DOF.
   On a prismatic joint an offset **along** the sliding axis therefore changes nothing
   observable (`PointA = [0 0 0]` and `PointA = [0 0 -1]` behave identically for a
@@ -136,7 +144,61 @@ hinged lid that must rest on its box). The flag is handed to the engine when the
 initializes, so changing it mid-run only takes effect after a pipeline rebuild
 (an add/delete of any object).
 
-## Springs & ropes (compliant elements)
+## Joint motors — phx.RevoluteJoint, phx.PrismaticJoint
+
+Both joints can drive themselves. The motor is a **saturated velocity source**: it holds
+`TargetVelocity` while it needs less than `MaxTorque` (N·m) / `MaxForce` (N), and delivers
+exactly that limit when the target is out of reach. Two numbers therefore cover three kinds
+of drive:
+
+| To get | TargetVelocity | MaxTorque / MaxForce |
+|---|---|---|
+| no motor (default) | anything | `0` |
+| speed drive | the wanted speed, signed | the limit |
+| friction brake | `0` | the holding torque/force |
+
+```matlab
+hub = phx.RevoluteJoint(base, disc, "TargetVelocity", 6, "MaxTorque", 5);
+sim.step(1, 100);               % spins up to 6 rad/s and holds it
+hub.TargetVelocity = 0;         % same motor, now a brake
+hub.MaxTorque = 1;              % lets go once the load passes 1 N*m
+```
+
+- Both properties are plain settable doubles: change them mid-run, drive them from a
+  `phx.Script` curve or a `phx.Function` control law, or wire them to Simulink ports.
+- The limits are **physical units**, not fractions — a cubic metre of default density
+  already weighs a tonne, so size them against the real load. `0` means no motor at all.
+- The motor is part of the constraint, so its **reaction lands on the other body**. Two
+  free bodies both turn, in opposite directions, split inversely by their inertias; the
+  motor sets their *relative* velocity, not the absolute speed of either.
+- Position control is not built in. Do it yourself by writing `TargetVelocity` each step
+  from the `Angle`/`Distance` error — that is the one mode that costs a per-step write.
+- `phx.CylindricalJoint` has no motor, and a prismatic joint's rotation is locked, so its
+  slider has nothing to turn.
+
+### Joint loads — `RevoluteJoint.AppliedTorque`, `PrismaticJoint.AppliedForce`
+
+When the drive is a torque or a force rather than a speed (an actuator model, a
+hydraulic cylinder computed in Simscape, a control law that outputs N·m), set
+`RevoluteJoint.AppliedTorque` (N·m) or `PrismaticJoint.AppliedForce` (N). It acts on
+body B about/along the joint axis and, reversed, on body A, and it **stays until you
+change it** — no per-step call, unlike `applyTorque`.
+
+```matlab
+hub = phx.RevoluteJoint(base, disc, "AppliedTorque", 2);   % 2 N*m from now on
+sim = phx.Simulation(gca);
+sim.step(1, 100);
+hub.AppliedTorque = 0;          % off again
+```
+
+- It is independent of the motor: both act at once, the motor regulating against the
+  applied value like against any other load (a speed drive keeps its speed under an applied
+  torque as long as `MaxTorque` allows). For a pure torque/force source leave the motor off.
+- Like the motor it acts between the two bodies, so its reaction lands on body A, and it
+  shows in the joint's `ForceA`…`TorqueB` feedback.
+- Signed; the sign follows the joint axis like `Angle` / `Distance`.
+
+## Springs and ropes (compliant elements)
 
 ```matlab
 % Spring = ideal spring + damper (+ inerter) in parallel
@@ -188,9 +250,9 @@ Note: `phx.BushingJoint` (the compliant 6-DOF counterpart of `phx.FixedJoint` �
 elastic bushing with per-axis linear/angular stiffness and damping) is a **joint**, not a
 spring; it lives with the joints above.
 
-## Force & field elements
+## Force and field elements
 
-### Body loads — `Body.AppliedForce` / `AppliedTorque` (start here)
+### Body loads — `Body.AppliedForce` / `AppliedTorque`
 
 The plain way to push a body: a force at its **centre of mass** and a torque, both in
 the **body frame**. The engine keeps them and adds them in **every step, turning with
@@ -262,14 +324,48 @@ behave as solid — model a boat hull as its convex hull. Open meshes
 discrete equilibria — raise `Resolution` for them. Demos: `phxex_buoyancy`,
 `phxex_gyrostab`.
 
-### Other elements
+### Drag and fields — Resistance, Monopole, Dipole
 
-- `phx.Resistance` — velocity-dependent drag (aerodynamic/hydrodynamic resistance).
-- `phx.Dipole` / `phx.Monopole` — magnetic/charge-like field sources; bodies carrying
-  them attract/repel (see `phxex_magnets`, `phxex_charges`, `phxex_maglev`).
-- Not an element but the same job: to drive bodies through contact (conveyor belts,
-  roller tracks, a self-propelled vehicle), give a body the `SurfaceVelocity` property
-  rather than scripting its pose — see phx-scene-basics and `phxex_beltmaze`.
+**`phx.Resistance` — drag against a moving environment** (air, water, wind). One object
+serves all its bodies:
+
+```matlab
+air = phx.Resistance([ball crate], ...
+    "VelocityFactors", [0 0.5 0.2], ...               % F = f1 + f2*|v| + f3*v^2 (N), per axis
+    "EnvironmentLinearVelocity", [3 0 0], ...          % wind, m/s
+    "EnvironmentAngularVelocity", [0 0 0.1], ...       % rad/s about EnvironmentOrigin
+    "EnvironmentOrigin", [0 0 0]);
+```
+
+`v` is the body's velocity relative to the environment (which moves at
+`EnvironmentLinearVelocity + cross(EnvironmentAngularVelocity, p - EnvironmentOrigin)`, right-hand
+rule). The force acts at the centre of mass against `v`, computed **per world axis**
+(`f(k)*|v_i|^(k-1)` in each component), so it is no exact quadratic drag on a diagonal
+motion, and it does not slow rotation. The default `VelocityFactors` 0 does nothing.
+
+**`phx.Monopole` / `phx.Dipole` — pairwise fields** (charges, magnets, gravity). Every
+pair of bodies of one object attracts or repels by `F = Attractivity*c1*c2/r^2`; with the
+default `Attractivity` -1 opposite charges attract.
+
+```matlab
+phx.Monopole(cubes, "Charge", [1 1 -1 -1]*1e4);                 % one Charge per body (or a scalar)
+phx.Monopole(planets, "Attractivity", 6.67430e-11, ...           % gravity: masses as charges
+    "Charge", [planets.Mass], "Visible", false);
+phx.Dipole(magnets, "Charge", 1, "Axis", [0.05 0 0]);            % poles at +-Axis (body frame)
+```
+
+A `Monopole` acts between the body origins; a `Dipole` puts `+Charge` and `-Charge` at
+`+Axis` and `-Axis` of each body, so it also turns the bodies (magnets align). The force
+has no softening: it grows without bound as `r` → 0 and is not finite for coincident
+poles, so keep charged bodies apart (collisions on). The `VectorField*` properties set
+the drawn field arrows, `Visible` hides them; `Energy` is the potential energy of the
+pairs. Demos: Monopole `phxex_charges`, `phxex_gravity`, `phxex_maglev`,
+`phxex_capacitor`; Dipole `phxex_magnets`, `phxex_magpendulum`.
+
+**Moving surfaces.** Not an element but the same job: to drive bodies through contact
+(conveyor belts, roller tracks, a self-propelled vehicle), give a body the
+`SurfaceVelocity` property rather than scripting its pose — see phx-scene-basics and
+`phxex_beltmaze`.
 
 ### One-step forces — `Body.applyForce` / `applyTorque`
 
@@ -292,63 +388,9 @@ Mind the two independent frame flags: `isLocalForce` rotates the vector with the
 `isLocalPoint` interprets the point of application in body coordinates. Passing a world
 force at a local point (or vice versa) is legal and often what you want — e.g. gravity-
 like world force applied at a local hardpoint. To drive a wheel or a shaft use the
-**joint motor** or the joint's `AppliedTorque` below, not `applyTorque` — an external
+**joint motor** or the joint's `AppliedTorque` above, not `applyTorque` — an external
 torque on a jointed body puts no reaction on the body it is hinged to, so the chassis
 never feels the push it should.
-
-## Joint motors — phx.RevoluteJoint, phx.PrismaticJoint
-
-Both joints can drive themselves. The motor is a **saturated velocity source**: it holds
-`TargetVelocity` while it needs less than `MaxTorque` (N·m) / `MaxForce` (N), and delivers
-exactly that limit when the target is out of reach. Two numbers therefore cover three kinds
-of drive:
-
-| To get | TargetVelocity | MaxTorque / MaxForce |
-|---|---|---|
-| no motor (default) | anything | `0` |
-| speed drive | the wanted speed, signed | the limit |
-| friction brake | `0` | the holding torque/force |
-
-```matlab
-hub = phx.RevoluteJoint(base, disc, "TargetVelocity", 6, "MaxTorque", 5);
-sim.step(1, 100);               % spins up to 6 rad/s and holds it
-hub.TargetVelocity = 0;         % same motor, now a brake
-hub.MaxTorque = 1;              % lets go once the load passes 1 N*m
-```
-
-- Both properties are plain settable doubles: change them mid-run, drive them from a
-  `phx.Script` curve or a `phx.Function` control law, or wire them to Simulink ports.
-- The limits are **physical units**, not fractions — a cubic metre of default density
-  already weighs a tonne, so size them against the real load. `0` means no motor at all.
-- The motor is part of the constraint, so its **reaction lands on the other body**. Two
-  free bodies both turn, in opposite directions, split inversely by their inertias; the
-  motor sets their *relative* velocity, not the absolute speed of either.
-- Position control is not built in. Do it yourself by writing `TargetVelocity` each step
-  from the `Angle`/`Distance` error — that is the one mode that costs a per-step write.
-- `phx.CylindricalJoint` has no motor, and a prismatic joint's rotation is locked, so its
-  slider has nothing to turn.
-
-### Pure torque / force — `AppliedTorque`, `AppliedForce`
-
-When the drive is a torque or a force rather than a speed (an actuator model, a
-hydraulic cylinder computed in Simscape, a control law that outputs N·m), set
-`RevoluteJoint.AppliedTorque` (N·m) or `PrismaticJoint.AppliedForce` (N). It acts on
-body B about/along the joint axis and, reversed, on body A, and it **stays until you
-change it** — no per-step call, unlike `applyTorque`.
-
-```matlab
-hub = phx.RevoluteJoint(base, disc, "AppliedTorque", 2);   % 2 N*m from now on
-sim = phx.Simulation(gca);
-sim.step(1, 100);
-hub.AppliedTorque = 0;          % off again
-```
-
-- It is independent of the motor: both act at once, the motor regulating against the
-  applied value like against any other load (a speed drive keeps its speed under an applied
-  torque as long as `MaxTorque` allows). For a pure torque/force source leave the motor off.
-- Like the motor it acts between the two bodies, so its reaction lands on body A, and it
-  shows in the joint's `ForceA`…`TorqueB` feedback.
-- Signed; the sign follows the joint axis like `Angle` / `Distance`.
 
 ## Driving parameters over time — phx.Script
 
@@ -394,7 +436,7 @@ rate: it fires on every substep, so you can keep `sim.step(interval, substeps)` 
 many substeps instead of stepping one substep at a time from MATLAB. Demos:
 `phxex_balance` (PD ball-on-plate), `phxex_drone`.
 
-## Closed-loop / interactive control pattern
+## Closed-loop and interactive control
 
 When control logic must react to state *and* drive the MATLAB-side loop (HUD updates,
 early termination, per-frame logging), step in a loop and read/write dependent
@@ -431,16 +473,15 @@ thinning the frames is already the default `RedrawMode`'s job. See **phx-scene-b
 A controlled vehicle that momentarily hovers near-still keeps responding to thrust
 because bodies never fall asleep; see **phx-engine-gotchas**.
 
-Keep `dt ≤ 5 ms` for tight constraint networks (joint chains, stacked contacts) or
-they destabilize. You can create or delete joints/springs mid-run freely:
-`delete(obj)` removes the engine constraint immediately and rebuilds the simulation
-pipelines automatically; add new elements via `sim.addObjects(...)`. See
-**phx-engine-gotchas**.
+The step size for joints and contacts: **phx-scene-basics**, "Practical tips". Joints and
+springs can be created or deleted mid-run (`sim.addObjects`, `delete`); see
+**phx-engine-gotchas**, "Known quirks".
 
 ## Related skills
 
 - **phx-scene-basics** — bodies, shapes, `Simulation.step`, running headless.
 - **phx-logging-view** — record forces/angles/velocities with `phx.Logger`, draw
   `phx.Trace`, detect bodies in a region with `phx.Zone`.
-- **phx-engine-gotchas** — pipeline rebuilds, `dt` stability, `phx.engine.Settings`, error IDs.
+- **phx-engine-gotchas** — pipeline rebuilds, `phx.engine.Settings`, accuracy diagnostics, error IDs.
 - **phx-simulink** — drive actuator/sensor properties from Simulink (the co-simulation block).
+- **phx-upgrade-from-1x** — converting code, saved scenes and Simulink models written for PHX 1.x.

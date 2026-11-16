@@ -27,11 +27,13 @@ classdef Settings
 %   that touch or are joined) end when its joints and its contacts have
 %   converged, each to its own tolerance, and at the latest after
 %   JointIterations (a group with a joint) or ContactIterations (any other).
-%   The joints of a group (fixed, revolute, prismatic and spherical joints,
-%   generic joints with all rotations or all translations locked, motors
-%   below their limit, closed loops included) are solved together, directly,
-%   in every iteration; the iterations serve the contacts and what the
-%   joints share with them. A tolerance is the largest change of a body's velocity that one joint
+%   The joints of a group (fixed, revolute, prismatic, cylindrical and
+%   spherical joints, generic joints with all rotations or all translations
+%   locked, motors below their limit, closed loops included) are solved
+%   together, directly, in every iteration; the iterations serve the
+%   contacts, the end stops and the other joints, and what the joints share
+%   with them. A group of 128 or more joints and contacts is split up and
+%   solved by iterations alone. A tolerance is the largest change of a body's velocity that one joint
 %   or contact may still make in an iteration, as a fraction of that body's
 %   velocity; it is the quantity that getDiagnosticReport of phx.Simulation
 %   reports as JointResidual and ContactResidual.

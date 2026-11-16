@@ -18,26 +18,21 @@ object-oriented layer over a physics engine reached through one MEX
 gateway (`phxEngine`). You build a scene from `phx.*` handle objects that
 draw into MATLAB axes via `hgtransform`, then step it with a `phx.Simulation`.
 
-## Path & how to run
+## Path and how to run
 
 PHX is used as an **installed toolbox** — `phx.*` is simply available, no `addpath`
-is needed and scene code must never contain one. The demos in `examples/` follow
-this: a `phxex_*` script is a plain function that assumes PHX is installed.
+is needed and scene code must never contain one. The `phxex_*` examples are on the path
+too, each one a single command.
 
 ```shell
 # Headless: -batch exits MATLAB when done and returns non-zero on error
-matlab -sd "examples" -batch "phxex_minimal"
+matlab -batch "phxex_minimal"
 ```
 
 Wrap long runs with a timeout — engine demos can take minutes. Graphics-dependent
 scenes still run under `-batch` (invisible figures), so headless verification works.
 
-*(Only when working on a PHX source checkout rather than the installed toolbox:
-prepend that checkout's `phx/` for the run — `-batch "addpath('phx'); cd examples;
-phxex_minimal"` — so the edited sources win over the installed copy. This is a
-development detail; never put it into user scene code.)*
-
-## The scene shape (memorize this)
+## The scene shape
 
 **Default to `phx.extra.Viewer("clear", ...)`** — it is what a PHX scene is meant to be
 shown in, and what almost every demo does. It gives orbit/pan/zoom, object picking, a
@@ -120,9 +115,9 @@ b = phx.Body(ax, ...
 - **Restitution (bounciness)**: `Restitution` (scalar ≥ 0, default **0** = dead contact),
   settable live mid-run. The bounce of a contact **combines the values of both colliding
   bodies** as their product: a bouncy ball dropped on a default floor does **not** bounce —
-  give the floor nonzero `Restitution` too. Realized bounce heights come out noticeably
-  below the ideal `e²·h` (solver losses at contact), so tune `e` empirically against the
-  bounce you want rather than computing it.
+  give the floor nonzero `Restitution` too. The rebound height is `e²·h` with `e` the
+  product of both values (exact at a 1 ms step, within 2 % at 5 ms), so compute `e` from
+  the bounce you want.
 - **`SurfaceVelocity` — a virtual moving surface (conveyor belts).** A `[vx vy vz]`
   vector, default `[0 0 0]`, settable live. The body itself does **not** move; contacts
   with it are solved as if its surface were sliding at that velocity, so resting bodies
@@ -217,152 +212,13 @@ one: a single cone value `d` is `[d 0]`, a single bore `d` is `[d d]` (the wall 
 thickness). Round shapes set their visual
 detail with `Segments` (`Sphere` default 28; about 10 is plenty for hundreds of small
 particles) — the collision shape stays an ideal primitive either way. Most accept `Color` and
-`Density` (auto-computes mass/inertia if you don't set them), and texture/material
+`Density` (auto-computes mass/inertia if you don't set them), and the appearance
 options. Shapes carry no attachment points: where a joint or spring grabs a body is set
 on the connector itself (`PointA`/`PointB` in body-local coordinates).
 
-**Appearance.** `Material` picks the shading preset — `"unlit"`, `"matte"`,
-`"plastic"` (default), `"glossy"` or `"metal"`. Reach for `"unlit"` when the color
-carries data (group, state, a mapped value) rather than shape: it renders the authored
-`Color` exactly and ignores the lights, so nothing shades the encoding away. `Style` is
-independent of it: `"smooth"` (default), `"edged"`, `"flat"` or `"wireframe"`.
-
-**Textures.** `Texture` takes the name of a built-in texture, an image file path, or an
-image matrix. The ten built-in textures are grayscale patterns (matched
-case-insensitively):
-
-| Patterns | Surfaces |
-|---|---|
-| `"arrows"` (chevrons pointing right), `"cells"`, `"checker"` (2×2 squares), `"circles"` (concentric rings), `"scratches"`, `"stripes"` (vertical), `"tiles"` (8×8 light tiles), `"xor"` (nested squares) | `"wood"`, `"stone"` (cloudy noise) |
-
-`TextureBlend` (0–1, default 1) mixes the texture with `Color`, so a light blend keeps
-the body's own color while giving it surface detail:
-
-```matlab
-crate = phx.shape.Box("Size", 0.4, "Color", [0.75 0.5 0.3], "Texture", "wood", "TextureBlend", 0.6);
-ball  = phx.shape.Sphere("Diameter", 1, "Color", [0.9 0.3 0.3], ...
-                         "Texture", "checker", "TextureBlend", 0.3);
-```
-
-An unknown name errors (`phx:Shape:fileNotFound`) instead of falling back, and the shape
-names are a *different* set from the viewer's sky textures (`"nebula"` is not a shape
-texture). `"metal"` is the old name of `"scratches"`: it still works but warns
-(`phx:Shape:renamedTexture`), so write `"scratches"`.
-
-Where textures help — use them deliberately, not on everything:
-- **Floors and platforms:** `"tiles"` on the ground box gives the scene scale and makes
-  sliding and rolling bodies readable against it (it is light, so no blend is needed).
-- **Rotating parts:** wheels, rotors, shafts, rollers and balls look static when
-  uniformly colored. A low blend (0.2–0.5) of `"stripes"` or `"checker"` makes the
-  rotation visible; `"stripes"` suits cylinders and wheels, `"checker"` spheres.
-- **A few featured objects:** `"wood"` on crates and planks, `"stone"` on boulders and
-  rocks, `"scratches"` on machine parts, `"arrows"` on conveyor belts.
-- **Not on large groups.** Leave bulk material, granular piles, debris, scattered rocks
-  and similar crowds of bodies plain colored (vary `Color` instead): a texture per body
-  costs memory and draw time and adds only visual noise at that scale.
-
-**Texture generators.** Each built-in texture is a static function that returns its
-image as `uint8`, `pattern = phx.base.Shape.name(resolution, ...)` with `resolution`
-as `[width height]` in pixels (default `[512 512]`). Prefer the plain name; call the
-function only when the default does not fit:
-- the pattern scale must match the object — more `tiles` on a large floor, wider
-  `stripes`, more `wood` rings on a long plank;
-- the face is far from square — a `resolution` with its aspect ratio keeps the pattern
-  undistorted;
-- a few objects should differ — another `seed` of `cells`, `scratches`, `stone`,
-  `tiles` or `wood`.
-
-| Function | Further arguments (default) |
-|---|---|
-| `arrows`, `stripes`, `circles` | `width` of one band/ring in pixels (64, 128, 32) |
-| `checker` | `count` [across down] ([2 2]) |
-| `tiles` | `count` ([8 8], must divide `resolution`), `base` joint lightness (0.8), `seed` |
-| `cells` | `density` number of cells (40), `seed` |
-| `stone` | `smoothness` (1.8, higher = larger, softer blotches), `seed` |
-| `scratches` | `seed` |
-| `wood` | `rings` (7), `seed` |
-| `xor` | — |
-
-```matlab
-floor = phx.shape.Box("Size", [20 20 0.2], "Texture", phx.base.Shape.tiles([512 512], [16 16]));
-plank = phx.shape.Box("Size", [2 0.3 0.05], "Color", [0.75 0.5 0.3], "TextureBlend", 0.6, ...
-                      "Texture", phx.base.Shape.wood([1024 256], 12));
-```
-
-Generating costs up to ~15 ms (`"wood"`), and a name or generator call inside a
-per-body `{"Box", ..., "Texture", ...}` spec generates the image again for every body.
-When many bodies share a textured shape, create the shape object once and pass that.
-
-`Texture` also takes an image matrix: M×N×3 RGB (`uint8`, or 0–1) or M×N gray levels.
-`uint8` gray levels are used as they are (0 black, 255 white); data of any other class
-are scaled to their full range, so `peaks(200)` works directly. `TextureColormap` (N×3,
-default empty = gray) maps an M×N matrix to colors instead. Name-value order does not
-matter:
-
-```matlab
-slab = phx.shape.Box("Size", [2 2 0.5], "Color", [0.9 0.5 0.2], ...
-                     "Texture", peaks(200), "TextureBlend", 0.6);   % tinted gray pattern
-trn  = phx.shape.Terrain("Height", H, "Texture", H, "TextureColormap", parula(256));
-```
-
-**Own patterns.** When neither a built-in texture nor its parameters give the pattern
-needed (markings, a grid of a given pitch, a logo, data), build the matrix yourself or
-load an image file. A row and a column vector with implicit expansion are enough for
-most patterns. Make it `uint8` when its gray levels matter (a light, low-contrast
-pattern); a `double` result is stretched to the full range anyway. Combine generator
-outputs in `double`, since `uint8` arithmetic rounds and saturates every step. A
-texture never repeats — one image spans the whole face — so the number of repetitions
-is part of the matrix:
-
-```matlab
-x = 0:511; y = (0:511)';
-pitch = uint8(255 - 60*(mod(x, 64) < 4 | mod(y, 64) < 4));   % light plate, darker grid every 64 px
-mix   = 0.7*double(phx.base.Shape.stone) + 0.3*double(phx.base.Shape.cells);
-plate = phx.shape.Box("Size", [4 4 0.1], "Texture", pitch);
-rock  = phx.shape.Sphere("Diameter", 1, "Color", [0.5 0.45 0.4], "TextureBlend", 0.6, "Texture", mix);
-```
-
-**Resolution.** 512×512, the generator default, suits most objects. Small or numerous
-objects do with 128–256 pixels; a large single object seen up close, typically the
-floor, may want 1024–2048. Every textured body gets its own copy of the image on the GPU
-at 4 bytes per pixel (1 MB at 512×512, 16 MB at 2048×2048), so do not go beyond what
-the object needs.
-
-`TextureTransform` edits the image before the blend: a string array of operations applied
-left to right — `"rot90"`/`"rot180"`/`"rot270"` (counterclockwise, like `rot90`),
-`"fliplr"`, `"flipud"`, `"grayscale"` (luma, like `rgb2gray`), `"invert"` and `"opaque"`
-(drops the alpha channel). Use it to turn or mirror a texture on all faces at once, and
-`"grayscale"` before a blend to tint a colored photo with `Color` (the built-in textures
-are already grayscale). An image with any transparent pixel switches the draw path to
-transparency, which turns antialiasing off; `"opaque"` brings it back when the alpha is
-unwanted. On a `Mesh`, `TextureBlend` and `TextureTransform` affect only the shape's own
-`Texture`, never textures from OBJ materials.
-
-```matlab
-panel = phx.shape.Box("Size", 1, "Texture", "photo.jpg", "Color", [0.2 0.4 0.9], ...
-                      "TextureTransform", ["grayscale" "fliplr"], "TextureBlend", 0.6);
-```
-
-> **Textures render only in `phx.extra.Viewer` axes.** Only the viewer's axes take the
-> fast world-primitive draw path that carries texture data; in plain axes (and whenever
-> `ForcePatch` is true) the shape falls back to a `patch` and the texture is silently
-> ignored — nothing errors, the surface just shows its `Color`. So if you set a texture,
-> build the scene into the viewer's `ax`.
-
-**Texture orientation.** An image reads unmirrored from outside. `Sphere` takes a standard
-2:1 equirectangular map (top row at the +z pole, left/right edges on the +x meridian,
-longitude anticlockwise about +z). A `Box` side face shows the image upright (top
-towards +z), the top face with the image top towards +y. Revolved shapes put the image
-top at the end of the profile, `Extrusion` at the end of the spine. `Rock` projects the
-image onto each face along the axis closest to its normal (the whole image spans the
-`Diameter`), so a noise-like texture such as the built-in `"stone"` suits it best. `Terrain` instead
-follows its `Height` matrix (image row 1 along the lowest y), so `Height` itself set as
-`Texture` lines up with the heights; a texture matrix, like an image, runs its columns
-along u and rows along v. `Mesh` `UV` data: u along the image
-columns, v *down* the rows ((0,0) = top-left); OBJ/PLY files (v up) are converted on load.
-A `Mesh` without UVs (any STL, or OBJ/PLY/data without them) box-projects `Texture` like
-`Rock`: the whole image spans the largest extent of the mesh, with no repeat and visible
-jumps where neighbouring faces change axis, so prefer a noise-like texture there.
+**Appearance** — `Color`, `Material` (shading preset), `Style` (edges, wireframe) and
+`Texture` (built-in patterns, image files or matrices), with when to use each: see
+**phx-logging-view**, "Appearance of shapes". Textures show only in the viewer's axes.
 
 **Imported geometry — `phx.shape.Mesh`.** One class covers all file formats: **STL,
 Wavefront OBJ and Stanford PLY** (there is no separate `OBJ`/`STL` shape class). The
@@ -436,6 +292,10 @@ ball = phx.SoftBody(ax, "Vertices", V, "Faces", F, "Position", [0 0 1], ...
 block = phx.FlexibleBody(ax, "Vertices", W, "Tetrahedra", delaunay(W), ...
     "Position", [1 0 0.5], "YoungsModulus", 2e5, "PoissonsRatio", 0.45);
 % or a mesh of any shape from PDE Toolbox: "Mesh", generateMesh(fegeometry("part.stl"), Hmax=0.02)
+% or a shape filled with tetrahedra, as fine as its ElementResolution (takes its Density):
+beam = phx.FlexibleBody(ax, "Shape", {"Box", "Size", [1 0.1 0.1], "ElementResolution", 3});
+% the same for a soft body, which takes the shape's surface (its Mass stays its own):
+cushion = phx.SoftBody(ax, "Shape", {"Box", "Size", [0.4 0.4 0.1]}, "Pressure", 100);
 
 % A rigid body overlapping it holds it: vertices inside the body are welded to it
 plate = phx.Body(ax, "Type", "static", "Position", [1 0 0.7], ...
@@ -452,6 +312,13 @@ gravel.add(Pnew); gravel.remove(gravel.Positions(:, 3) < -1);   % any time, also
   bushing) collide with rigid bodies only, not with each other. **No joint attaches to
   them**: weld a `phx.Body` into them with `phx.IntersectionWeld` (it should overlap at
   least 3 vertices not on one line) and connect joints, springs and forces to that body.
+- `"Shape"` meshes a `phx.shape.*` object or a `{name, args...}` cell: `Box`, `Sphere` and
+  `Cylinder` generate meshes (other shapes raise an error; use `Mesh` or `Vertices` for
+  them). `ElementResolution` of the shape sets the fineness: for a Box the number of
+  cells across its smallest side (the others cut into near-cubic cells) or `[nx ny nz]`;
+  for a Cylinder the same across the smaller of diameter and height, or `[nDiameter
+  nHeight]`; for a Sphere about the number of edges across the diameter. `generateVolumetricMesh` /
+  `generateSurfaceMesh` of the shape return the mesh itself.
 - The mesh is the rest shape, placed at `Position`/`Orientation` (or `EulerAngles`,
   `AxisAngle`, `Quaternion`, as on `Body`) when the simulation starts; mesh and material
   are read then, the friction/damping/pressure settings at any time. `CurrentVertices`
@@ -576,7 +443,7 @@ delete(sim);
 
 Run it repeatedly to interleave control logic between steps (read body state, set an
 actuator, step again) — see the **phx-constraints-forces** skill for the control-loop
-pattern. Keep `dt` small (≤ 5 ms) for tight constraint networks or they go unstable.
+pattern. How small `dt` must be: "Practical tips" below.
 
 `sim.RedrawMode` decides how — and in the default mode also how often — the scene is
 redrawn:
@@ -599,7 +466,7 @@ redrawn:
 - `"none"` — no screen update at all; the graphics objects are still updated, so the
   figure catches up once MATLAB goes idle. **Not a headless shortcut** — the graphics are
   still brought up to date on every requested redraw, so a headless run wants
-  `redrawStep = -1` (measured several times cheaper per substep on a 200-body scene).
+  `redrawStep = -1`, several times cheaper per substep.
 
 ```matlab
 sim = phx.Simulation(ax, "RedrawMode", "performance");   % a timing measurement
@@ -635,7 +502,7 @@ headless runs, parameter sweeps or anything that reports a timing number.
 sim = phx.Simulation(ax, "PacingRate", 1);   % at most real time — only on the user's request
 ```
 
-## Saving & loading scenes (MAT files)
+## Saving and loading scenes (MAT files)
 
 A scene is just `phx.Body` handle objects, so plain `save`/`load` is the whole mechanism —
 there is no export format. **Save the bodies**: everything attached to one (shapes, joints,
@@ -655,7 +522,7 @@ save("saved_buggy.mat", "-struct", "model");   % keeps the parts named
 ```
 
 **Never save a `phx.Simulation`** — it owns a live engine world; the file reloads as a
-broken object (measured: `Unrecognized field name "updatePipelines"` on load, then an
+broken object (`Unrecognized field name "updatePipelines"` on load, then an
 error in the destructor).
 
 ```matlab
@@ -674,7 +541,7 @@ and the **full kinematic state** — pose plus linear and angular velocity, whet
 mid-run or after `delete(sim)` (velocities are read from the engine as the file is
 written; `delete(sim)` also copies them back into the objects). They are pushed back into
 the engine on the next run, so a reloaded scene *continues* instead of restarting from
-rest (measured: ball saved at `v = -4.9050`, one 1 ms step after reload gives `-4.9148`).
+rest.
 Engine handles are transient and the pipelines are rebuilt — nothing else to restore.
 
 Convention in `examples/`: `model_*.m` builds the bodies and saves them, `phxex_*.m` loads
@@ -696,8 +563,8 @@ building a scene from scratch:
   region overlap-free (`Spacing`) in one call.
 - **`Friction` is one Coulomb coefficient `>= 0` (no upper bound)**, ≈0.5–0.8 for grippy
   contact, 0 for near-frictionless, above 1 for very grippy contact; a contact multiplies the
-  values of both bodies. The `[drag roll spin]` triplet of PHX 1.0 is gone: `[mu 0 0]` is
-  still taken as `mu`, a nonzero roll or spin value is an error.
+  values of both bodies. (Code with the `[drag roll spin]` triplet of PHX 1.x: see
+  **phx-upgrade-from-1x**.)
 - **Rolling and spinning resistance are lengths in m, both 0 by default**, and a contact
   adds the values of both bodies. `RollingResistance` b: a rolling contact meets a torque
   of up to `b*N` (a ball slows by `b*g/(R*(1 + I/(m*R^2)))`); steel on steel 1e-5 m, wood
@@ -712,8 +579,11 @@ building a scene from scratch:
   and give it a real drop height, then **verify by logging the launched body's apex**
   (`max(body.Position(3))` across the run) and iterate. Keep `Inertia` consistent with
   `Mass` (see the note above) or the lever will feel wrong even with the right masses.
-- **Stability.** Keep `dt = interval/substeps ≤ 5 ms` for contact-heavy or tightly
-  constrained scenes; raise `substeps` rather than taking bigger steps.
+- **Choosing the step — the rule all phx-* skills refer to.** Keep
+  `dt = interval/substeps ≤ 5 ms` for contact-heavy or tightly constrained scenes (joint
+  chains, stacks, mechanisms in contact); raise `substeps` rather than taking bigger
+  steps. Springs, ropes and torsion springs are no reason for a smaller `dt`: the engine
+  solves them stably at any stiffness.
 - **Finer steps only for what the scene is about.** Two motions need a shorter `dt` than
   the 5 ms above, but only when they are the point of the scene (what it measures, plots
   or shows off):
@@ -749,6 +619,7 @@ class as a starting point.
 
 - **phx-constraints-forces** — joints, springs, ropes, thrusters, buoyancy, fields,
   `applyForce`/`applyTorque`, scripted and closed-loop control.
-- **phx-logging-view** — Logger, Trace, Measure, Zone, Raycast, PlanarShadow, Camera, the interactive Viewer, plotting.
-- **phx-engine-gotchas** — the `phxEngine` gateway, error IDs, known quirks, tests.
+- **phx-logging-view** — Logger, Trace, Measure, Zone, Raycast, PlanarShadow, Camera, the interactive Viewer, plotting, and the appearance of shapes (colors, materials, textures).
+- **phx-engine-gotchas** — accuracy diagnostics, engine settings, known quirks, error IDs, the `phxEngine` gateway.
 - **phx-simulink** — drive a PHX scene from Simulink via the PhxModel co-simulation block.
+- **phx-upgrade-from-1x** — converting code, saved scenes and Simulink models written for PHX 1.x.

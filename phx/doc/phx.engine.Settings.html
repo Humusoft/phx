@@ -116,8 +116,8 @@ wedge.</td></tr>
 island) in iterations in each step. An island stops iterating when its joints and its contacts have
 each met their tolerance, and at the latest after <code class="phx-inline">JointIterations</code>
 (an island with a joint) or <code class="phx-inline">ContactIterations</code> (any other). The
-joints of an island are solved together, directly, in every iteration (fixed, revolute, prismatic
-and spherical joints, generic joints with all rotations or all translations locked, revolute and
+joints of an island are solved together, directly, in every iteration (fixed, revolute, prismatic,
+cylindrical and spherical joints, generic joints with all rotations or all translations locked, revolute and
 prismatic motors below their limit, closed loops included), so a mechanism of them stops after a
 few iterations even under a load taken up suddenly or with heavy and light links. What runs to the
 cap is the interplay with contacts: a heavy body on a light one, a tall stack, a mechanism standing
