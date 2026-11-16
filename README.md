@@ -41,7 +41,7 @@ see **AI agent skills** in the User Guide for how to point your assistant at the
 
 * MATLAB **R2025a or newer**
 * Simulink (only for the Simulink block)
-* Windows or Linux (the macOS build of the engine is in preparation)
+* Windows, Linux or macOS on Apple Silicon
 
 ## Installation
 
