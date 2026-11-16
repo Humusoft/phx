@@ -316,7 +316,7 @@ classdef Geometry
             volume = abs(volume);
         end
 
-        function [V, T] = cubedCylinder(nc, m, nz, a)
+        function [V, T] = cubedCylinder(nc, m, nz, a, radii)
             % Cylinder of unit radius and unit height along z, centred at the
             % origin, filled with tetrahedra: the disk of the equator of
             % cubedBall (a square core of half side a with nc cells along
@@ -327,6 +327,19 @@ classdef Geometry
             % axis, the second one z and the third points outwards, so the
             % faces of all neighbouring cells match. The tetrahedra are
             % turned to a positive volume.
+            %
+            % With radii = [r1 r2] the radius changes linearly from r1 at
+            % the bottom to r2 at the top: a truncated cone, or a sharp one
+            % when a radius is 0. The end layer of a sharp cone collapses
+            % into its apex, where the tetrahedra left without volume are
+            % dropped; each of its cells keeps two, a pyramid.
+            arguments
+                nc
+                m
+                nz
+                a
+                radii (1, 2) double = [1 1]
+            end
             g = linspace(-1, 1, nc + 1);
             h = linspace(-0.5, 0.5, nz + 1);
             [x, y, z] = ndgrid(g, g, h);
@@ -356,14 +369,121 @@ classdef Geometry
                 end
             end
             V = vertcat(P{:});
+            V(:, 1:2) = V(:, 1:2).*(radii(1) + (radii(2) - radii(1))*(V(:, 3) + 0.5));
             T = phx.internal.Geometry.hexTetrahedra(vertcat(H{:}));
 
-            % The points the core and the blocks share merged
+            % The points the core and the blocks share merged, the end layer
+            % of a sharp cone into one, and the tetrahedra that lost a corner
+            % so dropped
             [V, ~, map] = uniquetol(V, 1e-12, "ByRows", true, "DataScale", 1);
             T = map(T);
+            S = sort(T, 2);
+            T = T(all(diff(S, 1, 2) > 0, 2), :);
             e = V(T(:, 1), :);
             negative = dot(cross(V(T(:, 2), :) - e, V(T(:, 3), :) - e, 2), V(T(:, 4), :) - e, 2) < 0;
             T(negative, [2 3]) = T(negative, [3 2]);
+        end
+
+        function [V, F] = ringSurface(profile, spacing)
+            % Closed triangle mesh of the surface of revolution about z of
+            % a profile of [r z] points, from the axis back to the axis and
+            % counter-clockwise in the (r, z) plane, so that the solid lies
+            % on its left; its vertices spaced about evenly. Each segment of
+            % the profile is cut into parts about spacing(1) long, each point
+            % becomes a ring of vertices about spacing(end) apart (a point on
+            % the axis a single vertex), and neighbouring rings are joined by
+            % a band of triangles, counter-clockwise seen from outside.
+            along = spacing(1);
+            around = spacing(end);
+
+            % The profile cut into parts; a part point too near the axis for
+            % a ring of three vertices is left out, so that the vertices do
+            % not crowd towards an apex
+            points = profile(1, :);
+            for k = 2:size(profile, 1)
+                parts = max(1, round(norm(profile(k, :) - profile(k - 1, :))/along));
+                t = (1:parts)'/parts;
+                part = profile(k - 1, :) + t.*(profile(k, :) - profile(k - 1, :));
+                inner = (1:parts)' < parts & round(2*pi*part(:, 1)/around) < 3;
+                points = [points; part(~inner, :)]; %#ok<AGROW>
+            end
+
+            % A ring of vertices for each point, turned by half a step on
+            % every other ring
+            n = numel(points(:, 1));
+            rings = cell(n, 1);
+            angles = cell(n, 1);
+            V = zeros(0, 3);
+            for k = 1:n
+                r = points(k, 1);
+                if r < 1e-12*max(profile(:, 1))
+                    a = 0;
+                else
+                    c = max(3, round(2*pi*r/around));
+                    a = 2*pi*((0:c - 1)' + mod(k, 2)/2)/c;
+                end
+                rings{k} = size(V, 1) + (1:numel(a))';
+                angles{k} = a;
+                V = [V; r*cos(a) r*sin(a) repmat(points(k, 2), numel(a), 1)]; %#ok<AGROW>
+            end
+
+            % Bands between neighbouring rings, merged by angle
+            F = zeros(0, 3);
+            for k = 1:n - 1
+                A = rings{k};
+                B = rings{k + 1};
+                if isscalar(A) || isscalar(B)
+                    % A fan to a vertex on the axis
+                    ring = A;
+                    tip = B;
+                    if isscalar(A)
+                        ring = B;
+                        tip = A;
+                    end
+                    F = [F; ring circshift(ring, -1) repmat(tip, numel(ring), 1)]; %#ok<AGROW>
+                    continue
+                end
+                a = angles{k};
+                b = angles{k + 1};
+                [~, j0] = min(abs(angle(exp(1i*(b - a(1))))));
+                order = mod(j0 - 1 + (0:numel(b))', numel(b)) + 1;
+                bu = unwrap(b(order));
+                bu = bu - 2*pi*round((bu(1) - a(1))/(2*pi));
+                au = [a; a(1) + 2*pi];
+                ia = [A; A(1)];
+                ib = B(order);
+                i = 1;
+                j = 1;
+                while i < numel(au) || j < numel(bu)
+                    if j == numel(bu) || (i < numel(au) && au(i + 1) <= bu(j + 1))
+                        F = [F; ia(i) ia(i + 1) ib(j)]; %#ok<AGROW>
+                        i = i + 1;
+                    else
+                        F = [F; ia(i) ib(j + 1) ib(j)]; %#ok<AGROW>
+                        j = j + 1;
+                    end
+                end
+            end
+
+            % Each triangle turned to face away from the solid: the outward
+            % normal of its profile segment is the tangent turned clockwise
+            segment = zeros(size(F, 1), 1);
+            count = 0;
+            for k = 1:n - 1
+                m = numel(rings{k}) + numel(rings{k + 1});
+                if isscalar(rings{k}) || isscalar(rings{k + 1})
+                    m = max(numel(rings{k}), numel(rings{k + 1}));
+                end
+                segment(count + (1:m)) = k;
+                count = count + m;
+            end
+            tangent = points(segment + 1, :) - points(segment, :);
+            C = (V(F(:, 1), :) + V(F(:, 2), :) + V(F(:, 3), :))/3;
+            radial = C(:, 1:2)./max(sqrt(sum(C(:, 1:2).^2, 2)), eps);
+            outward = [tangent(:, 2).*radial, -tangent(:, 1)];
+            normal = cross(V(F(:, 2), :) - V(F(:, 1), :), V(F(:, 3), :) - V(F(:, 1), :), 2);
+            inward = dot(normal, outward, 2) < 0;
+            F(inward, [2 3]) = F(inward, [3 2]);
         end
 
         function [V, T] = cubedBall(nc, m, a)

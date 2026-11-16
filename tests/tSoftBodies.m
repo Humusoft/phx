@@ -125,7 +125,7 @@ classdef tSoftBodies < PhxTestCase
                 "phx:FlexibleBody:shapeAndMesh");
             tc.verifyError(@() phx.FlexibleBody([], "Shape", {"Box"}, "Mesh", struct("Nodes", V', "Elements", delaunay(V)')), ...
                 "phx:FlexibleBody:shapeAndMesh");
-            tc.verifyError(@() phx.FlexibleBody([], "Shape", {"Cone"}), "phx:Shape:noVolumetricMesh");
+            tc.verifyError(@() phx.FlexibleBody([], "Shape", {"Mesh", "Vertices", eye(4, 3), "Faces", [1 3 2; 1 2 4; 1 4 3; 2 3 4]}), "phx:Shape:noVolumetricMesh");
             tc.verifyError(@() phx.FlexibleBody([], "Shape", V), "phx:FlexibleBody:badShape");
         end
 
@@ -147,7 +147,7 @@ classdef tSoftBodies < PhxTestCase
             [V, F] = tc.cube;
             tc.verifyError(@() phx.SoftBody([], "Shape", {"Box"}, "Vertices", V, "Faces", F), ...
                 "phx:SoftBody:shapeAndMesh");
-            tc.verifyError(@() phx.SoftBody([], "Shape", {"Cone"}), "phx:Shape:noSurfaceMesh");
+            tc.verifyError(@() phx.SoftBody([], "Shape", {"Mesh", "Vertices", eye(4, 3), "Faces", [1 3 2; 1 2 4; 1 4 3; 2 3 4]}), "phx:Shape:noSurfaceMesh");
             tc.verifyError(@() phx.SoftBody([], "Shape", V), "phx:SoftBody:badShape");
         end
 

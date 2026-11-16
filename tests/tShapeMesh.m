@@ -192,6 +192,84 @@ classdef tShapeMesh < PhxTestCase
             end
         end
 
+        function coneVolumetricMeshFillsTheCone(tc)
+            % Truncated and sharp cones, the apex at either end: positive
+            % tetrahedra with matching faces inside the cone, the middles of
+            % the edges on its curved side on it, the others halfway, and
+            % close to its volume; a sharp cone closes into one apex vertex
+            h = 0.5;
+            for d = {[0.4 0.2], [0.4 0], [0 0.4]}
+                radii = d{1}/2;
+                [V, T] = phx.shape.Cone("Diameter", d{1}, "Height", h, "ElementResolution", 3).generateVolumetricMesh;
+                tc.verifyEqual(size(T, 2), 10);
+                tc.verifyGreaterThan(min(tc.volumes(V, T)), 0);
+                F = sort([T(:, [1 2 3]); T(:, [1 2 4]); T(:, [1 3 4]); T(:, [2 3 4])], 2);
+                [~, ~, k] = unique(F, "rows");
+                tc.verifyLessThanOrEqual(max(accumarray(k, 1)), 2);
+                rho = vecnorm(V(:, 1:2), 2, 2);
+                radius = radii(1) + (radii(2) - radii(1))*(V(:, 3)/h + 0.5);
+                tc.verifyLessThan(max(rho - radius), 1e-12);
+                ends = [1 2; 2 3; 1 3; 1 4; 2 4; 3 4];
+                E = [reshape(T(:, ends(:, 1)), [], 1) reshape(T(:, ends(:, 2)), [], 1)];
+                middle = reshape(T(:, 5:10), [], 1);
+                side = abs(rho(E(:, 1)) - radius(E(:, 1))) < 1e-12 & abs(rho(E(:, 2)) - radius(E(:, 2))) < 1e-12;
+                tc.verifyEqual(rho(middle(side)), radius(middle(side)), "AbsTol", 1e-12);
+                tc.verifyEqual(V(middle(~side), :), (V(E(~side, 1), :) + V(E(~side, 2), :))/2, "AbsTol", 1e-15);
+                volume = pi*h/3*(radii(1)^2 + radii(1)*radii(2) + radii(2)^2);
+                tc.verifyEqual(sum(phx.internal.Geometry.tetrahedraVolumes(V, T)), volume, "RelTol", 0.005);
+                if any(radii == 0)
+                    tip = h/2*(2*find(radii == 0) - 3);
+                    tc.verifyEqual(nnz(abs(V(:, 3) - tip) < 1e-12), 1, "One apex vertex.");
+                end
+            end
+        end
+
+        function coneResolutionCutsTheThinnerSize(tc)
+            % As for a cylinder, across the larger diameter
+            tc.verifyEqual(tc.layers(phx.shape.Cone("Diameter", [0.1 0.05], "Height", 1, "ElementResolution", 2)), 20);
+            tc.verifyEqual(tc.layers(phx.shape.Cone("Diameter", [0.5 1], "Height", 1, "ElementResolution", [4 6])), 6);
+            tc.verifyError(@() phx.shape.Cone("ElementResolution", [1 2 3]), "phx:Cone:badResolution");
+        end
+
+        function coneSurfaceMeshSpreadsItsVertices(tc)
+            % Truncated and sharp cones, the apex at either end: a closed
+            % surface facing out, its vertices on the cone, a sharp cone
+            % with one apex vertex, and the vertices spread evenly enough
+            % that their mean lies near the centroid of the surface
+            h = 1;
+            for d = {[1 0.5], [1 0], [0 1]}
+                radii = d{1}/2;
+                [V, F] = phx.shape.Cone("Diameter", d{1}, "Height", h, "ElementResolution", 4).generateSurfaceMesh;
+                E = sort([F(:, [1 2]); F(:, [2 3]); F(:, [3 1])], 2);
+                [~, ~, k] = unique(E, "rows");
+                tc.verifyEqual(unique(accumarray(k, 1))', 2, "A closed surface.");
+                tc.verifyEqual(unique(F(:))', 1:size(V, 1));
+                enclosed = sum(dot(V(F(:, 1), :), cross(V(F(:, 2), :), V(F(:, 3), :), 2), 2))/6;
+                volume = pi*h/3*(radii(1)^2 + radii(1)*radii(2) + radii(2)^2);
+                tc.verifyGreaterThan(enclosed, 0.85*volume, "Wound outwards, close to the cone.");
+                tc.verifyLessThan(enclosed, volume);
+                rho = vecnorm(V(:, 1:2), 2, 2);
+                radius = radii(1) + (radii(2) - radii(1))*(V(:, 3)/h + 0.5);
+                onSide = abs(rho - radius) < 1e-12;
+                onEnd = abs(abs(V(:, 3)) - h/2) < 1e-12 & rho <= radius + 1e-12;
+                tc.verifyTrue(all(onSide | onEnd), "Every vertex on the cone.");
+                if any(radii == 0)
+                    tip = h/2*(2*find(radii == 0) - 3);
+                    tc.verifyEqual(nnz(abs(V(:, 3) - tip) < 1e-12), 1, "One apex vertex.");
+                end
+                A = vecnorm(cross(V(F(:, 2), :) - V(F(:, 1), :), V(F(:, 3), :) - V(F(:, 1), :), 2), 2, 2);
+                centroid = sum(A.*(V(F(:, 1), 3) + V(F(:, 2), 3) + V(F(:, 3), 3))/3)/sum(A);
+                tc.verifyEqual(mean(V(:, 3)), centroid, "AbsTol", 0.03*h);
+            end
+        end
+
+        function coneMeshFollowsItsAxis(tc)
+            [V, T] = phx.shape.Cone("Diameter", [0.4 0], "Height", 1, "Axis", "y").generateVolumetricMesh;
+            [lo, hi] = bounds(V, 1);
+            tc.verifyEqual([lo; hi], [-0.2 -0.5 -0.2; 0.2 0.5 0.2], "AbsTol", 1e-12);
+            tc.verifyGreaterThan(min(tc.volumes(V, T)), 0, "Turned, not mirrored.");
+        end
+
         function sphereResolutionIsValidated(tc)
             for bad = {[1 2], 0, 1.5, NaN, []}
                 tc.verifyError(@() phx.shape.Sphere("ElementResolution", bad{1}), "phx:Sphere:badResolution");
@@ -199,8 +277,8 @@ classdef tShapeMesh < PhxTestCase
         end
 
         function shapesWithoutAMeshSayNo(tc)
-            tc.verifyError(@() phx.shape.Cone().generateVolumetricMesh, "phx:Shape:noVolumetricMesh");
-            tc.verifyError(@() phx.shape.Cone().generateSurfaceMesh, "phx:Shape:noSurfaceMesh");
+            tc.verifyError(@() tc.tetrahedron.generateVolumetricMesh, "phx:Shape:noVolumetricMesh");
+            tc.verifyError(@() tc.tetrahedron.generateSurfaceMesh, "phx:Shape:noSurfaceMesh");
         end
     end
 
@@ -214,6 +292,11 @@ classdef tShapeMesh < PhxTestCase
         function v = volumes(V, T)
             a = V(T(:, 1), :);
             v = dot(cross(V(T(:, 2), :) - a, V(T(:, 3), :) - a, 2), V(T(:, 4), :) - a, 2)/6;
+        end
+
+        function s = tetrahedron()
+            % A shape that generates no mesh
+            s = phx.shape.Mesh("Vertices", eye(4, 3), "Faces", [1 3 2; 1 2 4; 1 4 3; 2 3 4]);
         end
     end
 
