@@ -44,7 +44,8 @@ classdef Resistance < phx.base.Object
         ForceVectorSize (1, 1) double = 0.001
     end
 
-    % Former names, kept for compatibility
+    % Former names, kept for a transition period; they warn and will be
+    % removed in a future release
     properties (Dependent, Hidden)
         EnvironmentVelocity
         EnvironmentTwist
@@ -77,18 +78,22 @@ classdef Resistance < phx.base.Object
         end
 
         function value = get.EnvironmentVelocity(obj)
+            warnRenamed("EnvironmentVelocity", "EnvironmentLinearVelocity");
             value = obj.EnvironmentLinearVelocity;
         end
 
         function set.EnvironmentVelocity(obj, value)
+            warnRenamed("EnvironmentVelocity", "EnvironmentLinearVelocity");
             obj.EnvironmentLinearVelocity = value;
         end
 
         function value = get.EnvironmentTwist(obj)
+            warnRenamed("EnvironmentTwist", "EnvironmentAngularVelocity");
             value = obj.EnvironmentAngularVelocity;
         end
 
         function set.EnvironmentTwist(obj, value)
+            warnRenamed("EnvironmentTwist", "EnvironmentAngularVelocity");
             obj.EnvironmentAngularVelocity = value;
         end
     end
@@ -158,4 +163,15 @@ classdef Resistance < phx.base.Object
         end
     end
 
+end
+
+function warnRenamed(oldName, newName)
+%warnRenamed Warns that a former property name of Resistance is used.
+    msg = "Resistance." + oldName + " was renamed to " + newName + ...
+        "; the name " + oldName + " will be removed in a future release.";
+    if oldName == "EnvironmentTwist"
+        msg = msg + " The environment now rotates by the right-hand rule, " + ...
+            "opposite to PHX 1.x: negate a value written for PHX 1.x.";
+    end
+    warning("phx:Resistance:renamedProperty", "%s", msg);
 end

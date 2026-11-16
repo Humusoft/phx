@@ -13,6 +13,9 @@ classdef tEngineSettings < PhxTestCase
 %   island to its cap. The tests of that (tagged Engine) read the counts
 %   from getDiagnosticReport of phx.Simulation.
 %
+%   phx.engine.BulletSettings, the settings of PHX 1.x, warns and returns
+%   phx.engine.Settings with LengthScale and Margin carried over.
+%
 %   See also phx.engine.Settings, phx.Simulation/getDiagnosticReport
 
 %   Copyright 2026 HUMUSOFT s.r.o.
@@ -107,6 +110,24 @@ classdef tEngineSettings < PhxTestCase
             tc.verifyError(@() setfield(s, "JointIterations", 2.5), "MATLAB:validators:mustBeInteger"); %#ok<SFLD>
             tc.verifyError(@() setfield(s, "ContactIterations", 0), "MATLAB:validators:mustBePositive"); %#ok<SFLD>
             tc.verifyError(@() setfield(s, "PositionIterations", 0), "MATLAB:validators:mustBePositive"); %#ok<SFLD>
+        end
+
+        function bulletSettingsWarnAndCarryTheScaleOver(tc)
+            % The settings of PHX 1.x give phx.engine.Settings with the
+            % length scale and margin, and leave out what has no counterpart
+            s = tc.verifyWarning(@() phx.engine.BulletSettings("Solver", "dantzig", ...
+                "Iterations", 50, "AutoActivated", true, "LengthScale", 0.1), ...
+                "phx:BulletSettings:replaced");
+            tc.verifyClass(s, "phx.engine.Settings");
+            tc.verifyEqual(s.LengthScale, 0.1);
+            tc.verifyEqual(s.MarginMode, "auto");
+            tc.verifyEqual(s.ContactIterations, phx.engine.Settings().ContactIterations);
+
+            s = tc.verifyWarning(@() phx.engine.BulletSettings("Margin", 0), "phx:BulletSettings:replaced");
+            tc.verifyEqual([s.Margin, s.MarginMode], [0 "manual"]);
+            s = tc.verifyWarning(@() phx.engine.BulletSettings, "phx:BulletSettings:replaced");
+            tc.verifyEqual(s, phx.engine.Settings);
+            tc.verifyError(@() phx.engine.BulletSettings("Solver", "pgs"), "MATLAB:validators:mustBeMember");
         end
     end
 
