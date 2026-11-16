@@ -486,6 +486,51 @@ classdef Geometry
             F(inward, [2 3]) = F(inward, [3 2]);
         end
 
+        function [V, T] = cubedHalfBall(nc, kc, m, a)
+            % Upper half of the unit ball (z >= 0) filled with tetrahedra as
+            % cubedBall fills a ball: a core of half side a, nc cells across
+            % it and kc up to its top, and blocks of m layers of cells
+            % reaching the sphere, four on its sides and one on its top. Its
+            % flat face matches the end of cubedCylinder with the same nc, m
+            % and a, so the two join into a capsule. The tetrahedra are
+            % turned to a positive volume.
+            g = linspace(-1, 1, nc + 1);
+            up = linspace(0, 1, kc + 1);
+            [x, y, z] = ndgrid(g, g, up);
+            P = cell(1, 6);
+            H = cell(1, 6);
+            P{1} = a*[x(:) y(:) z(:)];
+            H{1} = phx.internal.Geometry.gridHexes([nc nc kc]);
+            offset = size(P{1}, 1);
+
+            % Blocks on the sides +-x and +-y (along the side, then up) and
+            % on the top (along x, then y); the third direction outwards
+            b = 1;
+            blocks = {[1 2 3], -1, up; [1 2 3], 1, up; [2 1 3], -1, up; [2 1 3], 1, up; [3 1 2], 1, g};
+            for k = 1:size(blocks, 1)
+                [order, side, second] = blocks{k, :};
+                [u, v, w] = ndgrid(g, second, linspace(0, 1, m + 1));
+                inner = zeros(numel(u), 3);
+                inner(:, order) = [repmat(side, numel(u), 1) u(:) v(:)];
+                outer = zeros(numel(u), 3);
+                outer(:, order) = [repmat(side, numel(u), 1) tan(pi/4*u(:)) tan(pi/4*v(:))];
+                outer = outer./sqrt(sum(outer.^2, 2));
+                b = b + 1;
+                P{b} = (1 - w(:)).*a.*inner + w(:).*outer;
+                H{b} = offset + phx.internal.Geometry.gridHexes([nc numel(second) - 1 m]);
+                offset = offset + numel(u);
+            end
+            V = vertcat(P{:});
+            T = phx.internal.Geometry.hexTetrahedra(vertcat(H{:}));
+
+            % The points the core and the blocks share merged
+            [V, ~, map] = uniquetol(V, 1e-12, "ByRows", true, "DataScale", 1);
+            T = map(T);
+            e = V(T(:, 1), :);
+            negative = dot(cross(V(T(:, 2), :) - e, V(T(:, 3), :) - e, 2), V(T(:, 4), :) - e, 2) < 0;
+            T(negative, [2 3]) = T(negative, [3 2]);
+        end
+
         function [V, T] = cubedBall(nc, m, a)
             % Ball of unit radius filled with tetrahedra: a cube core of half
             % side a with nc cells along each edge, and six blocks of m

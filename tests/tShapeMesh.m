@@ -270,6 +270,69 @@ classdef tShapeMesh < PhxTestCase
             tc.verifyGreaterThan(min(tc.volumes(V, T)), 0, "Turned, not mirrored.");
         end
 
+        function capsuleVolumetricMeshFillsTheCapsule(tc)
+            % With and without a cylindrical part: positive tetrahedra with
+            % matching faces (the ends join the cylinder face to face), the
+            % surface corners and the middles of the surface edges on the
+            % capsule, the others halfway, and close to its volume
+            r = 0.2;
+            for h = [0.5 0]
+                s = phx.shape.Capsule("Diameter", 2*r, "Height", h, "ElementResolution", 3);
+                [V, T] = s.generateVolumetricMesh;
+                tc.verifyEqual(size(T, 2), 10);
+                tc.verifyGreaterThan(min(tc.volumes(V, T)), 0);
+                F = sort([T(:, [1 2 3]); T(:, [1 2 4]); T(:, [1 3 4]); T(:, [2 3 4])], 2);
+                [faces, ~, k] = unique(F, "rows");
+                uses = accumarray(k, 1);
+                tc.verifyLessThanOrEqual(max(uses), 2);
+                distance = @(P) vecnorm(P - [0 0 1].*min(max(P(:, 3), -h/2), h/2), 2, 2);
+                outer = faces(uses == 1, :);
+                tc.verifyEqual(distance(V(unique(outer), :)), repmat(r, numel(unique(outer)), 1), "AbsTol", 1e-12);
+                tc.verifyLessThan(max(distance(V)), r*(1 + 1e-12));
+                surface = unique(sort([outer(:, [1 2]); outer(:, [2 3]); outer(:, [1 3])], 2), "rows");
+                ends = [1 2; 2 3; 1 3; 1 4; 2 4; 3 4];
+                E = sort([reshape(T(:, ends(:, 1)), [], 1) reshape(T(:, ends(:, 2)), [], 1)], 2);
+                middle = reshape(T(:, 5:10), [], 1);
+                on = ismember(E, surface, "rows");
+                tc.verifyEqual(distance(V(middle(on), :)), repmat(r, nnz(on), 1), "AbsTol", 1e-12);
+                tc.verifyEqual(V(middle(~on), :), (V(E(~on, 1), :) + V(E(~on, 2), :))/2, "AbsTol", 1e-15);
+                tc.verifyEqual(1000*sum(phx.internal.Geometry.tetrahedraVolumes(V, T)), s.computeMass, "RelTol", 0.01);
+            end
+        end
+
+        function capsuleResolutionCutsTheCylindricalPart(tc)
+            % A scalar is the number of cells across the diameter, the
+            % cylindrical part cut into cells about as long; a vector gives
+            % the cells across the diameter and along the Height. Counted by
+            % the corners on the axis between the ends.
+            tc.verifyEqual(tc.capsuleLayers(phx.shape.Capsule("Diameter", 0.1, "Height", 1, "ElementResolution", 2)), 20);
+            tc.verifyEqual(tc.capsuleLayers(phx.shape.Capsule("Diameter", 0.5, "Height", 1, "ElementResolution", [4 6])), 6);
+            tc.verifyError(@() phx.shape.Capsule("ElementResolution", [1 2 3]), "phx:Capsule:badResolution");
+        end
+
+        function capsuleSurfaceMeshSpreadsItsVertices(tc)
+            % A closed surface facing out, its vertices on the capsule and
+            % spread evenly enough that their mean distance from the middle
+            % lies near that of the surface; along its axis too
+            r = 0.25;
+            for h = [1 0]
+                s = phx.shape.Capsule("Diameter", 2*r, "Height", h, "ElementResolution", 8, "Axis", "y");
+                [V, F] = s.generateSurfaceMesh;
+                E = sort([F(:, [1 2]); F(:, [2 3]); F(:, [3 1])], 2);
+                [~, ~, k] = unique(E, "rows");
+                tc.verifyEqual(unique(accumarray(k, 1))', 2, "A closed surface.");
+                tc.verifyEqual(unique(F(:))', 1:size(V, 1));
+                enclosed = sum(dot(V(F(:, 1), :), cross(V(F(:, 2), :), V(F(:, 3), :), 2), 2))/6;
+                tc.verifyGreaterThan(enclosed, 0.9*s.computeMass/1000, "Wound outwards, close to the capsule.");
+                tc.verifyLessThan(enclosed, s.computeMass/1000);
+                P = V(:, [3 1 2]);   % the axis y to z
+                tc.verifyEqual(vecnorm(P - [0 0 1].*min(max(P(:, 3), -h/2), h/2), 2, 2), repmat(r, size(V, 1), 1), "AbsTol", 1e-12);
+                A = vecnorm(cross(V(F(:, 2), :) - V(F(:, 1), :), V(F(:, 3), :) - V(F(:, 1), :), 2), 2, 2);
+                centroid = sum(A.*abs(V(F(:, 1), 2) + V(F(:, 2), 2) + V(F(:, 3), 2))/3)/sum(A);
+                tc.verifyEqual(mean(abs(V(:, 2))), centroid, "AbsTol", 0.03*(h + 2*r));
+            end
+        end
+
         function sphereResolutionIsValidated(tc)
             for bad = {[1 2], 0, 1.5, NaN, []}
                 tc.verifyError(@() phx.shape.Sphere("ElementResolution", bad{1}), "phx:Sphere:badResolution");
@@ -287,6 +350,14 @@ classdef tShapeMesh < PhxTestCase
             % Layers of cells along z: the distinct heights of the corners
             [V, T] = shape.generateVolumetricMesh;
             n = numel(uniquetol(V(unique(T(:, 1:4)), 3), 1e-9)) - 1;
+        end
+
+        function n = capsuleLayers(shape)
+            % Layers of cells along the cylindrical part: the distinct
+            % heights of the corners between the ends
+            [V, T] = shape.generateVolumetricMesh;
+            z = V(unique(T(:, 1:4)), 3);
+            n = numel(uniquetol(z(abs(z) <= shape.Height/2 + 1e-12), 1e-9)) - 1;
         end
 
         function v = volumes(V, T)
