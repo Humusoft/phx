@@ -132,7 +132,7 @@ classdef tPlanarShadow < PhxTestCase
             tc.mkSim();
 
             V = tc.shadowVertices(s);
-            tc.verifyGreaterThan(max(range(V(:, 1:2), 1)), 0.5);
+            tc.verifyGreaterThan(max(max(V(:, 1:2)) - min(V(:, 1:2))), 0.5);
         end
 
         function anchoredPlaneFollowsTheAnchor(tc)
