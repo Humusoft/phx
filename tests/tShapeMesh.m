@@ -421,8 +421,12 @@ classdef tShapeMesh < PhxTestCase
         end
 
         function shapesWithoutAMeshSayNo(tc)
-            tc.verifyError(@() tc.tetrahedron.generateVolumetricMesh, "phx:Shape:noVolumetricMesh");
-            tc.verifyError(@() tc.tetrahedron.generateSurfaceMesh, "phx:Shape:noSurfaceMesh");
+            % The shapes whose meshes come in a future release, and one that
+            % generates none
+            for s = {tc.tetrahedron, phx.shape.Revolution(), phx.shape.Extrusion(), phx.shape.Rock()}
+                tc.verifyError(@() s{1}.generateVolumetricMesh, "phx:Shape:noVolumetricMesh");
+                tc.verifyError(@() s{1}.generateSurfaceMesh, "phx:Shape:noSurfaceMesh");
+            end
         end
     end
 

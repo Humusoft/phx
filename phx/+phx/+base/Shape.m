@@ -154,7 +154,7 @@ classdef Shape
         %
         % See also phx.base.Shape.generateSurfaceMesh, phx.FlexibleBody
 
-            error("phx:Shape:noVolumetricMesh", "%s cannot generate a volumetric mesh.", class(obj));
+            error("phx:Shape:noVolumetricMesh", "%s cannot generate a mesh of tetrahedra for a flexible body. Give the flexible body its Vertices and Tetrahedra, or the Mesh that PDE Toolbox generates.", class(obj));
         end
 
         function [V, F] = generateSurfaceMesh(obj)
@@ -175,7 +175,7 @@ classdef Shape
                 [V, T] = obj.generateVolumetricMesh;
             catch err
                 if err.identifier == "phx:Shape:noVolumetricMesh"
-                    error("phx:Shape:noSurfaceMesh", "%s cannot generate a surface mesh.", class(obj));
+                    error("phx:Shape:noSurfaceMesh", "%s cannot generate a surface mesh for a soft body. Give the soft body its Vertices and Faces.", class(obj));
                 end
                 rethrow(err);
             end

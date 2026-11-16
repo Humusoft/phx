@@ -159,6 +159,34 @@ classdef Mesh < phx.base.Shape
                 end
             end
         end
+
+        function [V, T] = generateVolumetricMesh(obj) %#ok<STOUT> comes in a future release
+        %generateVolumetricMesh Mesh of tetrahedra, not available yet.
+        %
+        %   generateVolumetricMesh(mesh) raises the error
+        %   phx:Shape:noVolumetricMesh: a triangle mesh cannot yet be filled
+        %   with tetrahedra for a phx.FlexibleBody. A future release adds
+        %   it; until then give the flexible body its Vertices and
+        %   Tetrahedra, or the Mesh that PDE Toolbox generates, for example
+        %   generateMesh(fegeometry("part.stl")).
+        %
+        %   See also phx.base.Shape.generateVolumetricMesh, phx.FlexibleBody
+
+            error("phx:Shape:noVolumetricMesh", "A mesh of tetrahedra of %s for a flexible body comes in a future release. Until then, give the flexible body its Vertices and Tetrahedra, or the Mesh that PDE Toolbox generates.", class(obj));
+        end
+
+        function [V, F] = generateSurfaceMesh(obj) %#ok<STOUT> comes in a future release
+        %generateSurfaceMesh Surface mesh for a soft body, not available yet.
+        %
+        %   generateSurfaceMesh(mesh) raises the error
+        %   phx:Shape:noSurfaceMesh: a triangle mesh cannot yet be remeshed
+        %   with evenly spaced vertices for a phx.SoftBody. A future release
+        %   adds it; until then give the soft body its Vertices and Faces.
+        %
+        %   See also phx.base.Shape.generateSurfaceMesh, phx.SoftBody
+
+            error("phx:Shape:noSurfaceMesh", "A surface mesh of %s for a soft body comes in a future release. Until then, give the soft body its Vertices and Faces.", class(obj));
+        end
     end
 
     methods (Access = {?phx.base.Shape, ?phx.base.Object})

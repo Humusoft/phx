@@ -106,6 +106,33 @@ classdef Revolution < phx.base.Shape
             [mass, ~, Icm, center] = phx.internal.Geometry.meshMass(V, F, obj.Density);
             inertia = Icm([1 5 9]);
         end
+
+        function [V, T] = generateVolumetricMesh(obj) %#ok<STOUT> comes in a future release
+        %generateVolumetricMesh Mesh of tetrahedra, not available yet.
+        %
+        %   generateVolumetricMesh(revolution) raises the error
+        %   phx:Shape:noVolumetricMesh: a solid of revolution cannot yet be
+        %   filled with tetrahedra for a phx.FlexibleBody. A future release
+        %   adds it; until then give the flexible body its Vertices and
+        %   Tetrahedra, or the Mesh that PDE Toolbox generates.
+        %
+        %   See also phx.base.Shape.generateVolumetricMesh, phx.FlexibleBody
+
+            error("phx:Shape:noVolumetricMesh", "A mesh of tetrahedra of %s for a flexible body comes in a future release. Until then, give the flexible body its Vertices and Tetrahedra, or the Mesh that PDE Toolbox generates.", class(obj));
+        end
+
+        function [V, F] = generateSurfaceMesh(obj) %#ok<STOUT> comes in a future release
+        %generateSurfaceMesh Surface mesh for a soft body, not available yet.
+        %
+        %   generateSurfaceMesh(revolution) raises the error
+        %   phx:Shape:noSurfaceMesh: a solid of revolution cannot yet be
+        %   covered with a mesh for a phx.SoftBody. A future release adds
+        %   it; until then give the soft body its Vertices and Faces.
+        %
+        %   See also phx.base.Shape.generateSurfaceMesh, phx.SoftBody
+
+            error("phx:Shape:noSurfaceMesh", "A surface mesh of %s for a soft body comes in a future release. Until then, give the soft body its Vertices and Faces.", class(obj));
+        end
     end
 
     methods (Access = private)
