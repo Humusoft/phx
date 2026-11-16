@@ -19,6 +19,7 @@ tests/
 release/
 publications/
 customer/
+issues/
 doc/logo/
 
 % Repository documents (not **/*.md - the agent skills in phx/skills ship)
