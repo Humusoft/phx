@@ -20,6 +20,7 @@
         <tocitem target="phx_ug_simulink.html">Simulink co-simulation</tocitem>
         <tocitem target="phx_ug_viewer.html">Interactive viewer</tocitem>
         <tocitem target="phx_ug_skills.html">AI agent skills</tocitem>
+        <tocitem target="phx_ug_upgrade.html">Upgrading from PHX 1.x</tocitem>
     </tocitem>
 
     <tocitem target="phx_ex_gallery.html" image="$toolbox/matlab/icons/demoicon.gif">Examples

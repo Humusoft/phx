@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Upgrading from PHX 1.x</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; User Guide &rsaquo; Upgrading from PHX 1.x</div>
+
+<h1 class="phx-title">Upgrading from PHX 1.x</h1>
+<p class="phx-purpose">What to change in code written for PHX 1.x, and what behaves differently now</p>
+
+<p>PHX&nbsp;1.x ran on the Bullet Physics engine; PHX&nbsp;2 runs on Jolt Physics. The
+<code class="phx-inline">phx.*</code> classes kept their names and most of their properties, so the
+greater part of a 1.x script runs unchanged. This page lists what does not:</p>
+<ul>
+<li><b><a href="#code">Changes in code</a></b> &mdash; renamed or removed classes, properties and
+values. Code that uses them stops with an error, so they are easy to find.</li>
+<li><b><a href="#behaviour">Changes in behaviour</a></b> &mdash; properties that keep their name but
+act differently. Code that uses them still runs, but the scene moves differently, so check each item
+that your scene uses.</li>
+<li><b><a href="#saved">Scenes saved in PHX 1.x</a></b> &mdash; what a MAT file of 1.x brings
+back.</li>
+</ul>
+
+<p>Even a scene that needs no change will not repeat a 1.x run to the digit: the contacts, the
+friction and the joints are solved by a different engine. Constants that were tuned by trial
+against the old engine &mdash; extra damping, controller gains, a very short step that kept a chain
+together &mdash; are worth trying again at their physical values. <a href="#check">Checking a
+ported scene</a> at the end of the page shows how.</p>
+
+<p>An AI coding assistant can do the conversion with the
+<code class="phx-inline">phx-upgrade-from-1x</code> skill that ships with PHX (see
+<a href="phx_ug_skills.html">AI agent skills</a>): it rewrites the changes in code and lists the
+changes in behaviour it found, for you to decide.</p>
+
+<h2 class="phx-h2" id="code">Changes in code</h2>
+
+<h3 class="phx-h3">Engine settings</h3>
+<p><code class="phx-inline">phx.engine.BulletSettings</code> is replaced by
+<a href="phx.engine.Settings.html">phx.engine.Settings</a>, passed to the simulation as before
+through its <code class="phx-inline">EngineSettings</code> option. For a transition period
+<code class="phx-inline">phx.engine.BulletSettings(Name, Value, ...)</code> still works: it warns
+(<code class="phx-inline">phx:BulletSettings:replaced</code>), carries
+<code class="phx-inline">LengthScale</code>, <code class="phx-inline">Margin</code> and
+<code class="phx-inline">MarginMode</code> over, leaves out the other settings and returns
+<code class="phx-inline">phx.engine.Settings</code>; it will be removed in a future release. The
+function <code class="phx-inline">phx.engine.switchEngine</code> is gone.</p>
+
+<table class="phx-tbl">
+<tr><th>PHX 1.x (<code class="phx-inline">BulletSettings</code>)</th><th>PHX 2 (<code class="phx-inline">Settings</code>)</th></tr>
+<tr><td><code class="phx-inline">Solver</code></td><td>Removed; there is one solver. It solves
+the joints of a group of connected bodies together and directly, which the MLCP solvers
+(<code class="phx-inline">"dantzig"</code>, <code class="phx-inline">"lemke"</code>) were chosen
+for.</td></tr>
+<tr><td><code class="phx-inline">Iterations</code></td><td><code class="phx-inline">ContactIterations</code>
+and <code class="phx-inline">JointIterations</code>, now caps: the iterations stop when the contacts
+and joints have converged to <code class="phx-inline">ContactTolerance</code> and
+<code class="phx-inline">JointTolerance</code>. <code class="phx-inline">PositionIterations</code>
+is new.</td></tr>
+<tr><td><code class="phx-inline">AutoActivated</code></td><td>Removed; bodies never fall asleep.</td></tr>
+<tr><td><code class="phx-inline">LengthScale</code>, <code class="phx-inline">Margin</code>,
+<code class="phx-inline">MarginMode</code> (PHX 1.0.16)</td><td>Unchanged. <code class="phx-inline">PenetrationSlop</code>
+and <code class="phx-inline">SpeculativeDistance</code> are new and follow
+<code class="phx-inline">LengthScale</code> in the same way.</td></tr>
+<tr><td>&mdash;</td><td><code class="phx-inline">Threads</code> and
+<code class="phx-inline">ContactCache</code> are new.</td></tr>
+</table>
+
+<pre class="phx-code"><span class="cmt">% PHX 1.x</span>
+opt = phx.engine.BulletSettings(<span class="str">"Solver"</span>, <span class="str">"dantzig"</span>, <span class="str">"Iterations"</span>, 50, <span class="str">"LengthScale"</span>, 0.1);
+<span class="cmt">% PHX 2: leave out the solver and the iterations first; the defaults usually do better</span>
+opt = phx.engine.Settings(<span class="str">"LengthScale"</span>, 0.1);
+sim = phx.Simulation(gca, <span class="str">"EngineSettings"</span>, opt);</pre>
+
+<h3 class="phx-h3" id="friction">Friction of bodies</h3>
+<p><code class="phx-inline">phx.Body.Friction</code> was a triplet
+<code class="phx-inline">[drag roll spin]</code>; it is now the Coulomb coefficient alone. Rolling
+and spinning resistance are two new properties with a different meaning, lengths in metres rather
+than coefficients:</p>
+<ul>
+<li><code class="phx-inline">RollingResistance</code> &mdash; the arm of the normal force that
+resists rolling (a torque of up to <code class="phx-inline">RollingResistance*N</code>).</li>
+<li><code class="phx-inline">SpinRadius</code> &mdash; the effective radius of the contact patch,
+which resists spinning about the contact normal by
+<code class="phx-inline">Friction*SpinRadius*N</code>.</li>
+</ul>
+<p>Both default to 0 and add up over the two bodies of a contact. A triplet
+<code class="phx-inline">[mu 0 0]</code> is still accepted as <code class="phx-inline">mu</code>;
+a nonzero rolling or spinning value raises the error
+<code class="phx-inline">phx:Body:frictionTriplet</code>, because its 1.x value cannot be carried
+over. Start without the two new properties and add them only where a body should come to rest that
+otherwise rolls or spins on: a ball on a flat floor, a spinning coin.</p>
+
+<pre class="phx-code"><span class="cmt">% PHX 1.x</span>
+ball = phx.Body(<span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>}, <span class="str">"Friction"</span>, [0.6 0.05 0.01]);
+<span class="cmt">% PHX 2</span>
+ball = phx.Body(<span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>}, <span class="str">"Friction"</span>, 0.6, <span class="str">"RollingResistance"</span>, 0.002);</pre>
+
+<p>The assembly builders <code class="phx-inline">phx.assembly.arena</code>,
+<code class="phx-inline">chain</code>, <code class="phx-inline">scatter</code> and
+<code class="phx-inline">wall</code> take a scalar <code class="phx-inline">Friction</code>
+too.</p>
+
+<h3 class="phx-h3">Limits of GenericJoint and BushingJoint</h3>
+<p>The four 1-by-3 properties <code class="phx-inline">LowerLinearLimits</code>,
+<code class="phx-inline">UpperLinearLimits</code>, <code class="phx-inline">LowerAngularLimits</code>
+and <code class="phx-inline">UpperAngularLimits</code> are replaced by two 3-by-2 matrices,
+<code class="phx-inline">LinearLimits</code> and <code class="phx-inline">AngularLimits</code>, with
+one row <code class="phx-inline">[lower upper]</code> per axis X, Y, Z. The old names are not
+accepted. A free axis is now written as <code class="phx-inline">[-Inf Inf]</code>; the 1.x
+convention <i>lower&nbsp;&gt;&nbsp;upper means free</i> is an error.</p>
+
+<table class="phx-tbl">
+<tr><th>Axis</th><th>PHX 1.x (lower, upper)</th><th>PHX 2 (row of the matrix)</th></tr>
+<tr><td>Locked at <i>v</i></td><td><i>v</i>, <i>v</i></td><td><code class="phx-inline">[v v]</code></td></tr>
+<tr><td>Bounded</td><td><i>a</i>, <i>b</i> with <i>a</i> &lt; <i>b</i></td><td><code class="phx-inline">[a b]</code></td></tr>
+<tr><td>Free</td><td>any lower &gt; upper, e.g. 1, &minus;1</td><td><code class="phx-inline">[-Inf Inf]</code></td></tr>
+</table>
+
+<pre class="phx-code"><span class="cmt">% PHX 1.x: rotation about X within +-30 deg, translation along Z free</span>
+j = phx.GenericJoint(A, B, <span class="str">"LowerAngularLimits"</span>, [-pi/6 0 0], <span class="str">"UpperAngularLimits"</span>, [pi/6 0 0], ...
+    <span class="str">"LowerLinearLimits"</span>, [0 0 1], <span class="str">"UpperLinearLimits"</span>, [0 0 -1]);
+<span class="cmt">% PHX 2</span>
+j = phx.GenericJoint(A, B, <span class="str">"AngularLimits"</span>, [-pi/6 pi/6; 0 0; 0 0], ...
+    <span class="str">"LinearLimits"</span>, [0 0; 0 0; -Inf Inf]);</pre>
+
+<p>The defaults are as before: a <code class="phx-inline">GenericJoint</code> is rigid, a
+<code class="phx-inline">BushingJoint</code> free. Angular limits lie within
+(&minus;&pi;,&nbsp;&pi;), and both are finite unless the axis is free. The meaning of the angles
+changed too; see <a href="#jointangles">Angles of GenericJoint and BushingJoint</a>. A Simulink port
+that referred to one of the old properties must refer to the new one.</p>
+
+<h3 class="phx-h3">Other renamed or removed names</h3>
+<table class="phx-tbl">
+<tr><th>Class</th><th>PHX 1.x</th><th>PHX 2</th></tr>
+<tr><td><a href="phx.Resistance.html">phx.Resistance</a></td>
+    <td><code class="phx-inline">EnvironmentVelocity</code>, <code class="phx-inline">EnvironmentTwist</code></td>
+    <td><code class="phx-inline">EnvironmentLinearVelocity</code>, <code class="phx-inline">EnvironmentAngularVelocity</code>.
+    The old names still work for now, with the warning
+    <code class="phx-inline">phx:Resistance:renamedProperty</code>, and will be removed in a future
+    release. The sense of rotation changed too; see <a href="#resistance">below</a>.</td></tr>
+<tr><td><a href="phx.Spring.html">phx.Spring</a>, <a href="phx.Rope.html">phx.Rope</a></td>
+    <td><code class="phx-inline">Colormap</code> as the name of a colormap, e.g. <code class="phx-inline">"parula"</code></td>
+    <td><code class="phx-inline">Colormap</code> as an N-by-3 matrix of colors, e.g.
+    <code class="phx-inline">parula(64)</code>; empty (the default) draws
+    <code class="phx-inline">Color</code>. A name is now an error.</td></tr>
+<tr><td><a href="phx.shape.Tube.html">phx.shape.Tube</a></td>
+    <td><code class="phx-inline">Taper</code></td>
+    <td>Removed. <code class="phx-inline">InnerDiameter</code> takes the bores at both ends,
+    <code class="phx-inline">[d1 d2]</code>. A taper <i>t</i>&nbsp;&ge;&nbsp;0 of a bore
+    <i>d</i> is <code class="phx-inline">[d d*(1-t)]</code>, a negative one
+    <code class="phx-inline">[d*(1+t) d]</code>. When the tube was given its outer
+    <code class="phx-inline">Diameter</code> or <code class="phx-inline">Radius</code>, the bore
+    was <code class="phx-inline">Diameter - 2*WallThickness</code>; give the pair as
+    <code class="phx-inline">InnerDiameter</code> alone and leave the outer size out, since a
+    single outer diameter sets a straight bore again.</td></tr>
+<tr><td><a href="phx.Simulation.html">phx.Simulation</a></td>
+    <td><code class="phx-inline">RedrawMode</code> <code class="phx-inline">"interactive"</code> (the default)</td>
+    <td>Removed; use <code class="phx-inline">"adaptive"</code>, the new default, or leave the
+    property out.</td></tr>
+<tr><td>Engine gateway</td>
+    <td><code class="phx-inline">phx.engine.io</code></td>
+    <td><code class="phx-inline">phxEngine</code>, with a changed protocol. Code that called the
+    gateway directly has to be rewritten against the <code class="phx-inline">phx.*</code>
+    properties, or against the new protocol.</td></tr>
+</table>
+
+<h3 class="phx-h3">Redraw in a step</h3>
+<p>The default of the <code class="phx-inline">redrawStep</code> argument of
+<code class="phx-inline">step</code> changed from 0 (one redraw at the end of the step) to 1
+(redraw whenever useful). In the default <code class="phx-inline">"adaptive"</code> mode a redraw
+is skipped when it would come sooner than one display frame, so
+<code class="phx-inline">sim.step(interval, substeps)</code> now animates the substeps of a long
+step at the speed of the display. Pass 0 to keep the 1.x behaviour, and -1 for a headless run as
+before.</p>
+
+<h2 class="phx-h2" id="behaviour">Changes in behaviour</h2>
+
+<h3 class="phx-h3">Applied forces and torques persist</h3>
+<p><code class="phx-inline">AppliedForce</code> and <code class="phx-inline">AppliedTorque</code>
+of <a href="phx.Body.html">phx.Body</a> acted for one step in 1.x, so a script assigned them before
+each step. They now act in every step until they are changed. A script that assigns them before
+each step works as before; a script that assigned a force once, for a single push, now pushes for
+ever. Use <code class="phx-inline">applyForce</code> and <code class="phx-inline">applyTorque</code>
+for a load that acts for one step, or set the property back to
+<code class="phx-inline">[0 0 0]</code>.</p>
+
+<pre class="phx-code">body.AppliedForce = [0 0 50];      <span class="cmt">% acts from now on, until changed</span>
+body.applyForce([0 0 50]);         <span class="cmt">% acts in the next engine step only</span></pre>
+
+<p><code class="phx-inline">AppliedTorque</code> of <a href="phx.RevoluteJoint.html">phx.RevoluteJoint</a>
+and <code class="phx-inline">AppliedForce</code> of <a href="phx.PrismaticJoint.html">phx.PrismaticJoint</a>
+were driven through the motor in 1.x: a nonzero value replaced
+<code class="phx-inline">TargetVelocity</code> and <code class="phx-inline">MaxTorque</code>
+(<code class="phx-inline">MaxForce</code>). They are now loads of their own that act
+<i>together</i> with the motor. A joint that has both a motor with nonzero
+<code class="phx-inline">MaxTorque</code> and an applied torque now gets the sum: the motor works
+against the applied torque to keep its target velocity. Set <code class="phx-inline">MaxTorque</code>
+to 0 where the applied torque should act alone.</p>
+
+<h3 class="phx-h3">Centre of mass of cones and mesh-based shapes</h3>
+<p>Every body in 1.x had its centre of mass at the origin of its frame. A body now has a
+<code class="phx-inline">CenterOfMass</code> given by its shape, about which it turns and at which
+gravity acts. For a box, sphere, cylinder, capsule, rock and terrain it is still the origin, but it
+moved for:</p>
+<ul>
+<li><a href="phx.shape.Cone.html">phx.shape.Cone</a> &mdash; on its axis, a quarter of the height
+above the base, where a solid cone has it;</li>
+<li><a href="phx.shape.Mesh.html">phx.shape.Mesh</a>, <a href="phx.shape.Extrusion.html">Extrusion</a>,
+<a href="phx.shape.Revolution.html">Revolution</a> and <a href="phx.shape.Tube.html">Tube</a> &mdash;
+at the centroid of the mesh, with <code class="phx-inline">Inertia</code> about it.</li>
+</ul>
+<p>A mesh whose origin lies away from its centroid, a part exported from CAD in assembly
+coordinates for example, therefore swings and tips as the real part would, no longer about its
+origin. <code class="phx-inline">Position</code> and <code class="phx-inline">Orientation</code>
+still give the body frame. A body that should turn about its origin as in 1.x gets
+<code class="phx-inline">CenterOfMass</code> <code class="phx-inline">[0 0 0]</code>; its
+<code class="phx-inline">Inertia</code> stays as the shape gave it.</p>
+<p>The mass of a <code class="phx-inline">Revolution</code> whose profile ends off the axis without
+returning to its first point is now that of the solid closed to the axis; in 1.x it depended on
+where the origin lay.</p>
+
+<h3 class="phx-h3">Springs and ropes are solved by the engine</h3>
+<p><a href="phx.Spring.html">phx.Spring</a> and <a href="phx.Rope.html">phx.Rope</a> computed
+their force in MATLAB in 1.x, from the positions of the previous step, and applied it as an external
+force. The engine now solves them with the joints and contacts, by an implicit scheme that keeps
+their energy and is stable at any stiffness and damping. A stiff spring that needed a very short
+step, or extra damping, to stay stable runs at an ordinary step now; and a spring that was stable
+only thanks to the numerical damping of the old scheme is now damped by its
+<code class="phx-inline">Damping</code> alone. Use the physical values of stiffness and damping and
+check the step: a spring that oscillates faster than about one radian per substep
+(<code class="phx-inline">&omega;&middot;dt</code>&nbsp;&gt;&nbsp;1) stays stable but moves
+inaccurately.</p>
+
+<h3 class="phx-h3">Joints hold tighter</h3>
+<p>The joints of a group of connected bodies are solved together and directly, closed loops
+included, so chains, linkages and loaded mechanisms stretch far less at ordinary steps. The 1.x
+remedies &mdash; a direct MLCP solver, many iterations, a very short step, extra damping at the
+joints &mdash; are not needed and cost time; remove them and check the result. The joint motors
+keep their meaning (<code class="phx-inline">TargetVelocity</code> with
+<code class="phx-inline">MaxTorque</code> or <code class="phx-inline">MaxForce</code>).</p>
+<p>The joint reactions <code class="phx-inline">ForceA</code>, <code class="phx-inline">TorqueA</code>,
+<code class="phx-inline">ForceB</code> and <code class="phx-inline">TorqueB</code> are exact for all
+joint types. In 1.x the <code class="phx-inline">TorqueA</code> of a revolute joint attached to a
+static or kinematic body missed the bending moment the joint carries, so a measured value may
+differ from the one of 1.x.</p>
+
+<h3 class="phx-h3" id="jointangles">Angles of GenericJoint and BushingJoint</h3>
+<p>The angular limits of 1.x bounded three successive rotations about X, Y and Z, and the rotation
+about Y degenerated near &plusmn;90&deg;. The rotation is now split into a twist about the Z axis of
+the joint frame and a swing about X and Y, each limited separately; there is no singularity at
+90&deg;. A joint that rotates about one axis only behaves as before. When several axes rotate at
+once, leave the freest rotation to Z (the twist): the 1.x advice to keep a free axis on X or Z and
+lock Y no longer applies. The limits, and the springs of a
+<code class="phx-inline">BushingJoint</code>, can now be changed while the simulation runs; in 1.x
+they were read only when it was built.</p>
+
+<h3 class="phx-h3" id="resistance">Rotating environment of Resistance</h3>
+<p>The environment of <a href="phx.Resistance.html">phx.Resistance</a> rotated against the
+right-hand rule in 1.x. Its velocity at a point <i>p</i> is now
+<code class="phx-inline">EnvironmentLinearVelocity + cross(EnvironmentAngularVelocity, p - EnvironmentOrigin)</code>,
+so a positive z component turns it counter-clockwise seen from above. To keep the motion of a 1.x
+scene, negate the value that was assigned to <code class="phx-inline">EnvironmentTwist</code>.</p>
+
+<h3 class="phx-h3">Contacts and friction</h3>
+<ul>
+<li>The contacts are solved more accurately: stacks stand at longer steps, sliding friction holds
+its Coulomb value at any speed, and bodies sink less into each other. Scenes whose outcome depends
+on a contact (a toppling stack, a gripper holding a part, a wheel on a slope) may end differently
+than in 1.x.</li>
+<li>Rolling and spinning resistance are defined anew (see <a href="#friction">Friction of
+bodies</a>).</li>
+<li>Bodies never fall asleep: a body at rest is simulated like any other, and nothing has to wake it
+when something touches it.</li>
+<li>The pose of a kinematic body that is set once before <code class="phx-inline">step(interval,
+substeps)</code> with several substeps is reached in the first substep, and the body stands still
+in the others. Set the pose before every step without substeps, or drive a kinematic body by its
+<code class="phx-inline">LinearVelocity</code> and <code class="phx-inline">AngularVelocity</code>,
+which hold until changed.</li>
+<li><code class="phx-inline">applyForce</code> and <code class="phx-inline">applyTorque</code> with
+several rows apply each row as a force (torque) of its own. In 1.x several rows at once gave a
+wrong resultant.</li>
+</ul>
+
+<h2 class="phx-h2" id="saved">Scenes saved in PHX 1.x</h2>
+<p>A MAT file saved in 1.x loads in PHX 2 and simulates, and each body keeps the centre of mass and
+inertia it was saved with, so a saved mesh keeps turning about its origin. Values that changed their
+form are converted: a single <code class="phx-inline">Diameter</code> of a cone loads as
+<code class="phx-inline">[d 0]</code>, a single <code class="phx-inline">InnerDiameter</code> of a
+tube as <code class="phx-inline">[d d]</code>, a friction triplet <code class="phx-inline">[mu 0 0]</code>
+as <code class="phx-inline">mu</code>. What has no counterpart is left at its default, without a
+warning:</p>
+<ul>
+<li>the limits of a <code class="phx-inline">GenericJoint</code> (it loads rigid) and of a
+<code class="phx-inline">BushingJoint</code> (it loads free);</li>
+<li>a <code class="phx-inline">Friction</code> with a nonzero rolling or spinning part (it loads as
+0.5);</li>
+<li>the <code class="phx-inline">Taper</code> of a tube (it loads straight);</li>
+<li>a colormap name of a spring or rope (it loads drawn in its <code class="phx-inline">Color</code>).</li>
+</ul>
+<p>Set these again after loading, or better rebuild the scene with the script that made it and save
+it anew. The same holds for the MAT scenes of a PHX Model block in Simulink.</p>
+
+<h2 class="phx-h2" id="check">Checking a ported scene</h2>
+<ol>
+<li>Run the scene and fix the errors from <a href="#code">Changes in code</a>.</li>
+<li>Go through <a href="#behaviour">Changes in behaviour</a> for the properties the scene uses,
+above all <code class="phx-inline">AppliedForce</code>/<code class="phx-inline">AppliedTorque</code>
+and meshes off their origin.</li>
+<li>Remove the engine workarounds of 1.x &mdash; solver choice, raised iterations, artificial
+damping, a step much shorter than the table in
+<a href="phx_ug_engine.html">Units, scale and engine settings</a> recommends &mdash; and run again.</li>
+<li>Switch on the accuracy diagnostics, which report joints and contacts that did not converge,
+deep penetrations, open joints and too fast bodies, naming the objects and the remedy:
+<pre class="phx-code">sim.DiagnosticInfo = <span class="str">"warnings"</span>;
+sim.step(5, 1000, -1);
+getDiagnosticReport(sim)</pre></li>
+<li>Check a result that matters by halving the substep: if it changes, the step was too long.</li>
+</ol>
+
+<div class="phx-note">
+<span class="lbl">New in PHX 2.</span> Besides the changes above, PHX&nbsp;2 adds deformable and
+granular objects (<a href="phx.SoftBody.html">phx.SoftBody</a>,
+<a href="phx.FlexibleBody.html">phx.FlexibleBody</a>, <a href="phx.Particles.html">phx.Particles</a>),
+the torsion spring <a href="phx.TorsionSpring.html">phx.TorsionSpring</a>, end stops of all joints
+(<code class="phx-inline">Limits</code>, <code class="phx-inline">ConeAngle</code>,
+<code class="phx-inline">TwistLimits</code>), <code class="phx-inline">Inertance</code> of springs,
+truncated cones, body accelerations, a multithreaded engine step and the accuracy diagnostics.
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.engine.Settings.html">phx.engine.Settings</a>,
+<a href="phx.Body.html">phx.Body</a>,
+<a href="phx.GenericJoint.html">phx.GenericJoint</a>,
+<a href="phx.Simulation.html">phx.Simulation</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_engine.html">Units, scale and engine settings</a>,
+<a href="phx_ug_joints.html">Joints, springs and ropes</a>,
+<a href="phx_ug_scenes.html">Saving and loading scenes</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox User Guide</div>
+
+</div>
+</body>
+</html>
