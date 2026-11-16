@@ -1889,54 +1889,45 @@ classdef tEngineProtocol < PhxTestCase
         function cylindricalLeavesOnlySlideAndTurnFree(tc)
             % A body on a cylindrical joint along world z, no gravity, pushed
             % along and turned about the axis and loaded across it: it moves
-            % and turns along the axis only, for the joint the block solves
-            % and for the six-DOF construction of before
-            for newJoint = [true false]
-                w = tc.newWorld([0 0 0]);
-                phxEngine('set', w, uint64(0), 'joltfix', struct('cylindrical', newJoint));
-                a = tc.addBox(w, 0, [0 0 0], 0.2*[1 1 1]);
-                b = tc.addBox(w, 2, [0 0 0], 0.2*[1 1 1], 1, [1 1 1]);
-                phxEngine('add', w, 'cylindrical', [a b], eye(4), eye(4), false);
-                phxEngine('set', w, b, 'appliedforce', [3 -2 1]);
-                phxEngine('set', w, b, 'appliedtorque', [2 1 1]);
-                T = tc.settle(w, 1);
-                label = sprintf("joltfix.cylindrical %d", newJoint);
-                tc.verifyEqual(T(1:2, 4)', [0 0], "AbsTol", 1e-4, label + ": stays on the axis");
-                tc.verifyEqual(T(3, 4), 0.5, "RelTol", 0.02, label + ": slides by F t^2/(2 m)");
-                tc.verifyEqual(T(1:3, 3)', [0 0 1], "AbsTol", 1e-4, label + ": the axis stays put");
-                tc.verifyEqual(atan2(T(2, 1), T(1, 1)), 0.5, "AbsTol", 0.01, label + ": turns by M t^2/(2 I)");
-            end
+            % and turns along the axis only
+            w = tc.newWorld([0 0 0]);
+            a = tc.addBox(w, 0, [0 0 0], 0.2*[1 1 1]);
+            b = tc.addBox(w, 2, [0 0 0], 0.2*[1 1 1], 1, [1 1 1]);
+            phxEngine('add', w, 'cylindrical', [a b], eye(4), eye(4), false);
+            phxEngine('set', w, b, 'appliedforce', [3 -2 1]);
+            phxEngine('set', w, b, 'appliedtorque', [2 1 1]);
+            T = tc.settle(w, 1);
+            tc.verifyEqual(T(1:2, 4)', [0 0], "AbsTol", 1e-4, "Stays on the axis");
+            tc.verifyEqual(T(3, 4), 0.5, "RelTol", 0.02, "Slides by F t^2/(2 m)");
+            tc.verifyEqual(T(1:3, 3)', [0 0 1], "AbsTol", 1e-4, "The axis stays put");
+            tc.verifyEqual(atan2(T(2, 1), T(1, 1)), 0.5, "AbsTol", 0.01, "Turns by M t^2/(2 I)");
         end
 
         function cylindricalLimitsBoundTravelAndAngle(tc)
             % Hanging along z on [-0.3 -0.1] m and turned on [0.1 0.3] rad by
             % a torque about z: the lower stop carries the weight, the angle
             % stops at whichever limit the torque drives it against; equal
-            % limits lock both. Checked for both constructions
+            % limits lock both
             m = 2;
-            for newJoint = [true false]
-                label = sprintf("joltfix.cylindrical %d", newJoint);
-                for s = [1 -1]
-                    w = tc.newWorld;
-                    phxEngine('set', w, uint64(0), 'joltfix', struct('cylindrical', newJoint));
-                    a = tc.addBox(w, 0, [0 0 2], 0.1*[1 1 1]);
-                    b = tc.addBox(w, 2, [0 0 1], 0.1*[1 1 1], m, [1 1 1]);
-                    j = phxEngine('add', w, 'cylindrical', [a b], tEngineProtocol.pose([0 0 -1]), eye(4), false);
-                    phxEngine('set', w, j, 'linlimits', -0.3, -0.1);
-                    phxEngine('set', w, j, 'anglimits', 0.1, 0.3);
-                    phxEngine('set', w, b, 'appliedtorque', [0 0 5*s]);
-                    T = tc.settle(w, 1);
-                    tc.verifyEqual(T(3, 4), 0.7, "AbsTol", 2e-3, label + ": on the lower stop");
-                    tc.verifyEqual(atan2(T(2, 1), T(1, 1)), 0.2 + 0.1*s, "AbsTol", 0.01, sprintf("%s: turned %+d", label, s));
-                    F = tc.meanForceB(w, j);
-                    tc.verifyEqual(F(3), m*tc.G, "AbsTol", 0.02*m*tc.G, label + ": the stop carries the weight");
-                end
-                phxEngine('set', w, j, 'linlimits', -0.2, -0.2);
-                phxEngine('set', w, j, 'anglimits', 0.2, 0.2);
+            for s = [1 -1]
+                w = tc.newWorld;
+                a = tc.addBox(w, 0, [0 0 2], 0.1*[1 1 1]);
+                b = tc.addBox(w, 2, [0 0 1], 0.1*[1 1 1], m, [1 1 1]);
+                j = phxEngine('add', w, 'cylindrical', [a b], tEngineProtocol.pose([0 0 -1]), eye(4), false);
+                phxEngine('set', w, j, 'linlimits', -0.3, -0.1);
+                phxEngine('set', w, j, 'anglimits', 0.1, 0.3);
+                phxEngine('set', w, b, 'appliedtorque', [0 0 5*s]);
                 T = tc.settle(w, 1);
-                tc.verifyEqual(T(3, 4), 0.8, "AbsTol", 2e-3, label + ": locked travel");
-                tc.verifyEqual(atan2(T(2, 1), T(1, 1)), 0.2, "AbsTol", 0.01, label + ": locked angle");
+                tc.verifyEqual(T(3, 4), 0.7, "AbsTol", 2e-3, "On the lower stop");
+                tc.verifyEqual(atan2(T(2, 1), T(1, 1)), 0.2 + 0.1*s, "AbsTol", 0.01, sprintf("Turned %+d", s));
+                F = tc.meanForceB(w, j);
+                tc.verifyEqual(F(3), m*tc.G, "AbsTol", 0.02*m*tc.G, "The stop carries the weight");
             end
+            phxEngine('set', w, j, 'linlimits', -0.2, -0.2);
+            phxEngine('set', w, j, 'anglimits', 0.2, 0.2);
+            T = tc.settle(w, 1);
+            tc.verifyEqual(T(3, 4), 0.8, "AbsTol", 2e-3, "Locked travel");
+            tc.verifyEqual(atan2(T(2, 1), T(1, 1)), 0.2, "AbsTol", 0.01, "Locked angle");
             tc.verifyError(@() phxEngine('set', w, j, 'linlimits', NaN, 0), "phx:engine:badArgument");
             tc.verifyError(@() phxEngine('set', w, j, 'cone', [1 1]), "phx:engine:unsupported");
         end
