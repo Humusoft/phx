@@ -452,7 +452,9 @@ delete(sim);
 - `substeps` — number of physics substeps; the engine timestep is `dt = interval/substeps`.
 - `redrawStep` — optional, **usually left out**. Default `1` = a redraw may be requested on
   every substep; `0` = no redraw during the step (the graphics are only brought up to date
-  at its end); `-1` = headless, the graphics are not touched at all.
+  at its end); `-1` = headless, the graphics are not touched at all. Pass it only as `-1`
+  (headless runs), `0` (the caller redraws itself) or, under `"full"`/`"performance"`, as
+  the frame cadence; under the default `"adaptive"` any positive value acts as `1`.
 
 Run it repeatedly to interleave control logic between steps (read body state, set an
 actuator, step again) — see the **phx-constraints-forces** skill for the control-loop
