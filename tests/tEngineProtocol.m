@@ -535,7 +535,10 @@ classdef tEngineProtocol < PhxTestCase
                     z(k) = T(3, 4, ids == h) - r;
                 end
             end
-            [~, touch] = min(z);
+            % The first touch is the step after which the ball first rises:
+            % the lowest point of the run can be a later landing, as every
+            % landing ends within about 1e-8 m of the floor
+            touch = find(diff(z) > 0, 1);
             tc.verifyEqual(max(z(touch:end)), 0.64, "RelTol", 0.15, "Height of the first bounce");
         end
 
