@@ -10,8 +10,11 @@ classdef tEngineSettings < PhxTestCase
 %   The velocity iterations of an island end at JointTolerance and
 %   ContactTolerance, at the latest at JointIterations (an island with a
 %   joint) or ContactIterations (any other); a tolerance of 0 runs every
-%   island to its cap. The tests of that (tagged Engine) read the counts
-%   from getDiagnosticReport of phx.Simulation.
+%   island to its cap. JointIterations 0 leaves a jointed island at
+%   ContactIterations, a looser tolerance takes fewer iterations, and more
+%   PositionIterations close the drift of a joint. The tests of that
+%   (tagged Engine) read the counts and gaps from getDiagnosticReport of
+%   phx.Simulation.
 %
 %   phx.engine.BulletSettings, the settings of PHX 1.x, warns and returns
 %   phx.engine.Settings with LengthScale and Margin carried over.
@@ -107,7 +110,10 @@ classdef tEngineSettings < PhxTestCase
                 tc.verifyError(@() setfield(s, name, Inf), "MATLAB:validators:mustBeFinite", name); %#ok<SFLD>
             end
             tc.verifyError(@() setfield(s, "JointIterations", 256), "MATLAB:validators:mustBeInRange"); %#ok<SFLD>
+            tc.verifyError(@() setfield(s, "JointIterations", -1), "MATLAB:validators:mustBeInRange"); %#ok<SFLD>
             tc.verifyError(@() setfield(s, "JointIterations", 2.5), "MATLAB:validators:mustBeInteger"); %#ok<SFLD>
+            s.JointIterations = 0;   % accepted: such groups run to ContactIterations
+            tc.verifyEqual(s.JointIterations, 0);
             tc.verifyError(@() setfield(s, "ContactIterations", 0), "MATLAB:validators:mustBePositive"); %#ok<SFLD>
             tc.verifyError(@() setfield(s, "PositionIterations", 0), "MATLAB:validators:mustBePositive"); %#ok<SFLD>
         end
@@ -181,12 +187,44 @@ classdef tEngineSettings < PhxTestCase
             tc.verifyEqual([r.JointIslandsAtCap, r.ContactIslandsAtCap], [0 0]);
             tc.verifyLessThanOrEqual([r.JointResidual, r.ContactResidual], 1e-3);
         end
+
+        function zeroJointIterationsLeaveJointsAtContactIterations(tc)
+            % JointIterations 0 gives a jointed island the cap of the others
+            s = phx.engine.Settings("JointTolerance", 1e-9, "JointIterations", 0, "ContactIterations", 12);
+            r = tc.runScene(s, "pendulum");
+            tc.verifyEqual(r.MaxIterations, 12);
+            tc.verifyGreaterThan(r.JointIslandsAtCap, 0);
+        end
+
+        function looserContactToleranceTakesFewerIterations(tc)
+            tight = tc.runScene(phx.engine.Settings("ContactTolerance", 1e-6), "box");
+            loose = tc.runScene(phx.engine.Settings("ContactTolerance", 1e-1), "box");
+            tc.verifyLessThan(loose.Iterations, tight.Iterations);
+        end
+
+        function positionIterationsCloseTheJointGap(tc)
+            % The drift of a joint halves with every doubling of the position
+            % iterations; a pendulum at 50 ms steps drifts far above the float
+            % resolution of its positions
+            gap = @(n) tc.runScene(phx.engine.Settings("PositionIterations", n), "pendulum", 4).JointGap;
+            g2 = gap(2);
+            g8 = gap(8);
+            tc.verifyGreaterThan(g2, 1e-5, "The drift to close");
+            tc.verifyLessThan(g8, g2/2);
+        end
     end
 
     methods (Access = private)
-        function r = runScene(tc, settings, scene)
+        function r = runScene(tc, settings, scene, substeps)
             % Diagnostics of 0.2 s of a pendulum swinging from 60 degrees,
-            % of a box sliding on a static floor at 1 m/s, or of both apart
+            % of a box sliding on a static floor at 1 m/s, or of both apart,
+            % in 20 steps unless given
+            arguments
+                tc
+                settings
+                scene
+                substeps = 20
+            end
             tc.requireEngine;
             bodies = phx.Body.empty;
             if scene ~= "box"
@@ -204,7 +242,7 @@ classdef tEngineSettings < PhxTestCase
             end
             sim = phx.Simulation(bodies, "EngineSettings", settings, "DiagnosticInfo", "warnings");
             tc.addTeardown(@() delete(sim));
-            sim.step(0.2, 20, -1);
+            sim.step(0.2, substeps, -1);
             r = sim.getDiagnosticReport;
         end
     end

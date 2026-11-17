@@ -84,15 +84,15 @@ classdef Simulation < phx.base.Object
         % short waits by up to a timer tick (~15 ms on Windows)
         PacingTolerance = 0.1
 
-        % Limits of the diagnostic warnings. Residuals are relative: the largest
-        % velocity change one joint or contact still made to a body in the last
-        % iteration, as a fraction of what the joints and contacts changed that
-        % body's velocity in the step (at least |g| dt), as the tolerances of
-        % EngineSettings. Lengths are fractions of EngineSettings.LengthScale.
-        DiagnosticJointResidual = 1
+        % Limits of the diagnostic warnings, as fractions of
+        % EngineSettings.LengthScale. The residuals have no warning: a scene
+        % that fails shows it in the gaps and penetrations, while joints held
+        % against motor or friction limits keep a residual that neither more
+        % iterations nor a smaller step remove. A body passes through thin
+        % parts only from about one LengthScale per step.
         DiagnosticPenetration = 0.1
-        DiagnosticJointGap = 0.01
-        DiagnosticTravel = 0.25
+        DiagnosticJointGap = 0.05
+        DiagnosticTravel = 0.5
     end
 
     properties (SetAccess = private)
@@ -142,12 +142,11 @@ classdef Simulation < phx.base.Object
         % Diagnostic information on the accuracy of the engine, after every step
         %   off - nothing is collected, at no cost (default)
         %   warnings - a warning when a step looks untrustworthy, each kind once
-        %     per simulation: joints far from converged
-        %     (phx:Simulation:jointsNotConverged), bodies placed inside each
-        %     other (initialOverlap) or sinking deep into each other later
-        %     (deepPenetration), a joint pulled apart (jointGap), a body that
-        %     moves a large part of LengthScale in one step (fastBody), NaN or
-        %     Inf (nonfinite)
+        %     per simulation: bodies placed inside each other
+        %     (phx:Simulation:initialOverlap) or sinking deep into each other
+        %     later (deepPenetration), a joint pulled apart (jointGap), a body
+        %     that moves a large part of LengthScale in one step (fastBody), NaN
+        %     or Inf (nonfinite)
         %   summary - the warnings, and one line per call of step
         %   detailed - the warnings, and a few lines per call of step that also
         %     name the bodies and joints concerned
@@ -547,9 +546,6 @@ classdef Simulation < phx.base.Object
                 "nonfinite", R.NonfiniteSteps > 0, ...
                     sprintf("A body reached a NaN or Inf pose or velocity (%s): the simulation has failed; reduce the step.", ...
                     obj.describe(R.NonfiniteBody))
-                "jointsNotConverged", R.JointResidual > obj.DiagnosticJointResidual, ...
-                    sprintf("Joints converge poorly (residual %.2g, limit %.2g): reduce the step or raise JointIterations of EngineSettings.", ...
-                    R.JointResidual, obj.DiagnosticJointResidual)
                 "initialOverlap", placedInside, ...
                     sprintf("Bodies start %.3g m inside each other (%s), more than %g %% of LengthScale: place them apart; the engine pushes them out over the first steps.", ...
                     overlap, obj.describe(overlapBodies), 100*obj.DiagnosticPenetration)

@@ -41,7 +41,9 @@ keeps the worst value. Fields:
   `JointTolerance` / `ContactTolerance`. At or below the tolerance = converged; above it =
   islands stopped at their cap (`JointIslandsAtCap` / `ContactIslandsAtCap` > 0); `NaN` =
   no joints / contacts. Heaps of contacts rarely converge and sit at their cap as a rule:
-  judge them by `Penetration`, not by `ContactResidual` (there is no contact warning).
+  judge them by `Penetration`, not by `ContactResidual`. Neither residual has a warning:
+  failures show in `JointGap` and `Penetration`, and joints held against a motor limit or
+  friction keep a residual that more iterations or a smaller `dt` do not remove.
 - `Penetration` (m) + `PenetratingBodies`, `JointGap` (m) + `GapJoint` (fixed, revolute,
   spherical joints, and cylindrical ones across their axis), `MaxSpeed` (m/s) + `FastestBody`, `MaxAngularSpeed` +
   `FastestTurningBody`, `NonfiniteSteps` + `NonfiniteBody` — the objects are the scene's
@@ -59,11 +61,10 @@ to do:
 | Identifier | Limit | Remedy |
 |---|---|---|
 | `nonfinite` | NaN/Inf pose or velocity | the run failed; reduce `dt` |
-| `jointsNotConverged` | joint residual > 1 | reduce `dt`, or raise `JointIterations` |
 | `initialOverlap` | bodies > 10 % of LengthScale inside each other in the first step after the simulation was made or `addObjects` | place them apart (the engine pushes them out, often violently) |
 | `deepPenetration` | later: > 10 % of LengthScale (silent while an initial overlap is pushed out) | reduce `dt`; check `LengthScale`, mass ratios |
-| `jointGap` | > 1 % of LengthScale | reduce `dt`, or raise `JointIterations` |
-| `fastBody` | > 25 % of LengthScale per engine step | reduce `dt` (tunnelling risk) |
+| `jointGap` | > 5 % of LengthScale | reduce `dt`, or raise `JointIterations` |
+| `fastBody` | > 50 % of LengthScale per engine step | reduce `dt` (bodies tunnel from about 1 LengthScale per step) |
 
 How to use it when debugging:
 

@@ -226,7 +226,10 @@ rule; the depth of their contacts (penetration below) tells whether that matters
 the largest change of velocity that one joint or one contact still made to a body in that iteration,
 as a fraction of what the joints and contacts changed that body's velocity in the step (at least
 |g|&middot;dt). It is the quantity of the tolerances: a residual at or below the tolerance means a
-converged island, one above it an island stopped by its cap.</li>
+converged island, one above it an island stopped by its cap. The residuals have no warning: a
+scene that fails shows it in its joint gaps and penetrations, while joints held against the limit
+of a motor or against friction keep a residual that neither more iterations nor a shorter step
+remove.</li>
 <li><b>penetration</b> &mdash; the deepest overlap of two bodies in contact.</li>
 <li><b>joint gap</b> &mdash; the widest separation of the two halves of a fixed, revolute or spherical
 joint, or across the axis of a cylindrical joint.</li>
@@ -240,8 +243,6 @@ joint, or across the axis of a cylindrical joint.</li>
 <tr><th>Identifier</th><th>Warns when</th><th>Usual remedy</th></tr>
 <tr><td class="name">phx:Simulation:nonfinite</td><td>a body reached a NaN or Inf pose or velocity</td>
 <td>The simulation has failed; reduce the step.</td></tr>
-<tr><td class="name">phx:Simulation:jointsNotConverged</td><td>the joint residual exceeds 1</td>
-<td>Reduce the step, or raise <code class="phx-inline">JointIterations</code>.</td></tr>
 <tr><td class="name">phx:Simulation:initialOverlap</td><td>in the first step of a new or changed
 scene (after creating the simulation or <code class="phx-inline">addObjects</code>), bodies are inside each
 other by more than 10&nbsp;% of <code class="phx-inline">LengthScale</code></td>
@@ -250,12 +251,13 @@ other by more than 10&nbsp;% of <code class="phx-inline">LengthScale</code></td>
 <tr><td class="name">phx:Simulation:deepPenetration</td><td>later, bodies sink into each other by more than
 10&nbsp;% of <code class="phx-inline">LengthScale</code></td>
 <td>Reduce the step; check <code class="phx-inline">LengthScale</code> and the mass ratios.</td></tr>
-<tr><td class="name">phx:Simulation:jointGap</td><td>a joint is pulled apart by more than 1&nbsp;% of
+<tr><td class="name">phx:Simulation:jointGap</td><td>a joint is pulled apart by more than 5&nbsp;% of
 <code class="phx-inline">LengthScale</code></td>
 <td>Reduce the step, or raise <code class="phx-inline">JointIterations</code>.</td></tr>
-<tr><td class="name">phx:Simulation:fastBody</td><td>a body moves more than 25&nbsp;% of
+<tr><td class="name">phx:Simulation:fastBody</td><td>a body moves more than half of
 <code class="phx-inline">LengthScale</code> in one engine step</td>
-<td>Reduce the step, or the body may pass through thin parts.</td></tr>
+<td>Reduce the step: from about one <code class="phx-inline">LengthScale</code> per step a body
+passes through thin parts.</td></tr>
 </table>
 
 <p>The warnings are ordinary MATLAB warnings, printed without a backtrace. Turn one off with
