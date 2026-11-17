@@ -50,7 +50,7 @@ function phxex_screwconv(showGraphs)
     % Balls
     for j = -0.2:0.2:0.2
         for i = 1:30
-            phx.Body(ax, "Position", [0.8 j 0.2+i*0.13], "Shape", {"Sphere", "Diameter", 0.13});
+            phx.Body(ax, "Position", [0.8 j 0.62+i*0.135], "Shape", {"Sphere", "Diameter", 0.13});
         end
     end
 

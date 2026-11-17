@@ -30,12 +30,12 @@ function phxex_gears
 
     % Create right static cylinder and dynamic gear body
     b1 = phx.Body(ax, "Type", "static", "Position", [-d 0 0.2], "Shape", {"Cylinder", "Radius", 0.1, "Height", 0.4, "Color", 0.6});
-    g1 = phx.Body(ax, "Position", [-d 0 0.1], "Shape", gearShape(m, z1, alpha, 0, w, [0.4 0.5 0.6]));
+    g1 = phx.Body(ax, "Position", [-d 0 0.2], "Shape", gearShape(m, z1, alpha, 0, w, [0.4 0.5 0.6]));
     phx.RevoluteJoint(b1, g1);
 
     % Create left static cylinder and dynamic gear body
     b2 = phx.Body(ax, "Type", "static", "Position", [d 0 0.2], "Shape", {"Cylinder", "Radius", 0.1, "Height", 0.4, "Color", 0.6});
-    g2 = phx.Body(ax, "Position", [d 0 0.1], "Shape", gearShape(m, z2, alpha, ph, w, [0.5 0.6 0.4]));
+    g2 = phx.Body(ax, "Position", [d 0 0.2], "Shape", gearShape(m, z2, alpha, ph, w, [0.5 0.6 0.4]));
     phx.RevoluteJoint(b2, g2, "TargetVelocity", 5, "MaxTorque", 10);
 
     % Initialize the simulation with specified settings

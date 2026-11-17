@@ -48,13 +48,14 @@ function phxex_beltmaze
             "Texture", texture, "TextureBlend", 0.15});
     end
 
-    % Parcels, dropped onto the feeder in a repeatable pseudo-random spread.
+    % Parcels, dropped onto the feeder in a repeatable pseudo-random spread,
+    % from high enough that the tallest one (1.2 m) starts above the belt.
     % The lane sets the route, the position along the belt sets the order.
     rng(7);
     colors = summer(nParcels);
     lane = sign(rand(nParcels, 1) - 0.5);
     for i = 1:nParcels
-        phx.Body("Position", [-6.6 + 4.8*rand, lane(i)*(0.45 + 0.85*rand), 0.5], ...
+        phx.Body("Position", [-6.6 + 4.8*rand, lane(i)*(0.45 + 0.85*rand), 0.7], ...
             "Shape", {"Box", "Size", rand(1, 3) + 0.2, "Color", colors(i, :), "Texture", "wood", "TextureBlend", 0.4});
     end
 
