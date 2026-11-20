@@ -2347,6 +2347,160 @@ classdef tEngineProtocol < PhxTestCase
         end
     end
 
+    % Liquids (particle groups with the field 'fluid', protocol 2 step U)
+    methods (Test, TestTags = {'Engine'})
+        function fluidFieldIsSetReadAndCleared(tc)
+            % The fluid struct reads back as set and [] makes the group plain
+            % again; incomplete or invalid structs and the densities of a
+            % plain group are refused.
+            w = tc.newWorld([0 0 0]);
+            g = phxEngine('add', w, 'particles', [0; 0; 0], 0.01, 0.01, false);
+            tc.verifyEqual(phxEngine('get', w, g, 'fluid'), []);
+            tc.verifyError(@() phxEngine('get', w, g, 'density'), "phx:engine:badArgument");
+            S = struct("density", 1000, "soundspeed", 20, "viscosity", 0.1);
+            phxEngine('set', w, g, 'fluid', S);
+            tc.verifyEqual(phxEngine('get', w, g, 'fluid'), S);
+            tc.verifyError(@() phxEngine('set', w, g, 'fluid', rmfield(S, "viscosity")), "phx:engine:badArgument");
+            tc.verifyError(@() phxEngine('set', w, g, 'fluid', setfield(S, "extra", 1)), "phx:engine:badArgument"); %#ok<SFLD>
+            tc.verifyError(@() phxEngine('set', w, g, 'fluid', setfield(S, "density", -1)), "phx:engine:badArgument"); %#ok<SFLD>
+            tc.verifyError(@() phxEngine('set', w, g, 'fluid', setfield(S, "soundspeed", 0)), "phx:engine:badArgument"); %#ok<SFLD>
+            tc.verifyError(@() phxEngine('set', w, g, 'fluid', setfield(S, "viscosity", -0.1)), "phx:engine:badArgument"); %#ok<SFLD>
+            phxEngine('set', w, g, 'fluid', []);
+            tc.verifyEqual(phxEngine('get', w, g, 'fluid'), []);
+            tc.verifyError(@() phxEngine('get', w, g, 'pressure'), "phx:engine:badArgument");
+        end
+
+        function fluidLatticeReadsTheRestDensity(tc)
+            % A simple cubic lattice of spacing 2 r: its interior particle
+            % reads the rest density, whatever mass the group was made with;
+            % the same lattice squeezed by 1 % reads more, with the Tait
+            % pressure of that density.
+            r = 0.01;
+            rho0 = 1000;
+            c = 20;
+            [x, y, z] = ndgrid(-2:2);
+            w = tc.newWorld([0 0 0]);
+            for squeeze = [1 0.99]
+                P = 2*r*squeeze*[x(:) y(:) z(:)]';
+                g = phxEngine('add', w, 'particles', P, r, 0.123, false);
+                phxEngine('set', w, g, 'fluid', struct("density", rho0, "soundspeed", c, "viscosity", 0.1));
+                rho = phxEngine('get', w, g, 'density');
+                p = phxEngine('get', w, g, 'pressure');
+                tc.verifySize(rho, [1 125]);
+                centre = find(all(P == 0, 1));
+                if squeeze == 1
+                    tc.verifyEqual(rho(centre), rho0, "RelTol", 1e-6);   % neighbour offsets in single precision
+                    tc.verifyEqual(p(centre), 0, "AbsTol", 1e-6);
+                else
+                    tc.verifyGreaterThan(rho(centre), rho0*1.02);
+                    tc.verifyEqual(p(centre), rho0*c^2/7*((rho(centre)/rho0)^7 - 1), "RelTol", 1e-9);
+                end
+                tc.verifyLessThan(rho(1), rho(centre), "A corner particle lacks neighbours.");
+                phxEngine('remove', w, g);
+            end
+        end
+
+        function fluidForcesConserveMomentum(tc)
+            % A squeezed block in free space expands: its outer particles move
+            % outwards and the momentum of the block stays zero.
+            r = 0.01;
+            [x, y, z] = ndgrid(-2:2);
+            P = 2*r*0.97*[x(:) y(:) z(:)]';
+            w = tc.newWorld([0 0 0]);
+            g = phxEngine('add', w, 'particles', P, r, 0.01, false);
+            phxEngine('set', w, g, 'fluid', struct("density", 1000, "soundspeed", 20, "viscosity", 0.1));
+            for k = 1:10
+                phxEngine('step', w, 2.5e-4);
+            end
+            V = phxEngine('get', w, g, 'velocities');
+            tc.verifyEqual(sum(V, 2), [0; 0; 0], "AbsTol", 1e-5*max(abs(V), [], "all"));
+            corner = find(all(P == 2*r*0.97*2, 1));
+            tc.verifyGreaterThan(V(:, corner), [0; 0; 0], "The corner particle moves outwards.");
+        end
+
+        function fluidParticlesDoNotSleep(tc)
+            % Particles of a liquid never sleep, whatever the group's
+            % sleeping says.
+            w = tc.newWorld;
+            tc.addFloor(w);
+            g = phxEngine('add', w, 'particles', [0 0.3; 0 0; 0.01 0.01], 0.01, 0.01, false);
+            phxEngine('set', w, g, 'sleeping', true);
+            phxEngine('set', w, g, 'fluid', struct("density", 1000, "soundspeed", 20, "viscosity", 0.1));
+            for k = 1:round(2/tc.Dt)
+                phxEngine('step', w, tc.Dt);
+            end
+            tc.verifyEqual(phxEngine('get', w, g, 'active'), [true true]);
+        end
+
+        function fluidRestsInATank(tc)
+            % A column of liquid in a tank of five static plates keeps its
+            % level within half a spacing (the free surface settles about a
+            % quarter of a spacing lower: its particles lack neighbours above)
+            % and its density within 2 %.
+            d = 0.02;
+            w = tc.newLiquidWorld;
+            P = tc.addTank(w, [0.2 0.2 0.25], d, 0.16);
+            g = phxEngine('add', w, 'particles', P, d/2, 0.01, false);
+            phxEngine('set', w, g, 'fluid', struct("density", 1000, "soundspeed", 20, "viscosity", 0.1));
+            for k = 1:4000
+                phxEngine('step', w, 2.5e-4);
+            end
+            X = phxEngine('get', w, g, 'positions');
+            top = sort(X(3, :), "descend");
+            tc.verifyEqual(mean(top(1:25)) + d/2, 0.16, "AbsTol", d/2, "The level stays.");
+            tc.verifyLessThan(max(phxEngine('get', w, g, 'density')), 1000*1.02);
+            tc.verifyLessThan(max(abs(phxEngine('get', w, g, 'velocities')), [], "all"), 0.2, "It comes to rest.");
+        end
+
+        function fluidFloatsADynamicBox(tc)
+            % A box of half the liquid's density floats: it neither sinks nor
+            % leaves the surface, its draft near half its height. (The
+            % boundary model gives about 10 % less at this resolution;
+            % FLUID.md.)
+            d = 0.02;
+            a = 0.12;
+            w = tc.newLiquidWorld;
+            P = tc.addTank(w, [0.24 0.24 0.3], d, 0.12);
+            P = P(:, ~(max(abs(P(1:2, :)), [], 1) < a/2 + d/2 & P(3, :) > 0.12 - a/2 - d/2));
+            box = tc.addBox(w, 2, [0 0 0.12], a*[1 1 1], 500*a^3);
+            g = phxEngine('add', w, 'particles', P, d/2, 0.01, false);
+            phxEngine('set', w, g, 'fluid', struct("density", 1000, "soundspeed", 20, "viscosity", 0.3));
+            for k = 1:round(0.6/2.5e-4)
+                phxEngine('step', w, 2.5e-4);
+            end
+            X = phxEngine('get', w, g, 'positions');
+            far = max(abs(X(1:2, :)), [], 1) > 0.09;
+            top = sort(X(3, far), "descend");
+            level = mean(top(1:20)) + d/2;
+            p = phxEngine('get', w, box, 'position');
+            draft = level - (p(3) - a/2);
+            tc.verifyEqual(draft, a/2, "RelTol", 0.25, "The box floats at about half its height.");
+            tc.verifyEqual(phxEngine('get', w, box, 'linvel'), [0 0 0], "AbsTol", 0.05, "It has come to rest.");
+        end
+
+        function fluidResultsDoNotDependOnThreads(tc)
+            % A liquid hitting a dynamic box moves the same, bit for bit, on
+            % one thread and on four.
+            d = 0.02;
+            X = cell(1, 2);
+            threads = [1 4];
+            for t = 1:2
+                w = tc.newLiquidWorld;
+                phxEngine('set', w, uint64(0), 'settings', struct('threads', threads(t)));
+                P = tc.addTank(w, [0.4 0.1 0.2], d, 0.16);
+                P = P(:, P(1, :) < -0.1);
+                tc.addBox(w, 2, [0.1 0 0.03], [0.06 0.06 0.06], 0.1);
+                g = phxEngine('add', w, 'particles', P, d/2, 0.01, false);
+                phxEngine('set', w, g, 'fluid', struct("density", 1000, "soundspeed", 20, "viscosity", 0.1));
+                for k = 1:400
+                    phxEngine('step', w, 2.5e-4);
+                end
+                X{t} = phxEngine('get', w, g, 'positions');
+            end
+            tc.verifyEqual(X{2}, X{1});
+        end
+    end
+
     % Spring constraint
     methods (Test, TestTags = {'Engine'})
         function springHoldsAMassAtItsStaticDeflection(tc)
@@ -2721,6 +2875,31 @@ classdef tEngineProtocol < PhxTestCase
         function h = addFloor(tc, w)
             % Static 10 x 10 m floor with its top at z = 0
             h = tc.addBox(w, 0, [0 0 -0.5], [10 10 1], 0, [0 0 0]);
+        end
+
+        function w = newLiquidWorld(tc)
+            % A world with gravity and the contact tolerances PHX sets for
+            % LengthScale 0.1, as the centimetre particles of a liquid need
+            % (at Jolt's defaults they rest 9 mm deep in the walls)
+            w = tc.newWorld;
+            phxEngine('set', w, uint64(0), 'settings', struct('margin', 0.004, 'penetrationslop', 1e-4, ...
+                'speculativedistance', 0.002, 'tolerancelength', 0.01));
+        end
+
+        function P = addTank(tc, w, inner, d, height)
+            % Static tank of five 0.05 m plates around the inner size
+            % [x y z], its floor top at z = 0 and centred on the z axis;
+            % returns a simple cubic lattice of spacing d filling it up to
+            % the given height (3xN), the particles d/2 from the plates
+            t = 0.05;
+            tc.addBox(w, 0, [0 0 -t/2], [inner(1:2) + 2*t, t], 0, [0 0 0]);
+            for s = [-1 1]
+                tc.addBox(w, 0, [s*(inner(1) + t)/2, 0, inner(3)/2], [t, inner(2) + 2*t, inner(3)], 0, [0 0 0]);
+                tc.addBox(w, 0, [0, s*(inner(2) + t)/2, inner(3)/2], [inner(1), t, inner(3)], 0, [0 0 0]);
+            end
+            [x, y, z] = ndgrid(-inner(1)/2 + d/2 : d : inner(1)/2 - d/4, ...
+                -inner(2)/2 + d/2 : d : inner(2)/2 - d/4, d/2 : d : height - d/4);
+            P = [x(:) y(:) z(:)]';
         end
 
         function [w, b, j] = hingeRig(tc)

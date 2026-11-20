@@ -128,6 +128,15 @@ classdef PhxTestCase < matlab.unittest.TestCase
             lines(end + 1) = "endsolid";
             file = tc.writeTextFile(name, strjoin(lines, newline));
         end
+
+        function verifyCubicLattice(tc, P, d, diagnostic)
+            % The rows of P lie on a cubic lattice of spacing d, aligned
+            % with the axes, each node at most once: the nearest two are d
+            % apart (without pdist, which is the Statistics Toolbox's)
+            steps = (P - P(1, :))/d;
+            tc.verifyEqual(steps, round(steps), "AbsTol", 1e-9, diagnostic);
+            tc.verifyEqual(size(unique(round(steps), "rows"), 1), size(P, 1), diagnostic);
+        end
     end
 
     methods (Static, Access = protected)

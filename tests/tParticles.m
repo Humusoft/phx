@@ -2,8 +2,8 @@ classdef tParticles < PhxTestCase
 %tParticles Tests for phx.Particles.
 %
 %   The bookkeeping tests add, remove and set particles before a simulation
-%   exists and check the documented errors; they need neither graphics nor
-%   the engine. The simulation tests ("Engine" tag) check that a running
+%   exists, fill a Shape with touching particles and check the documented
+%   errors; they need neither graphics nor the engine. The simulation tests ("Engine" tag) check that a running
 %   group reads and writes its particles through the engine, that a force
 %   changes the velocity of its particle by F*dt/m, that particles come to
 %   rest on a floor, and that the state survives the end of the simulation.
@@ -68,6 +68,25 @@ classdef tParticles < PhxTestCase
             tc.verifyError(@() set(p, "Velocities", [0 0 0]), "phx:Particles:sizeMismatch");
             tc.verifyError(@() p.applyForce([0 0 1]), "phx:Particles:notSimulated");
             tc.verifyError(@() phx.Particles([], "Positions", zeros(phx.Particles.MaxCount + 1, 3)), ...
+                "phx:Particles:tooMany");
+        end
+
+        function shapeFillsWithTouchingParticles(tc)
+            % A Shape is filled on a lattice of the particles' diameter;
+            % a Mass given with it counts the particles it filled
+            p = phx.Particles([], "Mass", 2, "Shape", {"Sphere", "Diameter", 0.2}, "Radius", 0.01);
+            P = p.Positions;
+            tc.verifyCubicLattice(P, 0.02, "The particles touch.");
+            tc.verifyLessThan(max(vecnorm(P, 2, 2)), 0.1, "They lie inside the sphere.");
+            tc.verifyEqual(p.Count*0.02^3, 4/3*pi*0.1^3, "RelTol", 0.05);
+            tc.verifyEqual(p.Mass, 2, "RelTol", 1e-12);
+            p.Radius = 0.02;
+            tc.verifyCubicLattice(p.Positions, 0.04, "A new Radius fills again.");
+        end
+
+        function shapeErrors(tc)
+            tc.verifyError(@() phx.Particles([], "Shape", {"Box"}, "Positions", [0 0 0]), "phx:Particles:shapeAndPositions");
+            tc.verifyError(@() phx.Particles([], "Shape", {"Box", "Size", [1 1 1]}, "Radius", 0.01), ...
                 "phx:Particles:tooMany");
         end
     end
