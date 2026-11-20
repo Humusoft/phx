@@ -132,7 +132,7 @@ classdef Body < phx.base.Object
         % Friction coefficient (Coulomb): a contact resists sliding, and a
         % contact patch turning about its normal, by this coefficient times
         % the normal force; it combines the values of both bodies as their
-        % product. [mu 0 0] is still accepted as mu.
+        % geometric mean, sqrt(mu1*mu2). [mu 0 0] is still accepted as mu.
         Friction (1, :) double {mustBeFrictionValue} = 0.5
 
         % Rolling resistance (m): the arm of the normal force N that resists
@@ -143,14 +143,15 @@ classdef Body < phx.base.Object
 
         % Spin radius (m): the effective radius of the contact patch that a
         % point contact (a ball on a floor) stands for; the contact resists
-        % spinning about its normal by Friction*SpinRadius*N, in addition to
+        % spinning about its normal by mu*SpinRadius*N (mu the contact's
+        % combined friction coefficient), in addition to
         % what a flat patch resists by its own extent. A contact adds the
         % values of both bodies; about 2/3 of the radius of the real patch.
         SpinRadius (1, 1) double {mustBeNonnegative, mustBeFinite} = 0
 
-        % Restitution (bounciness) coefficient, 0 = no bounce; the resulting
-        % bounce of a contact combines the values of both colliding bodies
-        % as their product
+        % Restitution (bounciness) coefficient, 0 = no bounce; a contact
+        % bounces with the smaller of the two colliding bodies' values, so
+        % a body of 1 (an ideal rigid floor) keeps the other's bounce
         Restitution (1, 1) double {mustBeGreaterThanOrEqual(Restitution, 0)} = 0
 
         % Enable collision response for this body

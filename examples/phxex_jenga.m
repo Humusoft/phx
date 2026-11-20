@@ -28,7 +28,7 @@ function phxex_jenga(n, s)
     shpA = phx.shape.Box("Size", s, "Texture", "wood", "TextureBlend", 0.4);
     shpB = phx.shape.Box("Size", s([2 1 3]), "Texture", "wood", "TextureBlend", 0.4);
     clr = (jet(n) + 1)/2; % Generate colors for the blocks
-    mu = 0.2; % Friction of the blocks, low enough for a pulled block not to drag the tower along
+    mu = 0.04; % Friction of the blocks, low enough for a pulled block not to drag the tower along
     % Create layers with three blocks each
     for i = 1:n
         if mod(i, 2) == 1 % Alternate between two shapes for odd/even blocks

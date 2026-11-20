@@ -113,11 +113,11 @@ b = phx.Body(ax, ...
   invisibly. `kinematic` bodies are in the redraw pipeline, so they render correctly
   through the switch.
 - **Restitution (bounciness)**: `Restitution` (scalar ≥ 0, default **0** = dead contact),
-  settable live mid-run. The bounce of a contact **combines the values of both colliding
-  bodies** as their product: a bouncy ball dropped on a default floor does **not** bounce —
-  give the floor nonzero `Restitution` too. The rebound height is `e²·h` with `e` the
-  product of both values (exact at a 1 ms step, within 2 % at 5 ms), so compute `e` from
-  the bounce you want.
+  settable live mid-run. A contact bounces with **the smaller of the two colliding bodies'
+  values**: a bouncy ball dropped on a default floor does **not** bounce — give the floor
+  `Restitution` too; a floor of 1 (ideal rigid surface) leaves the ball's own value. The
+  rebound height is `e²·h` with `e` the smaller value (exact at a 1 ms step, within 2 % at
+  5 ms), so compute `e` from the bounce you want.
 - **`SurfaceVelocity` — a virtual moving surface (conveyor belts).** A `[vx vy vz]`
   vector, default `[0 0 0]`, settable live. The body itself does **not** move; contacts
   with it are solved as if its surface were sliding at that velocity, so resting bodies
@@ -577,14 +577,15 @@ building a scene from scratch:
   tricks against initial overlap — `phx.assembly.scatter` places n bodies in a
   region overlap-free (`Spacing`) in one call.
 - **`Friction` is one Coulomb coefficient `>= 0` (no upper bound)**, ≈0.5–0.8 for grippy
-  contact, 0 for near-frictionless, above 1 for very grippy contact; a contact multiplies the
-  values of both bodies. (Code with the `[drag roll spin]` triplet of PHX 1.x: see
+  contact, 0 for near-frictionless, above 1 for very grippy contact; a contact takes the
+  geometric mean `sqrt(mu1*mu2)` of both bodies' values, so two bodies of 0.5 meet at 0.5
+  and a body of 0 makes any contact frictionless. (Code with the `[drag roll spin]` triplet of PHX 1.x: see
   **phx-upgrade-from-1x**.)
 - **Rolling and spinning resistance are lengths in m, both 0 by default**, and a contact
   adds the values of both bodies. `RollingResistance` b: a rolling contact meets a torque
   of up to `b*N` (a ball slows by `b*g/(R*(1 + I/(m*R^2)))`); steel on steel 1e-5 m, wood
   ~5e-4 m, a tyre a few mm. `SpinRadius` r: a point contact (ball on a floor) resists
-  spinning about its normal by `Friction*r*N`, about 2/3 of the real patch radius; flat
+  spinning about its normal by `mu*r*N` (`mu` the contact's combined friction), about 2/3 of the real patch radius; flat
   faces resist spinning by their own extent anyway. Without them a ball rolls and a top
   spins on forever; set them only where the scene needs it (Euler's disk, a ball that
   must come to rest, granular piles), and keep b small against the body size, as it also

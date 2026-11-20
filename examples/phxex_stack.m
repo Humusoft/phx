@@ -9,18 +9,18 @@ function phxex_stack(n, mu, tiltRate)
 %
 % Input Arguments:
 %     n        - number of stacked boxes (default 6)
-%     mu       - friction coefficient between boxes and pallet (default 0.5)
+%     mu       - friction coefficient between boxes and pallet (default 0.2)
 %     tiltRate - pallet tilt rate in deg/s (default 5)
 %
 % Example:
 %     phxex_stack            % default stack, moderate friction
-%     phxex_stack(8, 0.3)    % taller stack, slippery surfaces -> slides sooner
+%     phxex_stack(8, 0.1)    % taller stack, slippery surfaces -> slides sooner
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 
     arguments
         n (1, 1) double = 6
-        mu (1, 1) double {mustBeGreaterThanOrEqual(mu, 0)} = 0.5
+        mu (1, 1) double {mustBeGreaterThanOrEqual(mu, 0)} = 0.2
         tiltRate (1, 1) double = 5
     end
 

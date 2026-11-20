@@ -45,7 +45,7 @@ function phxex_gyrostab(duration, spinRate, maxAmplitude)
     % Cargo: four crates on the deck corners, same relative positions and
     % friction on both platforms (clear of the spinning disk in the middle)
     crateSize = 0.4;
-    crateMu = 0.15;
+    surfaceMu = 0.10;
     cratePos = [-0.65 -0.65; -0.65 0.65; 0.65 0.65; 0.65 -0.65];
 
     % Figure setup
@@ -54,8 +54,8 @@ function phxex_gyrostab(duration, spinRate, maxAmplitude)
 
     % Two identical platforms; the waves travel along y, so both see the
     % same wave phase and roll about their x axis
-    platA = phx.Body(ax, "Position", [-offset 0 0], "Shape", {"Box", "Size", platSize, "Density", 500, "Color", 1});
-    platB = phx.Body(ax, "Position", [offset 0 0], "Shape", {"Box", "Size", platSize, "Density", 500, "Color", 1});
+    platA = phx.Body(ax, "Position", [-offset 0 0], "Shape", {"Box", "Size", platSize, "Density", 500, "Color", 1}, "Friction", surfaceMu);
+    platB = phx.Body(ax, "Position", [offset 0 0], "Shape", {"Box", "Size", platSize, "Density", 500, "Color", 1}, "Friction", surfaceMu);
     plats = [platA platB];
 
     % Struts carrying the gimbal bearings
@@ -66,7 +66,7 @@ function phxex_gyrostab(duration, spinRate, maxAmplitude)
         "Color", [0.85 0.7 0.5], "Texture", "wood", "TextureBlend", 0.3);
     for p = 1:2
         for i = 1:4
-            crates(p, i) = phx.Body(ax, "Position", plats(p).Position + [cratePos(i, :), platSize(3)/2 + crateSize/2], "Shape", crateShape, "Friction", crateMu);
+            crates(p, i) = phx.Body(ax, "Position", plats(p).Position + [cratePos(i, :), platSize(3)/2 + crateSize/2], "Shape", crateShape, "Friction", surfaceMu);
         end
     end
 

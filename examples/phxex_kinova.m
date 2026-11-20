@@ -36,7 +36,7 @@ function phxex_kinova(sweepTime, Tmax, smooth)
 %   Copyright 2026 HUMUSOFT s.r.o.
 
     arguments
-        sweepTime (1, 1) double {mustBePositive} = 1.2
+        sweepTime (1, 1) double {mustBePositive} = 4.0
         Tmax (1, 1) double {mustBePositive} = 60
         smooth (1, 1) logical = true
     end
@@ -55,7 +55,7 @@ function phxex_kinova(sweepTime, Tmax, smooth)
     % Tool rack and the paddle standing in it
     rackAt = [0.40 -0.38];
     rackTop = 0.10;
-    paddle = [0.16 0.03 0.26];      % width across the sweep, thickness, length
+    paddle = [0.16 0.01 0.26];      % width across the sweep, thickness, length
     bladeTop = rackTop + paddle(3);
     grip = 0.02;                    % how close the tool point comes before it latches
 

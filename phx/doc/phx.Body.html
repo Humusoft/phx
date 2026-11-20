@@ -79,7 +79,9 @@ taken about the new centre as it is; a moving body keeps the velocity of its poi
 <tr><td class="name">Friction</td><td class="dflt">0.5</td>
 <td>Coulomb friction coefficient (&ge;&nbsp;0, no upper bound). A contact resists sliding by
 this coefficient times the normal force, and a flat contact patch also resists turning about
-its normal. The contact combines the values of <em>both</em> bodies as their product. The
+its normal. The contact combines the values of <em>both</em> bodies as their geometric mean,
+<code class="phx-inline">sqrt(mu1*mu2)</code>: two bodies of the same value meet with that value,
+and a frictionless body makes the contact frictionless. The
 <code class="phx-inline">[drag roll spin]</code> triplet of PHX 1.0 is still accepted as
 <code class="phx-inline">[mu 0 0]</code>; nonzero rolling or spinning values are an error, as
 their meaning has changed (see the next two properties).</td></tr>
@@ -94,13 +96,16 @@ With 0 on both bodies (the default), a ball rolls on forever.</td></tr>
 <tr><td class="name">SpinRadius</td><td class="dflt">0</td>
 <td>Spin radius, <span class="phx-unit">m</span> (&ge;&nbsp;0): the effective radius of the
 contact patch that a point contact (a ball on a floor) stands for. The contact resists spinning
-about its normal by <code class="phx-inline">Friction*SpinRadius*N</code>, in addition to what
+about its normal by <code class="phx-inline">mu*SpinRadius*N</code>, with <var>mu</var> the
+contact's combined friction coefficient, in addition to what
 a flat patch resists by its own extent; without friction nothing resists the spin. The contact
 adds the values of both bodies; about 2/3 of the radius of the real patch.</td></tr>
 <tr><td class="name">Restitution</td><td class="dflt">0</td>
-<td>Restitution (bounciness) coefficient (&ge;&nbsp;0); 0&nbsp;=&nbsp;no bounce. The resulting
-bounce of a contact combines the values of <em>both</em> colliding bodies as their product, so both must be
-nonzero for the contact to bounce.</td></tr>
+<td>Restitution (bounciness) coefficient (&ge;&nbsp;0); 0&nbsp;=&nbsp;no bounce. A contact
+bounces with the <em>smaller</em> of the two colliding bodies' values, so both must be nonzero for
+the contact to bounce: a ball of 0.8 on a default floor (0) does not bounce. A body of 1, an ideal
+rigid surface, leaves the other body's value as it is, and a ball of restitution <var>e</var>
+dropped onto it rises to <var>e</var>&sup2; of the drop height.</td></tr>
 <tr><td class="name">Collisions</td><td class="dflt">true</td>
 <td>Enable or disable collisions for this body.</td></tr>
 <tr><td class="name">SurfaceVelocity</td><td class="dflt">[0 0 0]</td>

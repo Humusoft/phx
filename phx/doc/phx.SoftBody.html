@@ -75,8 +75,8 @@ that of the soft body. Box, Sphere, Cylinder, Cone, Capsule and Tube generate me
 <tr><td class="name">VertexRadius</td><td class="dflt">0</td><td>Radius of the spheres the vertices collide as, <span class="phx-unit">m</span>.</td></tr>
 <tr><td class="name">Iterations</td><td class="dflt">5</td><td>Solver substeps of the soft body per simulation step.</td></tr>
 <tr><td class="name">Damping</td><td class="dflt">0</td><td>Damping of the vertex velocities, dv/dt&nbsp;=&nbsp;&minus;Damping&middot;v, <span class="phx-unit">1/s</span>.</td></tr>
-<tr><td class="name">Friction</td><td class="dflt">0.5</td><td>Friction coefficient; a contact combines the values of both bodies as their product.</td></tr>
-<tr><td class="name">Restitution</td><td class="dflt">0</td><td>Restitution (bounciness) coefficient, 0 = no bounce.</td></tr>
+<tr><td class="name">Friction</td><td class="dflt">0.5</td><td>Friction coefficient; a contact combines the values of both bodies as their geometric mean, <code class="phx-inline">sqrt(mu1*mu2)</code>.</td></tr>
+<tr><td class="name">Restitution</td><td class="dflt">0</td><td>Restitution (bounciness) coefficient, 0 = no bounce; a contact bounces with the smaller of the two bodies' values.</td></tr>
 <tr><td class="name">Color</td><td class="type">1&times;3 double</td><td>Color of the drawn mesh.</td></tr>
 <tr><td class="name">CurrentVertices</td><td class="type">N&times;3 double (read-only)</td><td>Present vertex positions in the global frame: the deformed mesh while the simulation runs, the placed rest shape before.</td></tr>
 </table>

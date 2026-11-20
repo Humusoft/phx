@@ -120,7 +120,7 @@ roll or spin raises `phx:Body:frictionTriplet`.
   - `RollingResistance` — arm of the normal force resisting rolling; for a body of
     radius `R` with a rolling-resistance coefficient `Crr`, `RollingResistance = Crr*R`.
   - `SpinRadius` — effective radius of the contact patch; resists spinning about the
-    contact normal by `Friction*SpinRadius*N`.
+    contact normal by `mu*SpinRadius*N` (`mu` the contact's combined friction).
 
   Leave both at 0 in the conversion; never pick a value yourself. Where the 1.x code
   had a nonzero roll or spin (or the comments say a body should come to rest), report it
@@ -128,6 +128,11 @@ roll or spin raises `phx:Body:frictionTriplet`.
   orders: a steel wheel on a rail about 0.001, a car tyre on asphalt about 0.01).
 - The same applies to the `Friction` option of `phx.assembly.arena`, `chain`,
   `scatter` and `wall` (now scalar).
+- A contact now combines the two coefficients as their geometric mean
+  `sqrt(mu1*mu2)`, not their product: two bodies of 0.5 meet at 0.5 instead of 0.25.
+  Keep `mu` as written and report it: squaring the `Friction` of every body (and of
+  the assembly options) gives each contact exactly its 1.x value, for the user to
+  choose where results must match 1.x.
 
 ### Limits of GenericJoint and BushingJoint
 
@@ -278,8 +283,12 @@ either way.
   which missed the bending moment. Expected values in user code or tests may change.
 - `applyForce`/`applyTorque` with several rows: each row is now a force of its own (the
   1.x resultant was wrong). No rewrite; report if results were compared to 1.x numbers.
-- Contacts are solved differently (more accurate friction, less sinking, no sleeping):
-  outcomes that hinge on contacts may change.
+- Contacts are solved differently (more accurate friction, less sinking, no sleeping,
+  friction combined as the geometric mean): outcomes that hinge on contacts may change.
+- A contact's `Restitution` is the smaller of the two bodies' values, not their product.
+  Pairs where one body has 0 or 1 bounce as before; pairs with both values between bounce
+  more (0.6 and 0.7: 0.6 instead of 0.42). Keep the values as written and report such
+  pairs with their 1.x product, for the user to decide.
 
 ### Workarounds
 

@@ -28,11 +28,11 @@ function phxex_soilparticles
     shift = s*(rand(2, size(z, 3)) - 0.5);
     x = x + reshape(shift(1, :), 1, 1, []);
     y = y + reshape(shift(2, :), 1, 1, []);
-    gravel = phx.Particles(ax, "Positions", [x(:) y(:) z(:)], "Radius", r, "Density", 2600, ...
-        "Color", [0.9 0.6 0.4], "RandomTint", 0.5, "MarkerSize", 18, "Sleeping", false, "Friction", 0.4);
+    phx.Particles(ax, "Positions", [x(:) y(:) z(:)], "Radius", r, "Density", 2600, ...
+        "Color", [0.9 0.6 0.4], "RandomTint", 0.5, "MarkerSize", 18, "Sleeping", false, "Friction", 0.2);
 
     % Create a kinematic body (bucket of 1.2 m) for interaction
-    exc = phx.Body(ax, "Type", "kinematic", "Position", [0 0 0.66], "Friction", 0.1, "Shape", {resdir+"Bucket.stl", "Scale", 0.012, "Centered", true, "Color", 0.4, "Envelope", "concave", "Style", "flat", "Texture", "stone", "TextureBlend", 0.2});
+    exc = phx.Body(ax, "Type", "kinematic", "Position", [0 0 0.66], "Friction", 0.1, "Shape", {resdir+"Bucket.stl", "Scale", 0.012, "Centered", true, "Color", 0.4, "Envelope", "concave", "Style", "flat", "Texture", "stone", "TextureBlend", 0.2}, "Friction", 0.1);
 
     % % Add planar shadows
     % phx.PlanarShadow(exc, "Anchor", ground, "Position", [0 0 0.03]);

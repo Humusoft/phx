@@ -44,7 +44,8 @@ function out = phxex_bowling(Options)
         "ballR", 0.1085, "ballM", 6.8, "pinH", 0.381, "pinM", 1.531, ...
         "pinSpace", 0.3048);
 
-    % Oil pattern: friction of the lane segments from the foul line back
+    % Oil pattern: friction between the ball and the lane segments from the
+    % foul line back
     L.edges = [0 13 15 L.xHead + L.deck];
     L.mu = [0.03 0.10 0.28];
 
@@ -147,12 +148,15 @@ end
 function scene = makeScene(ax, L)
 % Lane segments, ball and pins. The pin profile is shifted so that the body
 % origin (which is the centre of mass) sits low, as it does in a real pin.
+% A contact's friction is the geometric mean of its two bodies' values: the
+% ball has 1, so a segment of L.mu^2 meets it at L.mu, and pins of 0.08^2
+% meet it at 0.08. Its restitution is the smaller of the two values.
 
     for k = 1:numel(L.mu)
         len = L.edges(k+1) - L.edges(k);
         phx.Body(ax, "Type", "static", "Position", [L.edges(k) + len/2, 0, -0.05], ...
             "Shape", {"Box", "Size", [len L.width 0.1], "Color", [0.78 0.62 0.38] + 0.06*(k - 2)}, ...
-            "Friction", L.mu(k), "Restitution", 0.1);
+            "Friction", L.mu(k)^2, "Restitution", 0.07);
     end
 
     % Gutters, so a missed throw leaves the lane instead of sliding along it
@@ -163,7 +167,7 @@ function scene = makeScene(ax, L)
 
     ball = phx.Body(ax, "Position", [0.3 0 L.ballR + 0.001], ...
         "Shape", {"Sphere", "Radius", L.ballR, "Color", [0.15 0.2 0.45], "Texture", "stone", "TextureBlend", 0.3}, ...
-        "Friction", 1.0, "Restitution", 0.6);
+        "Friction", 1.0, "Restitution", 0.42);
     ball.Mass = L.ballM;
     ball.Inertia = 2/5*L.ballM*L.ballR^2*[1 1 1];
 
@@ -179,7 +183,7 @@ function scene = makeScene(ax, L)
     shp = phx.shape.Revolution("Profile", prof, "Segments", 24, "Envelope", "cones", "Color", 1);
     for k = 1:10
         pins(k) = phx.Body(ax, "Position", [L.xHead + layout(k, 1), layout(k, 2), cg + 0.002], ...
-            "Shape", shp, "Friction", 0.08, "Restitution", 0.7, "Mass", L.pinM, "Inertia", [0.0095 0.0095 0.0018]);
+            "Shape", shp, "Friction", 0.08^2, "Restitution", 0.49, "Mass", L.pinM, "Inertia", [0.0095 0.0095 0.0018]);
     end
 
     % The full rack: every throw starts by restoring this state

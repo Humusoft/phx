@@ -148,7 +148,7 @@ classdef FlexibleBody < phx.base.Object
         Damping (1, 1) double {mustBeNonnegative} = 0
 
         % Friction coefficient; a contact combines the values of both bodies
-        % as their product
+        % as their geometric mean, sqrt(mu1*mu2)
         Friction (1, 1) double {mustBeNonnegative} = 0.5
 
         % Colormap (Nx3, RGB in 0-1) that colors the surface by the von

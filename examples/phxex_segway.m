@@ -42,8 +42,8 @@ function phxex_segway(Kp, Kd, push)
 %   Copyright 2026 HUMUSOFT s.r.o.
 
     arguments
-        Kp   (1, 1) double = 6000
-        Kd   (1, 1) double = 3000
+        Kp   (1, 1) double = 4000
+        Kd   (1, 1) double = 2000
         push (1, 1) double = -40000
     end
 
@@ -55,7 +55,7 @@ function phxex_segway(Kp, Kd, push)
     % Ground
     phx.Body(ax, "Type", "static", "Position", [-15 0 -0.1], ...
         "Shape", {"Box", "Size", [40 30 0.2], "Color", 1, "Material", "matte", ...
-                  "Texture", "xor", "TextureBlend", 0.4}, "Friction", 0.9);
+                  "Texture", "xor", "TextureBlend", 0.4});
 
     % Dimensions
     wheelRad = 0.35;          % wheel radius
@@ -71,9 +71,9 @@ function phxex_segway(Kp, Kd, push)
 
     % Obstacle
     phx.Body(ax, "Position", [-4 0 1], ...
-        "Shape", {"Cylinder", "Axis", "y", "Diameter", 0.2, "Height", 2, "Color", [0.9 0.9 0]}, "Friction", 1);
+        "Shape", {"Cylinder", "Axis", "y", "Diameter", 0.2, "Height", 2, "Color", [0.9 0.9 0]});
     phx.Body(ax, "Position", [-3.8 0 2], ...
-        "Shape", {"Box", "Size", [3 2 0.05], "Color", [0.9 0.5 0.5], "Density", 100}, "Friction", 1);
+        "Shape", {"Box", "Size", [3 2 0.05], "Color", [0.9 0.5 0.5], "Density", 100});
 
     % Tall wall, set at an angle across the course so that the ray fan reads
     % a different free distance to the left and to the right of the robot.
@@ -82,7 +82,7 @@ function phxex_segway(Kp, Kd, push)
 
     % Low wall of loose bricks, standing below the ray fan
     phx.assembly.wall(ax, "Size", [3 0.2 1.0], "Rows", 5, "Columns", 5, ...
-        "Position", [-28 -3.4 0], "EulerAngles", [0 0 pi/2], ...
+        "Position", [-28 -2.0 0], "EulerAngles", [0 0 pi/2], ...
         "Color", [0.8 0.45 0.35], "Density", 900);
 
     % Two wheels as cylinders, axis along Y (the track direction)

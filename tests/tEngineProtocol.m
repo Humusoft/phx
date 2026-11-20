@@ -451,8 +451,8 @@ classdef tEngineProtocol < PhxTestCase
             tc.verifyEqual(phxEngine('get', w, h, 'position'), [1; 0; 0], "AbsTol", 1e-6);
         end
 
-        function frictionOfTheTwoBodiesMultiplies(tc)
-            % A box sliding on a floor decelerates by mu_box*mu_floor*g
+        function frictionIsTheGeometricMeanOfTheTwoBodies(tc)
+            % A box sliding on a floor decelerates by sqrt(mu_box*mu_floor)*g
             w = tc.newWorld;
             phxEngine('set', w, tc.addFloor(w), 'friction', 0.8);
             h = tc.addBox(w, 2, [0 0 0.2], 0.4*[1 1 1]);
@@ -462,7 +462,7 @@ classdef tEngineProtocol < PhxTestCase
             v0 = phxEngine('get', w, h, 'linvel');
             tc.settle(w, 0.2);
             v1 = phxEngine('get', w, h, 'linvel');
-            tc.verifyEqual((v0(1) - v1(1))/0.2, 0.5*0.8*tc.G, "RelTol", 0.03);
+            tc.verifyEqual((v0(1) - v1(1))/0.2, sqrt(0.5*0.8)*tc.G, "RelTol", 0.03);
         end
 
         function restitutionSetsTheBounce(tc)
@@ -498,7 +498,7 @@ classdef tEngineProtocol < PhxTestCase
             w = tc.newWorld;
             phxEngine('set', w, tc.addFloor(w), 'friction', 1);
             h = tc.addBox(w, 2, [0 0 0.01], s);
-            phxEngine('set', w, h, 'friction', 0.5);
+            phxEngine('set', w, h, 'friction', 0.25);   % 0.5 with the floor's 1
             phxEngine('set', w, h, 'linvel', [1 0 0]);
             phxEngine('set', w, h, 'angvel', [0 0 20]);
             slideStops = NaN;
@@ -540,6 +540,29 @@ classdef tEngineProtocol < PhxTestCase
             % landing ends within about 1e-8 m of the floor
             touch = find(diff(z) > 0, 1);
             tc.verifyEqual(max(z(touch:end)), 0.64, "RelTol", 0.15, "Height of the first bounce");
+        end
+
+        function restitutionIsTheSmallerOfTheTwoBodies(tc)
+            % A ball dropped from 1 m bounces with the smaller of its and
+            % the floor's restitution, whichever body has it: 0.8 and 0.5
+            % either way round rise to 0.5^2 = 0.25 m
+            r = 0.1;
+            for e = [0.8 0.5; 0.5 0.8]'
+                w = tc.newWorld;
+                phxEngine('set', w, tc.addFloor(w), 'restitution', e(1));
+                h = phxEngine('add', w, 'sphere', 2, r, tEngineProtocol.pose([0 0 1 + r]), 1, 0.4*r^2*[1 1 1]);
+                phxEngine('set', w, h, 'restitution', e(2));
+                z = nan(1, round(1.5/tc.Dt));
+                for k = 1:numel(z)
+                    [ids, T] = phxEngine('step', w, tc.Dt);
+                    if any(ids == h)
+                        z(k) = T(3, 4, ids == h) - r;
+                    end
+                end
+                touch = find(diff(z) > 0, 1);
+                tc.verifyEqual(max(z(touch:end)), 0.25, "RelTol", 0.15, ...
+                    sprintf("Bounce with floor %.1f and ball %.1f", e(1), e(2)));
+            end
         end
 
         function ballCrossesASeamWithoutHopping(tc)
@@ -706,12 +729,12 @@ classdef tEngineProtocol < PhxTestCase
             % a stack twitch at 2 rad/s and topple at 15 instead of 23 deg.)
             w = tc.newWorld;
             pallet = tc.addBox(w, 1, [0 0 0], [8 8 0.5]);
-            phxEngine('set', w, pallet, 'friction', 0.5);
+            phxEngine('set', w, pallet, 'friction', 0.25);
             offsets = [0.02 -0.03; -0.04 0.01; 0.03 0.04; -0.01 -0.02; 0.04 0.02; -0.03 0.03];
             boxes = zeros(1, 6, "uint64");
             for i = 1:6
                 boxes(i) = tc.addBox(w, 2, [offsets(i, :) 0.25 + (i - 0.5) + 0.02*i], [3 3 1], 1, [0.1 0.1 0.1]);
-                phxEngine('set', w, boxes(i), 'friction', 0.5);
+                phxEngine('set', w, boxes(i), 'friction', 0.25);
             end
             tc.settle(w, 0.5);
             n = round(1.6/tc.Dt);
@@ -731,12 +754,12 @@ classdef tEngineProtocol < PhxTestCase
 
         function kinematicBodyTiltedByPoseHoldsWhatRestsOnIt(tc)
             % Tilting a kinematic plate by its pose turns a box resting on
-            % it along, held by static friction (tan 0.15 < 0.8*0.8)
+            % it along, held by static friction (tan 0.15 < 0.64)
             w = tc.newWorld;
             plate = tc.addBox(w, 1, [0 0 -0.1], [4 4 0.2]);
-            phxEngine('set', w, plate, 'friction', 0.8);
+            phxEngine('set', w, plate, 'friction', 0.64);
             h = tc.addBox(w, 2, [1 0 0.2], 0.4*[1 1 1]);
-            phxEngine('set', w, h, 'friction', 0.8);
+            phxEngine('set', w, h, 'friction', 0.64);
             tc.settle(w, 0.1);
             n = round(1/tc.Dt);
             for k = 1:n
@@ -1050,9 +1073,9 @@ classdef tEngineProtocol < PhxTestCase
             % and slows by mu r m g / I; without friction nothing resists
             r = 0.1;
             I = 0.4*r^2;
-            tc.verifyEqual(tc.spinDeceleration([0.5 0 0.01], [1 0 0]), 0.5*0.01*tc.G/I, ...
+            tc.verifyEqual(tc.spinDeceleration([0.25 0 0.01], [1 0 0]), 0.5*0.01*tc.G/I, ...
                 "RelTol", 0.01, "Ball alone");
-            tc.verifyEqual(tc.spinDeceleration([0.5 0 0.005], [0.5 0 0.005]), 0.25*0.01*tc.G/I, ...
+            tc.verifyEqual(tc.spinDeceleration([0.25 0 0.005], [0.25 0 0.005]), 0.25*0.01*tc.G/I, ...
                 "RelTol", 0.01, "Shared by ball and floor");
             tc.verifyEqual(tc.spinDeceleration([0 0 0.01], [1 0 0]), 0, ...
                 "AbsTol", 1e-3, "No friction");

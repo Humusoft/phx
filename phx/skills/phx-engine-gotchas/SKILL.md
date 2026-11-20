@@ -202,8 +202,8 @@ h = phxEngine('add', w, kind, [hA hB], TA, TB, mutualCollisions, extra...);
 
 A revolute joint turns about Z of its frames with the zero angle where their X axes
 coincide; a prismatic joint slides along Z; a cylindrical joint does both. Body-level knobs that write straight
-through to the engine: `'restitution'` (Body.Restitution, contact bounciness combined
-from both bodies) alongside the existing `'friction'`/`'collisions'`.
+through to the engine: `'restitution'` (Body.Restitution, contact bounciness: the
+smaller of the two bodies' values) alongside the existing `'friction'`/`'collisions'`.
 
 **Joint fields** (all settable at any time):
 

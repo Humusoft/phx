@@ -107,10 +107,11 @@ classdef SoftBody < phx.base.Object
         Damping (1, 1) double {mustBeNonnegative} = 0
 
         % Friction coefficient; a contact combines the values of both bodies
-        % as their product
+        % as their geometric mean, sqrt(mu1*mu2)
         Friction (1, 1) double {mustBeNonnegative} = 0.5
 
-        % Restitution (bounciness) coefficient, 0 = no bounce
+        % Restitution (bounciness) coefficient, 0 = no bounce; a contact
+        % bounces with the smaller of the two bodies' values
         Restitution (1, 1) double {mustBeNonnegative} = 0
     end
 

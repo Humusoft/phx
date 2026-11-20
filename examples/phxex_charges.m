@@ -12,7 +12,7 @@ function phxex_charges
     % Physical model: an arena keeps the cubes in; its origin is lifted so
     % that the floor surface stays at z = 0.5, where the cubes rest
     parts = phx.assembly.arena("Size", [50 50 1.5], "Thickness", 1, "Position", [0 0 0.5], "Color", [1 1 1]);
-    parts.floor.Friction = 0.01;
+    parts.floor.Friction = 0;
     set(parts.walls, "Color", [0.8 0.8 0.8]);
 
     % Create dynamic objects

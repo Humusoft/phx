@@ -88,8 +88,13 @@ than coefficients:</p>
 resists rolling (a torque of up to <code class="phx-inline">RollingResistance*N</code>).</li>
 <li><code class="phx-inline">SpinRadius</code> &mdash; the effective radius of the contact patch,
 which resists spinning about the contact normal by
-<code class="phx-inline">Friction*SpinRadius*N</code>.</li>
+<code class="phx-inline">mu*SpinRadius*N</code>, with <var>mu</var> the contact's combined
+friction coefficient.</li>
 </ul>
+<p>A contact combines the friction coefficients of its two bodies as their geometric mean,
+<code class="phx-inline">sqrt(mu1*mu2)</code>, no longer as their product: two bodies of 0.5 now meet
+at 0.5, not 0.25. To keep the contact friction of a 1.x scene, square the
+<code class="phx-inline">Friction</code> of every body; each contact then has its old value exactly.</p>
 <p>Both default to 0 and add up over the two bodies of a contact. A triplet
 <code class="phx-inline">[mu 0 0]</code> is still accepted as <code class="phx-inline">mu</code>;
 a nonzero rolling or spinning value raises the error
@@ -274,8 +279,13 @@ scene, negate the value that was assigned to <code class="phx-inline">Environmen
 its Coulomb value at any speed, and bodies sink less into each other. Scenes whose outcome depends
 on a contact (a toppling stack, a gripper holding a part, a wheel on a slope) may end differently
 than in 1.x.</li>
-<li>Rolling and spinning resistance are defined anew (see <a href="#friction">Friction of
-bodies</a>).</li>
+<li>Rolling and spinning resistance are defined anew, and the friction of a contact is the
+geometric mean of the two bodies' values instead of their product (see <a href="#friction">Friction
+of bodies</a>).</li>
+<li>The restitution of a contact is the smaller of the two bodies' values instead of their product.
+A contact where one body has 0 (the default) or 1 bounces as before; where both have values between,
+it bounces more: 0.6 and 0.7 give 0.6 instead of 0.42. To keep the 1.x bounce of such a pair, give
+one body the old product and the other at least as much.</li>
 <li>Bodies never fall asleep: a body at rest is simulated like any other, and nothing has to wake it
 when something touches it.</li>
 <li>The pose of a kinematic body that is set once before <code class="phx-inline">step(interval,

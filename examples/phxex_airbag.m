@@ -30,7 +30,7 @@ function phxex_airbag(withAirbag)
     [viewer, ax] = phx.extra.Viewer("clear");
 
     % Floor and wall; the floor is slippery, the sled's deck is not (the
-    % friction of a contact is the product of the two bodies' values)
+    % friction of a contact is the geometric mean of the two bodies' values)
     wallX = 8;
     phx.Body(ax, "Type", "static", "Position", [4 0 -0.1], "Friction", 0.02, ...
         "Shape", {"Box", "Size", [20 4 0.2], "Color", [0.7 0.7 0.7], "Texture", "tiles"});

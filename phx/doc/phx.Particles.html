@@ -53,8 +53,8 @@ start empty and get its particles by <code class="phx-inline">add</code>.</p>
 <h3 class="phx-h3">Settings (apply at any time)</h3>
 <table class="phx-tbl">
 <tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
-<tr><td class="name">Friction</td><td class="dflt">0.5</td><td>Friction coefficient; a contact combines the values of both bodies as their product.</td></tr>
-<tr><td class="name">Restitution</td><td class="dflt">0</td><td>Restitution (bounciness) coefficient, 0 = no bounce.</td></tr>
+<tr><td class="name">Friction</td><td class="dflt">0.5</td><td>Friction coefficient; a contact combines the values of both bodies as their geometric mean, <code class="phx-inline">sqrt(mu1*mu2)</code>.</td></tr>
+<tr><td class="name">Restitution</td><td class="dflt">0</td><td>Restitution (bounciness) coefficient, 0 = no bounce; a contact bounces with the smaller of the two bodies' values.</td></tr>
 <tr><td class="name">LinearDamping</td><td class="dflt">0</td><td>Damping of the linear velocities, dv/dt&nbsp;=&nbsp;&minus;LinearDamping&middot;v, <span class="phx-unit">1/s</span>.</td></tr>
 <tr><td class="name">AngularDamping</td><td class="dflt">0</td><td>Damping of the angular velocities of rotating particles, <span class="phx-unit">1/s</span>.</td></tr>
 <tr><td class="name">SelfCollisions</td><td class="dflt">true</td><td>Collisions of the particles with each other.</td></tr>

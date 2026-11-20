@@ -28,7 +28,7 @@ function phxex_walker(freq, duty)
 
     arguments
         freq (1, 1) double = 1.0
-        duty (1, 1) double = 0.90
+        duty (1, 1) double = 0.82
     end
 
     % Robot
@@ -64,7 +64,7 @@ function phxex_walker(freq, duty)
     tex = phx.base.Shape.tiles(1024, 16);
     phx.Body("Type", "static", "Position", [5 0 -0.1], ...
         "Shape", {"Box", "Size", [12 12 0.2], "Color", 0.8, "Texture", tex}, ...
-        "Friction", 10);
+        "Friction", 1);
     chassis = phx.Body("Position", [0 0 H+bx(3)/2], "Mass", 4, ...
         "Shape", {"Box", "Size", bx, "Color", [0.30 0.45 0.70]});
 
@@ -82,7 +82,7 @@ function phxex_walker(freq, duty)
         thigh = phx.Body("Position", hp + (L/2)*d1, "EulerAngles", [0 qh 0], ...
             "Mass", 0.25, "Shape", {"Capsule", "Radius", Rl, "Height", L, "Color", [0.75 0.75 0.78]});
         shank = phx.Body("Position", hp + L*d1 + (L/2)*d2, "EulerAngles", [0 qh+qk 0], ...
-            "Mass", 0.2, "Friction", 10, ...
+            "Mass", 0.2, "Friction", 1, ...
             "Shape", {"Capsule", "Radius", Rl, "Height", L, "Color", [0.55 0.55 0.60]});
 
         hipj(k) = phx.RevoluteJoint(chassis, thigh, ...
