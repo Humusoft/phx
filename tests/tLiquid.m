@@ -128,7 +128,8 @@ classdef tLiquid < PhxTestCase
             rho = L.Densities;
             tc.verifySize(rho, [125 1]);
             tc.verifyEqual(rho(centre), 1000, "RelTol", 1e-6);
-            tc.verifyEqual(L.Pressures(centre), 0, "AbsTol", 1e-3);
+            % The pressure of that density error: rho0*c^2*1e-6
+            tc.verifyEqual(L.Pressures(centre), 0, "AbsTol", 1000*L.SoundSpeed^2*1e-6);
             L.Density = 800;
             tc.verifyEqual(L.Densities(centre), 800, "RelTol", 1e-6);
         end

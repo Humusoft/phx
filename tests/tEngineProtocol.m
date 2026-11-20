@@ -2389,8 +2389,10 @@ classdef tEngineProtocol < PhxTestCase
                 tc.verifySize(rho, [1 125]);
                 centre = find(all(P == 0, 1));
                 if squeeze == 1
-                    tc.verifyEqual(rho(centre), rho0, "RelTol", 1e-6);   % neighbour offsets in single precision
-                    tc.verifyEqual(p(centre), 0, "AbsTol", 1e-6);
+                    % Positions and neighbour offsets in single precision,
+                    % and the pressure of that density error
+                    tc.verifyEqual(rho(centre), rho0, "RelTol", 1e-6);
+                    tc.verifyEqual(p(centre), 0, "AbsTol", rho0*c^2*1e-6);
                 else
                     tc.verifyGreaterThan(rho(centre), rho0*1.02);
                     tc.verifyEqual(p(centre), rho0*c^2/7*((rho(centre)/rho0)^7 - 1), "RelTol", 1e-9);
@@ -2402,7 +2404,9 @@ classdef tEngineProtocol < PhxTestCase
 
         function fluidForcesConserveMomentum(tc)
             % A squeezed block in free space expands: its outer particles move
-            % outwards and the momentum of the block stays zero.
+            % outwards and the momentum of the block stays zero, up to the
+            % single precision of the vertex positions (each step derives
+            % the velocities from them).
             r = 0.01;
             [x, y, z] = ndgrid(-2:2);
             P = 2*r*0.97*[x(:) y(:) z(:)]';
@@ -2413,7 +2417,7 @@ classdef tEngineProtocol < PhxTestCase
                 phxEngine('step', w, 2.5e-4);
             end
             V = phxEngine('get', w, g, 'velocities');
-            tc.verifyEqual(sum(V, 2), [0; 0; 0], "AbsTol", 1e-5*max(abs(V), [], "all"));
+            tc.verifyEqual(sum(V, 2), [0; 0; 0], "AbsTol", 1e-4*max(abs(V), [], "all"));
             corner = find(all(P == 2*r*0.97*2, 1));
             tc.verifyGreaterThan(V(:, corner), [0; 0; 0], "The corner particle moves outwards.");
         end
