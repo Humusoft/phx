@@ -1,12 +1,20 @@
-function [V, F, N] = computeLiquidSurface(P, d)
+function [V, F, N] = computeLiquidSurface(P, d, threads) %#ok<INUSD>
 %phx.internal.computeLiquidSurface Surface of a liquid of particles
 % P: 3xN array of particle positions
 % d: rest spacing of the particles
-% V: 3xK array of surface vertices
-% F: Mx3 array of triangles (vertex indices, one-based)
-% N: 3xK array of unit vertex normals, pointing out of the liquid
+% threads: threads of the MEX build (default maxNumCompThreads); unused
+%    here
+% V: 3xK single array of surface vertices
+% F: 3xM uint32 array of triangles, one per column (vertex indices,
+%    one-based)
+% N: 3xK single array of unit vertex normals, pointing out of the liquid
 %
-% The particles are spread trilinearly onto a grid of cells d/2, the grid
+% The outputs are in the types a TriangleStrip takes: F(:)' is its
+% VertexIndices.
+%
+% The particles are spread trilinearly onto a grid of cells d/2 aligned
+% with the world origin (the surface does not shift as the liquid's
+% extent changes), the grid
 % is smoothed by a separable Gaussian of 0.6 d, and the surface is the
 % level 0.5 of that field normalised so that a liquid at rest reads 1 in
 % its interior. isosurface without vertex sharing is welded by the grid
@@ -24,12 +32,15 @@ function [V, F, N] = computeLiquidSurface(P, d)
 %   Licensed under the PHX Preview License v1.0; see LICENSE and NOTICE.
 %   ^..^
 
-    V = zeros(3, 0);
-    F = zeros(0, 3);
-    N = zeros(3, 0);
+    V = zeros(3, 0, "single");
+    F = zeros(3, 0, "uint32");
+    N = zeros(3, 0, "single");
     if isempty(P)
         return
     end
+    Fd = zeros(0, 3);
+    Vd = zeros(3, 0);
+    Nd = zeros(3, 0);
 
     % Clusters of touching blocks
     block = floor((P - min(P, [], 2))/(4*d));
@@ -45,10 +56,13 @@ function [V, F, N] = computeLiquidSurface(P, d)
     ofParticle = cluster(ofParticle);
     for c = 1:max(ofParticle)
         [Vc, Fc, Nc] = surfaceOf(P(:, ofParticle == c), d);
-        F = [F; Fc + size(V, 2)]; %#ok<AGROW>
-        V = [V Vc]; %#ok<AGROW>
-        N = [N Nc]; %#ok<AGROW>
+        Fd = [Fd; Fc + size(Vd, 2)]; %#ok<AGROW>
+        Vd = [Vd Vc]; %#ok<AGROW>
+        Nd = [Nd Nc]; %#ok<AGROW>
     end
+    V = single(Vd);
+    F = uint32(Fd');
+    N = single(Nd);
 end
 
 function [V, F, N] = surfaceOf(P, d)
@@ -61,7 +75,7 @@ function [V, F, N] = surfaceOf(P, d)
 
     % Grid around the particles with room for the kernel
     pad = (kr + 2)*h;
-    lo = min(P, [], 2) - pad;
+    lo = floor((min(P, [], 2) - pad)/h)*h;   % on the world lattice of cells h
     dims = ceil((max(P, [], 2) + pad - lo)/h)' + 1;
 
     % Trilinear splat: 8 cells per particle, one accumarray

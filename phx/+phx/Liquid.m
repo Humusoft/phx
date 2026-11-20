@@ -230,12 +230,13 @@ classdef Liquid < phx.base.ParticleGroup
 
         function drawSurface(obj, P)
             % The surface over the particles at P (3xN)
+            % (single vertices and normals, uint32 triangles by columns:
+            % what the TriangleStrip takes as it is)
             [V, F, N] = phx.internal.computeLiquidSurface(P, obj.Spacing);
             if obj.Strip
-                set(obj.hS, "VertexData", single(V), "NormalData", single(N), ...
-                    "VertexIndices", uint32(reshape(F', 1, [])));
+                set(obj.hS, "VertexData", V, "NormalData", N, "VertexIndices", reshape(F, 1, []));
             else
-                set(obj.hS, "Faces", F, "Vertices", V', "VertexNormals", N');
+                set(obj.hS, "Faces", double(F'), "Vertices", double(V'), "VertexNormals", double(N'));
             end
         end
         function s = fluidStruct(obj)
