@@ -45,6 +45,11 @@ classdef Shape
         % Surface style
         Style {mustBeMember(Style, ["smooth", "edged", "flat", "wireframe"])} = "smooth"
 
+        % Opacity of the surface (0 = invisible, 1 = opaque), multiplying
+        % the alpha of a texture. Any value below 1 turns antialiasing off
+        % in the whole figure, as all transparent graphics do.
+        Alpha (1, 1) double {mustBeInRange(Alpha, 0, 1)} = 1
+
         % Use patch object for drawing
         ForcePatch (1, 1) logical = false
     end
@@ -267,8 +272,11 @@ classdef Shape
 
                 % Apply patch-only visual properties
                 obj.applyStyle(go, obj.Style);
+                if obj.Alpha < 1
+                    go.FaceAlpha = obj.Alpha;
+                end
             else
-                clr = uint8([obj.Color 1]*255)';
+                clr = uint8([obj.Color obj.Alpha]*255)';
                 vertices = single(vertices)';
                 normals = single(normals)';
                 faces = uint32(faces)';
@@ -280,7 +288,14 @@ classdef Shape
                 end
                 if isempty(texture)
                     go = matlab.graphics.primitive.world.TriangleStrip('Parent', target, 'VertexIndices', faces, 'VertexData', vertices, 'NormalData', normals, 'NormalBinding', normBinding, 'ColorData', clr, 'ColorBinding', 'object', 'HitTest', 'on', 'FaceOffsetFactor', 0, 'FaceOffsetBias', 0);
+                    % truecoloralpha only for real transparency (antialiasing)
+                    if obj.Alpha < 1
+                        go.ColorType = 'truecoloralpha';
+                    end
                 else
+                    if obj.Alpha < 1
+                        texture(4, :) = texture(4, :)*obj.Alpha;
+                    end
                     uvs = single(uvs)';
                     % Texture data is RGBA; use truecoloralpha only for real
                     % transparency, because it turns antialiasing off
