@@ -1181,6 +1181,133 @@ classdef tEngineProtocol < PhxTestCase
         end
     end
 
+    % Compliant contacts (body field 'contact', protocol 2 step T)
+    methods (Test, TestTags = {'Engine'})
+        function softContactSinksByTheWeightOverTheStiffness(tc)
+            % A 10 kg box resting on a soft contact sinks m g / k into the
+            % floor, at a coarse step as at a fine one, and stays level
+            k = 1e6;
+            for dt = [1/60 tc.Dt]
+                [d, speed] = tc.restOnSoftContact(10, [k 2*sqrt(k*10)], dt, 1);
+                tc.verifyEqual(d, 10*tc.G/k, "RelTol", 0.01, sprintf("Penetration at dt %.4f s", dt));
+                tc.verifyLessThan(speed, 1e-3, sprintf("Speed at rest at dt %.4f s", dt));
+            end
+        end
+
+        function softImpactFollowsTheSpringDamperLaw(tc)
+            % A 1 kg ball dropped 0.2 m onto a soft contact, at a step of
+            % a fortieth of the contact time pi sqrt(m/k), sinks and rebounds
+            % as the unilateral Kelvin-Voigt law gives (k 1e5; damping
+            % ratios 0 and 0.3)
+            k = 1e5;
+            for zeta = [0 0.3]
+                c = 2*zeta*sqrt(k);
+                [rebound, depth] = tc.dropOnSoftContact([k c], [Inf 0], 1/4000);
+                [refRebound, refDepth] = tEngineProtocol.kelvinVoigtDrop(1, k, c, 0.2, tc.G);
+                tc.verifyEqual(rebound, refRebound, "RelTol", 0.03, sprintf("Rebound at zeta %.1f", zeta));
+                tc.verifyEqual(depth, refDepth, "RelTol", 0.03, sprintf("Largest penetration at zeta %.1f", zeta));
+            end
+        end
+
+        function softContactsCombineInSeries(tc)
+            % Ball 2e5 on a floor 2e5 (dampers 40 and 40) is the contact
+            % 1e5 with 20, as is a soft floor under a rigid ball
+            [r0, d0] = tc.dropOnSoftContact([1e5 20], [Inf 0], 1/2000);
+            [r1, d1] = tc.dropOnSoftContact([2e5 40], [2e5 40], 1/2000);
+            [r2, d2] = tc.dropOnSoftContact([Inf 0], [1e5 20], 1/2000);
+            tc.verifyEqual([r1 r2], [r0 r0], "RelTol", 1e-3, "Rebound");
+            tc.verifyEqual([d1 d2], [d0 d0], "RelTol", 1e-3, "Largest penetration");
+        end
+
+        function softContactNeverPulls(tc)
+            % A heavily damped soft contact (damping ratio 3) slows the
+            % ball down but never holds it back: no step accelerates it
+            % downwards by more than gravity
+            k = 1e5;
+            w = tc.newWorld;
+            tc.addFloor(w);
+            h = phxEngine('add', w, 'sphere', 2, 0.1, tEngineProtocol.pose([0 0 0.3]), 1, 0.004*[1 1 1]);
+            phxEngine('set', w, h, 'contact', [k 6*sqrt(k)]);
+            a = nan(1, 1200);
+            for i = 1:numel(a)
+                phxEngine('step', w, 1/2000);
+                acc = phxEngine('get', w, h, 'linacc');
+                a(i) = acc(3);
+            end
+            tc.verifyGreaterThan(min(a), -tc.G*(1 + 1e-3), "Downward acceleration beyond gravity");
+        end
+
+        function softContactKeepsCoulombFriction(tc)
+            % A box on a soft contact slides down a 25 deg incline (gravity
+            % tilted) with friction 0.3 at g (sin - 0.3 cos) and holds on a
+            % 10 deg one
+            for slope = [25 10]
+                g = tc.G*[sind(slope) 0 -cosd(slope)];
+                w = tc.newWorld(g);
+                phxEngine('set', w, tc.addFloor(w), 'friction', 0.3);
+                h = tc.addBox(w, 2, [0 0 0.1], 0.2*[1 1 1], 10);
+                phxEngine('set', w, h, 'friction', 0.3);
+                phxEngine('set', w, h, 'contact', [1e6 2*sqrt(1e7)]);
+                tc.settle(w, 0.2);
+                v0 = phxEngine('get', w, h, 'linvel');
+                tc.settle(w, 0.5);
+                v1 = phxEngine('get', w, h, 'linvel');
+                expected = max(0, tc.G*(sind(slope) - 0.3*cosd(slope)));
+                tc.verifyEqual((v1(1) - v0(1))/0.5, expected, "AbsTol", 0.01*tc.G, sprintf("Acceleration on %d deg", slope));
+            end
+        end
+
+        function stiffSoftContactStaysStableAtALargeStep(tc)
+            % k 1e9 under a 10 kg box at 1/60 s (omega dt 167), lightly
+            % damped (damping ratio 0.1): the box rests, sunk m g / k
+            [d, speed] = tc.restOnSoftContact(10, [1e9 0.2*sqrt(1e10)], 1/60, 4);
+            tc.verifyEqual(d, 10*tc.G/1e9, "RelTol", 0.1, "Penetration");
+            tc.verifyLessThan(speed, 1e-3, "Speed at rest");
+        end
+
+        function fastImpactOnASoftContactGainsNoEnergy(tc)
+            % A ball dropped 1 m at 1/60 s approaches by 7 cm a step, more
+            % than any speculative contact catches: undamped, it bounces
+            % back to at most its height
+            w = tc.newWorld;
+            tc.addFloor(w);
+            h = phxEngine('add', w, 'sphere', 2, 0.1, tEngineProtocol.pose([0 0 1.1]), 1, 0.004*[1 1 1]);
+            phxEngine('set', w, h, 'contact', [1e5 0]);
+            z = nan(1, 120);
+            for i = 1:numel(z)
+                phxEngine('step', w, 1/60);
+                p = phxEngine('get', w, h, 'position');
+                z(i) = p(3) - 0.1;
+            end
+            touch = find(z < 0, 1);
+            tc.assertNotEmpty(touch, "The ball never reached the floor.");
+            tc.verifyLessThan(max(z(touch:end)), 1.05, "Height of the bounce");
+        end
+
+        function rigidContactStiffnessRestoresTheHardContact(tc)
+            % Stiffness Inf is the rigid contact of before: a box set soft
+            % and then back rests on the floor's surface
+            w = tc.newWorld;
+            tc.addFloor(w);
+            h = tc.addBox(w, 2, [0 0 0.1], 0.2*[1 1 1], 10);
+            phxEngine('set', w, h, 'contact', [1e4 0]);
+            phxEngine('set', w, h, 'contact', [Inf 0]);
+            tc.settle(w, 0.5);
+            p = phxEngine('get', w, h, 'position');
+            tc.verifyLessThan(0.1 - p(3), 1e-3, "Penetration of the hard contact");
+        end
+
+        function contactRejectsBadValues(tc)
+            w = tc.newWorld;
+            h = tc.addBox(w, 2, [0 0 1], 0.2*[1 1 1]);
+            bad = {1e5, [1e5 1 2], [0 1], [-1 1], [NaN 1], [1e5 -1], [1e5 Inf], [1e5 NaN]};
+            for i = 1:numel(bad)
+                tc.verifyError(@() phxEngine('set', w, h, 'contact', bad{i}), "phx:engine:badArgument", ...
+                    "contact " + mat2str(bad{i}));
+            end
+        end
+    end
+
     % Forces and queries
     methods (Test, TestTags = {'Engine'})
         function kinematicSupportReadsTheWeight(tc)
@@ -2676,6 +2803,51 @@ classdef tEngineProtocol < PhxTestCase
             alpha = (w1(3) - w2(3))/0.3;
         end
 
+        function [d, speed] = restOnSoftContact(tc, mass, contact, dt, duration)
+            % A 0.2 m box of the given mass with the given contact, its
+            % bottom just touching a rigid floor, stepped at dt; returns
+            % its penetration and its largest speed over the last quarter
+            w = tc.newWorld;
+            tc.addFloor(w);
+            h = tc.addBox(w, 2, [0 0 0.1], 0.2*[1 1 1], mass);
+            phxEngine('set', w, h, 'contact', contact);
+            n = round(duration/dt);
+            d = nan(1, n);
+            speed = d;
+            for i = 1:n
+                phxEngine('step', w, dt);
+                p = phxEngine('get', w, h, 'position');
+                d(i) = 0.1 - p(3);
+                speed(i) = norm(phxEngine('get', w, h, 'linvel'));
+            end
+            tail = round(0.75*n):n;
+            d = mean(d(tail));
+            speed = max(speed(tail));
+        end
+
+        function [rebound, depth] = dropOnSoftContact(tc, ballContact, floorContact, dt)
+            % A 1 kg ball of radius 0.1 m dropped 0.2 m onto the floor,
+            % each with the given contact, stepped at dt for 0.6 s; returns
+            % the rebound (the speed of the bounce's apex height over the
+            % impact speed) and the largest penetration
+            r = 0.1;
+            w = tc.newWorld;
+            phxEngine('set', w, tc.addFloor(w), 'contact', floorContact);
+            h = phxEngine('add', w, 'sphere', 2, r, tEngineProtocol.pose([0 0 r + 0.2]), 1, 0.4*r^2*[1 1 1]);
+            phxEngine('set', w, h, 'contact', ballContact);
+            z = nan(1, round(0.6/dt));
+            for i = 1:numel(z)
+                phxEngine('step', w, dt);
+                p = phxEngine('get', w, h, 'position');
+                z(i) = p(3) - r;
+            end
+            touch = find(z < 0, 1);
+            leave = touch - 1 + find(z(touch:end) >= 0, 1);
+            tc.assertNotEmpty(leave, "The ball did not leave the floor.");
+            depth = -min(z);
+            rebound = sqrt(max(z(leave:end))/0.2);
+        end
+
         function T = settle(tc, w, duration)
             % Steps for the given time; returns the poses of the last step
             % (4x4xN, or false when nothing moved)
@@ -2702,6 +2874,31 @@ classdef tEngineProtocol < PhxTestCase
     end
 
     methods (Static, Access = private)
+        function [rebound, depth] = kelvinVoigtDrop(m, k, c, height, g)
+            % The exact unilateral Kelvin-Voigt impact of a mass dropped
+            % from the given height onto a rigid support: the force
+            % max(0, k x + c x') of the penetration x; returns the rebound
+            % (as dropOnSoftContact measures it) and the largest penetration
+            v0 = sqrt(2*g*height);
+            f = @(~, y) [y(2); g - max(0, k*y(1) + c*y(2))/m];
+            % The contact ends where its force falls to 0 (at x = 0 without
+            % damping, before it with damping)
+            options = odeset("RelTol", 1e-10, "AbsTol", 1e-12, ...
+                "Events", @(~, y) tEngineProtocol.contactForceFalls(y, k, c));
+            [~, y] = ode45(f, [0 1], [0; v0], options);
+            depth = max(y(:, 1));
+            % After the release the mass flies from x_l at the speed -v_l
+            apex = y(end, 2)^2/(2*g) - y(end, 1);
+            rebound = sqrt(max(apex, 0)/height);
+        end
+
+        function [value, terminal, direction] = contactForceFalls(y, k, c)
+            % Event of kelvinVoigtDrop: the contact force falling to 0
+            value = k*y(1) + c*y(2);
+            terminal = true;
+            direction = -1;
+        end
+
         function out = oneOutput(f)
             % Calls f asking for one output
             out = f();
