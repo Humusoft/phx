@@ -101,6 +101,8 @@ classdef tParticles < PhxTestCase
             tc.verifyEqual(p.Vertices(3, :), [3 0 0], "AbsTol", 1e-12, "A world point in the group frame.");
             bbox = p.boundingBox;
             tc.verifyEqual(bbox(2, :), [0 3 1] + p.Radius, "AbsTol", 1e-12);
+            p.Velocities = [1 0 0; 0 1 0; 0 0 1];
+            tc.verifyEqual(p.CurrentVelocities, p.Velocities, "CurrentVelocities read the Velocities.");
         end
 
         function positionsOfPHX2WarnAndAreWorldPoints(tc)

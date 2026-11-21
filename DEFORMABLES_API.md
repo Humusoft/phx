@@ -135,9 +135,12 @@ Each a step of its own, reviewed before the next:
    reads and writes world points, warning `phx:<Class>:renamedProperty`; the three
    demos with `Positions` moved at once, so that none warns.)
 2. Meshes: `CurrentVertices` after the run (kept in `stateTransfer`),
-   `CurrentVertices`/`CurrentVelocities` on all four; tests.
+   `CurrentVertices`/`CurrentVelocities` on all four; tests. (Done: the last vertices
+   kept until the rest shape changes (`Vertices`, `Faces`/`Tetrahedra`, `Shape`,
+   `Position`, `Orientation`), and saved with the body; `CurrentVelocities` of the
+   particle groups. That of the meshes needs the engine's soft body velocities: phase 4.)
 3. Engine: soft body `velocities`, the initial velocities of the flexible solver
    (tools/jolt, JOLT_CHANGES.md); contract tests; MEX built.
-4. `Velocities` of soft and flexible bodies; tests.
+4. `Velocities` and `CurrentVelocities` of soft and flexible bodies; tests.
 5. `LinearDamping` of soft and flexible bodies with the `Damping` alias; tests.
 6. Demos, help, user guide, skills, upgrade guide.

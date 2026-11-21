@@ -38,6 +38,10 @@ classdef SoftBody < phx.base.Object
     properties (Access = private)
         hP
 
+        % The vertices (Nx3, world) the last simulation ended with, until
+        % the rest shape changes; empty before
+        LastVertices = zeros(0, 3)
+
         % Drawn as a TriangleStrip (in the Viewer), with the map that sums
         % the face normals into vertex normals (faces x vertices); else as
         % a patch
@@ -116,7 +120,10 @@ classdef SoftBody < phx.base.Object
     end
 
     properties (Dependent, SetAccess = private)
-        % Present vertex positions in the global frame (Nx3)
+        % Present vertex positions in the world frame (Nx3): during a run
+        % those of the engine, after it the last ones (until the rest shape
+        % changes), before the first the rest shape at Position and
+        % Orientation
         CurrentVertices (:, 3) double
     end
 
@@ -283,6 +290,8 @@ classdef SoftBody < phx.base.Object
         function value = get.CurrentVertices(obj)
             if ~isempty(obj.ObjectHandle)
                 value = phxEngine('get', obj.WorldHandle, obj.ObjectHandle, 'vertices')';
+            elseif ~isempty(obj.LastVertices)
+                value = obj.LastVertices;
             else
                 value = obj.Vertices*obj.Orientation' + obj.Position;
             end
@@ -293,7 +302,8 @@ classdef SoftBody < phx.base.Object
         function state = stateTransfer(obj, state)
             % The engine keeps no state that could be written back: the
             % soft body starts again from its rest shape when it is created
-            % anew. What is drawn stays as it was.
+            % anew. The last vertices stay drawn and in CurrentVertices,
+            % until the rest shape changes.
             arguments
                 obj
                 state = []
@@ -301,8 +311,11 @@ classdef SoftBody < phx.base.Object
 
             if isempty(state)
                 state.Vertices = obj.CurrentVertices;
-            elseif isvalid(obj.hP)
-                obj.showVertices(state.Vertices');
+            else
+                obj.LastVertices = state.Vertices;
+                if isvalid(obj.hP)
+                    obj.showVertices(state.Vertices');
+                end
             end
         end
     end
@@ -318,6 +331,7 @@ classdef SoftBody < phx.base.Object
             % The mesh drawn before the simulation creates the soft body;
             % Vertices and Faces are set one after the other, so the patch
             % takes them only once they fit together
+            obj.LastVertices = zeros(0, 3);   % a new rest shape: the last run is over
             if isempty(obj.hP) || ~isempty(obj.ObjectHandle) || any(obj.Faces > size(obj.Vertices, 1), "all")
                 return
             end

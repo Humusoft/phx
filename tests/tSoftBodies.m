@@ -251,6 +251,30 @@ classdef tSoftBodies < PhxTestCase
             tc.verifyTrue(all(isfinite(f.VonMisesStress)));
         end
 
+        function lastVerticesOutliveTheSimulation(tc)
+            % After the run CurrentVertices read the last state, the rest
+            % shape stays the Vertices; a change of the rest shape (here
+            % its Position) brings the rest shape back, and a new run
+            % starts from it
+            tc.requireEngine;
+            [V, F] = tc.cube;
+            bodies = {phx.SoftBody([], "Vertices", V, "Faces", F, "Position", [0 0 1], "Compliance", 1e-4), ...
+                phx.FlexibleBody([], "Vertices", V, "Tetrahedra", delaunay(V), "Position", [0 0 1])};
+            for k = 1:2
+                b = bodies{k};
+                rest = b.CurrentVertices;
+                sim = tc.simulate({tc.floor, b});
+                sim.step(0.5, 100, -1);
+                last = b.CurrentVertices;
+                delete(sim);
+                tc.verifyEqual(b.CurrentVertices, last, class(b));
+                tc.verifyLessThan(mean(last(:, 3)), mean(rest(:, 3)) - 0.05, class(b) + " fell.");
+                tc.verifyEqual(b.Vertices, V, class(b) + " keeps its rest shape.");
+                b.Position = [0 0 2];
+                tc.verifyEqual(b.CurrentVertices, rest + [0 0 1], "AbsTol", 1e-12, class(b));
+            end
+        end
+
         function weldHoldsTheOverlappedVertices(tc)
             % A static slab over the top face of the cube holds its four
             % top vertices, and the hanging cube stays up

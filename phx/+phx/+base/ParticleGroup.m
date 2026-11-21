@@ -124,6 +124,11 @@ classdef (Abstract) ParticleGroup < phx.base.Object
         % at Position and Orientation
         CurrentVertices (:, 3) double
 
+        % Velocities of the particles in the world frame (Nx3, m/s): the
+        % Velocities, under the name the soft and flexible bodies read
+        % their present velocities by
+        CurrentVelocities (:, 3) double
+
         % Number of particles
         Count (1, 1) double
     end
@@ -284,6 +289,10 @@ classdef (Abstract) ParticleGroup < phx.base.Object
             else
                 value = obj.toWorld(obj.StoredPositions');
             end
+        end
+
+        function value = get.CurrentVelocities(obj)
+            value = obj.Velocities;
         end
 
         function value = get.Positions(obj)
