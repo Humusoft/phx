@@ -6,8 +6,9 @@ classdef FlexibleBody < phx.base.Object
 %   pad, a bushing, a beam. Its mesh of tetrahedra deforms as a fixed
 %   corotated material, which also holds for large rotations; the vertices
 %   carry the mass of the tetrahedra around them. It collides with rigid
-%   bodies (phx.Body), not with soft or flexible bodies. No joint holds it
-%   directly: a body welded into it with phx.IntersectionWeld holds and
+%   bodies (phx.Body), not with soft or flexible bodies; its contacts have
+%   no restitution, it rebounds only by its own elasticity. No joint holds
+%   it directly: a body welded into it with phx.IntersectionWeld holds and
 %   loads it instead.
 %
 %   The tetrahedra are quadratic: each has a vertex in the middle of each
@@ -25,10 +26,12 @@ classdef FlexibleBody < phx.base.Object
 %   vertices in the middles of the edges are added to V, or Kx10, a
 %   quadratic mesh (the corners, then the vertices of the edges 12 23 13 14
 %   24 34), whose edges are curved when the vertices are off their middles.
-%   The added vertices follow V in CurrentVertices and VonMisesStress. The
-%   mesh is the rest shape, placed at Position and Orientation when the
-%   simulation creates the body; its volume, curved edges included, gives
-%   the Mass.
+%   The added vertices follow V in CurrentVertices, CurrentVelocities and
+%   VonMisesStress. The mesh is the rest shape, placed at Position and
+%   Orientation when the simulation creates the body; its volume, curved
+%   edges included, gives the Mass. Velocities give its vertices an initial
+%   motion. CurrentVertices and CurrentVelocities read the present state:
+%   during a run that of the engine, after it the last one.
 %
 %   phx.FlexibleBody(axes, Mesh=mesh) takes the mesh of tetrahedra that PDE
 %   Toolbox generates, for example of an STL file:

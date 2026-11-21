@@ -24,9 +24,13 @@ optionally inflated by a gas pressure. It collides with rigid bodies
 body welded into it with <a href="phx.IntersectionWeld.html">phx.IntersectionWeld</a> holds and loads
 it instead.</p>
 <p>The mesh is the rest shape, placed at <code class="phx-inline">Position</code> and
-<code class="phx-inline">Orientation</code> when the simulation creates the soft body. The rest shape
-and its material are read once, at that moment; the settings in the second group of properties
-apply at any time. A soft body is a top-level object: hand it to the simulation like a body.</p>
+<code class="phx-inline">Orientation</code> when the simulation creates the soft body, its vertices
+moving at their <code class="phx-inline">Velocities</code>. The rest shape, the initial velocities and
+the material are read once, at that moment; the settings in the second group of properties apply at
+any time. <code class="phx-inline">CurrentVertices</code> and <code class="phx-inline">CurrentVelocities</code>
+read the present state: during a run that of the engine, after it the last one, which stays until
+the rest shape changes. A new simulation starts again from the rest shape. A soft body is a
+top-level object: hand it to the simulation like a body.</p>
 
 <h2 class="phx-h2">Creation</h2>
 <h3 class="phx-h3">Syntax</h3>
@@ -52,7 +56,7 @@ that of the soft body. Box, Sphere, Cylinder, Cone, Capsule and Tube generate me
 </div>
 
 <h2 class="phx-h2">Properties</h2>
-<h3 class="phx-h3">Rest shape and material (read when the simulation starts)</h3>
+<h3 class="phx-h3">Rest shape, initial motion and material (read when the simulation starts)</h3>
 <table class="phx-tbl">
 <tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
 <tr><td class="name">Vertices</td><td class="type">N&times;3 double</td><td>Vertices of the mesh in the body frame.</td></tr>
@@ -63,6 +67,7 @@ that of the soft body. Box, Sphere, Cylinder, Cone, Capsule and Tube generate me
 <tr><td class="name">AxisAngle</td><td class="type">1&times;4 double</td><td>Axis-angle rotation <code class="phx-inline">[x y z angle]</code> of the rest shape (dependent, a view of <code class="phx-inline">Orientation</code>).</td></tr>
 <tr><td class="name">EulerAngles</td><td class="type">1&times;3 double</td><td>Euler angles of the rest shape for z&rarr;y&rarr;x order, as <a href="phx.Body.html">phx.Body</a> takes them (dependent).</td></tr>
 <tr><td class="name">Quaternion</td><td class="type">1&times;4 double</td><td>Quaternion <code class="phx-inline">[w x y z]</code> of the rest shape (dependent).</td></tr>
+<tr><td class="name">Velocities</td><td class="type">N&times;3 double</td><td>Initial velocities of the vertices in the global frame, <span class="phx-unit">m/s</span>; one row sets all of them alike (and follows a new mesh). Zero by default.</td></tr>
 <tr><td class="name">Mass</td><td class="dflt">1</td><td>Total mass, spread evenly over the vertices, <span class="phx-unit">kg</span>.</td></tr>
 <tr><td class="name">Compliance</td><td class="dflt">0</td><td>Compliance of the edges, the inverse of their stiffness, <span class="phx-unit">m/N</span>; 0 keeps them at their rest length.</td></tr>
 <tr><td class="name">BendCompliance</td><td class="dflt">Inf</td><td>Compliance of the bend edges across each pair of adjacent triangles, <span class="phx-unit">m/N</span>; <code class="phx-inline">Inf</code> leaves them out.</td></tr>
@@ -74,11 +79,17 @@ that of the soft body. Box, Sphere, Cylinder, Cone, Capsule and Tube generate me
 <tr><td class="name">Pressure</td><td class="dflt">0</td><td>Gas pressure inside a closed mesh as n&middot;R&middot;T, <span class="phx-unit">J</span>: it pushes on the faces with this value over the enclosed volume.</td></tr>
 <tr><td class="name">VertexRadius</td><td class="dflt">0</td><td>Radius of the spheres the vertices collide as, <span class="phx-unit">m</span>.</td></tr>
 <tr><td class="name">Iterations</td><td class="dflt">5</td><td>Solver substeps of the soft body per simulation step.</td></tr>
-<tr><td class="name">Damping</td><td class="dflt">0</td><td>Damping of the vertex velocities, dv/dt&nbsp;=&nbsp;&minus;Damping&middot;v, <span class="phx-unit">1/s</span>.</td></tr>
+<tr><td class="name">LinearDamping</td><td class="dflt">0</td><td>Damping of the vertex velocities, dv/dt&nbsp;=&nbsp;&minus;LinearDamping&middot;v, <span class="phx-unit">1/s</span>. Named <code class="phx-inline">Damping</code> in PHX 2.0; that name still works, with a warning.</td></tr>
 <tr><td class="name">Friction</td><td class="dflt">0.5</td><td>Friction coefficient; a contact combines the values of both bodies as their geometric mean, <code class="phx-inline">sqrt(mu1*mu2)</code>.</td></tr>
 <tr><td class="name">Restitution</td><td class="dflt">0</td><td>Restitution (bounciness) coefficient, 0 = no bounce; a contact bounces with the smaller of the two bodies' values.</td></tr>
 <tr><td class="name">Color</td><td class="type">1&times;3 double</td><td>Color of the drawn mesh.</td></tr>
-<tr><td class="name">CurrentVertices</td><td class="type">N&times;3 double (read-only)</td><td>Present vertex positions in the global frame: the deformed mesh while the simulation runs, the placed rest shape before.</td></tr>
+</table>
+
+<h3 class="phx-h3">Present state (read-only)</h3>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type</th><th>Description</th></tr>
+<tr><td class="name">CurrentVertices</td><td class="type">N&times;3 double</td><td>Present vertex positions in the global frame: the deformed mesh while the simulation runs, after it the last one (until the rest shape changes), before the first run the rest shape at <code class="phx-inline">Position</code> and <code class="phx-inline">Orientation</code>.</td></tr>
+<tr><td class="name">CurrentVelocities</td><td class="type">N&times;3 double</td><td>Present vertex velocities in the global frame, <span class="phx-unit">m/s</span>: as <code class="phx-inline">CurrentVertices</code>, before the first run the <code class="phx-inline">Velocities</code>.</td></tr>
 </table>
 
 <h2 class="phx-h2">Object Functions</h2>

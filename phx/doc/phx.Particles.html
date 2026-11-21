@@ -22,31 +22,49 @@ density: sand, gravel, grain, beads. They collide with all bodies, and with each
 but the group reads and draws them all at once: one array of positions and one graphics object per
 redraw instead of a <a href="phx.Body.html">phx.Body</a> each, so that many thousands of them stay
 fast. A group holds at most 10&nbsp;000 particles; use several groups for more.</p>
-<p>Particles can be added and removed at any time, also while the simulation runs, and their
-positions and velocities read and set as N&times;3 arrays. A particle group is a top-level object:
-hand it to the simulation like a body.</p>
+<p>The particle centres are the <code class="phx-inline">Vertices</code>, in the frame of the group
+that <code class="phx-inline">Position</code> and <code class="phx-inline">Orientation</code> place (by
+default the global frame); <code class="phx-inline">CurrentVertices</code> are the same points in the
+global frame. They have no rest shape: <code class="phx-inline">Vertices</code> and
+<code class="phx-inline">Velocities</code> are the state itself, read and set as N&times;3 arrays
+before, during and after a run, and a new simulation goes on from where the last one ended.
+Particles can be added and removed at any time, also while the simulation runs. A particle group is a
+top-level object: hand it to the simulation like a body.</p>
 
 <h2 class="phx-h2">Creation</h2>
 <h3 class="phx-h3">Syntax</h3>
-<span class="phx-syntax">p = phx.Particles(ax,"Positions",P)</span>
+<span class="phx-syntax">p = phx.Particles(ax,"Vertices",P)</span>
+<span class="phx-syntax">p = phx.Particles(ax,"Shape",shape)</span>
 <span class="phx-syntax">p = phx.Particles(___,Name,Value)</span>
 
 <h3 class="phx-h3">Description</h3>
 <div class="phx-desc">
-<p><code class="phx-inline">p = phx.Particles(ax,"Positions",P)</code> creates particles at the rows
-of <code class="phx-inline">P</code> (N&times;3) and draws them into the axes
-<code class="phx-inline">ax</code>; <code class="phx-inline">[]</code> draws nothing. A group may also
-start empty and get its particles by <code class="phx-inline">add</code>.</p>
+<p><code class="phx-inline">p = phx.Particles(ax,"Vertices",P)</code> creates particles at the rows
+of <code class="phx-inline">P</code> (N&times;3, in the frame of the group) and draws them into the
+axes <code class="phx-inline">ax</code>; <code class="phx-inline">[]</code> draws nothing. A group may
+also start empty and get its particles by <code class="phx-inline">add</code>.</p>
+<p><code class="phx-inline">p = phx.Particles(ax,"Shape",shape)</code> fills a shape with particles
+touching each other, on a cubic lattice of their diameter, in the frame of the group. The shape is a
+<code class="phx-inline">phx.shape.*</code> object or a cell array of a shape name and its arguments,
+as <a href="phx.Body.html">phx.Body</a> takes it; Box, Sphere, Cylinder, Cone, Capsule and Tube can
+be filled. A shape and <code class="phx-inline">Vertices</code> in one constructor call are an
+error.</p>
 </div>
 
 <h2 class="phx-h2">Properties</h2>
 <h3 class="phx-h3">Particles (read when the simulation starts)</h3>
 <table class="phx-tbl">
 <tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">Shape</td><td class="type">shape object or cell array</td><td>Shape filled with particles on a cubic lattice of their diameter, in the frame of the group (write-only): sets <code class="phx-inline">Vertices</code>. Filled again when <code class="phx-inline">Radius</code> changes, until the simulation creates the group; setting <code class="phx-inline">Vertices</code> replaces it.</td></tr>
+<tr><td class="name">Position</td><td class="dflt">[0 0 0]</td><td>Position of the group's frame, <span class="phx-unit">m</span>. It stays during a run; setting it then is an error.</td></tr>
+<tr><td class="name">Orientation</td><td class="dflt">eye(3)</td><td>Orientation of the group's frame, likewise.</td></tr>
+<tr><td class="name">AxisAngle</td><td class="type">1&times;4 double</td><td>Axis-angle rotation <code class="phx-inline">[x y z angle]</code> of the group's frame (dependent, a view of <code class="phx-inline">Orientation</code>).</td></tr>
+<tr><td class="name">EulerAngles</td><td class="type">1&times;3 double</td><td>Euler angles of the group's frame for z&rarr;y&rarr;x order, as <a href="phx.Body.html">phx.Body</a> takes them (dependent).</td></tr>
+<tr><td class="name">Quaternion</td><td class="type">1&times;4 double</td><td>Quaternion <code class="phx-inline">[w x y z]</code> of the group's frame (dependent).</td></tr>
 <tr><td class="name">Radius</td><td class="dflt">0.02</td><td>Radius of every particle, <span class="phx-unit">m</span>.</td></tr>
 <tr><td class="name">Density</td><td class="dflt">1000</td><td>Density of the particles, <span class="phx-unit">kg/m&sup3;</span>.</td></tr>
 <tr><td class="name">ParticleMass</td><td class="type">double</td><td>Mass of one particle, <span class="phx-unit">kg</span>; setting it sets <code class="phx-inline">Density</code> for the present <code class="phx-inline">Radius</code>.</td></tr>
-<tr><td class="name">Mass</td><td class="type">double</td><td>Total mass of the particles, <span class="phx-unit">kg</span>, <code class="phx-inline">Count*ParticleMass</code>; setting it sets <code class="phx-inline">Density</code> for the present <code class="phx-inline">Count</code> and <code class="phx-inline">Radius</code>, so particles added or removed later change it. Set one of <code class="phx-inline">Density</code>, <code class="phx-inline">ParticleMass</code> and <code class="phx-inline">Mass</code>; given to the constructor, the masses are taken after <code class="phx-inline">Positions</code> and <code class="phx-inline">Radius</code>.</td></tr>
+<tr><td class="name">Mass</td><td class="type">double</td><td>Total mass of the particles, <span class="phx-unit">kg</span>, <code class="phx-inline">Count*ParticleMass</code>; setting it sets <code class="phx-inline">Density</code> for the present <code class="phx-inline">Count</code> and <code class="phx-inline">Radius</code>, so particles added or removed later change it. Set one of <code class="phx-inline">Density</code>, <code class="phx-inline">ParticleMass</code> and <code class="phx-inline">Mass</code>; given to the constructor, the masses are taken after <code class="phx-inline">Vertices</code> (or <code class="phx-inline">Shape</code>) and <code class="phx-inline">Radius</code>.</td></tr>
 <tr><td class="name">Rotation</td><td class="dflt">false</td><td>Rotation of the particles: <code class="phx-inline">false</code> = they only slide, <code class="phx-inline">true</code> = they also rotate and roll.</td></tr>
 </table>
 
@@ -67,17 +85,20 @@ start empty and get its particles by <code class="phx-inline">add</code>.</p>
 <h3 class="phx-h3">State</h3>
 <table class="phx-tbl">
 <tr><th>Property</th><th>Type</th><th>Description</th></tr>
-<tr><td class="name">Positions</td><td class="type">N&times;3 double</td><td>Positions of the particle centres in the global frame, <span class="phx-unit">m</span>. Setting it during the simulation needs one row per particle; before it, any number of rows replaces the particles.</td></tr>
-<tr><td class="name">Velocities</td><td class="type">N&times;3 double</td><td>Velocities of the particles, <span class="phx-unit">m/s</span>.</td></tr>
+<tr><td class="name">Vertices</td><td class="type">N&times;3 double</td><td>Particle centres in the frame of the group, <span class="phx-unit">m</span>: before a simulation where it starts from, during it the present ones (read and written in the engine), after it the last ones, from which the next simulation goes on. Setting it during the simulation needs one row per particle; before it, any number of rows replaces the particles.</td></tr>
+<tr><td class="name">Velocities</td><td class="type">N&times;3 double</td><td>Velocities of the particles in the global frame, <span class="phx-unit">m/s</span>, like <code class="phx-inline">Vertices</code> before, during and after a simulation; one row sets all of them alike.</td></tr>
+<tr><td class="name">CurrentVertices</td><td class="type">N&times;3 double (read-only)</td><td>Particle centres in the global frame: <code class="phx-inline">Vertices</code> placed at <code class="phx-inline">Position</code> and <code class="phx-inline">Orientation</code>.</td></tr>
+<tr><td class="name">CurrentVelocities</td><td class="type">N&times;3 double (read-only)</td><td>The <code class="phx-inline">Velocities</code>, under the name the soft and flexible bodies read their present velocities by.</td></tr>
 <tr><td class="name">Count</td><td class="type">double (read-only)</td><td>Number of particles.</td></tr>
+<tr><td class="name">Positions</td><td class="type">N&times;3 double</td><td>Name of PHX 2.0, deprecated: reads <code class="phx-inline">CurrentVertices</code> and sets the particles from points in the global frame, with a warning.</td></tr>
 </table>
 
 <h2 class="phx-h2">Object Functions</h2>
 <table class="phx-tbl">
 <tr><th>Function</th><th>Description</th></tr>
-<tr><td class="name">add(p,P)<br>add(p,P,V)</td><td>Add particles at the rows of <code class="phx-inline">P</code> (N&times;3), at rest or with the velocities <code class="phx-inline">V</code>.</td></tr>
+<tr><td class="name">add(p,P)<br>add(p,P,V)</td><td>Add particles at the rows of <code class="phx-inline">P</code> (N&times;3, global frame), at rest or with the velocities <code class="phx-inline">V</code> (global frame).</td></tr>
 <tr><td class="name">remove(p,index)</td><td>Remove the particles of the given indices or logical mask; the others keep their order.</td></tr>
-<tr><td class="name">applyForce(p,F)</td><td>Apply the force <code class="phx-inline">F</code>, <span class="phx-unit">N</span>, in the world frame: 1&times;3 acts on every particle of the group, each getting the whole <code class="phx-inline">F</code>; N&times;3 gives each particle its own row, in the order of <code class="phx-inline">Positions</code>. The forces act at the particle centres during the next engine step only, one substep of <code class="phx-inline">sim.step</code> (call it from a <a href="phx.Function.html">phx.Function</a> for a force in every substep); only in a running simulation.</td></tr>
+<tr><td class="name">applyForce(p,F)</td><td>Apply the force <code class="phx-inline">F</code>, <span class="phx-unit">N</span>, in the world frame: 1&times;3 acts on every particle of the group, each getting the whole <code class="phx-inline">F</code>; N&times;3 gives each particle its own row, in the order of <code class="phx-inline">Vertices</code>. The forces act at the particle centres during the next engine step only, one substep of <code class="phx-inline">sim.step</code> (call it from a <a href="phx.Function.html">phx.Function</a> for a force in every substep); only in a running simulation.</td></tr>
 <tr><td class="name">boundingBox</td><td>Axis-aligned bounding box of all particles of one or more groups, their radius included, a 2&times;3 matrix [min; max].</td></tr>
 </table>
 
@@ -87,7 +108,7 @@ start empty and get its particles by <code class="phx-inline">add</code>.</p>
 
 phx.assembly.arena(gca, <span class="str">"Size"</span>, [1 1 0.3]);
 [x, y, z] = ndgrid(-0.3:0.06:0.3, -0.3:0.06:0.3, 0.3:0.06:0.6);
-gravel = phx.Particles(gca, <span class="str">"Positions"</span>, [x(:) y(:) z(:)], <span class="str">"Radius"</span>, 0.025, ...
+gravel = phx.Particles(gca, <span class="str">"Vertices"</span>, [x(:) y(:) z(:)], <span class="str">"Radius"</span>, 0.025, ...
     <span class="str">"Density"</span>, 1600, <span class="str">"Color"</span>, [0.8 0.6 0.4], <span class="str">"RandomTint"</span>, 0.4, <span class="str">"MarkerSize"</span>, 10);
 
 sim = phx.Simulation(gca, <span class="str">"EngineSettings"</span>, phx.engine.Settings(<span class="str">"LengthScale"</span>, 0.1));

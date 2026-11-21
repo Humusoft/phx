@@ -12,7 +12,9 @@ classdef SoftBody < phx.base.Object
 %   triangle mesh V (Nx3, in the body frame) and F (Mx3 vertex indices, as
 %   for patch) and draws it into the given axes object; [] draws nothing.
 %   The mesh is the rest shape, placed at Position and Orientation when the
-%   simulation creates the soft body.
+%   simulation creates the soft body; Velocities give its vertices an
+%   initial motion. CurrentVertices and CurrentVelocities read the present
+%   state: during a run that of the engine, after it the last one.
 %
 %   phx.SoftBody(axes, Shape=shape) covers a shape with the surface mesh it
 %   generates, its vertices spaced about evenly as the ElementResolution of

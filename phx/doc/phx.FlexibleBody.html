@@ -21,7 +21,8 @@
 Young's modulus and Poisson's ratio: a block of rubber or foam, a soft gripper pad, a bushing, a
 beam. Its mesh of tetrahedra deforms as a fixed corotated material, which also holds for large
 rotations; the vertices carry the mass of the tetrahedra around them. It collides with rigid bodies
-(<a href="phx.Body.html">phx.Body</a>), not with soft or flexible bodies. No joint holds it directly:
+(<a href="phx.Body.html">phx.Body</a>), not with soft or flexible bodies; its contacts have no
+restitution, it rebounds only by its own elasticity. No joint holds it directly:
 a body welded into it with <a href="phx.IntersectionWeld.html">phx.IntersectionWeld</a> holds and
 loads it instead.</p>
 <p>The tetrahedra are quadratic: each has a vertex in the middle of each edge, so that it bends
@@ -35,9 +36,13 @@ the radius of a curved body it touches, or the body feels the spacing of the ver
 tetrahedra suit large rotations with strains up to some 10-20&nbsp;%; the material is no calibrated
 rubber for larger strains.</p>
 <p>The mesh is the rest shape, placed at <code class="phx-inline">Position</code> and
-<code class="phx-inline">Orientation</code> when the simulation creates the body; the rest shape and
-the material are read once, at that moment. A flexible body is a top-level object: hand it to the
-simulation like a body.</p>
+<code class="phx-inline">Orientation</code> when the simulation creates the body, its vertices moving
+at their <code class="phx-inline">Velocities</code>; the rest shape, the initial velocities and the
+material are read once, at that moment. <code class="phx-inline">CurrentVertices</code> and
+<code class="phx-inline">CurrentVelocities</code> read the present state: during a run that of the
+engine, after it the last one, which stays until the rest shape changes. A new simulation starts
+again from the rest shape. A flexible body is a top-level object: hand it to the simulation like a
+body.</p>
 
 <h2 class="phx-h2">Creation</h2>
 <h3 class="phx-h3">Syntax</h3>
@@ -56,8 +61,8 @@ and <code class="phx-inline">T</code> (vertex indices) and draws its surface int
 gives it, and the vertices in the middles of the edges are added to <code class="phx-inline">V</code>,
 or K&times;10, a quadratic mesh (the corners, then the vertices of the edges 12 23 13 14 24 34),
 whose edges are curved where those vertices lie off their middles. The added vertices follow
-<code class="phx-inline">V</code> in <code class="phx-inline">CurrentVertices</code> and
-<code class="phx-inline">VonMisesStress</code>.</p>
+<code class="phx-inline">V</code> in <code class="phx-inline">CurrentVertices</code>,
+<code class="phx-inline">CurrentVelocities</code> and <code class="phx-inline">VonMisesStress</code>.</p>
 <p><code class="phx-inline">flex = phx.FlexibleBody(ax,"Mesh",mesh)</code> takes the mesh of
 tetrahedra that PDE Toolbox generates: the <code class="phx-inline">Mesh</code> of an
 <code class="phx-inline">fegeometry</code> or <code class="phx-inline">femodel</code>, or the geometry
@@ -73,7 +78,7 @@ sets how fine the mesh is. Box, Sphere, Cylinder, Cone, Capsule and Tube generat
 </div>
 
 <h2 class="phx-h2">Properties</h2>
-<h3 class="phx-h3">Rest shape and material (read when the simulation starts)</h3>
+<h3 class="phx-h3">Rest shape, initial motion and material (read when the simulation starts)</h3>
 <table class="phx-tbl">
 <tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
 <tr><td class="name">Vertices</td><td class="type">N&times;3 double</td><td>Vertices of the mesh in the body frame.</td></tr>
@@ -85,6 +90,7 @@ sets how fine the mesh is. Box, Sphere, Cylinder, Cone, Capsule and Tube generat
 <tr><td class="name">AxisAngle</td><td class="type">1&times;4 double</td><td>Axis-angle rotation <code class="phx-inline">[x y z angle]</code> of the rest shape (dependent, a view of <code class="phx-inline">Orientation</code>).</td></tr>
 <tr><td class="name">EulerAngles</td><td class="type">1&times;3 double</td><td>Euler angles of the rest shape for z&rarr;y&rarr;x order, as <a href="phx.Body.html">phx.Body</a> takes them (dependent).</td></tr>
 <tr><td class="name">Quaternion</td><td class="type">1&times;4 double</td><td>Quaternion <code class="phx-inline">[w x y z]</code> of the rest shape (dependent).</td></tr>
+<tr><td class="name">Velocities</td><td class="type">N&times;3 double</td><td>Initial velocities of the vertices in the global frame, <span class="phx-unit">m/s</span>, one row per row of <code class="phx-inline">Vertices</code>; one row sets all of them alike (and follows a new mesh). The vertices added in the middles of the edges of a K&times;4 mesh get the mean of the two ends. Zero by default.</td></tr>
 <tr><td class="name">Density</td><td class="dflt">1000</td><td>Density of the material, <span class="phx-unit">kg/m&sup3;</span>.</td></tr>
 <tr><td class="name">Mass</td><td class="type">double</td><td>Mass of the body, <span class="phx-unit">kg</span>: <code class="phx-inline">Density</code> times the <code class="phx-inline">Volume</code>. Set either one: setting <code class="phx-inline">Mass</code> sets <code class="phx-inline">Density</code> for the present mesh, which a later change of the mesh keeps (as <code class="phx-inline">Radius</code> and <code class="phx-inline">Diameter</code> of the shapes). The constructor takes either one, after the mesh.</td></tr>
 <tr><td class="name">Volume</td><td class="type">double (read-only)</td><td>Volume of the mesh, <span class="phx-unit">m&sup3;</span>: of the tetrahedra handed to the engine, curved ones included.</td></tr>
@@ -98,7 +104,7 @@ sets how fine the mesh is. Box, Sphere, Cylinder, Cone, Capsule and Tube generat
 <tr><td class="name">VertexRadius</td><td class="dflt">0</td><td>Radius of the spheres the vertices collide as, <span class="phx-unit">m</span>.</td></tr>
 <tr><td class="name">Iterations</td><td class="dflt">10</td><td>Most Newton iterations per step, up to 4 more in a step whose contacts keep changing.</td></tr>
 <tr><td class="name">Tolerance</td><td class="dflt">1e-4</td><td>Force left unbalanced at which a step has converged, relative to the weight of the body; 0 takes <code class="phx-inline">Iterations</code> iterations unless the force falls below 1e-10 of the weight.</td></tr>
-<tr><td class="name">Damping</td><td class="dflt">0</td><td>Damping of the vertex velocities, dv/dt&nbsp;=&nbsp;&minus;Damping&middot;v, <span class="phx-unit">1/s</span>.</td></tr>
+<tr><td class="name">LinearDamping</td><td class="dflt">0</td><td>Damping of the vertex velocities, dv/dt&nbsp;=&nbsp;&minus;LinearDamping&middot;v, <span class="phx-unit">1/s</span>. Named <code class="phx-inline">Damping</code> in PHX 2.0; that name still works, with a warning.</td></tr>
 <tr><td class="name">Friction</td><td class="dflt">0.5</td><td>Friction coefficient; a contact combines the values of both bodies as their geometric mean, <code class="phx-inline">sqrt(mu1*mu2)</code>.</td></tr>
 <tr><td class="name">Colormap</td><td class="dflt">[]</td><td>Colormap (N&times;3 matrix, RGB in 0&ndash;1, e.g. <code class="phx-inline">turbo(64)</code>) that colors the surface by the von Mises stress. Empty draws the plain <code class="phx-inline">Color</code>, which the colormap leaves unchanged.</td></tr>
 <tr><td class="name">ColorRange</td><td class="dflt">[0 1e6]</td><td>Stress range mapped across the whole colormap, <span class="phx-unit">Pa</span>.</td></tr>
@@ -109,7 +115,8 @@ sets how fine the mesh is. Box, Sphere, Cylinder, Cone, Capsule and Tube generat
 <table class="phx-tbl">
 <tr><th>Property</th><th>Type</th><th>Description</th></tr>
 <tr><td class="name">Faces</td><td class="type">M&times;3 double</td><td>Boundary triangles of the mesh, wound outwards; a face of a tetrahedron is split into four at the vertices of its edges.</td></tr>
-<tr><td class="name">CurrentVertices</td><td class="type">N&times;3 double</td><td>Present vertex positions in the global frame, with the vertices added in the middles of the edges of a K&times;4 mesh.</td></tr>
+<tr><td class="name">CurrentVertices</td><td class="type">N&times;3 double</td><td>Present vertex positions in the global frame, with the vertices added in the middles of the edges of a K&times;4 mesh: the deformed mesh while the simulation runs, after it the last one (until the rest shape changes), before the first run the rest shape at <code class="phx-inline">Position</code> and <code class="phx-inline">Orientation</code>.</td></tr>
+<tr><td class="name">CurrentVelocities</td><td class="type">N&times;3 double</td><td>Present vertex velocities in the global frame, <span class="phx-unit">m/s</span>, with the vertices added in the middles of the edges: as <code class="phx-inline">CurrentVertices</code>, before the first run the <code class="phx-inline">Velocities</code>.</td></tr>
 <tr><td class="name">VonMisesStress</td><td class="type">N&times;1 double</td><td>Von Mises stress at the vertices, averaged over the tetrahedra around each, <span class="phx-unit">Pa</span>; zero before the simulation starts.</td></tr>
 </table>
 
