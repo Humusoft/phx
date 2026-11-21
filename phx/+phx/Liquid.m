@@ -9,15 +9,16 @@ classdef Liquid < phx.base.ParticleGroup
 %   forces of the liquid acting on each other.
 %
 %   phx.Liquid(axes, Shape=shape) fills a shape with the liquid, on a
-%   cubic lattice of the Spacing, the shape placed at Position and
-%   Orientation, and draws it into the given axes object; [] draws
-%   nothing. A column of water 0.2 m wide and 0.4 m high on the floor:
+%   cubic lattice of the Spacing, in the frame of the liquid that Position
+%   and Orientation place, and draws it into the given axes object; []
+%   draws nothing. A column of water 0.2 m wide and 0.4 m high on the floor:
 %
 %       water = phx.Liquid(gca, Shape={"Box", "Size", [0.2 0.4 0.4]}, ...
 %           Position=[-0.5 0 0.2], Spacing=0.02, SoundSpeed=30);
 %
-%   phx.Liquid(axes, Positions=P) creates the liquid's particles at the
-%   rows of P (Nx3) instead, best on a cubic lattice of the Spacing.
+%   phx.Liquid(axes, Vertices=P) creates the liquid's particles at the
+%   rows of P (Nx3, in the frame of the liquid) instead, best on a cubic
+%   lattice of the Spacing.
 %
 %   phx.Liquid(___, Name, Value, ...) sets properties values according to
 %   given name-value pairs.
@@ -169,7 +170,7 @@ classdef Liquid < phx.base.ParticleGroup
 
     methods (Access = protected)
         function handle = createGroup(obj, world)
-            handle = phxEngine('add', world, 'particles', obj.StoredPositions, ...
+            handle = phxEngine('add', world, 'particles', obj.worldPoints, ...
                 obj.Spacing/2, obj.ParticleMass, false);
             phxEngine('set', world, handle, 'fluid', obj.fluidStruct);
         end
@@ -183,11 +184,11 @@ classdef Liquid < phx.base.ParticleGroup
         end
 
         function redraw(obj)
-            % Positions drawn outside the simulation steps, as points or as
-            % the surface over them
+            % The particles drawn outside the simulation steps, as points or
+            % as the surface over them
             redraw@phx.base.ParticleGroup(obj);
             if obj.Style == "surface" && ~isempty(obj.hS) && isvalid(obj.hS)
-                obj.drawSurface(obj.Positions');
+                obj.drawSurface(obj.CurrentVertices');
             end
         end
     end

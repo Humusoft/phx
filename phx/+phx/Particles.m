@@ -7,12 +7,14 @@ classdef Particles < phx.base.ParticleGroup
 %   graphics object per redraw instead of a phx.Body each, so that many
 %   thousands of them stay fast.
 %
-%   phx.Particles(axes, Positions=P) creates particles at the rows of P
-%   (Nx3) and draws them into the given axes object; [] draws nothing.
+%   phx.Particles(axes, Vertices=P) creates particles at the rows of P
+%   (Nx3, in the frame of the group that Position and Orientation place,
+%   by default the world frame) and draws them into the given axes
+%   object; [] draws nothing.
 %
 %   phx.Particles(axes, Shape=shape) fills a shape with particles
-%   touching each other, on a cubic lattice of their diameter, the shape
-%   placed at Position and Orientation:
+%   touching each other, on a cubic lattice of their diameter, in the
+%   frame of the group:
 %
 %       grains = phx.Particles(gca, Shape={"Cylinder", "Radius", 0.1, ...
 %           "Height", 0.3}, Position=[0 0 0.5], Radius=0.01);
@@ -62,7 +64,7 @@ classdef Particles < phx.base.ParticleGroup
     end
 
     % Views of Density, read when the simulation creates the particles.
-    % Given to the constructor, they are taken after Positions and Radius
+    % Given to the constructor, they are taken after Vertices and Radius
     % and override a Density given there.
     properties (Dependent)
         % Mass of one particle (kg); setting it sets the Density for the
@@ -124,7 +126,7 @@ classdef Particles < phx.base.ParticleGroup
         function set.Mass(obj, value)
             n = obj.Count;
             if n == 0
-                error("phx:Particles:noParticles", "Mass needs the particles: give their Positions first.");
+                error("phx:Particles:noParticles", "Mass needs the particles: give their Vertices or a Shape first.");
             end
             obj.ParticleMass = value/n;
         end
@@ -147,7 +149,7 @@ classdef Particles < phx.base.ParticleGroup
 
     methods (Access = protected)
         function handle = createGroup(obj, world)
-            handle = phxEngine('add', world, 'particles', obj.StoredPositions, ...
+            handle = phxEngine('add', world, 'particles', obj.worldPoints, ...
                 obj.Radius, obj.ParticleMass, obj.Rotation);
             phxEngine('set', world, handle, 'angulardamping', obj.AngularDamping);
             phxEngine('set', world, handle, 'selfcollisions', obj.SelfCollisions);

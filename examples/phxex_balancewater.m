@@ -88,7 +88,7 @@ function phxex_balancewater(Kp, Kd)
     offset = zeros(n, 2);
     for k = 1:n
         sim.step(dt, 10);
-        offset(k, :) = mean(water.Positions(:, 1:2)) - ball.Position(1:2);
+        offset(k, :) = mean(water.CurrentVertices(:, 1:2)) - ball.Position(1:2);
 
         if mod(k, 10) == 0
             err = ball.Position(1:2) - reference(path, sim.Time);

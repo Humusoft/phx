@@ -89,7 +89,7 @@ function phxex_plow(Options)
         phx.Body(ax, "Type", "static", "Visible", false, "Position", [0 0 t + wall + collar/2], ...
             "Shape", {"Tube", "InnerDiameter", 2*(Ri - t), "WallThickness", t, "Height", collar, ...
             "Segments", 90, "Envelope", "concave"})];
-    soil = phx.Particles(ax, "Positions", P, "Radius", d/2, "Density", 2650, "Friction", 0.25, ...
+    soil = phx.Particles(ax, "Vertices", P, "Radius", d/2, "Density", 2650, "Friction", 0.25, ...
         "Color", [0.75 0.55 0.35], "RandomTint", 0.4, "MarkerSize", 28);
 
     % Tool, top down: a kinematic shank sliding in a guide on a cantilever
@@ -185,7 +185,7 @@ function phxex_plow(Options)
     % path of the share
     sim.step(settle, round(settle/dt));
     [collars.Collisions] = deal(false);
-    P = soil.Positions;
+    P = soil.CurrentVertices;
     near = abs(hypot(P(:, 1), P(:, 2)) - Rm) < 0.05;
     p = driver.UserData;
     p.Surface = prctile(P(near, 3), 98) + d/2;

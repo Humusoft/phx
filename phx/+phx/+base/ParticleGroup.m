@@ -6,8 +6,9 @@ classdef (Abstract) ParticleGroup < phx.base.Object
 %   positions and drawn as one graphics object per redraw instead of a
 %   phx.Body each. This class provides what the groups share:
 %
-%   - the particles themselves: Positions, Velocities and Count, add,
-%     remove and applyForce, boundingBox;
+%   - the particles themselves: Vertices (in the frame of the group, which
+%     Position and Orientation place), CurrentVertices (world), Velocities
+%     and Count, add, remove and applyForce, boundingBox;
 %   - the contact properties Friction and Restitution and the drag
 %     LinearDamping;
 %   - the drawing as points: Color (from phx.base.Object), MarkerSize and
@@ -31,7 +32,8 @@ classdef (Abstract) ParticleGroup < phx.base.Object
         % Point marker that draws the particles
         hM
 
-        % Positions and velocities (3xN) while the engine does not hold them
+        % Points in the frame of the group and velocities in the world
+        % frame (3xN), while the engine does not hold them
         StoredPositions = zeros(3, 0)
         StoredVelocities = zeros(3, 0)
 
@@ -39,10 +41,9 @@ classdef (Abstract) ParticleGroup < phx.base.Object
         Shades = zeros(1, 0)
 
         % The shape that fills the group until the simulation creates it
-        % (or Positions replace it), and its lattice in the shape frame for
-        % the spacing it was made with
+        % (or Vertices replace it), and the spacing its lattice was made
+        % with
         FillShape = []
-        FillLocal = zeros(0, 3)
         FillSpacing = NaN
 
         % True while a constructor takes its arguments: the shape is filled
@@ -50,37 +51,38 @@ classdef (Abstract) ParticleGroup < phx.base.Object
         Deferred = false
     end
 
-    % Declared first, so that given to the constructor, the positions it
+    % Declared first, so that given to the constructor, the particles it
     % fills are in place before the views of the particles' mass
     properties (Dependent, GetAccess = private)
         % Shape filled with particles on a cubic lattice of the group's
-        % spacing, which sets Positions: a phx.shape.* object that can
-        % generate a mesh of tetrahedra (Box, Sphere, Cylinder, Cone,
-        % Capsule, Tube), or a cell array of its name and constructor
-        % arguments. It is placed at Position and Orientation and filled
-        % again when they or the spacing change, until the simulation
-        % creates the group; setting Positions replaces it.
+        % spacing, in the frame of the group, which sets Vertices: a
+        % phx.shape.* object that can generate a mesh of tetrahedra (Box,
+        % Sphere, Cylinder, Cone, Capsule, Tube), or a cell array of its
+        % name and constructor arguments. It is filled again when the
+        % spacing changes, until the simulation creates the group; setting
+        % Vertices replaces it.
         Shape
     end
 
-    % Pose of the Shape, read when the group is filled
+    % Pose of the group: where the simulation places its Vertices when it
+    % creates it; the frame stays during a run
     properties
-        % Position of the Shape that fills the group
+        % Position of the group's frame
         Position (1, 3) double {mustBeFinite} = [0 0 0]
 
-        % Orientation of the Shape that fills the group (3x3)
+        % Orientation of the group's frame (3x3)
         Orientation (3, 3) double {mustBeFinite} = eye(3)
     end
 
-    % The orientation of the Shape in other forms, views of Orientation
+    % The orientation in other forms, views of Orientation
     properties (Dependent)
-        % Axis-angle rotation [x y z angle] of the Shape
+        % Axis-angle rotation [x y z angle] of the group's frame
         AxisAngle (1, 4) double {mustBeFinite}
 
-        % Euler angles [x y z] of the Shape for z->y->x order
+        % Euler angles [x y z] of the group's frame for z->y->x order
         EulerAngles (1, 3) double {mustBeFinite}
 
-        % Quaternion [w x y z] of the Shape
+        % Quaternion [w x y z] of the group's frame
         Quaternion (1, 4) double {mustBeFinite}
     end
 
@@ -106,25 +108,40 @@ classdef (Abstract) ParticleGroup < phx.base.Object
     end
 
     properties (Dependent)
-        % Positions of the particle centres in the global frame (Nx3)
-        Positions (:, 3) double {mustBeFinite}
+        % The particle centres in the frame of the group (Nx3): before a
+        % simulation where it starts from, during it the present ones (read
+        % and written in the engine), after it the last ones, from which
+        % the next simulation goes on
+        Vertices (:, 3) double {mustBeFinite}
 
-        % Velocities of the particles (Nx3, m/s)
+        % Velocities of the particles in the world frame (Nx3, m/s), like
+        % Vertices before, during and after a simulation
         Velocities (:, 3) double {mustBeFinite}
     end
 
     properties (Dependent, SetAccess = private)
+        % The particle centres in the world frame (Nx3): Vertices placed
+        % at Position and Orientation
+        CurrentVertices (:, 3) double
+
         % Number of particles
         Count (1, 1) double
+    end
+
+    properties (Dependent, Hidden)
+        % The particle centres in the world frame (Nx3), as PHX 2.0 named
+        % them; deprecated: Vertices and CurrentVertices
+        Positions (:, 3) double {mustBeFinite}
     end
 
     methods
         function add(obj, positions, velocities)
         %ADD Adds particles to the group.
         %
-        %   add(group, P) adds particles at the rows of P (Nx3), at rest.
+        %   add(group, P) adds particles at the rows of P (Nx3, world
+        %   frame), at rest.
         %
-        %   add(group, P, V) gives them the velocities V (Nx3).
+        %   add(group, P, V) gives them the velocities V (Nx3, world frame).
 
             arguments
                 obj (1, 1)
@@ -139,7 +156,7 @@ classdef (Abstract) ParticleGroup < phx.base.Object
             if obj.isLive
                 phxEngine('add', obj.WorldHandle, obj.ObjectHandle, positions', velocities');
             else
-                obj.StoredPositions = [obj.StoredPositions positions'];
+                obj.StoredPositions = [obj.StoredPositions obj.toGroup(positions)'];
                 obj.StoredVelocities = [obj.StoredVelocities velocities'];
             end
             obj.Shades = [obj.Shades rand(1, size(positions, 1))];
@@ -185,7 +202,7 @@ classdef (Abstract) ParticleGroup < phx.base.Object
         %   particle of the group, each particle getting the whole F.
         %
         %   applyForce(group, F) with F of N rows (Nx3, one row per particle,
-        %   in the order of Positions) applies a force of its own to each
+        %   in the order of Vertices) applies a force of its own to each
         %   particle.
         %
         %   The forces are given in the world frame and act at the particle
@@ -214,7 +231,7 @@ classdef (Abstract) ParticleGroup < phx.base.Object
         %   - second row: maximum corner [xmax ymax zmax]
         %   Without any particle, the corners are Inf and -Inf.
         %
-        % See also phx.Body.boundingBox, phx.base.ParticleGroup.Positions
+        % See also phx.Body.boundingBox, phx.base.ParticleGroup.CurrentVertices
 
             arguments
                 objs (1, :) phx.base.ParticleGroup
@@ -222,7 +239,7 @@ classdef (Abstract) ParticleGroup < phx.base.Object
 
             bbox = [Inf Inf Inf; -Inf -Inf -Inf];
             for obj = objs
-                p = obj.Positions;
+                p = obj.CurrentVertices;
                 if ~isempty(p)
                     [pmin, pmax] = bounds(p, 1);
                     r = obj.particleRadius;
@@ -231,23 +248,23 @@ classdef (Abstract) ParticleGroup < phx.base.Object
             end
         end
 
-        function value = get.Positions(obj)
+        function value = get.Vertices(obj)
             if obj.isLive
-                value = phxEngine('get', obj.WorldHandle, obj.ObjectHandle, 'positions')';
+                value = obj.toGroup(phxEngine('get', obj.WorldHandle, obj.ObjectHandle, 'positions')');
             else
                 value = obj.StoredPositions';
             end
         end
 
-        function set.Positions(obj, value)
+        function set.Vertices(obj, value)
             if obj.isLive
                 if size(value, 1) ~= obj.Count
                     error(obj.errorId("sizeMismatch"), ...
-                        "Give one position per particle; add or remove particles to change their number.");
+                        "Give one vertex per particle; add or remove particles to change their number.");
                 end
-                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'positions', value');
+                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'positions', obj.toWorld(value)');
             else
-                % Positions given replace the shape that filled the group
+                % Vertices given replace the shape that filled the group
                 obj.FillShape = [];
                 obj.checkCount(size(value, 1));
                 % A new number of particles starts them at rest, in new shades
@@ -259,6 +276,24 @@ classdef (Abstract) ParticleGroup < phx.base.Object
             end
             obj.redraw;
             obj.applyTint;
+        end
+
+        function value = get.CurrentVertices(obj)
+            if obj.isLive
+                value = phxEngine('get', obj.WorldHandle, obj.ObjectHandle, 'positions')';
+            else
+                value = obj.toWorld(obj.StoredPositions');
+            end
+        end
+
+        function value = get.Positions(obj)
+            obj.warnPositions;
+            value = obj.CurrentVertices;
+        end
+
+        function set.Positions(obj, value)
+            obj.warnPositions;
+            obj.Vertices = obj.toGroup(value);
         end
 
         function value = get.Velocities(obj)
@@ -313,13 +348,15 @@ classdef (Abstract) ParticleGroup < phx.base.Object
         end
 
         function set.Position(obj, value)
+            obj.checkPose;
             obj.Position = value;
-            obj.refill;
+            obj.redraw;
         end
 
         function set.Orientation(obj, value)
+            obj.checkPose;
             obj.Orientation = value;
-            obj.refill;
+            obj.redraw;
         end
 
         function value = get.AxisAngle(obj)
@@ -376,25 +413,26 @@ classdef (Abstract) ParticleGroup < phx.base.Object
 
     methods (Access = ?phx.base.Object)
         function state = stateTransfer(obj, state)
-            % Positions and velocities move from the engine to the object
-            % when the simulation ends, so that a new one starts from them
+            % The particles move from the engine to the object when the
+            % simulation ends, into Vertices (the frame of the group) and
+            % Velocities, so that a new one starts from them
             arguments
                 obj
                 state = []
             end
 
             if isempty(state)
-                state.Positions = obj.Positions;
+                state.Vertices = obj.Vertices;
                 state.Velocities = obj.Velocities;
             else
-                obj.StoredPositions = state.Positions';
+                obj.StoredPositions = state.Vertices';
                 obj.StoredVelocities = state.Velocities';
             end
         end
     end
 
     methods (Abstract, Access = protected)
-        % Creates the group in the engine world from StoredPositions and
+        % Creates the group in the engine world from worldPoints and
         % returns its handle; the settings of the subclass go with it. The
         % velocities and the settings of this class follow.
         handle = createGroup(obj, world)
@@ -413,32 +451,61 @@ classdef (Abstract) ParticleGroup < phx.base.Object
 
         function checkSources(obj, Options)
             % A constructor takes the particles from a Shape or from
-            % Positions, not both
-            if isfield(Options, "Shape") && isfield(Options, "Positions")
-                error(obj.errorId("shapeAndPositions"), "Give the particles either a Shape or their Positions, not both.");
+            % Vertices (or the Positions of PHX 2.0), one of them
+            if nnz(isfield(Options, ["Shape", "Vertices", "Positions"])) > 1
+                error(obj.errorId("shapeAndVertices"), "Give the particles either a Shape or their Vertices, not both.");
             end
         end
 
         function refill(obj)
-            % Fills the Shape, placed at Position and Orientation, with a
-            % cubic lattice of the group's spacing; the particles start at
-            % rest, in new shades. Nothing to do without a shape, inside a
-            % constructor or once the simulation holds the group.
+            % Fills the Shape with a cubic lattice of the group's spacing,
+            % in the frame of the group; the particles start at rest, in
+            % new shades. Nothing to do without a shape, inside a
+            % constructor, once the simulation holds the group, or when the
+            % spacing is the one the lattice was made with.
             if obj.Deferred || isempty(obj.FillShape) || obj.isLive
                 return
             end
             d = obj.fillSpacing;
-            if d ~= obj.FillSpacing
-                obj.FillLocal = phx.base.ParticleGroup.fillLattice(obj.FillShape, d, obj.errorId("badShape"));
-                obj.FillSpacing = d;
+            if d == obj.FillSpacing
+                return
             end
-            P = obj.FillLocal*obj.Orientation' + obj.Position;
+            P = phx.base.ParticleGroup.fillLattice(obj.FillShape, d, obj.errorId("badShape"));
+            obj.FillSpacing = d;
             obj.checkCount(size(P, 1));
             obj.StoredPositions = P';
             obj.StoredVelocities = zeros(3, size(P, 1));
             obj.Shades = rand(1, size(P, 1));
             obj.redraw;
             obj.applyTint;
+        end
+
+        function P = worldPoints(obj)
+            % The particles to create the group from (3xN, world frame)
+            P = obj.toWorld(obj.StoredPositions')';
+        end
+
+        function P = toWorld(obj, P)
+            % Points (Nx3) from the frame of the group to the world
+            P = P*obj.Orientation' + obj.Position;
+        end
+
+        function P = toGroup(obj, P)
+            % Points (Nx3) from the world to the frame of the group
+            P = (P - obj.Position)*obj.Orientation;
+        end
+
+        function checkPose(obj)
+            % The frame of the group stays while the simulation holds it
+            if obj.isLive
+                error(obj.errorId("running"), "Position and Orientation place the group when the simulation creates it.");
+            end
+        end
+
+        function warnPositions(obj)
+            warning(obj.errorId("renamedProperty"), "Positions is deprecated: the particles are Vertices, " + ...
+                "in the frame of the group (Position, Orientation), and CurrentVertices in the world frame. " + ...
+                "Positions will be removed in a future release.");
         end
 
         function id = errorId(obj, mnemonic)
@@ -462,7 +529,7 @@ classdef (Abstract) ParticleGroup < phx.base.Object
             % The point marker, made once the constructor has taken its
             % arguments
             obj.hM = matlab.graphics.primitive.world.Marker('Parent', obj.Graphics, ...
-                'VertexData', single(obj.StoredPositions), 'EdgeColorData', uint8([obj.Color*255 255]'), ...
+                'VertexData', single(obj.toWorld(obj.StoredPositions')'), 'EdgeColorData', uint8([obj.Color*255 255]'), ...
                 'Style', 'point', 'Size', obj.MarkerSize, ...
                 'Layer', phx.internal.choose({'middle', 'front'}, obj.Overlay + 1), 'PickableParts', 'none');
             obj.applyTint;
@@ -491,12 +558,12 @@ classdef (Abstract) ParticleGroup < phx.base.Object
         end
 
         function redraw(obj)
-            % Positions drawn outside the simulation steps
+            % The particles drawn outside the simulation steps
             if ~isempty(obj.hM) && isvalid(obj.hM)
                 if obj.isLive
                     obj.hM.VertexData = single(phxEngine('get', obj.WorldHandle, obj.ObjectHandle, 'positions'));
                 else
-                    obj.hM.VertexData = single(obj.StoredPositions);
+                    obj.hM.VertexData = single(obj.toWorld(obj.StoredPositions')');
                 end
             end
         end

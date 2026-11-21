@@ -28,7 +28,7 @@ function phxex_soilparticles
     shift = s*(rand(2, size(z, 3)) - 0.5);
     x = x + reshape(shift(1, :), 1, 1, []);
     y = y + reshape(shift(2, :), 1, 1, []);
-    phx.Particles(ax, "Positions", [x(:) y(:) z(:)], "Radius", r, "Density", 2600, ...
+    phx.Particles(ax, "Vertices", [x(:) y(:) z(:)], "Radius", r, "Density", 2600, ...
         "Color", [0.9 0.6 0.4], "RandomTint", 0.5, "MarkerSize", 18, "Sleeping", false, "Friction", 0.2);
 
     % Create a kinematic body (bucket of 1.2 m) for interaction

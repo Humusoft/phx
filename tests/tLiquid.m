@@ -4,7 +4,7 @@ classdef tLiquid < PhxTestCase
 %   The bookkeeping tests need neither graphics nor the engine: the
 %   defaults of a liquid, the mass of its particles, filling a Shape (the
 %   lattice of the Spacing, the pose, the order of the constructor's
-%   arguments, Positions replacing the shape, the shapes that cannot fill)
+%   arguments, Vertices replacing the shape, the shapes that cannot fill)
 %   and the errors. The simulation tests ("Engine" tag) check that the
 %   engine takes the mass PHX reports, that a lattice at rest reads the
 %   Density and a changed Density reaches the engine, that a column in a
@@ -39,7 +39,7 @@ classdef tLiquid < PhxTestCase
         function liquidHasItsDefaults(tc)
             % A liquid slides along walls without bouncing; the mass of a
             % particle is that of the lattice that reads the Density
-            L = phx.Liquid([], "Positions", [0 0 1; 1 0 1]);
+            L = phx.Liquid([], "Vertices", [0 0 1; 1 0 1]);
             tc.verifyEqual([L.Friction L.Restitution], [0 0]);
             tc.verifyEqual([L.Spacing L.Density L.SoundSpeed L.Viscosity], [0.02 1000 20 0.1]);
             tc.verifyEqual(L.ParticleMass, 1000*0.02^3*32768*pi/103950, "RelTol", 1e-12);
@@ -53,14 +53,14 @@ classdef tLiquid < PhxTestCase
         function liquidHasNoParticleLimit(tc)
             % The limit of phx.Particles comes from contacts among the
             % particles, which a liquid has not
-            L = phx.Liquid([], "Positions", zeros(phx.Particles.MaxCount + 1, 3));
+            L = phx.Liquid([], "Vertices", zeros(phx.Particles.MaxCount + 1, 3));
             tc.verifyEqual(L.Count, phx.Particles.MaxCount + 1);
         end
 
         function shapeFillsWithTheLatticeOfTheSpacing(tc, Filled)
             L = phx.Liquid([], "Shape", Filled{1}, "Spacing", 0.01);
             tc.verifyEqual(L.Count*0.01^3, Filled{2}, "RelTol", 0.03);
-            tc.verifyCubicLattice(L.Positions, 0.01, "A cubic lattice of the Spacing.");
+            tc.verifyCubicLattice(L.CurrentVertices, 0.01, "A cubic lattice of the Spacing.");
         end
 
         function boxFillsExactly(tc)
@@ -76,30 +76,35 @@ classdef tLiquid < PhxTestCase
             box = {"Box", "Size", [0.2 0.1 0.3]};
             A = phx.Liquid([], "Shape", box, "Spacing", 0.01, "Position", [1 2 3], "EulerAngles", [0 0 pi/2]);
             B = phx.Liquid([], "EulerAngles", [0 0 pi/2], "Position", [1 2 3], "Spacing", 0.01, "Shape", box);
-            tc.verifyEqual(sortrows(A.Positions), sortrows(B.Positions), "AbsTol", 1e-12);
-            tc.verifyEqual(mean(A.Positions), [1 2 3], "AbsTol", 1e-12);
-            tc.verifyEqual(max(A.Positions) - min(A.Positions), [0.09 0.19 0.29], "AbsTol", 1e-12, "Turned a quarter about z.");
+            tc.verifyEqual(sortrows(A.CurrentVertices), sortrows(B.CurrentVertices), "AbsTol", 1e-12);
+            tc.verifyEqual(mean(A.CurrentVertices), [1 2 3], "AbsTol", 1e-12);
+            tc.verifyEqual(max(A.CurrentVertices) - min(A.CurrentVertices), [0.09 0.19 0.29], "AbsTol", 1e-12, "Turned a quarter about z.");
         end
 
         function shapeIsFilledAgainUntilTheSimulation(tc)
-            % A new Position or Spacing fills the shape again; Positions
-            % given replace it, and a later Position moves nothing
+            % A new Spacing fills the shape again, a new Position only moves
+            % the group (the lattice is in its frame); Vertices given
+            % replace the shape, and Position then moves them as a whole
             L = phx.Liquid([], "Shape", {"Box", "Size", [0.2 0.2 0.2]}, "Spacing", tc.D);
             tc.verifyEqual(L.Count, 1000);
             L.Spacing = 0.04;
             tc.verifyEqual(L.Count, 125);
+            V = L.Vertices;
             L.Position = [0 0 1];
-            tc.verifyEqual(mean(L.Positions), [0 0 1], "AbsTol", 1e-12);
-            L.Positions = [0 0 0; 1 0 0];
+            tc.verifyEqual(L.Vertices, V, "Moving the group fills nothing again.");
+            tc.verifyEqual(mean(L.CurrentVertices), [0 0 1], "AbsTol", 1e-12);
+            L.Vertices = [0 0 0; 1 0 0];
             L.Position = [5 5 5];
-            tc.verifyEqual(L.Positions, [0 0 0; 1 0 0]);
+            tc.verifyEqual(L.CurrentVertices, [5 5 5; 6 5 5]);
+            L.Spacing = 0.03;
+            tc.verifyEqual(L.Vertices, [0 0 0; 1 0 0], "The shape is gone.");
         end
 
         function shapeErrors(tc)
-            tc.verifyError(@() phx.Liquid([], "Shape", {"Box"}, "Positions", [0 0 0]), "phx:Liquid:shapeAndPositions");
+            tc.verifyError(@() phx.Liquid([], "Shape", {"Box"}, "Vertices", [0 0 0]), "phx:Liquid:shapeAndVertices");
             tc.verifyError(@() phx.Liquid([], "Shape", {"Revolution"}), "phx:Liquid:badShape");
             tc.verifyError(@() phx.Liquid([], "Shape", 42), "phx:Liquid:badShape");
-            L = phx.Liquid([], "Positions", [0 0 1]);
+            L = phx.Liquid([], "Vertices", [0 0 1]);
             tc.verifyError(@() L.applyForce([0 0 1]), "phx:Liquid:notSimulated");
             tc.verifyError(@() set(L, "Velocities", [0 0 0; 0 0 0]), "phx:Liquid:sizeMismatch");
         end
@@ -111,7 +116,7 @@ classdef tLiquid < PhxTestCase
             % A lone particle has no neighbours and no pressure: a force
             % changes its velocity by F*dt/ParticleMass
             tc.requireLiquids;
-            L = phx.Liquid([], "Positions", [0 0 1], "Spacing", tc.D);
+            L = phx.Liquid([], "Vertices", [0 0 1], "Spacing", tc.D);
             sim = tc.simulate({L}, [0 0 0]);
             L.applyForce([1 0 0]);
             sim.step(tc.Dt, 1, -1);
@@ -124,7 +129,7 @@ classdef tLiquid < PhxTestCase
             tc.requireLiquids;
             L = phx.Liquid([], "Shape", {"Box", "Size", 5*tc.D*[1 1 1]}, "Spacing", tc.D);
             tc.simulate({L}, [0 0 0]);
-            centre = find(all(abs(L.Positions) < 1e-9, 2));
+            centre = find(all(abs(L.CurrentVertices) < 1e-9, 2));
             rho = L.Densities;
             tc.verifySize(rho, [125 1]);
             tc.verifyEqual(rho(centre), 1000, "RelTol", 1e-6);
@@ -142,32 +147,37 @@ classdef tLiquid < PhxTestCase
             L = phx.Liquid([], "Shape", {"Box", "Size", [0.2 0.2 0.16]}, "Position", [0 0 0.08], "Spacing", tc.D);
             sim = tc.simulate([{parts.floor}, num2cell(parts.walls), {L}]);
             sim.step(1, 1/tc.Dt, -1);
-            top = sort(L.Positions(:, 3), "descend");
+            top = sort(L.CurrentVertices(:, 3), "descend");
             tc.verifyEqual(mean(top(1:25)) + tc.D/2, 0.16, "AbsTol", tc.D/2);
             tc.verifyLessThan(max(L.Densities), 1000*1.02);
             tc.verifyLessThan(max(vecnorm(L.Velocities, 2, 2)), 0.2);
         end
 
         function shapeIsDoneOnceSimulated(tc)
+            % The engine holds the particles: no Shape, no new pose; after
+            % the run Vertices keep the last state in the group frame, and
+            % a new Position moves them as a whole
             tc.requireLiquids;
             L = phx.Liquid([], "Shape", {"Box", "Size", 3*tc.D*[1 1 1]}, "Position", [0 0 1], "Spacing", tc.D);
             sim = tc.simulate({L}, [0 0 0]);
             tc.verifyError(@() set(L, "Shape", {"Sphere"}), "phx:Liquid:running");
+            tc.verifyError(@() set(L, "Position", [1 1 1]), "phx:Liquid:running");
             sim.step(tc.Dt, 1, -1);
             delete(sim);
-            P = L.Positions;
+            V = L.Vertices;
             L.Position = [5 5 5];
-            tc.verifyEqual(L.Positions, P, "The shape no longer moves the particles.");
+            tc.verifyEqual(L.Vertices, V);
+            tc.verifyEqual(L.CurrentVertices, V + [5 5 5], "AbsTol", 1e-12);
         end
 
         function stateSurvivesTheSimulation(tc)
             tc.requireLiquids;
-            L = phx.Liquid([], "Positions", [0 0 1], "Spacing", tc.D);
+            L = phx.Liquid([], "Vertices", [0 0 1], "Spacing", tc.D);
             sim = tc.simulate({L}, [0 0 0]);
             L.Velocities = [0 0 -1];
             sim.step(0.01, 40, -1);
             delete(sim);
-            tc.verifyEqual(L.Positions, [0 0 0.99], "AbsTol", 1e-6);
+            tc.verifyEqual(L.CurrentVertices, [0 0 0.99], "AbsTol", 1e-6);
             tc.verifyEqual(L.Velocities, [0 0 -1], "AbsTol", 1e-6);
         end
     end
