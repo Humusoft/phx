@@ -2565,6 +2565,70 @@ classdef tEngineProtocol < PhxTestCase
             phxEngine('remove', w, h);
             tc.verifyError(@() phxEngine('get', w, h, 'vertices'), ?MException);
         end
+
+        function softBodyVelocitiesAreSetAndReadInTheWorld(tc)
+            % The vertex velocities of a soft body are set and read as 3xN
+            % in the world; given all the same, the mesh flies off at that
+            % velocity without gravity. A pinned vertex keeps standing
+            % still, and a matrix of another size fails.
+            [V, F] = tEngineProtocol.cubeMesh(0.2);
+            w = tc.newWorld([0 0 0]);
+            h = phxEngine('add', w, 'softbody', V, F, tEngineProtocol.pose([0 0 1]), 1, 0);
+            tc.verifyEqual(phxEngine('get', w, h, 'velocities'), zeros(3, 8));
+            v = [1; 0.5; -0.2];
+            phxEngine('set', w, h, 'velocities', repmat(v, 1, 8));
+            tc.verifyEqual(phxEngine('get', w, h, 'velocities'), repmat(v, 1, 8), "AbsTol", 1e-6);
+            t = 0.2;
+            for k = 1:round(t/tc.Dt)
+                phxEngine('step', w, tc.Dt);
+            end
+            X = phxEngine('get', w, h, 'vertices');
+            tc.verifyEqual(X, V + [0; 0; 1] + v*t, "AbsTol", 1e-4, "The mesh moves at the velocity.");
+            tc.verifyEqual(phxEngine('get', w, h, 'velocities'), repmat(v, 1, 8), "AbsTol", 1e-4);
+
+            phxEngine('set', w, h, 'pinned', 1);
+            phxEngine('set', w, h, 'velocities', repmat(v, 1, 8));
+            U = phxEngine('get', w, h, 'velocities');
+            tc.verifyEqual(U(:, 1), zeros(3, 1), "A pinned vertex stays held.");
+            tc.verifyEqual(U(:, 2:end), repmat(v, 1, 7), "AbsTol", 1e-6);
+            tc.verifyError(@() phxEngine('set', w, h, 'velocities', zeros(3, 7)), "phx:engine:badArgument");
+        end
+
+        function flexibleBodyVelocitiesAreSetAndReadInTheWorld(tc)
+            % A flexible body of linear and of quadratic tetrahedra takes
+            % its vertex velocities as a soft body does; the Newton solver of
+            % the quadratic ones keeps them in double precision. A uniform
+            % velocity carries the body along without gravity, unstrained,
+            % also when it is set again during the run.
+            w = tc.newWorld([0 0 0]);
+            for order = [4 10]
+                [V, F, T] = tEngineProtocol.tetrahedronMesh(order);
+                n = size(V, 2);
+                h = phxEngine('add', w, 'flexiblebody', V, F, tEngineProtocol.pose([0 0 1]), 1, [1e6 0.3], T);
+                tol = 1e-8 + (order == 4)*1e-5;   % float velocities of Jolt's solver
+                tc.verifyEqual(phxEngine('get', w, h, 'velocities'), zeros(3, n), ...
+                    sprintf("At rest at first (order %d).", order));
+                v = [0.3; -0.4; 1];
+                phxEngine('set', w, h, 'velocities', repmat(v, 1, n));
+                tc.verifyEqual(phxEngine('get', w, h, 'velocities'), repmat(v, 1, n), "AbsTol", 1e-6);
+                t = 0.1;
+                for k = 1:round(t/tc.Dt)
+                    phxEngine('step', w, tc.Dt);
+                end
+                X = phxEngine('get', w, h, 'vertices');
+                tc.verifyEqual(X, V + [0; 0; 1] + v*t, "AbsTol", tol, ...
+                    sprintf("The body moves at the velocity (order %d).", order));
+                tc.verifyEqual(phxEngine('get', w, h, 'velocities'), repmat(v, 1, n), "AbsTol", tol);
+
+                phxEngine('set', w, h, 'velocities', repmat(-v, 1, n));
+                for k = 1:round(t/tc.Dt)
+                    phxEngine('step', w, tc.Dt);
+                end
+                tc.verifyEqual(phxEngine('get', w, h, 'vertices'), V + [0; 0; 1], "AbsTol", 2*tol, ...
+                    sprintf("Set again, the velocity brings it back (order %d).", order));
+                phxEngine('remove', w, h);
+            end
+        end
     end
 
     % Particle groups
@@ -3653,6 +3717,22 @@ classdef tEngineProtocol < PhxTestCase
             % one-based faces 3x12
             V = half*[-1 -1 -1; 1 -1 -1; 1 1 -1; -1 1 -1; -1 -1 1; 1 -1 1; 1 1 1; -1 1 1]';
             F = 1 + [0 2 1; 0 3 2; 4 5 6; 4 6 7; 0 1 5; 0 5 4; 1 2 6; 1 6 5; 2 3 7; 2 7 6; 3 0 4; 3 4 7]';
+        end
+
+        function [V, F, T] = tetrahedronMesh(order)
+            % One tetrahedron of 0.2 m legs: vertices 3xN, the outward
+            % faces of its corners 3x4 and its vertex indices 4x1 (order 4)
+            % or, with the vertices of the edges 12 23 13 14 24 34, 10x1
+            % (order 10)
+            C = 0.2*[0 0 0; 1 0 0; 0 1 0; 0 0 1]';
+            F = [1 3 2; 1 2 4; 2 3 4; 1 4 3]';
+            if order == 4
+                V = C;
+            else
+                E = [1 2; 2 3; 1 3; 1 4; 2 4; 3 4];
+                V = [C, (C(:, E(:, 1)) + C(:, E(:, 2)))/2];
+            end
+            T = (1:order)';
         end
     end
 

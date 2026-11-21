@@ -140,7 +140,9 @@ Each a step of its own, reviewed before the next:
    `Position`, `Orientation`), and saved with the body; `CurrentVelocities` of the
    particle groups. That of the meshes needs the engine's soft body velocities: phase 4.)
 3. Engine: soft body `velocities`, the initial velocities of the flexible solver
-   (tools/jolt, JOLT_CHANGES.md); contract tests; MEX built.
+   (tools/jolt, JOLT_CHANGES.md); contract tests; MEX built. (Done: the soft body field
+   `velocities`, protocol 2 step Z, JOLT_CHANGES.md item 45, Jolt `94b834c`: setting
+   velocities restarts BDF2 with a backward Euler step; a pinned vertex keeps zero.)
 4. `Velocities` and `CurrentVelocities` of soft and flexible bodies; tests.
 5. `LinearDamping` of soft and flexible bodies with the `Damping` alias; tests.
 6. Demos, help, user guide, skills, upgrade guide.
