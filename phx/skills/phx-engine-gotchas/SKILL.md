@@ -109,6 +109,12 @@ How to use it when debugging:
   velocity) is in **phx-scene-basics**, "Driving a kinematic body".
 - **Negative time steps are refused** (`phx:engine:badArgument`): the engine only steps
   forward.
+- **Compliant contacts sink by design.** A body with a finite `ContactStiffness` rests
+  `F/ContactStiffness` deep in its support, and `Penetration` in the diagnostics reports that
+  depth too; `deepPenetration` fires once it passes 10 % of `LengthScale`. That is the
+  stiffness being too low for the load, not a solver failure: raise `ContactStiffness`, do
+  not lower `dt`. Soft bodies, flexible bodies and particles keep rigid contacts. Whether a
+  scene should use compliant contacts at all: **phx-scene-basics**.
 
 ## phx.engine.Settings — initial engine config
 

@@ -116,6 +116,10 @@ read and written &mdash; even during the simulation (they read/write the engine 
     <td>Rolling resistance and spin radius [m], both 0 by default: the arm of the normal
     force that resists rolling, and the effective contact patch radius that resists spinning
     of a point contact. A contact adds the values of both bodies.</td></tr>
+<tr><td class="name">ContactStiffness / ContactDamping</td>
+    <td>Contact stiffness [N/m] and damping [N&middot;s/m]: <code class="phx-inline">Inf</code> and 0 by
+    default, a rigid contact. A finite stiffness makes the contacts of the body compliant (see
+    <a href="#compliant">below</a>).</td></tr>
 <tr><td class="name">TotalForce / TotalTorque / Energy</td>
     <td>Current force, torque and kinetic energy (read-only).</td></tr>
 <tr><td class="name">LinearAcceleration / AngularAcceleration</td>
@@ -134,6 +138,56 @@ body.AppliedTorque = [0 0 2];   <span class="cmt">% 2 N*m about the body z axis,
 body.applyForce([0 0 50]);      <span class="cmt">% a 50 N push for one substep</span>
 body.LinearVelocity = [2 0 0];  <span class="cmt">% set velocity at runtime</span></pre>
 <p>See <a href="phx_ug_forces.html">Forces, actuators and fields</a>.</p>
+
+<h2 class="phx-h2" id="compliant">Compliant contacts</h2>
+<p>Contacts are rigid by default: bodies do not sink into each other, and the force of a
+contact is whatever keeps them apart. A rubber pad, a polyurethane wheel or a padded support
+is better described by a spring along the contact normal. A finite
+<code class="phx-inline">ContactStiffness</code> <var>k</var> with a
+<code class="phx-inline">ContactDamping</code> <var>c</var> makes every contact of the body a
+spring-damper, with the force
+<var>F</var>&nbsp;=&nbsp;max(0,&nbsp;<var>k</var>&thinsp;<var>d</var>&nbsp;+&nbsp;<var>c</var>&thinsp;<var>d&prime;</var>)
+of the penetration <var>d</var>. It is the contact law of Simscape Multibody's Spatial Contact
+Force and of Adams, in the same units:</p>
+<ul>
+<li>A body resting on a support sinks <var>F</var>/<var>k</var> into it, and a gripper pad pressed
+in by <var>d</var> clamps with <var>k</var>&thinsp;<var>d</var>.</li>
+<li>The contact never pulls. Restitution does not apply; the damping ratio
+<var>c</var>/(2&radic;(<var>km</var>)) of a mass <var>m</var> sets the rebound instead.</li>
+<li>Friction, <code class="phx-inline">RollingResistance</code> and
+<code class="phx-inline">SpinRadius</code> act as on a rigid contact.</li>
+<li>The two bodies act in series, 1/<var>k</var>&nbsp;=&nbsp;1/<var>k</var><sub>1</sub>&nbsp;+&nbsp;1/<var>k</var><sub>2</sub>
+(the damping likewise): a compliant body keeps its own values against a rigid one, so it is
+compliant against everything it touches.</li>
+</ul>
+
+<pre class="phx-code">pad = phx.Body(<span class="str">"Type"</span>, <span class="str">"kinematic"</span>, <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [0.04 0.3 0.3]}, ...
+    <span class="str">"ContactStiffness"</span>, 1e4, <span class="str">"ContactDamping"</span>, 70);   <span class="cmt">% 10 N per mm, rubber</span>
+pad.TotalForce                  <span class="cmt">% the contact force on the pad, after a step</span></pre>
+
+<p>A body of mass <var>m</var> stays in contact for about
+<var>T</var><sub>c</sub>&nbsp;=&nbsp;&pi;&radic;(<var>m</var>/<var>k</var>). Resting, rolling
+and clamping contacts come out right at any step. The force and the rebound of an impact
+follow the law within a few per cent with an engine step of <var>T</var><sub>c</sub>/10 or less,
+and within about 10&nbsp;% up to <var>T</var><sub>c</sub>/3. With coarser steps impacts become
+inelastic, while the contact stays stable even at a very high stiffness. A stiffness that
+leaves a penetration of a millimetre or more under the working loads is usually what a
+compliant contact is for; keep the penetration well below the size of the shapes.</p>
+
+<div class="phx-note">
+<span class="lbl">Where it helps.</span> In <code>phxex_grip</code> the jaw pads clamp the object
+with <code class="phx-inline">ContactStiffness</code> times their squeeze, and the plot shows the
+clamping force and the friction carrying the object; rigid jaws pressed in by the same
+3.5&nbsp;mm clamped it with kilonewtons. In <code>phxex_coaster</code> compliant wheel treads
+take the knocks of the faceted rails: the wheels stay on the rails, and the train loses less
+speed.
+</div>
+
+<p>The stiffness belongs to the whole contact face and is shared by its points, so a box on
+its face rocks as on springs at its corners. A body touching a triangle mesh may meet it in
+several faces at once, and is then stiffer than its
+<code class="phx-inline">ContactStiffness</code> says. Soft bodies, flexible bodies and
+particles keep rigid contacts.</p>
 
 <div class="phx-note">
 <span class="lbl">Coordinate system.</span> PHX uses the <b>z</b> axis pointing up by default; the

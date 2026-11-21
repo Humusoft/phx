@@ -118,6 +118,37 @@ b = phx.Body(ax, ...
   `Restitution` too; a floor of 1 (ideal rigid surface) leaves the ball's own value. The
   rebound height is `e²·h` with `e` the smaller value (exact at a 1 ms step, within 2 % at
   5 ms), so compute `e` from the bounce you want.
+- **Compliant contacts — `ContactStiffness` (N/m, default `Inf` = rigid) and
+  `ContactDamping` (N·s/m, default 0).** **Keep contacts rigid by default**; make a body's
+  contacts compliant only when the scene has a reason:
+  - the part *is* compliant and its deflection matters: rubber gripper pads, polyurethane
+    wheels, a padded support, a foot on a mat;
+  - the **contact force is a result** you report or plot: rigid jaws pressed into an object
+    clamp it with whatever the solver needs (kilonewtons for a 0.5 kg object), compliant
+    pads with exactly `ContactStiffness*squeeze`;
+  - rigid wheels knock on a faceted triangle-mesh track (every bend a hard impulse, wheels
+    hop): compliant treads take the knocks (`phxex_coaster`).
+
+  Not for: making a stack or a scene "more stable", softening a collision that only looks
+  harsh, or bounces (use `Restitution`; a compliant contact ignores it). Rules:
+  - Force `max(0, k*d + c*d')` of the penetration `d`, never pulling. The two bodies act in
+    series (`1/k = 1/k1 + 1/k2`, damping likewise), so a compliant body is compliant
+    against everything, rigid floor included; the contact is rigid only if both are.
+  - **Choose `k` from the deflection** you accept under the working load, `k = F/d`
+    (1e4 N/m = 1 mm per 10 N; the 400 kg coaster cars ride 1 mm deep on wheels of 1e6), and `c` from
+    the damping ratio `zeta = c/(2*sqrt(k*m))`, `m` the mass the contact carries (0.3: a
+    ball rebounds at 0.44 of its impact speed; 0.5-1 for pads that should not ring).
+  - Resting, rolling and clamping come out right at any step; **impacts need
+    `dt <= T_c/10`**, `T_c = pi*sqrt(m/k)` (coarser: inelastic, but stable).
+  - The stiffness belongs to the whole contact face, shared by its points; a body touching
+    a triangle mesh in several faces at once is stiffer than set.
+  - Read the force through the partner: a static or kinematic body's `TotalForce` is the
+    sum of its contact forces (`phxex_grip` plots clamping force and friction this way).
+
+  ```matlab
+  pad = phx.Body(ax, "Type", "kinematic", "Shape", {"Box", "Size", [0.04 0.3 0.3]}, ...
+      "Friction", 0.6, "ContactStiffness", 1e4, "ContactDamping", 70);  % rubber, 1 mm per 10 N
+  ```
 - **`SurfaceVelocity` — a virtual moving surface (conveyor belts).** A `[vx vy vz]`
   vector, default `[0 0 0]`, settable live. The body itself does **not** move; contacts
   with it are solved as if its surface were sliding at that velocity, so resting bodies

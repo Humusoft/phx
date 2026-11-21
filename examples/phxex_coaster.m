@@ -3,12 +3,12 @@ function phxex_coaster(Options)
 %
 % A train of three cars pushed over the crest rolls down a 14 m drop,
 % through a loop and a 180 deg banked turn, and leaves the end of the track
-% over a small kicker into a brick wall. Nothing guides the cars but their wheels on the
-% rails: flanged wheels with a coned tread ride two tube rails (static
-% triangle meshes), and the front axle of each car sits in a springy
-% bushing that lets it roll and yaw, so that all four wheels follow the
-% twist of the banked turn. The cars are coupled
-% by stiff damped springs, colored by their force. The bank of the turn is
+% over a small kicker into a brick wall. Nothing guides the cars but their
+% wheels on the rails: flanged wheels with a coned, compliant tread ride
+% two tube rails (static triangle meshes), and the front axle of each car
+% sits in a springy bushing that lets it roll and yaw, so that all four
+% wheels follow the twist of the banked turn. The cars are coupled by
+% stiff damped springs, colored by their force. The bank of the turn is
 % set for the speed the train is expected to have there (see coasterTrack
 % below). The camera stands in the middle of the ride and follows the
 % middle car; a gauge shows its speed and a plot the load felt by a rider
@@ -58,10 +58,10 @@ function phxex_coaster(Options)
 
     addSurroundings(ax, trk);
 
-    % A wall of loose light bricks across the landing lane, 12 m past the end
+    % A wall of loose light bricks across the landing lane, 13 m past the end
     % of the track, where the flying train comes down
     phx.assembly.wall(ax, "Size", [6 0.3 3], "Rows", 6, "Columns", 6, ...
-        "Position", [24 24.8 0], "EulerAngles", [0 0 pi/2], "Density", 600, ...
+        "Position", [23.5 24.8 0], "EulerAngles", [0 0 pi/2], "Density", 600, ...
         "Color", [0.8 0.4 0.3], "RandomTint", 0.3);
 
     % The train: cars 2 m apart on the crest, the first one in front
@@ -186,9 +186,12 @@ function cart = buildCart(ax, trk, s0, color, gauge, railRadius, wheelRadius, sp
                 "Visible", false);
         end
         for side = [1 -1]
+            % Compliant treads (polyurethane): 1 mm under a quarter of the
+            % car, damped at a ratio of 0.3
             pWheel = [xw side*gauge/2 -0.05];
             wheel = phx.Body(ax, "Position", pCart + pWheel*R0', "Orientation", R0, ...
                 "Shape", wheelShape{(3 - side)/2}, "Friction", 0.3, ...
+                "ContactStiffness", 1e6, "ContactDamping", 6e3, ...
                 "LinearVelocity", v0, "AngularVelocity", speed0/r*trk.L(i0, :));
             phx.RevoluteJoint(host, wheel, "PointA", pWheel - offset, "PointB", [0 0 0], ...
                 "AxisA", [0 1 0], "AxisB", [0 1 0], "Visible", false);

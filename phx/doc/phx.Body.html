@@ -105,7 +105,29 @@ adds the values of both bodies; about 2/3 of the radius of the real patch.</td><
 bounces with the <em>smaller</em> of the two colliding bodies' values, so both must be nonzero for
 the contact to bounce: a ball of 0.8 on a default floor (0) does not bounce. A body of 1, an ideal
 rigid surface, leaves the other body's value as it is, and a ball of restitution <var>e</var>
-dropped onto it rises to <var>e</var>&sup2; of the drop height.</td></tr>
+dropped onto it rises to <var>e</var>&sup2; of the drop height. A compliant contact (see
+<code class="phx-inline">ContactStiffness</code>) does not use it; its damping takes its place.</td></tr>
+<tr><td class="name">ContactStiffness</td><td class="dflt">Inf</td>
+<td>Contact stiffness, <span class="phx-unit">N/m</span> (&gt;&nbsp;0). <code class="phx-inline">Inf</code>
+keeps the contacts of the body rigid. A finite value makes them compliant: a spring along the
+contact normal, so a body resting on a support sinks <var>F</var>/<code class="phx-inline">ContactStiffness</code>
+into it, and the clamping force of a gripper pad pressed in by <var>d</var> is
+<code class="phx-inline">ContactStiffness</code>&middot;<var>d</var>. A contact combines the values of both
+bodies in series, 1/<var>k</var>&nbsp;=&nbsp;1/<var>k</var><sub>1</sub>&nbsp;+&nbsp;1/<var>k</var><sub>2</sub>:
+against a rigid body the compliant one keeps its own value, and the contact is rigid only when
+both bodies are. The points of a contact face share the stiffness. A mass <var>m</var> stays in
+contact for about &pi;&radic;(<var>m</var>/<var>k</var>); impacts follow the law closely with a
+step of a tenth of that, while resting and rolling contacts are right at any step. See
+<a href="phx_ug_bodies.html#compliant">Compliant contacts</a>.</td></tr>
+<tr><td class="name">ContactDamping</td><td class="dflt">0</td>
+<td>Contact damping of a compliant contact, <span class="phx-unit">N&middot;s/m</span> (&ge;&nbsp;0, finite):
+the damper beside the spring. The contact force is max(0,&nbsp;<var>k</var><var>d</var>&nbsp;+&nbsp;<var>c</var><var>d&prime;</var>)
+of the penetration <var>d</var>, so it never pulls. For a mass <var>m</var> on a rigid support the
+damping ratio is <var>c</var>/(2&radic;(<var>km</var>)); a ratio of 0.3 lets a dropped ball rebound with
+about 0.44 of its impact speed, 1 hardly at all. A contact combines the values in series,
+<var>c</var><sub>1</sub><var>c</var><sub>2</sub>/(<var>c</var><sub>1</sub>&nbsp;+&nbsp;<var>c</var><sub>2</sub>),
+a rigid body leaving the other's. No effect while <code class="phx-inline">ContactStiffness</code>
+is <code class="phx-inline">Inf</code>.</td></tr>
 <tr><td class="name">Collisions</td><td class="dflt">true</td>
 <td>Enable or disable collisions for this body.</td></tr>
 <tr><td class="name">SurfaceVelocity</td><td class="dflt">[0 0 0]</td>

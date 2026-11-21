@@ -116,6 +116,53 @@ classdef tSimulation < PhxTestCase
             tc.verifyEqual(ball.LinearVelocity(1), v3(1), "RelTol", 1e-3, "Rolling without resistance");
             tc.verifyEqual(ball.AngularVelocity(3), w3(3), "RelTol", 1e-3, "Spinning without spin radius");
         end
+
+        function contactStiffnessReachesTheEngine(tc)
+            % A 10 kg box with ContactStiffness k rests sunk m g / k into a
+            % rigid floor, set at construction and changed while running;
+            % rigid by default, it does not sink
+            g = 9.81;
+            floor = tc.spawnBody([0 0 -0.5], "Type", "static", "Shape", {"Box", "Size", [4 4 1]});
+            box = tc.spawnBody([0 0 0.1], "Shape", {"Box", "Size", 0.2*[1 1 1]}, "Mass", 10, ...
+                "ContactStiffness", 1e6, "ContactDamping", 2*sqrt(1e7));   % damping ratio 1
+            rigid = tc.spawnBody([1 0 0.1], "Shape", {"Box", "Size", 0.2*[1 1 1]}, "Mass", 10);
+            sim = phx.Simulation([floor box rigid], "Gravity", [0 0 -g]);
+            tc.addTeardown(@() delete(sim));
+            sim.step(1, 240, -1);
+            tc.verifyEqual(0.1 - box.Position(3), 10*g/1e6, "RelTol", 0.01, "Stiffness set at construction");
+            tc.verifyLessThan(abs(0.1 - rigid.Position(3)), 1e-6, "A rigid body does not sink.");
+            box.ContactStiffness = 2e6;
+            sim.step(1, 240, -1);
+            tc.verifyEqual(0.1 - box.Position(3), 10*g/2e6, "RelTol", 0.01, "Stiffness changed while running");
+        end
+
+        function contactDampingSetsTheRebound(tc)
+            % A 1 kg ball dropped 0.2 m onto a rigid floor, k 1e5 and the
+            % damping ratio 0.3 (c 190 N s/m), rebounds with 0.437 of its
+            % impact speed, the exact Kelvin-Voigt impact (the step a
+            % fortieth of the contact time); undamped, it bounces back up
+            R = 0.1;
+            k = 1e5;
+            rebound = zeros(1, 2);
+            for i = 1:2
+                c = [0 2*0.3*sqrt(k)];
+                floor = tc.spawnBody([0 0 -0.5], "Type", "static", "Shape", {"Box", "Size", [4 4 1]});
+                ball = tc.spawnBody([0 0 R + 0.2], "Shape", {"Sphere", "Radius", R}, ...
+                    "Mass", 1, "Inertia", 0.4*R^2*[1 1 1], "ContactStiffness", k, "ContactDamping", c(i));
+                sim = phx.Simulation([floor ball], "Gravity", [0 0 -9.81]);
+                z = nan(1, 2400);
+                for j = 1:numel(z)
+                    sim.step(1/4000, 1, -1);
+                    z(j) = ball.Position(3) - R;
+                end
+                delete(sim);
+                touch = find(z < 0, 1);
+                leave = touch - 1 + find(z(touch:end) >= 0, 1);
+                tc.assertNotEmpty(leave, "The ball did not leave the floor.");
+                rebound(i) = sqrt(max(z(leave:end))/0.2);
+            end
+            tc.verifyEqual(rebound, [1 0.437], "RelTol", 0.03);
+        end
     end
 
     methods (Test, TestTags = {'Engine', 'Graphics'})

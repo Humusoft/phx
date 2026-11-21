@@ -163,6 +163,21 @@ classdef tBodyKinematics < PhxTestCase
             tc.verifyError(@() set(tc.Body, "SpinRadius", NaN), ?MException);
         end
 
+        function contactStiffnessAndDampingAreValidated(tc)
+            % The contact is rigid by default (stiffness Inf, damping 0); a
+            % stiffness must be positive (Inf allowed), a damping finite
+            % and not negative
+            tc.verifyEqual([tc.Body.ContactStiffness tc.Body.ContactDamping], [Inf 0]);
+            tc.verifyError(@() set(tc.Body, "ContactStiffness", 0), ?MException);
+            tc.verifyError(@() set(tc.Body, "ContactStiffness", -1e5), ?MException);
+            tc.verifyError(@() set(tc.Body, "ContactStiffness", NaN), ?MException);
+            tc.verifyError(@() set(tc.Body, "ContactDamping", -1), ?MException);
+            tc.verifyError(@() set(tc.Body, "ContactDamping", Inf), ?MException);
+            tc.Body.ContactStiffness = 1e5;
+            tc.Body.ContactStiffness = Inf;
+            tc.verifyEqual(tc.Body.ContactStiffness, Inf);
+        end
+
         function frictionIsTheCoefficientAlone(tc)
             % Friction is a scalar coefficient; the [drag roll spin] form of
             % PHX 1.0 is still taken when it carries the coefficient alone,

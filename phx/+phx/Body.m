@@ -154,6 +154,25 @@ classdef Body < phx.base.Object
         % a body of 1 (an ideal rigid floor) keeps the other's bounce
         Restitution (1, 1) double {mustBeGreaterThanOrEqual(Restitution, 0)} = 0
 
+        % Contact stiffness (N/m): Inf (the default) keeps the contacts of
+        % the body rigid; a finite value makes them compliant, a spring
+        % along the contact normal, so a body resting on a support sinks
+        % F/ContactStiffness into it. A contact combines the values of both
+        % bodies in series, 1/k = 1/k1 + 1/k2: against a rigid body the
+        % compliant one keeps its own. The points of a contact face share
+        % it. A compliant contact does not use Restitution (ContactDamping
+        % takes its place) and lasts about pi*sqrt(m/k) for a mass m;
+        % impacts follow the law closely with a step of a tenth of that.
+        ContactStiffness (1, 1) double {mustBePositive} = Inf
+
+        % Contact damping (N*s/m) of a compliant contact, the damper beside
+        % the spring: the contact force is max(0, k*d + c*d') of the
+        % penetration d, so it never pulls. For a mass m on a rigid support
+        % the damping ratio is c/(2*sqrt(k*m)). A contact combines the
+        % values in series, c1*c2/(c1 + c2), a rigid body leaving the
+        % other's. No effect while ContactStiffness is Inf.
+        ContactDamping (1, 1) double {mustBeNonnegative, mustBeFinite} = 0
+
         % Enable collision response for this body
         Collisions (1, 1) logical = true
 
@@ -530,6 +549,16 @@ classdef Body < phx.base.Object
             if ~isempty(obj.ObjectHandle)
                 phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'restitution', value);
             end
+        end
+
+        function set.ContactStiffness(obj, value)
+            obj.ContactStiffness = value;
+            obj.pushContact;
+        end
+
+        function set.ContactDamping(obj, value)
+            obj.ContactDamping = value;
+            obj.pushContact;
         end
 
         function set.Collisions(obj, enable)
@@ -956,6 +985,9 @@ classdef Body < phx.base.Object
                 obj.stateTransfer(state);
                 obj.pushFriction;
                 obj.Restitution = obj.Restitution;
+                if valid && isfinite(obj.ContactStiffness)
+                    obj.pushContact;
+                end
                 obj.Collisions = obj.Collisions;
                 obj.SurfaceVelocity = obj.SurfaceVelocity;
                 % The persistent loads go with the engine body, so a new one
@@ -985,6 +1017,14 @@ classdef Body < phx.base.Object
             if ~isempty(obj.ObjectHandle)
                 phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'friction', ...
                     [obj.Friction obj.RollingResistance obj.SpinRadius]);
+            end
+        end
+
+        function pushContact(obj)
+            % Hands ContactStiffness and ContactDamping to the engine
+            if ~isempty(obj.ObjectHandle)
+                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'contact', ...
+                    [obj.ContactStiffness obj.ContactDamping]);
             end
         end
     end
