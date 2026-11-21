@@ -115,12 +115,17 @@ classdef Body < phx.base.Object
         % - dynamic
         Type {mustBeMember(Type, ["static", "kinematic", "dynamic"])} = "dynamic";
 
-        % Body mass (kg)
-        Mass (1, 1) double = 0
+        % Body mass (kg), Density times Volume. Setting it sets the Density
+        % for the present Volume and scales the Inertia by the ratio of the
+        % new mass to the old, so that the mass keeps its distribution.
+        % (Declared before Inertia: a saved body loads its mass first.)
+        Mass (1, 1) double {mustBePositive, mustBeFinite} = 1000
 
         % Principal moments of inertia (kg*m^2) about the centre of mass, in
-        % the body axes
-        Inertia (1, 3) double = [0 0 0]
+        % the body axes. The shape gives them at the Density; setting them
+        % changes neither the Mass nor the Density, and later changes of
+        % the mass or the density scale them as they are.
+        Inertia (1, 3) double {mustBePositive, mustBeFinite} = [1 1 1]*1000/6
 
         % Centre of mass (m) in the body frame, relative to the body origin
         % The shape gives it, as it gives Mass and Inertia; the body turns
@@ -195,10 +200,29 @@ classdef Body < phx.base.Object
         OnDoubleClickFcn = []
     end
 
+    properties (Dependent)
+        % Density of the body (kg/m^3), Mass over Volume. Setting it sets
+        % the Mass for the present Volume, which scales the Inertia; a new
+        % shape keeps it.
+        Density (1, 1) double {mustBePositive, mustBeFinite}
+    end
+
+    properties (Dependent, SetAccess = private)
+        % Volume of the shape (m^3); a Terrain, which encloses none, has a
+        % placeholder of 1 m^3
+        Volume (1, 1) double
+    end
+
     properties (Dependent, Hidden, SetAccess = private)
         % Numerical representation of Type property
         % (0 = static, 1 = kinematic, 2 = dynamic)
         TypeID
+    end
+
+    properties (Access = private)
+        % Volume of the shape, NaN in a body saved before PHX kept it: then
+        % read from the shape on first use
+        ShapeVolume = NaN
     end
 
     methods
@@ -212,23 +236,25 @@ classdef Body < phx.base.Object
             obj.SimulationOrder = "none";
             obj.RedrawOrder = "after";
 
-            % Process input arguments
+            % Process input arguments: the shape (or the default box) first,
+            % then the others in their order, then the mass properties in a
+            % fixed one, whatever the order they came in: the density or the
+            % mass, the inertia, the centre of mass
             obj.ParentAxes = ParentAxes;
-            phx.internal.applyArguments(Options, obj);
-
-            % Draw default shape
-            if isempty(obj.Graphics.Children)
-                mass = obj.Mass;
-                inertia = obj.Inertia;
-                center = obj.CenterOfMass;
+            if isfield(Options, "Density") && isfield(Options, "Mass")
+                error("phx:Body:densityAndMass", "Give a body either a Density or a Mass, not both.");
+            end
+            if isfield(Options, "Shape")
+                obj.Shape = Options.Shape;
+            else
                 obj.Shape = phx.shape.Box;
-                if mass ~= 0
-                    obj.Mass = mass;
+            end
+            massFields = ["Shape", "Density", "Mass", "Inertia", "CenterOfMass"];
+            phx.internal.applyArguments(rmfield(Options, intersect(fieldnames(Options), massFields)), obj);
+            for name = massFields(2:end)
+                if isfield(Options, name)
+                    obj.(name) = Options.(name);
                 end
-                if sum(inertia) ~= 0
-                    obj.Inertia = inertia;
-                end
-                obj.CenterOfMass = center; % the box has its own at the origin
             end
         end
 
@@ -351,8 +377,58 @@ classdef Body < phx.base.Object
                     end
             end
 
+            % The body keeps its density, unless the shape brings one, as in
+            % PHX 2.0
+            density = obj.Density;
+            if ~isnan(shape.Density)
+                density = shape.Density;
+            end
+
+            % The geometry of the shape at that density: the mass (whose
+            % scaling of the old inertia the new inertia then replaces),
+            % the inertia, the centre of mass
             shape.drawTo(obj.Graphics);
-            [obj.Mass, obj.Inertia, obj.CenterOfMass] = shape.computeMass;
+            [volume, inertia, center] = shape.computeVolume;
+            obj.ShapeVolume = volume;
+            obj.Mass = density*volume;
+            obj.Inertia = density*inertia;
+            obj.CenterOfMass = center;
+        end
+
+        function value = get.Volume(obj)
+            value = obj.ShapeVolume;
+            if isnan(value)
+                % A body saved before PHX kept the volume reads it from its
+                % shape; a saved mesh, whose geometry the graphics alone
+                % keep, from the mass and the density of the shape (that of
+                % PHX 2.0, 1000 kg/m^3 by default). Before its first shape,
+                % the 1 m^3 of the defaults.
+                value = 1;
+                for primitive = obj.Graphics.Children'
+                    shape = getappdata(primitive, "phxShape");
+                    if ~isempty(shape)
+                        try
+                            value = shape.computeVolume;
+                        catch
+                            density = shape.Density;
+                            if isnan(density)
+                                density = 1000;
+                            end
+                            value = obj.Mass/density;
+                        end
+                        obj.ShapeVolume = value;
+                        break
+                    end
+                end
+            end
+        end
+
+        function value = get.Density(obj)
+            value = obj.Mass/obj.Volume;
+        end
+
+        function set.Density(obj, value)
+            obj.Mass = value*obj.Volume;
         end
 
         function value = get.Transform(obj)
@@ -498,9 +574,12 @@ classdef Body < phx.base.Object
         end
 
         function set.Mass(obj, value)
+            % The inertia follows by the ratio of the masses, which keeps
+            % the distribution of the mass (its setter tells the engine)
+            old = obj.Mass;
             obj.Mass = value;
-            if ~isempty(obj.ObjectHandle)
-                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'massprops', value, obj.Inertia);
+            if value ~= old
+                obj.Inertia = obj.Inertia*(value/old);
             end
         end
 

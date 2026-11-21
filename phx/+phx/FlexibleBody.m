@@ -285,7 +285,10 @@ classdef FlexibleBody < phx.base.Object
             obj.Tetrahedra = zeros(0, size(T, 2));
             obj.Vertices = V;
             obj.Tetrahedra = T;
-            obj.Density = shape.Density;
+            if ~isnan(shape.Density)
+                % A density given to the shape, as in PHX 2.0
+                obj.Density = shape.Density;
+            end
         end
 
         function mesh = get.Mesh(obj)

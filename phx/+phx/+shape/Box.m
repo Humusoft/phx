@@ -28,9 +28,6 @@ classdef Box < phx.base.Shape
         % Box size (X Y Z)
         Size (1, 3) double = [1 1 1]
 
-        % Volumetric density (kg/m^3)
-        Density (1, 1) double = 1000
-
         % Resolution of the meshes of flexible and soft bodies: the
         % number of cells across the smallest side, the other sides cut
         % into cells as close to cubes as possible, or the numbers of cells

@@ -65,13 +65,6 @@ classdef Terrain < phx.base.Shape
             inertia = [0.1 0.1 0.1];
             center = [0 0 0];
         end
-
-        function [mass, inertia, center] = computeMass(obj)
-            % A terrain has no Density: its placeholders at 1000 kg/m^3
-            [volume, inertia, center] = obj.computeVolume;
-            mass = 1000*volume;
-            inertia = 1000*inertia;
-        end
     end
 
     methods (Access = {?phx.base.Shape, ?phx.base.Object})

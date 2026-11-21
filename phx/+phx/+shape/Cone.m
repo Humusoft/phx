@@ -44,9 +44,6 @@ classdef Cone < phx.base.Shape
         % Number of cone segments
         Segments (1, 1) double = 24
 
-        % Volumetric density (kg/m^3)
-        Density (1, 1) double = 1000
-
         % Resolution of the meshes of flexible and soft bodies: the number
         % of cells across the smaller of the larger diameter and the height,
         % the other one cut into cells as close to cubes as possible, or the

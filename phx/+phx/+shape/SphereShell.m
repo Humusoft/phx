@@ -45,9 +45,6 @@ classdef SphereShell < phx.base.Shape
         % Number of meridian segments of each face; the parallels follow at
         % the same angular step
         Segments (1, 1) double = 28
-
-        % Volumetric density of the wall (kg/m^3)
-        Density (1, 1) double = 1000
     end
 
     properties (Dependent)

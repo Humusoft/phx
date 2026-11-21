@@ -51,9 +51,6 @@ classdef CapsuleShell < phx.base.Shape
 
         % Number of segments of each face around the axis
         Segments (1, 1) double = 24
-
-        % Volumetric density of the wall (kg/m^3)
-        Density (1, 1) double = 1000
     end
 
     properties (Dependent)

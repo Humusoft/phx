@@ -53,9 +53,6 @@ classdef Tube < phx.base.Shape
         % Number of tube segments
         Segments (1, 1) double = 24
 
-        % Volumetric density (kg/m^3)
-        Density (1, 1) double = 1000
-
         % Collision envelope: "concave" triangle mesh, "convex" hull or
         % bounding "cylinder" about the tube axis
         Envelope {mustBeMember(Envelope, ["concave", "convex", "cylinder"])} = "concave"

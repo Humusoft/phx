@@ -43,9 +43,6 @@ classdef Extrusion < phx.base.Shape
         % Modeling axis of the extrusion
         Axis {mustBeMember(Axis, ["x", "y", "z"])} = "z"
 
-        % Volumetric density (kg/m^3)
-        Density (1, 1) double = 1000
-
         % Collision envelope: "convex" hull or "concave" triangle mesh
         Envelope {mustBeMember(Envelope, ["convex", "concave"])} = "convex"
     end

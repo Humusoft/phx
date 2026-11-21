@@ -167,9 +167,15 @@ Each a step of its own, reviewed before the next:
    as before; tests. (Done: masses, moments and centres of all shapes as before to
    the last bits.)
 2. `phx.Body`: the properties, the write rules, the constructor order, the positive
-   validators, the deprecated shape `Density` with its warning (once the body takes
-   the density, not before); tests.
+   validators; the shape `Density` moved to `phx.base.Shape`, hidden, NaN when not
+   given, taken by the body when given; tests. (Done. A flat open mesh falls back to a
+   box a thousandth of its largest side thick, so that its mass stays positive. A body
+   saved before keeps its saved mass and inertia; its volume comes from its shape, or
+   for a saved mesh, whose geometry only the graphics keep, from its mass and the
+   density of its shape.)
 3. `phx.FlexibleBody` (and the shape density of the others); tests.
-4. `phx.assembly` builders and the demos.
+4. `phx.assembly` builders and the demos, with the warning `phx:Shape:densityMoved`
+   for a density given to a shape (not before: until the demos move, it would warn in
+   every one of them).
 5. Saved scenes: loading, resaving the `saved_*.mat` files.
 6. Help, user guide, skills, upgrade guide.

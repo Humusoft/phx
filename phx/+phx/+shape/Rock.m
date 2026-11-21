@@ -31,9 +31,6 @@ classdef Rock < phx.base.Shape
 
         % Roundness factor (of the ideal icosahedron shape)
         Roundness (1, 1) double = 0.75
-
-        % Volumetric density (kg/m^3)
-        Density (1, 1) double = 1000
     end
 
     properties (Dependent)

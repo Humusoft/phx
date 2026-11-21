@@ -74,7 +74,7 @@ classdef tBoxShell < PhxTestCase
                 tc.verifyTrue(all(rising(inner) < 0), "The inner face faces the cavity.");
                 a = V(F(:, 1), :); b = V(F(:, 2), :); c = V(F(:, 3), :);
                 volume = sum(dot(a, cross(b, c, 2), 2))/6;
-                tc.verifyEqual(volume, s.computeMass/s.Density, "RelTol", 5e-3, "The faces enclose the wall.");
+                tc.verifyEqual(volume, s.computeVolume, "RelTol", 5e-3, "The faces enclose the wall.");
             end
         end
 

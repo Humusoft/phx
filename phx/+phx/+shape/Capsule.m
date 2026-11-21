@@ -39,9 +39,6 @@ classdef Capsule < phx.base.Shape
         % Number of Capsule segments
         Segments (1, 1) double = 24
 
-        % Volumetric density (kg/m^3)
-        Density (1, 1) double = 1000
-
         % Resolution of the meshes of flexible and soft bodies: the number
         % of cells across the diameter, the cylindrical part cut into cells
         % as close to cubes as possible, or the numbers of cells across the

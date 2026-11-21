@@ -75,6 +75,13 @@ classdef Shape
         TextureTransform (1, :) string {mustBeMember(TextureTransform, ["rot90", "rot180", "rot270", "fliplr", "flipud", "grayscale", "invert", "opaque"])} = strings(1, 0)
     end
 
+    properties (Hidden)
+        % Density (kg/m^3) as PHX 2.0 gave it to the shape, NaN when not
+        % given: the density belongs to the body that wears the shape
+        % (phx.Body.Density), which takes this one if given
+        Density (1, 1) double = NaN
+    end
+
     methods (Abstract)
         % Draw the shape into the target (axes or hgtransform)
         drawTo(obj, target)
@@ -136,19 +143,35 @@ classdef Shape
             end
         end
 
-        function [mass, inertia, center] = computeMass(obj)
-        %computeMass Mass properties of the shape at its Density.
-        %
-        %   [mass, inertia, center] = computeMass(shape) returns the mass
-        %   (kg), the principal moments of inertia about the centre of mass
-        %   (1x3, kg*m^2) and the centre of mass (shape axes, relative to its
-        %   origin) of the shape's volume at its Density.
-        %
-        % See also phx.base.Shape.computeVolume
+        function obj = set.Density(obj, value)
+            if ~(value > 0) || ~isfinite(value)
+                error("phx:Shape:badDensity", "The density must be positive and finite.");
+            end
+            obj.Density = value;
+        end
 
+        function [mass, inertia, center] = computeMass(obj, density)
+        %computeMass Mass properties of the shape at a density.
+        %
+        %   [mass, inertia, center] = computeMass(shape, density) returns the
+        %   mass (kg), the principal moments of inertia about the centre of
+        %   mass (1x3, kg*m^2) and the centre of mass (shape axes, relative
+        %   to its origin) of the shape's volume at the density (kg/m^3).
+        %
+        %   [mass, inertia, center] = computeMass(shape) takes the density
+        %   given to the shape, or 1000 kg/m^3.
+        %
+        % See also phx.base.Shape.computeVolume, phx.Body.Density
+
+            if nargin < 2
+                density = obj.Density;
+                if isnan(density)
+                    density = 1000;
+                end
+            end
             [volume, inertia, center] = obj.computeVolume;
-            mass = obj.Density*volume;
-            inertia = obj.Density*inertia;
+            mass = density*volume;
+            inertia = density*inertia;
         end
 
         function obj = nextColor(obj)

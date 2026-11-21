@@ -46,9 +46,6 @@ classdef Revolution < phx.base.Shape
         % Number of revolution segments
         Segments (1, 1) double = 45
 
-        % Volumetric density (kg/m^3)
-        Density (1, 1) double = 1000
-
         % Collision envelope: "convex" hull, "concave" triangle mesh,
         % bounding "cylinder" about the revolution axis, or "cones": the
         % profile revolved exactly, one truncated cone per segment, which

@@ -66,9 +66,6 @@ classdef Mesh < phx.base.Shape
         % Move the origin to the centre of the shape's bounding box
         Centered (1, 1) logical = true
 
-        % Volumetric density (kg/m^3)
-        Density (1, 1) double = 1000
-
         % Collision envelope: bounding "box", "cylinder" or "sphere",
         % "convex" hull, or "concave" triangle mesh
         Envelope {mustBeMember(Envelope, ["box", "cylinder", "sphere", "convex", "concave"])} = "convex"
@@ -147,8 +144,11 @@ classdef Mesh < phx.base.Shape
             [volume, ~, Icm, center] = phx.internal.Geometry.meshMass(V, F, 1);
             inertia = Icm([1 5 9]);
             if ~(volume > 0) || any(~isfinite(inertia)) || any(inertia <= 0) || any(~isfinite(center))
-                % Non-solid or open mesh: fall back to the bounding box
+                % Non-solid or open mesh: fall back to the bounding box; a
+                % flat one (a plane, a floor) as a box a thousandth of its
+                % largest side thick, so that its mass stays positive
                 s = obj.BBox.*abs(obj.Scale);
+                s = max(s, 1e-3*max(s));
                 volume = s(1)*s(2)*s(3);
                 q = s.^2;
                 inertia = [q(2) + q(3), q(1) + q(3), q(1) + q(2)]*volume/12;
