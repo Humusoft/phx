@@ -120,8 +120,8 @@ classdef SoftBody < phx.base.Object
         % Solver substeps of the soft body per simulation step
         Iterations (1, 1) double {mustBeInteger, mustBePositive} = 5
 
-        % Damping of the vertex velocities (1/s): dv/dt = -Damping*v
-        Damping (1, 1) double {mustBeNonnegative} = 0
+        % Damping of the vertex velocities (1/s): dv/dt = -LinearDamping*v
+        LinearDamping (1, 1) double {mustBeNonnegative} = 0
 
         % Friction coefficient; a contact combines the values of both bodies
         % as their geometric mean, sqrt(mu1*mu2)
@@ -130,6 +130,11 @@ classdef SoftBody < phx.base.Object
         % Restitution (bounciness) coefficient, 0 = no bounce; a contact
         % bounces with the smaller of the two bodies' values
         Restitution (1, 1) double {mustBeNonnegative} = 0
+    end
+
+    % Former name of LinearDamping (PHX 2.0)
+    properties (Dependent, Hidden)
+        Damping
     end
 
     properties (Dependent, SetAccess = private)
@@ -290,9 +295,19 @@ classdef SoftBody < phx.base.Object
             obj.engineSet('iterations', value);
         end
 
-        function set.Damping(obj, value)
-            obj.Damping = value;
+        function set.LinearDamping(obj, value)
+            obj.LinearDamping = value;
             obj.engineSet('damping', value);
+        end
+
+        function value = get.Damping(obj)
+            warnDamping;
+            value = obj.LinearDamping;
+        end
+
+        function set.Damping(obj, value)
+            warnDamping;
+            obj.LinearDamping = value;
         end
 
         function set.Friction(obj, value)
@@ -431,7 +446,7 @@ classdef SoftBody < phx.base.Object
                 obj.Pressure = obj.Pressure;
                 obj.VertexRadius = obj.VertexRadius;
                 obj.Iterations = obj.Iterations;
-                obj.Damping = obj.Damping;
+                obj.LinearDamping = obj.LinearDamping;
                 obj.Friction = obj.Friction;
                 obj.Restitution = obj.Restitution;
                 if any(obj.InitialVelocities, "all")
@@ -461,4 +476,10 @@ classdef SoftBody < phx.base.Object
         end
     end
 
+end
+
+function warnDamping
+%warnDamping Warns that the former name Damping of LinearDamping is used.
+    warning("phx:SoftBody:renamedProperty", "SoftBody.Damping was renamed to LinearDamping, " + ...
+        "the name the particle groups use; the name Damping will be removed in a future release.");
 end

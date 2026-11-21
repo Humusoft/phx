@@ -149,5 +149,8 @@ Each a step of its own, reviewed before the next:
    (`phx:<Class>:sizeMismatch`) when they are set or used; the vertices of the edges of
    a Kx4 mesh get the mean of their ends. The last velocities kept after a run as the
    last vertices are. A single row expands on the particle groups too.)
-5. `LinearDamping` of soft and flexible bodies with the `Damping` alias; tests.
+5. `LinearDamping` of soft and flexible bodies with the `Damping` alias; tests. (Done:
+   `phxex_cantilever`, `phxex_plow` and the probe `flexibleFactor` moved. A scene saved
+   by 2.0 with such a body warns once when loaded: MATLAB sets the saved `Damping`
+   through the alias; saving it again ends that.)
 6. Demos, help, user guide, skills, upgrade guide.

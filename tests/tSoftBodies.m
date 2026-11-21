@@ -91,6 +91,23 @@ classdef tSoftBodies < PhxTestCase
                 "Rows that no longer fit the mesh fail when they are used.");
         end
 
+        function dampingOfPHX2WarnsAndIsLinearDamping(tc)
+            % Damping, the name of PHX 2.0, warns and reads and writes
+            % LinearDamping, also in the constructor
+            [V, F] = tc.cube;
+            make = {@(varargin) phx.SoftBody([], "Vertices", V, "Faces", F, varargin{:}), ...
+                @(varargin) phx.FlexibleBody([], "Vertices", V, "Tetrahedra", delaunay(V), varargin{:})};
+            ids = ["phx:SoftBody:renamedProperty" "phx:FlexibleBody:renamedProperty"];
+            for k = 1:2
+                b = tc.verifyWarning(@() make{k}("Damping", 2), ids(k));
+                tc.verifyEqual(b.LinearDamping, 2);
+                tc.verifyEqual(tc.verifyWarning(@() b.Damping, ids(k)), 2);
+                tc.verifyWarning(@() set(b, "Damping", 3), ids(k));
+                tc.verifyEqual(b.LinearDamping, 3);
+                tc.verifyWarningFree(@() make{k}("LinearDamping", 1));
+            end
+        end
+
         function linearMeshGetsEdgeVertices(tc)
             V = tc.cube;
             T = delaunay(V);

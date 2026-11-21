@@ -166,8 +166,8 @@ classdef FlexibleBody < phx.base.Object
         % force falls below 1e-10 of the weight
         Tolerance (1, 1) double {mustBeNonnegative} = 1e-4
 
-        % Damping of the vertex velocities (1/s): dv/dt = -Damping*v
-        Damping (1, 1) double {mustBeNonnegative} = 0
+        % Damping of the vertex velocities (1/s): dv/dt = -LinearDamping*v
+        LinearDamping (1, 1) double {mustBeNonnegative} = 0
 
         % Friction coefficient; a contact combines the values of both bodies
         % as their geometric mean, sqrt(mu1*mu2)
@@ -180,6 +180,11 @@ classdef FlexibleBody < phx.base.Object
 
         % Stress range (Pa) mapped on the whole colormap
         ColorRange (1, 2) double = [0 1e6]
+    end
+
+    % Former name of LinearDamping (PHX 2.0)
+    properties (Dependent, Hidden)
+        Damping
     end
 
     properties (Dependent, SetAccess = private)
@@ -387,9 +392,19 @@ classdef FlexibleBody < phx.base.Object
             obj.engineSet('tolerance', value);
         end
 
-        function set.Damping(obj, value)
-            obj.Damping = value;
+        function set.LinearDamping(obj, value)
+            obj.LinearDamping = value;
             obj.engineSet('damping', value);
+        end
+
+        function value = get.Damping(obj)
+            warnDamping;
+            value = obj.LinearDamping;
+        end
+
+        function set.Damping(obj, value)
+            warnDamping;
+            obj.LinearDamping = value;
         end
 
         function set.Friction(obj, value)
@@ -669,7 +684,7 @@ classdef FlexibleBody < phx.base.Object
                 obj.VertexRadius = obj.VertexRadius;
                 obj.Iterations = obj.Iterations;
                 obj.Tolerance = obj.Tolerance;
-                obj.Damping = obj.Damping;
+                obj.LinearDamping = obj.LinearDamping;
                 obj.Friction = obj.Friction;
                 if any(obj.InitialVelocities, "all")
                     phxEngine('set', world, obj.ObjectHandle, 'velocities', obj.meshVelocities');
@@ -705,4 +720,10 @@ classdef FlexibleBody < phx.base.Object
         end
     end
 
+end
+
+function warnDamping
+%warnDamping Warns that the former name Damping of LinearDamping is used.
+    warning("phx:FlexibleBody:renamedProperty", "FlexibleBody.Damping was renamed to LinearDamping, " + ...
+        "the name the particle groups use; the name Damping will be removed in a future release.");
 end
