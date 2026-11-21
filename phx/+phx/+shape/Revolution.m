@@ -10,7 +10,8 @@ classdef Revolution < phx.base.Shape
 %   truncated cones, one per profile segment. The cones are round about the
 %   axis, so a body rolls on them smoothly where a faceted hull or mesh
 %   would not; they need a profile with one radius per height (no bore, no
-%   overhang). Mass properties are always calculated from the actual
+%   overhang). The volume and its moments (the mass properties at
+%   the density of the body) are always calculated from the actual
 %   triangular mesh, an open profile closed to the axis first (see Profile).
 %   A hollow body takes a profile that returns to its first point, giving
 %   the wall a thickness, and Envelope "concave".

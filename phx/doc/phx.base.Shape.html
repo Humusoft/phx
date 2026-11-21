@@ -20,7 +20,9 @@
 <p><code class="phx-inline">phx.base.Shape</code> is the abstract superclass for all shapes that define
 the visual and collision geometry of a <a href="phx.Body.html">phx.Body</a>. Concrete shapes in the
 <code class="phx-inline">phx.shape.*</code> package derive from this class and implement how they are
-drawn and how their mass and moments of inertia are computed. The class provides the appearance
+drawn and their geometry: the volume, its centre and its moments of inertia, which the density of
+the body wearing the shape turns into mass properties (<a href="phx.Body.html">phx.Body</a>
+<code class="phx-inline">Density</code>). The class provides the appearance
 parameters shared by all shapes &mdash; surface color, material, style and an optional texture.</p>
 
 <p>You normally do not instantiate this class directly; you assign a concrete shape to a body's
@@ -89,6 +91,7 @@ coordinates project the image onto each face along the axis closest to its norma
 <tr><th>Function</th><th>Description</th></tr>
 <tr><td class="name">nextColor</td><td>Assign the next color from the cyclic color order to the shape.</td></tr>
 <tr><td class="name">resetColorOrder</td><td><b>Static.</b> Reset the counter so <code class="phx-inline">nextColor</code> starts again from the first color.</td></tr>
+<tr><td class="name">[mass,inertia,center] = computeMass(obj,density)</td><td>Mass properties of the shape at a density (<span class="phx-unit">kg/m&sup3;</span>): the mass, the principal moments of inertia about the centre of mass (1&times;3) and the centre of mass, shape axes relative to its origin. Without <code class="phx-inline">density</code>, at 1000 (or a density given to the shape, which is deprecated).</td></tr>
 <tr><td class="name">[V,T] = generateVolumetricMesh(obj)</td><td>Mesh of tetrahedra that fills the shape, as <a href="phx.FlexibleBody.html">phx.FlexibleBody</a> takes it: vertices <code class="phx-inline">V</code> (N&times;3, shape frame) and tetrahedra <code class="phx-inline">T</code> (K&times;4, or K&times;10 quadratic ones whose middles of the surface edges follow a curved surface), as fine as the shape's <code class="phx-inline">ElementResolution</code> sets. A shape that generates none raises <code class="phx-inline">phx:Shape:noVolumetricMesh</code>.</td></tr>
 <tr><td class="name">[V,F] = generateSurfaceMesh(obj)</td><td>Triangle mesh of the surface, as <a href="phx.SoftBody.html">phx.SoftBody</a> takes it, its vertices spaced about evenly and its triangles counter-clockwise seen from outside. By default the boundary of the volumetric mesh; the round shapes generate their own. A shape that generates none raises <code class="phx-inline">phx:Shape:noSurfaceMesh</code>.</td></tr>
 </table>
@@ -137,7 +140,7 @@ future release.
 <table class="phx-tbl">
 <tr><th>Method</th><th>Role</th></tr>
 <tr><td class="name">drawTo(obj,target)</td><td>Draw the shape into the target axes or <code class="phx-inline">hgtransform</code>.</td></tr>
-<tr><td class="name">[mass,inertia,center] = computeMass(obj)</td><td>Compute the mass, the principal moments of inertia about the centre of mass and the centre of mass (shape axes, relative to its origin) of the shape.</td></tr>
+<tr><td class="name">[volume,inertia,center] = computeVolume(obj)</td><td>The geometry of the shape: its volume (<span class="phx-unit">m&sup3;</span>), the principal moments of inertia of the volume at unit density about its centre (1&times;3, <span class="phx-unit">kg&middot;m&sup2;</span> per <span class="phx-unit">kg/m&sup3;</span>) and the centre of the volume (shape axes, relative to its origin).</td></tr>
 </table>
 
 <h2 class="phx-h2">Concrete Shapes</h2>
@@ -158,7 +161,7 @@ can wear, including:</p>
 b1 = phx.Body(<span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [2 1 1], <span class="str">"Color"</span>, [0.4 0.6 1]});
 
 <span class="cmt">% As a shape object</span>
-b2 = phx.Body(<span class="str">"Shape"</span>, phx.shape.Sphere(<span class="str">"Diameter"</span>, 0.5, <span class="str">"Density"</span>, 50));</pre>
+b2 = phx.Body(<span class="str">"Shape"</span>, phx.shape.Sphere(<span class="str">"Diameter"</span>, 0.5), <span class="str">"Density"</span>, 50);</pre>
 
 <h4 class="phx-h4">Material and style</h4>
 <pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;

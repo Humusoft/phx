@@ -192,4 +192,11 @@ Each a step of its own, reviewed before the next:
    kinematic bowl of `saved_ballplate2.mat`, which the older file had from an earlier
    PHX (centre at the origin, another mass of the revolution); the volumes of the
    meshes are now those of their geometry, not the fallback from mass and density.)
-6. Help, user guide, skills, upgrade guide.
+6. Help, user guide, skills, upgrade guide. (Done: the help of phx.Body and of the
+   shapes; the reference pages of phx.Body (Density, Volume, the write rules, the
+   constructor order), phx.base.Shape (computeVolume, computeMass with a density), the
+   shapes (their Density rows gone), phx.FlexibleBody (Volume), scatter (Density) and
+   the examples of the others; the user guide pages on bodies, deformables,
+   assemblies and forces; the upgrade guide and the phx-upgrade-from-1x skill (the
+   shape density as a renamed name, mass, density and inertia as a change in
+   behaviour); phx-scene-basics; the help search index rebuilt.)

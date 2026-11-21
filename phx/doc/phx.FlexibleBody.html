@@ -63,9 +63,9 @@ tetrahedra that PDE Toolbox generates: the <code class="phx-inline">Mesh</code> 
 <code class="phx-inline">fegeometry</code> or <code class="phx-inline">femodel</code>, or the geometry
 or model itself. PHX only reads the mesh and does not need PDE Toolbox.</p>
 <p><code class="phx-inline">flex = phx.FlexibleBody(ax,"Shape",shape)</code> fills a shape with the
-mesh of tetrahedra it generates (<code class="phx-inline">generateVolumetricMesh</code>) and takes its
-<code class="phx-inline">Density</code>; a <code class="phx-inline">Density</code> or
-<code class="phx-inline">Mass</code> given to the constructor overrides it. The shape is a
+mesh of tetrahedra it generates (<code class="phx-inline">generateVolumetricMesh</code>); the material is the
+<code class="phx-inline">Density</code> (or <code class="phx-inline">Mass</code>, not both) of the flexible body, set after the
+mesh whatever the order of the arguments. The shape is a
 <code class="phx-inline">phx.shape.*</code> object or a cell array of a shape name and its arguments,
 as <a href="phx.Body.html">phx.Body</a> takes it; its <code class="phx-inline">ElementResolution</code>
 sets how fine the mesh is. Box, Sphere, Cylinder, Cone, Capsule and Tube generate meshes; see
@@ -79,14 +79,15 @@ sets how fine the mesh is. Box, Sphere, Cylinder, Cone, Capsule and Tube generat
 <tr><td class="name">Vertices</td><td class="type">N&times;3 double</td><td>Vertices of the mesh in the body frame.</td></tr>
 <tr><td class="name">Tetrahedra</td><td class="type">K&times;4 or K&times;10 double</td><td>Tetrahedra as vertex indices.</td></tr>
 <tr><td class="name">Mesh</td><td class="type">mesh object or struct</td><td>Mesh of tetrahedra as PDE Toolbox gives it, with <code class="phx-inline">Nodes</code> (3&times;N) and <code class="phx-inline">Elements</code> (4&times;K or 10&times;K); an <code class="phx-inline">fegeometry</code> or <code class="phx-inline">femodel</code> gives its <code class="phx-inline">Mesh</code>. Sets <code class="phx-inline">Vertices</code> and <code class="phx-inline">Tetrahedra</code> and reads them back in this form.</td></tr>
-<tr><td class="name">Shape</td><td class="type">shape object or cell array</td><td>Shape filled with a mesh of tetrahedra (write-only, as for <a href="phx.Body.html">phx.Body</a>): sets <code class="phx-inline">Vertices</code>, <code class="phx-inline">Tetrahedra</code> and <code class="phx-inline">Density</code>. Not together with a mesh in one constructor call.</td></tr>
+<tr><td class="name">Shape</td><td class="type">shape object or cell array</td><td>Shape filled with a mesh of tetrahedra (write-only, as for <a href="phx.Body.html">phx.Body</a>): sets <code class="phx-inline">Vertices</code> and <code class="phx-inline">Tetrahedra</code>. Not together with a mesh in one constructor call.</td></tr>
 <tr><td class="name">Position</td><td class="dflt">[0 0 0]</td><td>Position of the rest shape when the body is created, <span class="phx-unit">m</span>.</td></tr>
 <tr><td class="name">Orientation</td><td class="dflt">eye(3)</td><td>Orientation of the rest shape when the body is created.</td></tr>
 <tr><td class="name">AxisAngle</td><td class="type">1&times;4 double</td><td>Axis-angle rotation <code class="phx-inline">[x y z angle]</code> of the rest shape (dependent, a view of <code class="phx-inline">Orientation</code>).</td></tr>
 <tr><td class="name">EulerAngles</td><td class="type">1&times;3 double</td><td>Euler angles of the rest shape for z&rarr;y&rarr;x order, as <a href="phx.Body.html">phx.Body</a> takes them (dependent).</td></tr>
 <tr><td class="name">Quaternion</td><td class="type">1&times;4 double</td><td>Quaternion <code class="phx-inline">[w x y z]</code> of the rest shape (dependent).</td></tr>
 <tr><td class="name">Density</td><td class="dflt">1000</td><td>Density of the material, <span class="phx-unit">kg/m&sup3;</span>.</td></tr>
-<tr><td class="name">Mass</td><td class="type">double</td><td>Mass of the body, <span class="phx-unit">kg</span>: <code class="phx-inline">Density</code> times the volume of the mesh, curved tetrahedra included. Set either one: setting <code class="phx-inline">Mass</code> sets <code class="phx-inline">Density</code> for the present mesh, which a later change of the mesh keeps (as <code class="phx-inline">Radius</code> and <code class="phx-inline">Diameter</code> of the shapes). Given to the constructor, it is taken after the mesh.</td></tr>
+<tr><td class="name">Mass</td><td class="type">double</td><td>Mass of the body, <span class="phx-unit">kg</span>: <code class="phx-inline">Density</code> times the <code class="phx-inline">Volume</code>. Set either one: setting <code class="phx-inline">Mass</code> sets <code class="phx-inline">Density</code> for the present mesh, which a later change of the mesh keeps (as <code class="phx-inline">Radius</code> and <code class="phx-inline">Diameter</code> of the shapes). The constructor takes either one, after the mesh.</td></tr>
+<tr><td class="name">Volume</td><td class="type">double (read-only)</td><td>Volume of the mesh, <span class="phx-unit">m&sup3;</span>: of the tetrahedra handed to the engine, curved ones included.</td></tr>
 <tr><td class="name">YoungsModulus</td><td class="dflt">1e6</td><td>Young's modulus of the material, <span class="phx-unit">Pa</span>.</td></tr>
 <tr><td class="name">PoissonsRatio</td><td class="dflt">0.45</td><td>Poisson's ratio of the material, from 0 to 0.5 for an incompressible one (taken as at most 0.49995).</td></tr>
 </table>

@@ -165,6 +165,18 @@ that referred to one of the old properties must refer to the new one.</p>
     was <code class="phx-inline">Diameter - 2*WallThickness</code>; give the pair as
     <code class="phx-inline">InnerDiameter</code> alone and leave the outer size out, since a
     single outer diameter sets a straight bore again.</td></tr>
+<tr><td><a href="phx.base.Shape.html">phx.shape.*</a></td>
+    <td><code class="phx-inline">Density</code> of a shape, e.g.
+    <code class="phx-inline">"Shape", {"Box", "Density", 2500}</code></td>
+    <td><code class="phx-inline">Density</code> of the body, e.g.
+    <code class="phx-inline">"Shape", {"Box"}, "Density", 2500</code> (also of a
+    <a href="phx.FlexibleBody.html">phx.FlexibleBody</a>; the <code class="phx-inline">Density</code>
+    option of <code class="phx-inline">phx.assembly.scatter</code>). A shape still takes its density
+    for now, with the warning <code class="phx-inline">phx:Shape:densityMoved</code>: a body takes it
+    unless given a <code class="phx-inline">Density</code> or <code class="phx-inline">Mass</code> of
+    its own, a soft body and a particle group ignore it. It will be removed in a future release. The
+    shape's <code class="phx-inline">computeMass</code> takes the density as an argument; its geometry
+    is <code class="phx-inline">computeVolume</code>.</td></tr>
 <tr><td><a href="phx.Simulation.html">phx.Simulation</a></td>
     <td><code class="phx-inline">RedrawMode</code> <code class="phx-inline">"interactive"</code> (the default)</td>
     <td>Removed; use <code class="phx-inline">"adaptive"</code>, the new default, or leave the
@@ -186,6 +198,27 @@ step at the speed of the display. Pass 0 to keep the 1.x behaviour, and -1 for a
 before.</p>
 
 <h2 class="phx-h2" id="behaviour">Changes in behaviour</h2>
+
+<h3 class="phx-h3" id="mass">Mass, density and inertia</h3>
+<p>The shape of a <a href="phx.Body.html">phx.Body</a> gives its geometry and the body its material:
+<code class="phx-inline">Mass</code> is <code class="phx-inline">Density</code> times
+<code class="phx-inline">Volume</code>, and the shape gives the <code class="phx-inline">Inertia</code>
+at that density. What changed:</p>
+<ul>
+<li>Setting <code class="phx-inline">Mass</code> (or <code class="phx-inline">Density</code>) scales
+the <code class="phx-inline">Inertia</code> by the ratio of the masses. In 1.x the inertia stayed that
+of the shape's density, so a body made heavier by its mass alone turned too easily. Setting the
+inertia still changes neither the mass nor the density.</li>
+<li>The constructor sets the <code class="phx-inline">Shape</code> first and
+<code class="phx-inline">Density</code> or <code class="phx-inline">Mass</code>,
+<code class="phx-inline">Inertia</code> and <code class="phx-inline">CenterOfMass</code> last, whatever
+the order of the arguments; in 1.x a <code class="phx-inline">Mass</code> given before the
+<code class="phx-inline">Shape</code> was lost. <code class="phx-inline">Density</code> and
+<code class="phx-inline">Mass</code> together are an error.</li>
+<li>Mass, density and each moment of inertia must be positive. A zero inertia, which the engine took
+as a locked rotation, is an error; lock a rotation with a joint to a static body
+(<a href="phx.GenericJoint.html">phx.GenericJoint</a>) instead.</li>
+</ul>
 
 <h3 class="phx-h3">Applied forces and torques persist</h3>
 <p><code class="phx-inline">AppliedForce</code> and <code class="phx-inline">AppliedTorque</code>

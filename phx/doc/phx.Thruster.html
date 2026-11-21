@@ -73,7 +73,7 @@ through the properties below.</p>
 <h4 class="phx-h4">Full-throttle thruster in zero gravity</h4>
 <pre class="phx-code">clf; ax = gca; view(3); axis equal; grid on; camlight headlight;
 
-b = phx.Body(ax, <span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>, <span class="str">"Diameter"</span>, 0.5, <span class="str">"Density"</span>, 50});
+b = phx.Body(ax, <span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>, <span class="str">"Diameter"</span>, 0.5}, <span class="str">"Density"</span>, 50);
 
 phx.Thruster(b, <span class="str">"MaxThrust"</span>, 10, <span class="str">"Throttle"</span>, 1);
 

@@ -21,7 +21,8 @@
 perturbing an icosahedron. <code class="phx-inline">Roundness</code> controls how close the result is
 to an ideal sphere and <code class="phx-inline">Diameter</code> (or <code class="phx-inline">Radius</code>)
 sets its size. The collision shape is the convex hull of the generated mesh, while the mass
-properties are modeled as an ideal sphere of the given <code class="phx-inline">Density</code>.</p>
+properties are those of an ideal sphere of the <code class="phx-inline">Diameter</code>, at the density of
+the <a href="phx.Body.html">body</a> (<code class="phx-inline">Density</code>).</p>
 
 <h2 class="phx-h2">Creation</h2>
 <h3 class="phx-h3">Syntax</h3>
@@ -41,7 +42,6 @@ properties are modeled as an ideal sphere of the given <code class="phx-inline">
 <tr><td class="name">Diameter</td><td class="dflt">1</td><td>Rock diameter, <span class="phx-unit">m</span>.</td></tr>
 <tr><td class="name">Radius</td><td class="type">double (dependent)</td><td>Rock radius, <span class="phx-unit">m</span>. Setting it updates <code class="phx-inline">Diameter</code>.</td></tr>
 <tr><td class="name">Roundness</td><td class="dflt">0.75</td><td>Roundness factor relative to the ideal sphere (0&ndash;1, higher is rounder).</td></tr>
-<tr><td class="name">Density</td><td class="dflt">1000</td><td>Volumetric density, <span class="phx-unit">kg/m&sup3;</span>.</td></tr>
 </table>
 
 <p>Appearance properties are inherited from <a href="phx.base.Shape.html">phx.base.Shape</a>.

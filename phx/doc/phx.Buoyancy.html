@@ -73,8 +73,8 @@ discrete equilibria; increase <code class="phx-inline">Resolution</code> for the
 <pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
 
 <span class="cmt">% Half the water density -> floats half submerged; denser -> sinks</span>
-b1 = phx.Body(<span class="str">"Position"</span>, [0 0 1], <span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>, <span class="str">"Radius"</span>, 0.5, <span class="str">"Density"</span>, 500});
-b2 = phx.Body(<span class="str">"Position"</span>, [2 0 1], <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [0.5 0.5 0.5], <span class="str">"Density"</span>, 1100});
+b1 = phx.Body(<span class="str">"Position"</span>, [0 0 1], <span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>, <span class="str">"Radius"</span>, 0.5}, <span class="str">"Density"</span>, 500);
+b2 = phx.Body(<span class="str">"Position"</span>, [2 0 1], <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [0.5 0.5 0.5]}, <span class="str">"Density"</span>, 1100);
 
 phx.Buoyancy([b1 b2], <span class="str">"Level"</span>, 0, <span class="str">"LinearDamping"</span>, 200, <span class="str">"AngularDamping"</span>, 30);
 

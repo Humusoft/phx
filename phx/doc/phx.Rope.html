@@ -79,7 +79,7 @@ per body).</p>
 
 anchor = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Position"</span>, [0 0 5]);
 load   = phx.Body(<span class="str">"Position"</span>, [0 0 3], ...
-    <span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>, <span class="str">"Radius"</span>, 0.2, <span class="str">"Density"</span>, 300});   <span class="cmt">% a 10 kg ball</span>
+    <span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>, <span class="str">"Radius"</span>, 0.2}, <span class="str">"Density"</span>, 300);   <span class="cmt">% a 10 kg ball</span>
 
 rope = phx.Rope([anchor load], <span class="str">"Stiffness"</span>, 5e3, <span class="str">"Damping"</span>, 50, ...
     <span class="str">"Colormap"</span>, hot(64), <span class="str">"ColorRange"</span>, [0 200]);

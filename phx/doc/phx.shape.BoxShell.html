@@ -34,7 +34,7 @@ with all other shapes, meshes, terrains and other shells included, as cheaply as
 every flat wall a body reaches gives it its own contact, so a ball heading into a corner or a box pushed
 into one touches every wall it meets. As any thin wall, the shell lets through a body that moves farther in
 one step than the wall thickness plus its own size; shorten the step for fast bodies. Mass properties are
-those of the rounded box less its cavity, with <code class="phx-inline">Density</code>.</p>
+those of the rounded box less its cavity, at the density of the <a href="phx.Body.html">body</a> (<code class="phx-inline">Density</code>).</p>
 
 <p>The shape draws its outer face and its inner face, turned to the cavity, their rounded edges with
 <code class="phx-inline">Segments</code> segments per full turn; a texture is projected onto each side.
@@ -62,7 +62,6 @@ arguments.</p>
 <tr><td class="name">InnerEdgeRadius</td><td class="dflt">0</td><td>Radius of the rounded edges and corners of the cavity, <span class="phx-unit">m</span>; 0 keeps them sharp. The outer edges are rounded by this radius plus <code class="phx-inline">WallThickness</code>.</td></tr>
 <tr><td class="name">InnerSize</td><td class="type">double (dependent, read-only)</td><td>Size of the cavity, <code class="phx-inline">Size - 2*WallThickness</code>, <span class="phx-unit">m</span>.</td></tr>
 <tr><td class="name">Segments</td><td class="dflt">24</td><td>Number of segments of the rounded edges per full turn.</td></tr>
-<tr><td class="name">Density</td><td class="dflt">1000</td><td>Volumetric density of the wall, <span class="phx-unit">kg/m&sup3;</span>.</td></tr>
 </table>
 
 <p>Appearance properties, <code class="phx-inline">Alpha</code> among them, are inherited from

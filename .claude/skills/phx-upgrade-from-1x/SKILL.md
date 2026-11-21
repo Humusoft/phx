@@ -5,14 +5,15 @@ description: >
   (the Bullet-based releases 1.0.x) to PHX 2: phx.engine.BulletSettings, the
   [drag roll spin] Friction triplet, Lower/Upper Linear/AngularLimits of
   GenericJoint and BushingJoint, Resistance EnvironmentTwist/EnvironmentVelocity,
-  Tube Taper, Spring/Rope Colormap names, RedrawMode "interactive", direct
-  phx.engine.io calls, and the behaviour changes that need a decision
-  (AppliedForce/AppliedTorque persisting, joint AppliedTorque adding to the motor,
-  centre of mass of meshes and cones, engine-solved springs, Resistance rotation
-  sense). Use when upgrading or porting PHX code, when old PHX code fails with
+  Tube Taper, Spring/Rope Colormap names, RedrawMode "interactive", the Density
+  of shapes (now of the body), direct phx.engine.io calls, and the behaviour
+  changes that need a decision (AppliedForce/AppliedTorque persisting, joint
+  AppliedTorque adding to the motor, centre of mass of meshes and cones, Mass
+  scaling the Inertia, engine-solved springs, Resistance rotation sense). Use when
+  upgrading or porting PHX code, when old PHX code fails with
   phx:Body:frictionTriplet, an unknown property or option, or warns with
-  phx:BulletSettings:replaced or phx:Resistance:renamedProperty, or when a scene
-  behaves differently after the upgrade.
+  phx:BulletSettings:replaced, phx:Resistance:renamedProperty or
+  phx:Shape:densityMoved, or when a scene behaves differently after the upgrade.
 ---
 
 # Upgrading PHX 1.x code to PHX 2
@@ -65,6 +66,7 @@ Syntax changes (each hit must be rewritten):
 | `EnvironmentTwist\|EnvironmentVelocity\b` | Resistance names |
 | `Taper` | Tube bore |
 | `Colormap` (on `phx.Spring` / `phx.Rope`) | colormap matrix |
+| `"Density"` inside a `Shape` cell or a `phx.shape.*(...)` call | density of the body |
 | `"interactive"` / `'interactive'` (with `RedrawMode`) | redraw mode |
 
 Behaviour changes (each hit must be reviewed):
@@ -79,6 +81,7 @@ Behaviour changes (each hit must be reviewed):
 | `"kinematic"` | kinematic pose per step |
 | `TorqueA\|TorqueB\|ForceA\|ForceB` | exact joint reactions |
 | `applyForce\|applyTorque` with a multi-row matrix | each row a force |
+| `"Mass"\|\.Mass\b\|"Inertia"\|\.Inertia\b` (of `phx.Body`) | mass scales the inertia; positive values |
 | `\.mat\b` in `load`, `addObjects`, `phx.Simulation(` | saved scenes |
 
 ## Syntax changes
@@ -188,6 +191,13 @@ The meaning of the angles changed too (see *Joint angles* below).
   `parula(64)` (any colormap function the same way); `"none"` → delete the option (the
   default `[]` draws `Color`). A name that is no MATLAB colormap function drew nothing
   in 1.x → delete it.
+- **`Density` of a shape** → `Density` of the body: move `"Density", rho` out of the
+  `Shape` cell (or the `phx.shape.*(...)` call) into the arguments of `phx.Body` or
+  `phx.FlexibleBody`: `"Shape", {"Box", "Size", s}, "Density", rho`. A shape object
+  shared by several bodies loses its density and every body gets it. For
+  `phx.assembly.scatter` use its `Density` option. In a `phx.SoftBody` or a particle
+  group the shape density never counted: delete it. The old form still works with the
+  warning `phx:Shape:densityMoved`.
 - **Simulation `RedrawMode "interactive"`** (removed) → delete the setting (the default
   `"adaptive"` replaces it).
 - **`phx.engine.io(...)`** → the gateway is now `phxEngine` with a changed protocol
@@ -240,6 +250,23 @@ about it. Box, Sphere, Cylinder, Capsule, Rock and Terrain keep it at the origin
   `Inertia` is now about the centre of mass.
 - The mass of a `Revolution` with an open profile (an end off the axis, not returning
   to the start) changed: it is the solid closed to the axis.
+
+### Mass, density and inertia
+
+The shape gives the geometry and the body its material: `Mass` is `Density` times
+`Volume`, and the shape gives `Inertia` at that density.
+
+- Setting `Mass` or `Density` scales `Inertia` by the ratio of the masses (1.x kept the
+  inertia of the shape's density). A body given only a `Mass` now turns as a body of
+  that mass should; report the change. Where the 1.x script set `Mass` and `Inertia`
+  separately, both still come out as given.
+- The constructor sets `Shape` first and `Density` or `Mass`, `Inertia`,
+  `CenterOfMass` last, whatever the order of the arguments (in 1.x a `Mass` given
+  before the `Shape` was lost; the scene now gets the mass it asked for, report it).
+  `Density` and `Mass` together are an error: keep one.
+- Mass, density and each moment of inertia must be positive. A zero inertia (which
+  locked a rotation) is an error: lock the rotation with a `phx.GenericJoint` to a
+  static body instead, and report it.
 
 ### Springs and ropes are solved by the engine
 
@@ -344,6 +371,7 @@ state = warning;                                  % to restore afterwards
 warning("error", "phx:BulletSettings:replaced");
 warning("error", "phx:Resistance:renamedProperty");
 warning("error", "phx:Shape:renamedTexture");
+warning("error", "phx:Shape:densityMoved");
 run("converted_script.m");
 warning(state);
 ```

@@ -104,9 +104,13 @@ read and written &mdash; even during the simulation (they read/write the engine 
     step, without substeps (<code class="phx-inline">sim.step(dt)</code>), or drive the body by
     <code class="phx-inline">LinearVelocity</code> and <code class="phx-inline">AngularVelocity</code>,
     which hold until changed.</td></tr>
-<tr><td class="name">Mass</td>
-    <td>Mass [kg]. Can also be derived from the shape density
-    (<code class="phx-inline">Density</code>).</td></tr>
+<tr><td class="name">Density, Mass, Inertia</td>
+    <td>The shape gives the geometry (<code class="phx-inline">Volume</code>, centre, moments), the body its
+    material: <code class="phx-inline">Mass</code> [kg] is <code class="phx-inline">Density</code> [kg/m&sup3;, default 1000]
+    times <code class="phx-inline">Volume</code>, and the shape gives <code class="phx-inline">Inertia</code> at that density.
+    Give either the density or the mass. Writing either scales the inertia by the ratio of the masses,
+    so a custom <code class="phx-inline">Inertia</code> (a hollow rotor, mass near an axis) keeps its distribution;
+    writing the inertia changes neither. All positive.</td></tr>
 <tr><td class="name">CenterOfMass</td>
     <td>Centre of mass [m] in the body frame, relative to the origin; the shape gives it, like
     <code class="phx-inline">Mass</code> and <code class="phx-inline">Inertia</code> (which is about it).

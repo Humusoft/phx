@@ -29,8 +29,8 @@ a closed cup. The bore and the outer size read back as pairs.</p>
 it is what a tube that has to hold or pass anything needs; <code class="phx-inline">"convex"</code>
 uses the convex hull of the mesh and seals the tube shut, while a bounding
 <code class="phx-inline">"cylinder"</code> keeps a rolling body smooth where a faceted hull would
-not. Mass properties are always computed from the actual triangular mesh and
-<code class="phx-inline">Density</code>.</p>
+not. Mass properties are always computed from the actual triangular mesh, at the density of the
+<a href="phx.Body.html">body</a> (<code class="phx-inline">Density</code>).</p>
 
 <h2 class="phx-h2">Creation</h2>
 <h3 class="phx-h3">Syntax</h3>
@@ -56,7 +56,6 @@ arguments.</p>
 <tr><td class="name">Height</td><td class="dflt">1</td><td>Tube height along the modeling axis, <span class="phx-unit">m</span>.</td></tr>
 <tr><td class="name">Axis</td><td class="dflt">"z"</td><td>Modeling axis: <code class="phx-inline">"x"</code>, <code class="phx-inline">"y"</code> or <code class="phx-inline">"z"</code>.</td></tr>
 <tr><td class="name">Segments</td><td class="dflt">24</td><td>Number of segments around the circumference.</td></tr>
-<tr><td class="name">Density</td><td class="dflt">1000</td><td>Volumetric density, <span class="phx-unit">kg/m&sup3;</span>.</td></tr>
 <tr><td class="name">Envelope</td><td class="dflt">"concave"</td><td>Collision envelope: <code class="phx-inline">"concave"</code> triangle mesh, <code class="phx-inline">"convex"</code> hull, or bounding <code class="phx-inline">"cylinder"</code> about the tube axis. The cylinder takes its radius from the wider outer end and its half height from <code class="phx-inline">Height</code>, centred on the shape origin.</td></tr>
 </table>
 

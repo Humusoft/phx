@@ -42,7 +42,6 @@ and right edges on the +x meridian, and longitude growing anticlockwise about +z
 <tr><td class="name">Diameter</td><td class="dflt">1</td><td>Sphere diameter, <span class="phx-unit">m</span>.</td></tr>
 <tr><td class="name">Radius</td><td class="type">double (dependent)</td><td>Sphere radius, <span class="phx-unit">m</span>. Setting it updates <code class="phx-inline">Diameter</code>.</td></tr>
 <tr><td class="name">Segments</td><td class="dflt">28</td><td>Number of meridian segments (level of visual detail); the parallels follow at the same angular step. A multiple of 4 puts a parallel on the equator and meridians on both horizontal axes.</td></tr>
-<tr><td class="name">Density</td><td class="dflt">1000</td><td>Volumetric density, <span class="phx-unit">kg/m&sup3;</span>.</td></tr>
 </table>
 
 <p>Appearance properties are inherited from <a href="phx.base.Shape.html">phx.base.Shape</a>.</p>
@@ -67,7 +66,7 @@ soft ball usually looks better with 16 or more. See
 <pre class="phx-code">phx.extra.Viewer(<span class="str">"clear"</span>, <span class="str">"DefaultCameraPosition"</span>, [10 10 10]);
 
 b = phx.Body(<span class="str">"Position"</span>, [0 0 3], ...
-    <span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>, <span class="str">"Diameter"</span>, 0.5, <span class="str">"Density"</span>, 2700});
+    <span class="str">"Shape"</span>, {<span class="str">"Sphere"</span>, <span class="str">"Diameter"</span>, 0.5}, <span class="str">"Density"</span>, 2700);
 
 sim = phx.Simulation;
 sim.step(2, 200, 1);</pre>

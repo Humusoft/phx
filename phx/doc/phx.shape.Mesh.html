@@ -38,8 +38,9 @@ axis; a noise-like texture such as the built-in <code class="phx-inline">"stone"
 fits a smooth primitive to the mesh (cylinder and sphere keep rolling bodies from juddering), while
 <code class="phx-inline">"convex"</code> uses the convex hull (the default) and
 <code class="phx-inline">"concave"</code> uses the exact triangle mesh, which keeps cavities and holes at a higher
-collision cost than a hull. Mass properties are computed from the mesh volume and
-<code class="phx-inline">Density</code>, falling back to the bounding box for non-solid meshes.</p>
+collision cost than a hull. Mass properties are computed from the mesh volume at the density of the
+<a href="phx.Body.html">body</a> (<code class="phx-inline">Density</code>), falling back to the bounding box for
+non-solid meshes (a flat one a thousandth of its largest side thick).</p>
 
 <h2 class="phx-h2">Creation</h2>
 <h3 class="phx-h3">Syntax</h3>
@@ -70,7 +71,6 @@ passing <code class="phx-inline">phx.shape.Mesh("Source", "file.stl", "Envelope"
 <tr><td class="name">UV</td><td class="type">N&times;2 double</td><td>Vertex texture coordinates (direct data input). <code class="phx-inline">u</code> runs along the image columns and <code class="phx-inline">v</code> down its rows, so (0,&nbsp;0) is the top-left corner of the image. The OBJ and PLY coordinates of a <code class="phx-inline">Source</code> file, whose <code class="phx-inline">v</code> runs up the image, are converted on load. Without them, a <code class="phx-inline">Texture</code> is box-projected.</td></tr>
 <tr><td class="name">Scale</td><td class="dflt">[1 1 1]</td><td>Scale factor applied to the mesh; a negative factor mirrors it along that axis.</td></tr>
 <tr><td class="name">Centered</td><td class="dflt">true</td><td>Move the origin to the centre of the bounding box.</td></tr>
-<tr><td class="name">Density</td><td class="dflt">1000</td><td>Volumetric density, <span class="phx-unit">kg/m&sup3;</span>.</td></tr>
 </table>
 
 <h3 class="phx-h3">Collision</h3>

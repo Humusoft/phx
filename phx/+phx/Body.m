@@ -12,7 +12,18 @@ classdef Body < phx.base.Object
 %   phx.Body(___, Name, Value, ...) creates a body and sets properties values
 %   according to given name-value pairs.
 %
-%   See also phx.Simulation, phx.Spring, phx.Trace
+%   The Shape gives the geometry, the body its material: Mass is Density
+%   times the Volume of the shape, and the shape gives the Inertia and the
+%   CenterOfMass at that density. Writing Mass or Density scales the Inertia
+%   by the ratio of the masses, keeping a custom one's distribution; writing
+%   Inertia changes neither. The constructor sets the Shape first, then the
+%   other properties, then Density or Mass (not both), Inertia and
+%   CenterOfMass, whatever the order of the arguments:
+%
+%       b = phx.Body(gca, "Shape", {"Box", "Size", [0.4 0.2 0.1]}, ...
+%           "Density", 7800);
+%
+%   See also phx.Simulation, phx.Spring, phx.Trace, phx.base.Shape.computeVolume
 
 %   Copyright 2026 HUMUSOFT s.r.o.
 %   SPDX-License-Identifier: LicenseRef-PHX-Preview-1.0

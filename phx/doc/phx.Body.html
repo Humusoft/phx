@@ -45,6 +45,11 @@ set later through the <code class="phx-inline">ParentAxes</code> property.</p>
 <div class="phx-desc">
 <p><code class="phx-inline">body = phx.Body(___,Name,Value)</code> sets properties using name-value
 arguments, for example <code class="phx-inline">phx.Body("Type","static","Position",[1 0 0])</code>.</p>
+<p class="phx-eg">The constructor sets the <code class="phx-inline">Shape</code> first, then the other properties,
+then <code class="phx-inline">Density</code> or <code class="phx-inline">Mass</code> (not both),
+<code class="phx-inline">Inertia</code> and <code class="phx-inline">CenterOfMass</code>, whatever the order of the
+arguments: <code class="phx-inline">phx.Body("Mass",5,"Inertia",[1 1 2],"Shape",{"Cylinder"})</code> gives exactly
+5&nbsp;kg and those moments.</p>
 </div>
 
 <h3 class="phx-h3">Input Arguments</h3>
@@ -61,13 +66,23 @@ arguments, for example <code class="phx-inline">phx.Body("Type","static","Positi
 <tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
 <tr><td class="name">Type</td><td class="dflt">"dynamic"</td>
 <td>Body type: <code class="phx-inline">"static"</code>, <code class="phx-inline">"kinematic"</code> or <code class="phx-inline">"dynamic"</code>.</td></tr>
+<tr><td class="name">Density</td><td class="dflt">1000</td>
+<td>Density of the body, <span class="phx-unit">kg/m&sup3;</span>: <code class="phx-inline">Mass</code> over
+<code class="phx-inline">Volume</code>. Setting it sets the <code class="phx-inline">Mass</code> for the present volume, which
+scales the <code class="phx-inline">Inertia</code>; a new <code class="phx-inline">Shape</code> keeps it. Positive.</td></tr>
+<tr><td class="name">Volume</td><td class="type">double (read-only)</td>
+<td>Volume of the shape, <span class="phx-unit">m&sup3;</span>. A non-solid mesh counts as its bounding box (a flat one
+a thousandth of its largest side thick); a <a href="phx.shape.Terrain.html">Terrain</a>, which encloses none, as 1&nbsp;m&sup3;.</td></tr>
 <tr><td class="name">Mass</td><td class="dflt">1000</td>
-<td>Body mass, <span class="phx-unit">kg</span>. Recomputed from the shape and density when a <code class="phx-inline">Shape</code> is assigned;
-the default is that of the default shape, a 1&nbsp;m cube of density 1000.</td></tr>
+<td>Body mass, <span class="phx-unit">kg</span>: <code class="phx-inline">Density</code> times <code class="phx-inline">Volume</code>.
+Setting it sets the <code class="phx-inline">Density</code> for the present volume and scales the
+<code class="phx-inline">Inertia</code> by the ratio of the new mass to the old, so that the mass keeps its distribution.
+Positive. The default is that of the default shape, a 1&nbsp;m cube of density 1000.</td></tr>
 <tr><td class="name">Inertia</td><td class="dflt">[166.7 166.7 166.7]</td>
-<td>Principal moments of inertia about the centre of mass, in the body axes, <span class="phx-unit">kg&middot;m&sup2;</span>. Recomputed with
-<code class="phx-inline">Mass</code> when a <code class="phx-inline">Shape</code> is assigned, but not when
-<code class="phx-inline">Mass</code> or <code class="phx-inline">CenterOfMass</code> alone is set.</td></tr>
+<td>Principal moments of inertia about the centre of mass, in the body axes, <span class="phx-unit">kg&middot;m&sup2;</span>. The shape
+gives them at the <code class="phx-inline">Density</code>; setting them changes neither the mass nor the density, and later
+changes of the mass or the density scale them as they are (a custom inertia, such as that of a hollow rotor,
+keeps its distribution). A new <code class="phx-inline">Shape</code> sets them anew. Each positive.</td></tr>
 <tr><td class="name">CenterOfMass</td><td class="dflt">[0 0 0]</td>
 <td>Centre of mass in the body frame, relative to the body origin, <span class="phx-unit">m</span>. The shape gives
 it when a <code class="phx-inline">Shape</code> is assigned: at the origin for a box, sphere, cylinder, capsule or

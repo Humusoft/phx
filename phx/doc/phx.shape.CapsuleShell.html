@@ -32,8 +32,8 @@ engine as <a href="phx.shape.SphereShell.html">phx.shape.SphereShell</a> is, wit
 collides with all other shapes, meshes, terrains and other shells included, as cheaply as a capsule; a
 convex body in the cavity rests on the corners of its face towards the wall, and a capsule shell lying in
 another shell rests on both its ends. As any thin wall, it lets through a body that moves farther in
-one step than the wall thickness plus its own size; shorten the step for fast bodies. Mass properties are those of the solid capsule of the outer face less that of the cavity, with
-<code class="phx-inline">Density</code>.</p>
+one step than the wall thickness plus its own size; shorten the step for fast bodies. Mass properties are those of the solid capsule of the outer face less that of the cavity, at the density of the
+<a href="phx.Body.html">body</a> (<code class="phx-inline">Density</code>).</p>
 
 <p>The shape draws its outer face and its inner face, turned to the cavity, each a revolved profile of
 <code class="phx-inline">Segments</code> segments. <code class="phx-inline">Alpha</code> is the opacity of
@@ -63,7 +63,6 @@ arguments.</p>
 <tr><td class="name">WallThickness</td><td class="dflt">0.05</td><td>Thickness of the wall, inwards from the outer diameter, <span class="phx-unit">m</span>; positive and less than the outer radius.</td></tr>
 <tr><td class="name">InnerDiameter</td><td class="type">double (dependent, read-only)</td><td>Diameter of the cavity, <code class="phx-inline">Diameter - 2*WallThickness</code>, <span class="phx-unit">m</span>.</td></tr>
 <tr><td class="name">Segments</td><td class="dflt">24</td><td>Number of segments of each face around the axis.</td></tr>
-<tr><td class="name">Density</td><td class="dflt">1000</td><td>Volumetric density of the wall, <span class="phx-unit">kg/m&sup3;</span>.</td></tr>
 </table>
 
 <p>Appearance properties, <code class="phx-inline">Alpha</code> among them, are inherited from

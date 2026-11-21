@@ -194,19 +194,20 @@ b = phx.Body(ax, ...
   `TotalTorque` (resultants of all forces in the last engine step, world axes, torque
   about the centre of mass), `Energy`, and `LinearAcceleration`/`AngularAcceleration` (mean over
   the last step, world axes; gravity included, so a falling body reads g).
-- **`Mass` and `Inertia` are independent overrides (by design).** A shape computes
-  *both* from its `Density` as defaults, but you may override either one on its own —
-  e.g. set a custom `Inertia` to model a non-uniform mass distribution, or a custom
-  `Mass` without disturbing the shape-derived `Inertia`. Setting one never rewrites the
-  other. Practical consequence to keep in mind: if you override `Mass` alone, `Inertia`
-  keeps the shape's density-based value (a thin `Box [8 1 0.1]` at default `Density`
-  1000 is an 800 kg block → `Inertia_y ≈ 4267`, unchanged even if you set `Mass` to 4),
-  so a uniform body spins as if it still had its natural mass. For a *uniform* body of a
-  given mass, either drive it through `Density`, or set `Mass` and `Inertia` together —
-  the demos do the latter, e.g. `"Mass", 8, "Inertia", 10`.
-- Same for the default box: `phx.Body("Mass", 10)` (no explicit `Shape`) weighs 10 kg
-  but keeps the unit box's default `Inertia` (166.7); set `Inertia` too when spin
-  matters.
+- **Mass properties: the shape gives the geometry, the body the material.** `Mass` is
+  the body's `Density` (default 1000 kg/m³) times the shape's `Volume` (read-only), and
+  the shape gives `Inertia` and `CenterOfMass` at that density. Give the body either
+  `"Density", rho` or `"Mass", m` (both is an error) — never a `"Density"` inside the
+  `Shape` cell (deprecated, warns `phx:Shape:densityMoved`).
+- Writing `Mass` or `Density` **scales `Inertia`** by the ratio of the masses, so a
+  uniform body of 4 kg is just `"Mass", 4`. Writing `Inertia` changes neither mass nor
+  density, and later mass or density changes scale a custom inertia as it is (it keeps
+  its distribution — a hollow rotor, mass near an axis). A new `Shape` sets inertia and
+  centre anew and keeps the density.
+- The constructor applies `Shape` first, then the other options, then `Density`/`Mass`,
+  `Inertia`, `CenterOfMass`, whatever the argument order: `"Mass", 8, "Inertia", 10`
+  gives exactly those. Mass, density and each moment must be **positive**; to lock a
+  rotation use a `phx.GenericJoint` to a static body, not a zero inertia.
 - **`CenterOfMass`** (body frame, from the origin) comes from the shape too: zero for
   box/sphere/cylinder/capsule, on the axis for a cone, the centroid for meshes. The body
   turns about it and gravity acts there, while `Position` stays the origin where the
@@ -245,9 +246,8 @@ bore take a pair, at the negative and the positive end of `Axis`, and always rea
 one: a single cone value `d` is `[d 0]`, a single bore `d` is `[d d]` (the wall keeps its
 thickness). Round shapes set their visual
 detail with `Segments` (`Sphere` default 28; about 10 is plenty for hundreds of small
-particles) — the collision shape stays an ideal primitive either way. Most accept `Color` and
-`Density` (auto-computes mass/inertia if you don't set them), and the appearance
-options. Shapes carry no attachment points: where a joint or spring grabs a body is set
+particles) — the collision shape stays an ideal primitive either way. All accept `Color` and
+the appearance options; the density belongs to the body, not the shape. Shapes carry no attachment points: where a joint or spring grabs a body is set
 on the connector itself (`PointA`/`PointB` in body-local coordinates).
 
 **Appearance** — `Color`, `Material` (shading preset), `Style` (edges, wireframe) and
@@ -262,8 +262,8 @@ cell shorthand recognizes the extension, so `{"model.obj", ...}` /`{"part.stl", 
 its objects and materials (textures and diffuse colors come from the referenced
 `.mtl` automatically); use `Group` to keep a single named object, or
 `phx.assembly.import` to turn a multi-object OBJ into separate bodies. Other options:
-`Scale`, `Centered` (origin at the bounding-box centre, default true), `Density`,
-and for STL `Details` (decimation).
+`Scale`, `Centered` (origin at the bounding-box centre, default true), and for STL
+`Details` (decimation).
 
 The **collision** geometry is chosen by `Envelope`, and this is the property that
 decides whether an imported body behaves:
@@ -343,8 +343,8 @@ ball = phx.SoftBody(ax, "Shape", {"Sphere", "Diameter", 0.6, "ElementResolution"
 % or your own closed mesh, faces counter-clockwise from outside: "Vertices", V, "Faces", convhull(V)
 
 % Flexible body: an elastic solid of quadratic tetrahedra, here a shape filled with
-% tetrahedra as fine as its ElementResolution (takes the shape's Density)
-block = phx.FlexibleBody(ax, "Shape", {"Box", "Size", [0.4 0.4 0.4]}, ...
+% tetrahedra as fine as its ElementResolution; the material is the body's Density
+block = phx.FlexibleBody(ax, "Shape", {"Box", "Size", [0.4 0.4 0.4]}, "Density", 1100, ...
     "Position", [1 0 0.5], "YoungsModulus", 2e5, "PoissonsRatio", 0.45);
 % or a mesh of any shape from PDE Toolbox: "Mesh", generateMesh(fegeometry("part.stl"), Hmax=0.02)
 % or your own: "Vertices", W, "Tetrahedra", T (Kx4, edge vertices added, or Kx10)
@@ -369,8 +369,8 @@ gravel.add(Pnew); gravel.remove(gravel.Positions(:, 3) < -1);   % any time, also
   `Revolution`, `Extrusion` and `Mesh` raise `phx:Shape:noVolumetricMesh` /
   `noSurfaceMesh` until a future release (`Rock`, `Terrain`, and the shells `SphereShell`,
   `CapsuleShell`, `BoxShell` too): give those a PDE Toolbox `"Mesh"` or `Vertices` of your
-  own. A FlexibleBody takes the shape's `Density` (a
-  `Density`/`Mass` given to the constructor wins), a SoftBody only its geometry.
+  own. Both take only the shape's geometry: a FlexibleBody has its own `Density` or
+  `Mass` (`Volume` read-only), a SoftBody its `Mass`.
 - `ElementResolution` of the shape (like `Segments` for drawing) sets the fineness as cell
   counts, independent of the size. A scalar counts cells across the thinnest section, the
   rest near-cubic: Box smallest side, Sphere the diameter, Cylinder/Cone the smaller of
@@ -436,7 +436,8 @@ p = phx.assembly.chain([0 0 0; 0.4 0 0; 0.8 0 0], "Anchor", "start", "Axis", [0 
 % sampling (error phx:scatter:regionFull when it does not fit). Draws from the
 % GLOBAL rng like rand — reproduce with rng(seed), no state is saved/restored.
 % A cell shape spec builds a new shape per body (phx.shape.Rock => variety);
-% a shape object is shared by all bodies.
+% a shape object is shared by all bodies. Density (kg/m^3, default 1000) is
+% the bodies' own, like Density of chain and wall.
 % RandomTint (0..1, default 0) darkens each body on its own like in wall:
 % bodyColor = color*(1 - rand*RandomTint) over the Color row OR, with no Color,
 % over the body's palette color (that palette cycles per created shape, NOT

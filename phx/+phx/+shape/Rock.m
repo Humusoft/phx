@@ -9,7 +9,8 @@ classdef Rock < phx.base.Shape
 %   jumps at the face edges best (such as the built-in "stone").
 %
 %   The collision shape is the convex hull of the generated mesh, while the
-%   mass properties are modeled as an ideal sphere of the given Density.
+%   volume and its moments (the mass properties at the density of the body)
+%   are those of an ideal sphere of the Diameter.
 %
 %   phx.shape.Rock() creates a shape with default parameters.
 %

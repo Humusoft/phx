@@ -10,8 +10,9 @@ classdef Tube < phx.base.Shape
 %   Collision shape is selected by the Envelope property: the exact concave
 %   triangle mesh, which is the only one that leaves the bore open, the convex
 %   hull of the mesh, or a bounding cylinder about the tube axis, which keeps
-%   a rolling body smooth where a faceted hull would not. Mass properties are
-%   always calculated from the actual triangular mesh.
+%   a rolling body smooth where a faceted hull would not. The volume and its
+%   moments (the mass properties at the density of the body) are always
+%   calculated from the actual triangular mesh.
 %
 %   As the Shape of a phx.FlexibleBody, the tube wall is filled with a mesh
 %   of tetrahedra (generateVolumetricMesh); as the Shape of a phx.SoftBody,

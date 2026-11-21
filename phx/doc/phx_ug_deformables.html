@@ -97,9 +97,8 @@ radius of a curved body it touches. The tetrahedra suit strains up to some 10&nd
 <h2 class="phx-h2" id="shapes">Meshes from shapes</h2>
 <p>The simplest mesh comes from a shape, given to <code class="phx-inline">"Shape"</code> as an object
 or as the same cell array that <a href="phx.Body.html">phx.Body</a> takes. A flexible body fills the
-shape with tetrahedra and takes the <code class="phx-inline">Density</code> of the shape; a
-<code class="phx-inline">Density</code> or <code class="phx-inline">Mass</code> given to the
-constructor overrides it. A soft body covers the shape with triangles and takes only its geometry: a
+shape with tetrahedra; its material is its own <code class="phx-inline">Density</code> or
+<code class="phx-inline">Mass</code> (not both), as for a rigid body. A soft body covers the shape with triangles and takes only its geometry: a
 soft body is a skin, and its <code class="phx-inline">Mass</code> stays its own.</p>
 
 <p>How fine the mesh is, the <code class="phx-inline">ElementResolution</code> of the shape sets,
@@ -134,7 +133,7 @@ rings of vertices.</p>
 <pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
 
 floor = phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Position"</span>, [0 0 -0.1], <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [2 2 0.2]});
-bumper = phx.FlexibleBody(gca, <span class="str">"Shape"</span>, {<span class="str">"Cylinder"</span>, <span class="str">"Diameter"</span>, 0.3, <span class="str">"Height"</span>, 0.4, <span class="str">"Density"</span>, 1100}, ...
+bumper = phx.FlexibleBody(gca, <span class="str">"Shape"</span>, {<span class="str">"Cylinder"</span>, <span class="str">"Diameter"</span>, 0.3, <span class="str">"Height"</span>, 0.4}, <span class="str">"Density"</span>, 1100, ...
     <span class="str">"Position"</span>, [-0.3 0 0.6], <span class="str">"YoungsModulus"</span>, 1e6);
 pillow = phx.SoftBody(gca, <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [0.4 0.4 0.1], <span class="str">"ElementResolution"</span>, 2}, ...
     <span class="str">"Position"</span>, [0.3 0 0.6], <span class="str">"Mass"</span>, 0.3, <span class="str">"Compliance"</span>, 1e-4, <span class="str">"Pressure"</span>, 50);

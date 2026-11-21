@@ -30,7 +30,7 @@ a sphere, far cheaper than an inverted triangle mesh would. A convex body in the
 with every corner of its face towards it, so a box rests there on its corners. As any thin wall, the
 shell lets through a body that moves farther in one step than the wall thickness plus its own size;
 shorten the step for fast bodies. Mass properties are those of the ideal
-shell and <code class="phx-inline">Density</code>.</p>
+shell, at the density of the <a href="phx.Body.html">body</a> (<code class="phx-inline">Density</code>).</p>
 
 <p>The shape draws its outer face and its inner face, turned to the cavity, each a latitude-longitude grid
 of <code class="phx-inline">Segments</code> meridians; a texture is mapped onto both as onto a
@@ -60,7 +60,6 @@ with name-value arguments.</p>
 <tr><td class="name">WallThickness</td><td class="dflt">0.05</td><td>Thickness of the wall, inwards from the outer diameter, <span class="phx-unit">m</span>; positive and less than the outer radius.</td></tr>
 <tr><td class="name">InnerDiameter</td><td class="type">double (dependent, read-only)</td><td>Diameter of the cavity, <code class="phx-inline">Diameter - 2*WallThickness</code>, <span class="phx-unit">m</span>.</td></tr>
 <tr><td class="name">Segments</td><td class="dflt">28</td><td>Number of meridian segments of each face; the parallels follow at the same angular step.</td></tr>
-<tr><td class="name">Density</td><td class="dflt">1000</td><td>Volumetric density of the wall, <span class="phx-unit">kg/m&sup3;</span>.</td></tr>
 </table>
 
 <p>Appearance properties, <code class="phx-inline">Alpha</code> among them, are inherited from
