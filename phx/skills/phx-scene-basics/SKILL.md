@@ -354,10 +354,11 @@ plate = phx.Body(ax, "Type", "static", "Position", [1 0 0.7], ...
     "Shape", {"Box", "Size", [0.6 0.6 0.05]});
 phx.IntersectionWeld(block, plate);
 
-% Particles: thousands of equal spheres simulated and drawn in bulk
-gravel = phx.Particles(ax, "Positions", P, "Radius", 0.02, "Density", 1600, ...
+% Particles: thousands of equal spheres simulated and drawn in bulk; Vertices are in the
+% frame of the group (Position/Orientation, default the world), or "Shape" fills a shape
+gravel = phx.Particles(ax, "Vertices", P, "Radius", 0.02, "Density", 1600, ...
     "Color", [0.8 0.6 0.4], "RandomTint", 0.4, "MarkerSize", 8);
-gravel.add(Pnew); gravel.remove(gravel.Positions(:, 3) < -1);   % any time, also mid-run
+gravel.add(Pnew); gravel.remove(gravel.CurrentVertices(:, 3) < -1);   % world; any time
 ```
 
 - `SoftBody` (cloth, cushion, inflated ball) and `FlexibleBody` (rubber block, pad,
@@ -386,13 +387,17 @@ gravel.add(Pnew); gravel.remove(gravel.Positions(:, 3) < -1);   % any time, also
   their vertices evenly (geodesic sphere, rings for the other round shapes).
   `generateVolumetricMesh` / `generateSurfaceMesh` of the shape return `[V, T]` /
   `[V, F]` themselves, e.g. to scale a sphere surface into an ellipsoid.
-- The mesh is the rest shape, placed at `Position`/`Orientation` (or `EulerAngles`,
-  `AxisAngle`, `Quaternion`, as on `Body`) when the simulation starts; mesh and material
-  are read then, the friction/damping/pressure settings at any time. `CurrentVertices`
-  gives the deformed mesh; `FlexibleBody.VonMisesStress` the stress per vertex (colour it
-  with `Colormap`, an N×3 matrix such as `turbo(64)`, and `ColorRange`).
-- `FlexibleBody` uses quadratic tetrahedra (a Kx4 mesh gets edge vertices; `ElementOrder
-  "linear"` takes the corners, also of a Kx10 mesh): implicit,
+- The mesh (`Vertices`, body frame) is the rest shape, placed at `Position`/`Orientation`
+  (or `EulerAngles`, `AxisAngle`, `Quaternion`, as on `Body`) when the simulation starts;
+  mesh, material and the initial vertex `Velocities` (world, N×3 or one 1×3 row for all)
+  are read then, the friction/`LinearDamping`/pressure settings at any time. Every new
+  simulation starts again from the rest shape. `CurrentVertices` / `CurrentVelocities`
+  (world, read-only) give the present state: the engine's during a run, the last one after
+  it. `FlexibleBody.VonMisesStress` gives the stress per vertex (colour it with
+  `Colormap`, an N×3 matrix such as `turbo(64)`, and `ColorRange`).
+- `Damping` of soft/flexible bodies and `Positions` of particles are PHX 2.0 names: they
+  still work with a `renamedProperty` warning; write `LinearDamping` and `Vertices`.
+- `FlexibleBody` uses quadratic tetrahedra (a Kx4 mesh gets edge vertices): implicit,
   stiffness right on a coarse mesh (2-3 elements across a section to bend, 3-4 to twist),
   `Tolerance` sets the convergence and `Iterations` caps it. Its contacts are inelastic
   (no `Restitution`). Good for large rotations with strains up to some 10-20 %.
@@ -400,8 +405,13 @@ gravel.add(Pnew); gravel.remove(gravel.Positions(:, 3) < -1);   % any time, also
   radius of a curved body it touches.
 - Masses: `FlexibleBody.Mass` (total) and `Particles.Mass` (total) / `ParticleMass` (one
   particle) are settable views of `Density`; set one of them, not both.
-- `Particles`: at most 10 000 per group (use more groups); `Positions`/`Velocities` are
-  N×3 arrays, `applyForce(F)` (world frame; 1×3 = the whole F on every particle, N×3 = one row
+- `Particles`: at most 10 000 per group (use more groups). No rest shape: `Vertices`
+  (group frame) and `Velocities` (world; one 1×3 row sets all) are the live state before,
+  during and after a run, and a new run goes on from the last state; `CurrentVertices`
+  (world) and `CurrentVelocities` read them under the mesh names. `Position`/`Orientation`
+  of a running group are an error. `"Shape"` fills a shape on a lattice of the particle
+  diameter (refilled when `Radius` changes, until the run). `add(P, V)` takes world
+  points. `applyForce(F)` (world frame; 1×3 = the whole F on every particle, N×3 = one row
   each) acts in the next engine step (one substep) of a running simulation. Set the
   engine's `LengthScale` to the grain size class (`phx.engine.Settings("LengthScale",
   0.01)` for centimetre grains).

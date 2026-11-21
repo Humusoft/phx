@@ -1,6 +1,7 @@
 # Points of deformable bodies and particle groups: proposal (2026-11-21)
 
-Status: agreed in discussion, not implemented. Covers `phx.SoftBody`, `phx.FlexibleBody`,
+Status: agreed in discussion and implemented in six phases (all done 2026-11-21, see
+Phases). Covers `phx.SoftBody`, `phx.FlexibleBody`,
 `phx.Particles` and `phx.Liquid` (with `phx.base.ParticleGroup`). Follows the mass
 properties work (MASS_API.md), which settled the shape density.
 
@@ -153,4 +154,9 @@ Each a step of its own, reviewed before the next:
    `phxex_cantilever`, `phxex_plow` and the probe `flexibleFactor` moved. A scene saved
    by 2.0 with such a body warns once when loaded: MATLAB sets the saved `Damping`
    through the alias; saving it again ends that.)
-6. Demos, help, user guide, skills, upgrade guide.
+6. Demos, help, user guide, skills, upgrade guide. (Done in three steps: the reference
+   pages and class help, `phx.Particles.html` brought up to the group frame and `Shape`
+   as well; the user guide and the product page's conventions; the skill
+   `phx-scene-basics`. The demos had moved in phases 1 and 5. The upgrade guide from 1.x
+   needs nothing: 1.x had no soft bodies or particles; the renamed 2.0 names belong in
+   the release notes.)
