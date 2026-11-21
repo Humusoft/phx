@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.shape.SphereShell</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.shape.SphereShell</div>
+
+<h1 class="phx-title">phx.shape.SphereShell</h1>
+<p class="phx-purpose">Spherical shell shape with a wall of given thickness</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.shape.SphereShell &nbsp;|&nbsp; Superclass: <a href="phx.base.Shape.html">phx.base.Shape</a></p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.shape.SphereShell</code> is a hollow sphere: a wall of
+<code class="phx-inline">WallThickness</code> inside the outer <code class="phx-inline">Diameter</code>,
+solid from both sides like a vessel of sheet metal. A body outside the shell touches its outer face, a
+body inside it, in the cavity, its inner face: a static shell holds bodies,
+<a href="phx.Particles.html">particles</a> and liquids inside, and a dynamic one is a hollow ball that
+rolls and can carry a load inside.</p>
+
+<p>The collision shape is an ideal spherical shell, independent of the visual details, built into the
+engine: it collides with all other shapes, meshes, terrains and other shells included, as cheaply as
+a sphere, far cheaper than an inverted triangle mesh would. A convex body in the cavity touches the wall
+with every corner of its face towards it, so a box rests there on its corners. The shell has no
+continuous collision detection: a body that passes through the wall within one step, faster than the
+wall thickness plus its own size per step, goes through it. Mass properties are those of the ideal
+shell and <code class="phx-inline">Density</code>.</p>
+
+<p>The shape draws its outer face and its inner face, turned to the cavity, each a latitude-longitude grid
+of <code class="phx-inline">Segments</code> meridians; a texture is mapped onto both as onto a
+<a href="phx.shape.Sphere.html">phx.shape.Sphere</a>. <code class="phx-inline">Alpha</code> is the
+opacity of the wall as a whole: a line of sight through the wall crosses both faces, so each face is
+drawn with the opacity <code class="phx-inline">1 - sqrt(1 - Alpha)</code>. A see-through wall shows
+what the shell holds.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">shape = phx.shape.SphereShell</span>
+<span class="phx-syntax">shape = phx.shape.SphereShell(Name,Value)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">shape = phx.shape.SphereShell</code> creates a shell of 1 m outer diameter
+with a 5 cm wall. <code class="phx-inline">phx.shape.SphereShell(Name,Value)</code> sets properties
+with name-value arguments.</p>
+</div>
+
+<h2 class="phx-h2">Properties</h2>
+<h3 class="phx-h3">Geometry</h3>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">Diameter</td><td class="dflt">1</td><td>Outer diameter of the shell, <span class="phx-unit">m</span>; positive. A <a href="phx.shape.Sphere.html">phx.shape.Sphere</a> of the same <code class="phx-inline">Diameter</code> has the same outside.</td></tr>
+<tr><td class="name">Radius</td><td class="type">double (dependent)</td><td>Outer radius, <span class="phx-unit">m</span>. Setting it updates <code class="phx-inline">Diameter</code>.</td></tr>
+<tr><td class="name">WallThickness</td><td class="dflt">0.05</td><td>Thickness of the wall, inwards from the outer diameter, <span class="phx-unit">m</span>; positive and less than the outer radius.</td></tr>
+<tr><td class="name">InnerDiameter</td><td class="type">double (dependent, read-only)</td><td>Diameter of the cavity, <code class="phx-inline">Diameter - 2*WallThickness</code>, <span class="phx-unit">m</span>.</td></tr>
+<tr><td class="name">Segments</td><td class="dflt">28</td><td>Number of meridian segments of each face; the parallels follow at the same angular step.</td></tr>
+<tr><td class="name">Density</td><td class="dflt">1000</td><td>Volumetric density of the wall, <span class="phx-unit">kg/m&sup3;</span>.</td></tr>
+</table>
+
+<p>Appearance properties, <code class="phx-inline">Alpha</code> among them, are inherited from
+<a href="phx.base.Shape.html">phx.base.Shape</a>.</p>
+
+<div class="phx-note">
+<span class="lbl">Note.</span> <code class="phx-inline">WallThickness</code> is checked against the
+diameter where the shape is used (drawn, weighed or simulated), not when it is set, so the two may be
+set in any order. A wall as thick as the radius leaves no cavity and is an error
+(<code class="phx-inline">phx:SphereShell:badWallThickness</code>); a solid ball is a
+<a href="phx.shape.Sphere.html">phx.shape.Sphere</a>.
+</div>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">Particles in a see-through tank</h4>
+<pre class="phx-code">phx.extra.Viewer(<span class="str">"clear"</span>, <span class="str">"DefaultCameraPosition"</span>, [2.5 -2.5 2]);
+
+phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Position"</span>, [0 0 0.6], <span class="str">"Shape"</span>, ...
+    {<span class="str">"SphereShell"</span>, <span class="str">"Diameter"</span>, 1.2, <span class="str">"WallThickness"</span>, 0.04, <span class="str">"Alpha"</span>, 0.4});
+phx.Particles(gca, <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [0.5 0.5 0.3]}, ...
+    <span class="str">"Position"</span>, [0 0 0.7], <span class="str">"Radius"</span>, 0.02);
+
+sim = phx.Simulation;
+sim.step(3, 600, 1);</pre>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.Body.html">phx.Body</a>,
+<a href="phx.shape.Sphere.html">phx.shape.Sphere</a>,
+<a href="phx.shape.CapsuleShell.html">phx.shape.CapsuleShell</a>,
+<a href="phx.shape.Tube.html">phx.shape.Tube</a>,
+<a href="phx.Particles.html">phx.Particles</a>,
+<a href="phx.base.Shape.html">phx.base.Shape</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_bodies.html">Bodies and shapes</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

@@ -37,6 +37,8 @@ and are settable as <code class="phx-inline">Name,Value</code> pairs in any shap
 <td>Surface material: <code class="phx-inline">"unlit"</code>, <code class="phx-inline">"matte"</code>, <code class="phx-inline">"plastic"</code>, <code class="phx-inline">"glossy"</code> or <code class="phx-inline">"metal"</code>.</td></tr>
 <tr><td class="name">Style</td><td class="dflt">"smooth"</td>
 <td>Surface style: <code class="phx-inline">"smooth"</code>, <code class="phx-inline">"edged"</code>, <code class="phx-inline">"flat"</code> or <code class="phx-inline">"wireframe"</code>.</td></tr>
+<tr><td class="name">Alpha</td><td class="dflt">1</td>
+<td>Opacity of the surface, 0 (invisible) to 1 (opaque), as the <code class="phx-inline">FaceAlpha</code> of MATLAB graphics; it multiplies the alpha channel of a texture. The hollow shapes <a href="phx.shape.SphereShell.html">SphereShell</a> and <a href="phx.shape.CapsuleShell.html">CapsuleShell</a> take it as the opacity of their whole wall.</td></tr>
 <tr><td class="name">ForcePatch</td><td class="dflt">false</td>
 <td>Force the use of a <code class="phx-inline">patch</code> object for drawing instead of the fast world primitive.</td></tr>
 <tr><td class="name">Texture</td><td class="type">string | matrix</td>
@@ -91,7 +93,7 @@ coordinates project the image onto each face along the axis closest to its norma
 <tr><td class="name">[V,F] = generateSurfaceMesh(obj)</td><td>Triangle mesh of the surface, as <a href="phx.SoftBody.html">phx.SoftBody</a> takes it, its vertices spaced about evenly and its triangles counter-clockwise seen from outside. By default the boundary of the volumetric mesh; the round shapes generate their own. A shape that generates none raises <code class="phx-inline">phx:Shape:noSurfaceMesh</code>.</td></tr>
 </table>
 <p>Box, Sphere, Cylinder, Cone, Capsule and Tube generate both meshes; Revolution, Extrusion and Mesh
-will in a future release, and Rock and Terrain generate none. See
+will in a future release, and Rock, Terrain, SphereShell and CapsuleShell generate none. See
 <a href="phx_ug_deformables.html#shapes">Meshes from shapes</a>.</p>
 
 <h3 class="phx-h3" id="builtin">Built-in textures</h3>
@@ -221,9 +223,8 @@ color:</p>
 panel = phx.shape.Box(<span class="str">"Size"</span>, 1, <span class="str">"Texture"</span>, <span class="str">"photo.jpg"</span>, <span class="str">"Color"</span>, [0.2 0.4 0.9], ...
     <span class="str">"TextureTransform"</span>, [<span class="str">"grayscale"</span> <span class="str">"fliplr"</span>], <span class="str">"TextureBlend"</span>, 0.6);</pre>
 
-<p>A PNG image with an alpha channel switches the drawing to transparency, which turns antialiasing
-off. Add <code class="phx-inline">"opaque"</code> when the image carries an alpha channel it does not
-need.</p>
+<p>Add <code class="phx-inline">"opaque"</code> when a PNG image carries an alpha channel it does not
+need, so that the surface is drawn fully opaque.</p>
 
 <div class="phx-seealso">
 <span class="lbl">See also</span>

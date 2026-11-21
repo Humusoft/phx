@@ -17,6 +17,8 @@
 %   phx.shape.Tube            - Tube, pipe or funnel shape
 %   phx.shape.Cone            - Cone or truncated cone shape
 %   phx.shape.Capsule         - Capsule shape
+%   phx.shape.SphereShell     - Spherical shell shape with a wall of given thickness
+%   phx.shape.CapsuleShell    - Capsule shell shape with a wall of given thickness
 %   phx.shape.Mesh            - Triangular mesh shape imported from a file or built from data
 %   phx.shape.Extrusion       - Profile extruded along a spine
 %   phx.shape.Revolution      - Profile revolved about an axis

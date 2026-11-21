@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.shape.CapsuleShell</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.shape.CapsuleShell</div>
+
+<h1 class="phx-title">phx.shape.CapsuleShell</h1>
+<p class="phx-purpose">Capsule shell shape with a wall of given thickness</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.shape.CapsuleShell &nbsp;|&nbsp; Superclass: <a href="phx.base.Shape.html">phx.base.Shape</a></p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.shape.CapsuleShell</code> is a hollow capsule: a wall of
+<code class="phx-inline">WallThickness</code> inside the outer <code class="phx-inline">Diameter</code>,
+around a cylindrical part of <code class="phx-inline">Height</code> along
+<code class="phx-inline">Axis</code> closed by two hemispherical ends, as
+<a href="phx.shape.Capsule.html">phx.shape.Capsule</a> has them. The wall is solid from both sides like a
+vessel of sheet metal: a body outside the shell touches its outer face, a body inside it, in the cavity,
+its inner face. A static shell is an upright or lying tank for bodies,
+<a href="phx.Particles.html">particles</a> and liquids; a dynamic one lying on its side is a drum that
+rolls like a cylinder.</p>
+
+<p>The collision shape is an ideal capsule shell, independent of the visual details, built into the
+engine as <a href="phx.shape.SphereShell.html">phx.shape.SphereShell</a> is, with the same behaviour: it
+collides with all other shapes, meshes, terrains and other shells included, as cheaply as a capsule; a
+convex body in the cavity rests on the corners of its face towards the wall, and a capsule shell lying in
+another shell rests on both its ends. It has no continuous collision detection: a body that passes
+through the wall within one step, faster than the wall thickness plus its own size per step, goes
+through it. Mass properties are those of the solid capsule of the outer face less that of the cavity, with
+<code class="phx-inline">Density</code>.</p>
+
+<p>The shape draws its outer face and its inner face, turned to the cavity, each a revolved profile of
+<code class="phx-inline">Segments</code> segments. <code class="phx-inline">Alpha</code> is the opacity of
+the wall as a whole: each face is drawn with the opacity <code class="phx-inline">1 - sqrt(1 - Alpha)</code>.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">shape = phx.shape.CapsuleShell</span>
+<span class="phx-syntax">shape = phx.shape.CapsuleShell(Name,Value)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">shape = phx.shape.CapsuleShell</code> creates a shell of 1 m outer diameter
+around a 1 m cylindrical part along z, with a 5 cm wall.
+<code class="phx-inline">phx.shape.CapsuleShell(Name,Value)</code> sets properties with name-value
+arguments.</p>
+</div>
+
+<h2 class="phx-h2">Properties</h2>
+<h3 class="phx-h3">Geometry</h3>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">Diameter</td><td class="dflt">1</td><td>Outer diameter of the shell, <span class="phx-unit">m</span>; positive.</td></tr>
+<tr><td class="name">Radius</td><td class="type">double (dependent)</td><td>Outer radius, <span class="phx-unit">m</span>. Setting it updates <code class="phx-inline">Diameter</code>.</td></tr>
+<tr><td class="name">Height</td><td class="dflt">1</td><td>Height of the cylindrical part, without the hemispherical ends, <span class="phx-unit">m</span>; not negative. Zero is a spherical shell.</td></tr>
+<tr><td class="name">Axis</td><td class="dflt">"z"</td><td>Modeling axis: <code class="phx-inline">"x"</code>, <code class="phx-inline">"y"</code> or <code class="phx-inline">"z"</code>.</td></tr>
+<tr><td class="name">WallThickness</td><td class="dflt">0.05</td><td>Thickness of the wall, inwards from the outer diameter, <span class="phx-unit">m</span>; positive and less than the outer radius.</td></tr>
+<tr><td class="name">InnerDiameter</td><td class="type">double (dependent, read-only)</td><td>Diameter of the cavity, <code class="phx-inline">Diameter - 2*WallThickness</code>, <span class="phx-unit">m</span>.</td></tr>
+<tr><td class="name">Segments</td><td class="dflt">24</td><td>Number of segments of each face around the axis.</td></tr>
+<tr><td class="name">Density</td><td class="dflt">1000</td><td>Volumetric density of the wall, <span class="phx-unit">kg/m&sup3;</span>.</td></tr>
+</table>
+
+<p>Appearance properties, <code class="phx-inline">Alpha</code> among them, are inherited from
+<a href="phx.base.Shape.html">phx.base.Shape</a>.</p>
+
+<div class="phx-note">
+<span class="lbl">Note.</span> <code class="phx-inline">WallThickness</code> is checked against the
+diameter where the shape is used, not when it is set, so the two may be set in any order. A wall as thick
+as the radius leaves no cavity and is an error
+(<code class="phx-inline">phx:CapsuleShell:badWallThickness</code>); a solid capsule is a
+<a href="phx.shape.Capsule.html">phx.shape.Capsule</a>.
+</div>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">Drum with balls rolling over a floor</h4>
+<pre class="phx-code">phx.extra.Viewer(<span class="str">"clear"</span>, <span class="str">"DefaultCameraPosition"</span>, [3 -3 2]);
+
+phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Position"</span>, [0 0 -0.05], <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [4 6 0.1]});
+drum = phx.Body(<span class="str">"Position"</span>, [0 -2 0.3], <span class="str">"Shape"</span>, {<span class="str">"CapsuleShell"</span>, <span class="str">"Diameter"</span>, 0.6, ...
+    <span class="str">"Height"</span>, 1, <span class="str">"Axis"</span>, <span class="str">"x"</span>, <span class="str">"WallThickness"</span>, 0.02, <span class="str">"Alpha"</span>, 0.4});
+phx.Particles(gca, <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [0.8 0.3 0.15]}, ...
+    <span class="str">"Position"</span>, [0 -2 0.15], <span class="str">"Radius"</span>, 0.03);
+drum.LinearVelocity = [0 2 0];
+
+sim = phx.Simulation;
+sim.step(3, 600, 1);</pre>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.Body.html">phx.Body</a>,
+<a href="phx.shape.Capsule.html">phx.shape.Capsule</a>,
+<a href="phx.shape.SphereShell.html">phx.shape.SphereShell</a>,
+<a href="phx.Particles.html">phx.Particles</a>,
+<a href="phx.base.Shape.html">phx.base.Shape</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_bodies.html">Bodies and shapes</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

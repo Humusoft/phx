@@ -309,6 +309,206 @@ classdef tEngineProtocol < PhxTestCase
         end
     end
 
+    % Spherical shell (protocol 2, step W): a static shell of middle radius
+    % 1 m and a 5 cm wall, its inner face at 0.975 m, its outer at 1.025 m
+    methods (Test, TestTags = {'Engine'})
+        function shellHoldsASphereInsideAndBearsOneOutside(tc)
+            % A ball thrown about in the cavity never gets past the inner
+            % face; a ball dropped on the top never sinks into the outer one.
+            % Hitting the wall at 3.7 m/s it sinks in a few millimetres at
+            % this step, as into any wall.
+            w = tc.newWorld;
+            tEngineProtocol.addShell(w, 0, 1, 0.05);
+            r = 0.1;
+            I = 0.4*r^2*[1 1 1];
+            in = phxEngine('add', w, 'sphere', 2, r, tEngineProtocol.pose([0.3 0 0]), 1, I);
+            out = phxEngine('add', w, 'sphere', 2, r, tEngineProtocol.pose([0.05 0 1.6]), 1, I);
+            phxEngine('set', w, in, 'linvel', [3 2 1]);
+            farthest = 0;
+            nearest = inf;
+            for k = 1:400
+                phxEngine('step', w, tc.Dt);
+                farthest = max(farthest, norm(phxEngine('get', w, in, 'position')));
+                nearest = min(nearest, norm(phxEngine('get', w, out, 'position')));
+            end
+            tc.verifyLessThan(farthest, 0.975 - r + 5e-3, "Farthest the inner ball's centre got (m)");
+            tc.verifyGreaterThan(nearest, 1.025 + r - 2e-3, "Nearest the outer ball's centre got (m)");
+        end
+
+        function shellHoldsABoxOnItsCorners(tc)
+            % A box let down flat in the cavity comes to rest on the four
+            % corners of its bottom face, all on the inner face
+            w = tc.newWorld;
+            tEngineProtocol.addShell(w, 0, 1, 0.05);
+            half = [0.1 0.05 0.05];
+            h = tc.addBox(w, 2, [0 0 -0.5], 2*half);
+            tc.settle(w, 3);
+            T = phxEngine('get', w, h, 'transform');
+            [a, b, c] = ndgrid([-1 1], [-1 1], [-1 1]);
+            corners = T*[a(:)*half(1) b(:)*half(2) c(:)*half(3) ones(8, 1)]';
+            radii = sort(vecnorm(corners(1:3, :)), "descend");
+            tc.verifyEqual(radii(1:4), 0.975*[1 1 1 1], "AbsTol", 2e-3, "Radii of the four lowest corners (m)");
+            tc.verifyLessThan(norm(phxEngine('get', w, h, 'linvel')), 1e-3, "The box comes to rest.");
+        end
+
+        function shellCollidesWithMeshesTerrainsAndShells(tc)
+            % A mesh cube and a smaller shell thrown about in the cavity stay
+            % in it; a small shell rests on a flat terrain on its outer face
+            [V, F] = tEngineProtocol.cubeMesh(0.08);
+            w = tc.newWorld;
+            tEngineProtocol.addShell(w, 0, 1, 0.05);
+            cube = tEngineProtocol.addTrimesh(w, V, F, tEngineProtocol.pose([0.2 0 0]));
+            small = tEngineProtocol.addShell(w, 2, 0.2, 0.02, [-0.4 0 0]);
+            phxEngine('set', w, cube, 'linvel', [3 1 2]);
+            phxEngine('set', w, cube, 'angvel', [4 -2 3]);
+            phxEngine('set', w, small, 'linvel', [-2 2 1]);
+            cubeReach = 0;
+            shellReach = 0;
+            for k = 1:400
+                phxEngine('step', w, tc.Dt);
+                T = phxEngine('get', w, cube, 'transform');
+                cubeReach = max(cubeReach, max(vecnorm(T(1:3, :)*[V; ones(1, 8)])));
+                shellReach = max(shellReach, norm(phxEngine('get', w, small, 'position')));
+            end
+            tc.verifyLessThan(cubeReach, 0.975 + 2e-3, "Farthest a vertex of the mesh cube got (m)");
+            tc.verifyLessThan(shellReach, 0.975 - 0.21 + 2e-3, "Farthest the small shell's centre got (m)");
+
+            w = tc.newWorld;
+            phxEngine('add', w, 'terrain', 0, zeros(11), [0.2 0.2], tEngineProtocol.pose([0 0 0]), 0, [0 0 0]);
+            small = tEngineProtocol.addShell(w, 2, 0.2, 0.02, [0 0 0.5]);
+            tc.settle(w, 1);
+            p = phxEngine('get', w, small, 'position');
+            tc.verifyEqual(p(3), 0.21, "AbsTol", 2e-3, "Height of the shell resting on the terrain (m)");
+        end
+
+        function raycastHitsTheShellFaces(tc)
+            % From the cavity a ray hits the inner face, facing the cavity;
+            % from outside the outer face; from inside the wall it passes out
+            w = tc.newWorld([0 0 0]);
+            h = tEngineProtocol.addShell(w, 0, 1, 0.05);
+            O = [0 0 0; 0 0 3; 0 0 1]';
+            E = [2 0 0; 0 0 0; 0 0 3]';
+            [p, n, d, ids] = phxEngine('raycast', w, O, E);
+            tc.verifyEqual(ids(1:2), [h h]);
+            tc.verifyEqual(p(:, 1), [0.975; 0; 0], "AbsTol", 1e-5);
+            tc.verifyEqual(n(:, 1), [-1; 0; 0], "AbsTol", 1e-5);
+            tc.verifyEqual(d(1), 0.975, "AbsTol", 1e-5);
+            tc.verifyEqual(p(:, 2), [0; 0; 1.025], "AbsTol", 1e-5);
+            tc.verifyEqual(n(:, 2), [0; 0; 1], "AbsTol", 1e-5);
+            tc.verifyEqual(d(2), 1.975, "AbsTol", 1e-5);
+            tc.verifyEqual(ids(3), uint64(0), "A ray starting in the wall passes out of it.");
+        end
+
+        function shellArgumentsAreChecked(tc)
+            % A positive radius and a positive wall thinner than the diameter
+            w = tc.newWorld;
+            P = tEngineProtocol.pose([0 0 0]);
+            tc.verifyError(@() phxEngine('add', w, 'sphereshell', 0, 1, 2, P, 0, [0 0 0]), "phx:engine:badArgument");
+            tc.verifyError(@() phxEngine('add', w, 'sphereshell', 0, 0, 0.1, P, 0, [0 0 0]), "phx:engine:badArgument");
+            tc.verifyError(@() phxEngine('add', w, 'sphereshell', 0, 1, 0, P, 0, [0 0 0]), "phx:engine:badArgument");
+            tc.verifyError(@() phxEngine('add', w, 'sphereshell', 0, 1), "phx:engine:badArgument");
+        end
+    end
+
+    % Capsule shell (protocol 2, step X): a static shell of middle radius
+    % 0.5 m about a 2 m segment, a 4 cm wall, its inner face 0.48 m and its
+    % outer 0.52 m from the segment
+    methods (Test, TestTags = {'Engine'})
+        function capsuleShellHoldsBodiesInsideAndBearsThemOutside(tc)
+            % In a lying shell a ball thrown about never gets past the inner
+            % face (3.9 m/s against the wall sinks a few mm) and a ball
+            % dropped on the top never sinks into the outer face; a box laid
+            % alone along the axis comes to rest on its four lowest corners
+            % on the inner face
+            w = tc.newWorld;
+            tEngineProtocol.addCapsuleShell(w, 0, 0.5, 2, 'x', 0.04);
+            r = 0.08;
+            I = 0.4*r^2*[1 1 1];
+            in = phxEngine('add', w, 'sphere', 2, r, tEngineProtocol.pose([0.5 0 0]), 1, I);
+            out = phxEngine('add', w, 'sphere', 2, r, tEngineProtocol.pose([0.3 0.02 1]), 1, I);
+            phxEngine('set', w, in, 'linvel', [3 2 1.5]);
+            farthest = 0;
+            nearest = inf;
+            for k = 1:600
+                phxEngine('step', w, tc.Dt);
+                farthest = max(farthest, tEngineProtocol.fromSegment(reshape(phxEngine('get', w, in, 'position'), 3, 1), 1, 1));
+                nearest = min(nearest, tEngineProtocol.fromSegment(reshape(phxEngine('get', w, out, 'position'), 3, 1), 1, 1));
+            end
+            tc.verifyLessThan(farthest, 0.48 - r + 5e-3, "Farthest the inner ball's centre got from the segment (m)");
+            tc.verifyGreaterThan(nearest, 0.52 + r - 2e-3, "Nearest the outer ball's centre got to the segment (m)");
+
+            w = tc.newWorld;
+            tEngineProtocol.addCapsuleShell(w, 0, 0.5, 2, 'x', 0.04);
+            half = [0.4 0.1 0.05];
+            box = tc.addBox(w, 2, [-0.3 0 -0.2], 2*half);
+            tc.settle(w, 3);
+            T = phxEngine('get', w, box, 'transform');
+            [a, b, c] = ndgrid([-1 1], [-1 1], [-1 1]);
+            corners = T*[a(:)*half(1) b(:)*half(2) c(:)*half(3) ones(8, 1)]';
+            d = sort(tEngineProtocol.fromSegment(corners(1:3, :), 1, 1), "descend");
+            tc.verifyEqual(d(1:4), 0.48*[1 1 1 1], "AbsTol", 2e-3, "Distances of the four lowest corners from the segment (m)");
+            tc.verifyLessThan(norm(phxEngine('get', w, box, 'linvel')), 1e-3, "The box comes to rest.");
+        end
+
+        function capsuleShellsNestInShells(tc)
+            % A spherical shell thrown about in a lying capsule shell stays in
+            % it, and a capsule shell in a spherical one stays in it with both
+            % ends of its core
+            w = tc.newWorld;
+            tEngineProtocol.addCapsuleShell(w, 0, 0.5, 2, 'x', 0.04);
+            ball = tEngineProtocol.addShell(w, 2, 0.15, 0.02, [0.5 0 0]);
+            phxEngine('set', w, ball, 'linvel', [3 2 1]);
+            reach = 0;
+            for k = 1:400
+                phxEngine('step', w, tc.Dt);
+                reach = max(reach, tEngineProtocol.fromSegment(reshape(phxEngine('get', w, ball, 'position'), 3, 1), 1, 1));
+            end
+            tc.verifyLessThan(reach, 0.48 - 0.16 + 2e-3, "Farthest the spherical shell's centre got from the segment (m)");
+
+            w = tc.newWorld;
+            tEngineProtocol.addShell(w, 0, 1, 0.05);
+            pill = tEngineProtocol.addCapsuleShell(w, 2, 0.15, 0.6, 'x', 0.02, [0 0 -0.3]);
+            phxEngine('set', w, pill, 'linvel', [2 1 -2]);
+            phxEngine('set', w, pill, 'angvel', [1 3 2]);
+            reach = 0;
+            for k = 1:400
+                phxEngine('step', w, tc.Dt);
+                T = phxEngine('get', w, pill, 'transform');
+                ends = T*[0.3 -0.3; 0 0; 0 0; 1 1];
+                reach = max(reach, max(vecnorm(ends(1:3, :))));
+            end
+            tc.verifyLessThan(reach, 0.975 - 0.16 + 2e-3, "Farthest an end of the capsule's core got from the centre (m)");
+        end
+
+        function raycastHitsTheCapsuleShellFaces(tc)
+            % From the cavity a ray hits the inner face on the side and in the
+            % end cap; from outside the outer face; from inside the wall of
+            % the cap it passes out
+            w = tc.newWorld([0 0 0]);
+            h = tEngineProtocol.addCapsuleShell(w, 0, 0.5, 2, 'z', 0.04);
+            O = [0 0 0; 0 0 0; 0 0 3; 3 0 0.5; 0 0 1.5]';
+            E = [2 0 0; 0 0 3; 0 0 0; 0 0 0.5; 0 0 3]';
+            [p, n, d, ids] = phxEngine('raycast', w, O, E);
+            tc.verifyEqual(ids(1:4), [h h h h]);
+            tc.verifyEqual(p(:, 1:4), [0.48 0 0; 0 0 1.48; 0 0 1.52; 0.52 0 0.5]', "AbsTol", 1e-5);
+            tc.verifyEqual(n(:, 1:4), [-1 0 0; 0 0 -1; 0 0 1; 1 0 0]', "AbsTol", 1e-5);
+            tc.verifyEqual(d(1:4), [0.48 1.48 1.48 2.48], "AbsTol", 1e-5);
+            tc.verifyEqual(ids(5), uint64(0), "A ray starting in the wall passes out of it.");
+        end
+
+        function capsuleShellArgumentsAreChecked(tc)
+            % A positive radius, a height not negative, an axis char and a
+            % positive wall thinner than the diameter
+            w = tc.newWorld;
+            P = tEngineProtocol.pose([0 0 0]);
+            tc.verifyError(@() phxEngine('add', w, 'capsuleshell', 0, 1, 1, 'z', 2, P, 0, [0 0 0]), "phx:engine:badArgument");
+            tc.verifyError(@() phxEngine('add', w, 'capsuleshell', 0, 1, -1, 'z', 0.1, P, 0, [0 0 0]), "phx:engine:badArgument");
+            tc.verifyError(@() phxEngine('add', w, 'capsuleshell', 0, 1, 1, 'w', 0.1, P, 0, [0 0 0]), "phx:engine:badArgument");
+            tc.verifyError(@() phxEngine('add', w, 'capsuleshell', 0, 0, 1, 'z', 0.1, P, 0, [0 0 0]), "phx:engine:badArgument");
+            tc.verifyError(@() phxEngine('add', w, 'capsuleshell', 0, 1, 1, 'z'), "phx:engine:badArgument");
+        end
+    end
+
     % Body fields
     methods (Test, TestTags = {'Engine'})
         function transformTeleportsTheBody(tc)
@@ -2456,6 +2656,48 @@ classdef tEngineProtocol < PhxTestCase
             tc.verifyLessThan(max(abs(phxEngine('get', w, g, 'velocities')), [], "all"), 0.2, "It comes to rest.");
         end
 
+        function fluidStaysInASphereShell(tc)
+            % Liquid filling the lower half of a spherical shell (inner face
+            % at 0.14 m) stays in it: its particles touch the inner face with
+            % their radius d/2 and keep the density near the rest one
+            d = 0.02;
+            w = tc.newLiquidWorld;
+            tEngineProtocol.addShell(w, 0, 0.15, 0.02);
+            r = 0.14 - d/2;
+            [x, y, z] = ndgrid(-r:d:r, -r:d:r, -r:d:0);
+            P = [x(:) y(:) z(:)]';
+            P = P(:, vecnorm(P) <= r);
+            g = phxEngine('add', w, 'particles', P, d/2, 0.01, false);
+            phxEngine('set', w, g, 'fluid', struct("density", 1000, "soundspeed", 20, "viscosity", 0.1));
+            for k = 1:1200
+                phxEngine('step', w, 2.5e-4);
+            end
+            X = phxEngine('get', w, g, 'positions');
+            tc.verifyLessThan(max(vecnorm(X)), r + 2e-3, "Farthest particle centre from the shell centre (m)");
+            tc.verifyLessThan(max(phxEngine('get', w, g, 'density')), 1000*1.03);
+        end
+
+        function fluidStaysInACapsuleShell(tc)
+            % Liquid filling the lower half of a lying capsule shell (inner
+            % face 0.19 m from a 0.6 m segment) stays in it
+            d = 0.02;
+            w = tc.newLiquidWorld;
+            tEngineProtocol.addCapsuleShell(w, 0, 0.2, 0.6, 'x', 0.02);
+            r = 0.19 - d/2;
+            [x, y, z] = ndgrid(-0.3 - r:d:0.3 + r, -r:d:r, -r:d:0);
+            P = [x(:) y(:) z(:)]';
+            P = P(:, tEngineProtocol.fromSegment(P, 1, 0.3) <= r);
+            g = phxEngine('add', w, 'particles', P, d/2, 0.01, false);
+            phxEngine('set', w, g, 'fluid', struct("density", 1000, "soundspeed", 20, "viscosity", 0.1));
+            for k = 1:1200
+                phxEngine('step', w, 2.5e-4);
+            end
+            X = phxEngine('get', w, g, 'positions');
+            tc.verifyLessThan(max(tEngineProtocol.fromSegment(X, 1, 0.3)), r + 2e-3, ...
+                "Farthest particle centre from the shell's segment (m)");
+            tc.verifyLessThan(max(phxEngine('get', w, g, 'density')), 1000*1.03);
+        end
+
         function fluidFloatsADynamicBox(tc)
             % A box of half the liquid's density floats: it neither sinks nor
             % leaves the surface, its draft near half its height. (The
@@ -3159,6 +3401,52 @@ classdef tEngineProtocol < PhxTestCase
             % whatever the margin, so only a coarse height is part of the
             % contract
             s.concaveMesh = row(@(w, P) tEngineProtocol.addTrimesh(w, V, F, P), 0.2, 0.05);
+            % A shell rests on its outer face, radius + thickness/2
+            s.sphereShell = row(@(w, P) phxEngine('add', w, 'sphereshell', 2, 0.3, 0.04, P, 1, I), 0.32);
+            % A capsule shell lying rests on the outer radius, standing on its
+            % end cap at half its cylinder plus that radius
+            s.capsuleShellLying = row(@(w, P) phxEngine('add', w, 'capsuleshell', 2, 0.2, 0.6, 'x', 0.04, P, 1, I), 0.22);
+            s.capsuleShellStanding = row(@(w, P) phxEngine('add', w, 'capsuleshell', 2, 0.2, 0.6, 'z', 0.04, P, 1, I), 0.52);
+        end
+
+        function h = addCapsuleShell(w, type, radius, height, axis, thickness, position, mass)
+            % Capsule shell of the given middle radius, cylinder height, axis
+            % and wall; a dynamic one gets a rough isotropic inertia
+            arguments
+                w
+                type
+                radius
+                height
+                axis
+                thickness
+                position (1, 3) double = [0 0 0]
+                mass (1, 1) double = 1
+            end
+            h = phxEngine('add', w, 'capsuleshell', type, radius, height, axis, thickness, ...
+                tEngineProtocol.pose(position), mass, mass*(radius^2 + height^2/12)*[1 1 1]);
+        end
+
+        function d = fromSegment(P, axis, halfHeight)
+            % Distances of the points P (3xN) from the segment of the given
+            % half height along the axis (1, 2 or 3) through the origin
+            Q = zeros(size(P));
+            Q(axis, :) = max(min(P(axis, :), halfHeight), -halfHeight);
+            d = vecnorm(P - Q, 2, 1);
+        end
+
+        function h = addShell(w, type, radius, thickness, position, mass)
+            % Spherical shell of the given middle radius and wall; a dynamic
+            % one gets the inertia of a thin shell, 2/3 m r^2
+            arguments
+                w
+                type
+                radius
+                thickness
+                position (1, 3) double = [0 0 0]
+                mass (1, 1) double = 1
+            end
+            h = phxEngine('add', w, 'sphereshell', type, radius, thickness, tEngineProtocol.pose(position), ...
+                mass, 2/3*mass*radius^2*[1 1 1]);
         end
 
         function r = shapeRow(add, restHeight, tolerance)

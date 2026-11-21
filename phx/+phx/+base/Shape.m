@@ -46,8 +46,7 @@ classdef Shape
         Style {mustBeMember(Style, ["smooth", "edged", "flat", "wireframe"])} = "smooth"
 
         % Opacity of the surface (0 = invisible, 1 = opaque), multiplying
-        % the alpha of a texture. Any value below 1 turns antialiasing off
-        % in the whole figure, as all transparent graphics do.
+        % the alpha of a texture
         Alpha (1, 1) double {mustBeInRange(Alpha, 0, 1)} = 1
 
         % Use patch object for drawing

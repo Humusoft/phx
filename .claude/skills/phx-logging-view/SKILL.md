@@ -7,7 +7,7 @@ description: >
   phx.Zone, sense range/normal/body along rays with phx.Raycast, cast shadows
   onto a plane with phx.PlanarShadow (only when the user asks for them), set
   up the view with phx.Camera and the interactive phx.extra.Viewer, and style
-  shapes (Color, Material, Style, Texture: built-in textures and their generators,
+  shapes (Color, Material, Style, Alpha, Texture: built-in textures and their generators,
   image files and matrices, TextureBlend/TextureTransform). Use when capturing
   signals for plots, detecting events in a scene, sensing distances or line of
   sight, configuring how a PHX scene is displayed, or giving bodies colors,
@@ -299,6 +299,11 @@ carries data (group, state, a mapped value) rather than shape: it renders the au
 `Color` exactly and ignores the lights, so nothing shades the encoding away. `Style` is
 independent of it: `"smooth"` (default), `"edged"`, `"flat"` or `"wireframe"`.
 
+**Alpha.** `Alpha` is the opacity of the surface, 0 (invisible) to 1 (opaque, the
+default), as MATLAB's `FaceAlpha`; it multiplies a texture's alpha. On `SphereShell` and
+`CapsuleShell` it is the opacity of the whole wall (each of its two faces gets
+1 - sqrt(1 - Alpha)), the way to show what a tank holds.
+
 **Textures.** `Texture` takes the name of a built-in texture, an image file path, or an
 image matrix. The ten built-in textures are grayscale patterns (matched
 case-insensitively):
@@ -405,9 +410,8 @@ left to right — `"rot90"`/`"rot180"`/`"rot270"` (counterclockwise, like `rot90
 `"fliplr"`, `"flipud"`, `"grayscale"` (luma, like `rgb2gray`), `"invert"` and `"opaque"`
 (drops the alpha channel). Use it to turn or mirror a texture on all faces at once, and
 `"grayscale"` before a blend to tint a colored photo with `Color` (the built-in textures
-are already grayscale). An image with any transparent pixel switches the draw path to
-transparency, which turns antialiasing off; `"opaque"` brings it back when the alpha is
-unwanted. On a `Mesh`, `TextureBlend` and `TextureTransform` affect only the shape's own
+are already grayscale), and `"opaque"` when an image carries an alpha channel it does
+not need. On a `Mesh`, `TextureBlend` and `TextureTransform` affect only the shape's own
 `Texture`, never textures from OBJ materials.
 
 ```matlab
