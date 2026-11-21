@@ -64,6 +64,7 @@ function catalog = exampleCatalog
         entry("phxex_drone",       "Vehicles, robots and control",   15)
         entry("phxex_rocket",      "Vehicles, robots and control",   12)
         entry("phxex_balance",     "Vehicles, robots and control",    4)
+        entry("phxex_balancewater", "Vehicles, robots and control",  10)  % wall-clock, ~1.6x slower than real time; the ball on its first move, the water sloshing
         entry("phxex_antisway",    "Vehicles, robots and control",   12)
         entry("phxex_swingover",   "Vehicles, robots and control",   16, "", "Build walls,Simulate")
         entry("phxex_sim_swingover", "Vehicles, robots and control", 24, "Simulink version: a scheduled trolley path swings the load over the wall")
@@ -87,6 +88,7 @@ function catalog = exampleCatalog
         entry("phxex_sorter",      "Fields, magnetism and fluids",   12)
         entry("phxex_capacitor",   "Fields, magnetism and fluids",   25)
         entry("phxex_buoyancy",    "Fields, magnetism and fluids",   15)
+        entry("phxex_dambreak",    "Fields, magnetism and fluids",   15)  % wall-clock, ~14x slower than real time; the wave running along the tank
 
         entry("phxex_bowling",     "Analysis and workflows",         15)
         entry("phxex_validate",    "Analysis and workflows",         20)
