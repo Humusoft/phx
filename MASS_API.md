@@ -187,5 +187,9 @@ Each a step of its own, reviewed before the next:
    PHX 2.0 shape density still reaches the bodies); 24 demos, the two `model_*`
    scene builders and the Spawner code of `phxex_sim_sorter.slx` (saved back as
    R2026a) give the density to the bodies. The `saved_*.mat` files are phase 5.)
-5. Saved scenes: loading, resaving the `saved_*.mat` files.
+5. Saved scenes: loading, resaving the `saved_*.mat` files. (Done: the five files
+   rebuilt by their `model_*.m`. Masses, moments and centres as before, but for the
+   kinematic bowl of `saved_ballplate2.mat`, which the older file had from an earlier
+   PHX (centre at the origin, another mass of the revolution); the volumes of the
+   meshes are now those of their geometry, not the fallback from mass and density.)
 6. Help, user guide, skills, upgrade guide.
