@@ -60,15 +60,19 @@ classdef FlexibleBody < phx.base.Object
 %#ok<*MCSUP> OK to access other properties in setters
 %#ok<*INUSD> OK to see the full list of arguments for callbacks
 
-    properties (Access = private)
-        hP
-
-        % The vertices (Nx3, world) the last simulation ended with, until
-        % the rest shape changes; empty before
+    % The state the last simulation ended with, until the rest shape
+    % changes; empty before. Not saved: a loaded body starts from its rest
+    % shape, as a new simulation does
+    properties (Access = private, Transient)
+        % The vertices (Nx3, world)
         LastVertices = zeros(0, 3)
 
-        % Their velocities (Nx3, world), likewise
+        % Their velocities (Nx3, world)
         LastVelocities = zeros(0, 3)
+    end
+
+    properties (Access = private)
+        hP
 
         % Velocities as set: one row per vertex, or one for all
         InitialVelocities = [0 0 0]
@@ -203,14 +207,14 @@ classdef FlexibleBody < phx.base.Object
         % Present vertex positions in the world frame (Nx3, with the
         % vertices added in the middles of the edges of a Kx4 mesh): during
         % a run those of the engine, after it the last ones (until the rest
-        % shape changes), before the first the rest shape at Position and
-        % Orientation
+        % shape changes; they are not saved with the body), else the rest
+        % shape at Position and Orientation
         CurrentVertices (:, 3) double
 
         % Present vertex velocities in the world frame (Nx3, m/s, with the
         % vertices added in the middles of the edges of a Kx4 mesh): during
-        % a run those of the engine, after it the last ones (until the rest
-        % shape changes), before the first the Velocities
+        % a run those of the engine, after it the last ones (likewise), else
+        % the Velocities
         CurrentVelocities (:, 3) double
     end
 
@@ -678,6 +682,8 @@ classdef FlexibleBody < phx.base.Object
         function valid = initObject(obj, world)
             valid = true;
             if isempty(obj.ObjectHandle)
+                % Checked first: a failure leaves no engine body behind
+                W = obj.meshVelocities;
                 pose = [obj.Orientation obj.Position'; 0 0 0 1];
                 [V, T] = obj.mesh;
                 obj.ObjectHandle = phxEngine('add', world, 'flexiblebody', V', ...
@@ -689,8 +695,8 @@ classdef FlexibleBody < phx.base.Object
                 obj.Tolerance = obj.Tolerance;
                 obj.LinearDamping = obj.LinearDamping;
                 obj.Friction = obj.Friction;
-                if any(obj.InitialVelocities, "all")
-                    phxEngine('set', world, obj.ObjectHandle, 'velocities', obj.meshVelocities');
+                if any(W, "all")
+                    phxEngine('set', world, obj.ObjectHandle, 'velocities', W');
                 end
             end
         end

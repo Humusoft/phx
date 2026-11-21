@@ -111,13 +111,17 @@ classdef Liquid < phx.base.ParticleGroup
             obj.Restitution = 0;
 
             % Process input arguments; a Shape is filled once they are all
-            % set
+            % set, and the velocities need the particles, so they come last
             obj.ParentAxes = ParentAxes;
             obj.checkSources(Options);
+            late = intersect("Velocities", string(fieldnames(Options))');
             obj.Deferred = true;
-            phx.internal.applyArguments(Options, obj);
+            phx.internal.applyArguments(rmfield(Options, late), obj);
             obj.Deferred = false;
             obj.refill;
+            for name = late
+                obj.(name) = Options.(name);
+            end
 
             obj.createMarker;
             obj.createSurface;

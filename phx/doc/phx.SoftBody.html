@@ -29,7 +29,7 @@ moving at their <code class="phx-inline">Velocities</code>. The rest shape, the 
 the material are read once, at that moment; the settings in the second group of properties apply at
 any time. <code class="phx-inline">CurrentVertices</code> and <code class="phx-inline">CurrentVelocities</code>
 read the present state: during a run that of the engine, after it the last one, which stays until
-the rest shape changes. A new simulation starts again from the rest shape. A soft body is a
+the rest shape changes. A new simulation, and a body loaded from a MAT file, start again from the rest shape. A soft body is a
 top-level object: hand it to the simulation like a body.</p>
 
 <h2 class="phx-h2">Creation</h2>
@@ -88,8 +88,8 @@ that of the soft body. Box, Sphere, Cylinder, Cone, Capsule and Tube generate me
 <h3 class="phx-h3">Present state (read-only)</h3>
 <table class="phx-tbl">
 <tr><th>Property</th><th>Type</th><th>Description</th></tr>
-<tr><td class="name">CurrentVertices</td><td class="type">N&times;3 double</td><td>Present vertex positions in the global frame: the deformed mesh while the simulation runs, after it the last one (until the rest shape changes), before the first run the rest shape at <code class="phx-inline">Position</code> and <code class="phx-inline">Orientation</code>.</td></tr>
-<tr><td class="name">CurrentVelocities</td><td class="type">N&times;3 double</td><td>Present vertex velocities in the global frame, <span class="phx-unit">m/s</span>: as <code class="phx-inline">CurrentVertices</code>, before the first run the <code class="phx-inline">Velocities</code>.</td></tr>
+<tr><td class="name">CurrentVertices</td><td class="type">N&times;3 double</td><td>Present vertex positions in the global frame: the deformed mesh while the simulation runs, after it the last one (until the rest shape changes; not saved with the body), else the rest shape at <code class="phx-inline">Position</code> and <code class="phx-inline">Orientation</code>.</td></tr>
+<tr><td class="name">CurrentVelocities</td><td class="type">N&times;3 double</td><td>Present vertex velocities in the global frame, <span class="phx-unit">m/s</span>: as <code class="phx-inline">CurrentVertices</code>, else the <code class="phx-inline">Velocities</code>.</td></tr>
 </table>
 
 <h2 class="phx-h2">Object Functions</h2>

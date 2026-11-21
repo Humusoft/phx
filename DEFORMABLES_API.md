@@ -138,8 +138,11 @@ Each a step of its own, reviewed before the next:
 2. Meshes: `CurrentVertices` after the run (kept in `stateTransfer`),
    `CurrentVertices`/`CurrentVelocities` on all four; tests. (Done: the last vertices
    kept until the rest shape changes (`Vertices`, `Faces`/`Tetrahedra`, `Shape`,
-   `Position`, `Orientation`), and saved with the body; `CurrentVelocities` of the
-   particle groups. That of the meshes needs the engine's soft body velocities: phase 4.)
+   `Position`, `Orientation`); `CurrentVelocities` of the particle groups. That of the
+   meshes needs the engine's soft body velocities: phase 4. The last state is not saved
+   with the body (decided after the review, 2026-11-21): loading runs the setters of the
+   rest shape, which would clear it anyway, and a loaded body starts from its rest shape
+   as a new simulation does.)
 3. Engine: soft body `velocities`, the initial velocities of the flexible solver
    (tools/jolt, JOLT_CHANGES.md); contract tests; MEX built. (Done: the soft body field
    `velocities`, protocol 2 step Z, JOLT_CHANGES.md item 45, Jolt `94b834c`: setting

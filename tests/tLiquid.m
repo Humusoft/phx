@@ -100,6 +100,12 @@ classdef tLiquid < PhxTestCase
             tc.verifyEqual(L.Vertices, [0 0 0; 1 0 0], "The shape is gone.");
         end
 
+        function shapeTakesOneRowOfVelocities(tc)
+            % Velocities given with a Shape apply to the particles it fills
+            L = phx.Liquid([], "Shape", {"Box", "Size", [0.1 0.1 0.1]}, "Spacing", tc.D, "Velocities", [0 0 -1]);
+            tc.verifyEqual(L.Velocities, repmat([0 0 -1], L.Count, 1));
+        end
+
         function shapeErrors(tc)
             tc.verifyError(@() phx.Liquid([], "Shape", {"Box"}, "Vertices", [0 0 0]), "phx:Liquid:shapeAndVertices");
             tc.verifyError(@() phx.Liquid([], "Shape", {"Revolution"}), "phx:Liquid:badShape");

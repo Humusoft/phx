@@ -40,8 +40,8 @@ rubber for larger strains.</p>
 at their <code class="phx-inline">Velocities</code>; the rest shape, the initial velocities and the
 material are read once, at that moment. <code class="phx-inline">CurrentVertices</code> and
 <code class="phx-inline">CurrentVelocities</code> read the present state: during a run that of the
-engine, after it the last one, which stays until the rest shape changes. A new simulation starts
-again from the rest shape. A flexible body is a top-level object: hand it to the simulation like a
+engine, after it the last one, which stays until the rest shape changes. A new simulation, and a body loaded from a MAT file,
+start again from the rest shape. A flexible body is a top-level object: hand it to the simulation like a
 body.</p>
 
 <h2 class="phx-h2">Creation</h2>
@@ -115,8 +115,8 @@ sets how fine the mesh is. Box, Sphere, Cylinder, Cone, Capsule and Tube generat
 <table class="phx-tbl">
 <tr><th>Property</th><th>Type</th><th>Description</th></tr>
 <tr><td class="name">Faces</td><td class="type">M&times;3 double</td><td>Boundary triangles of the mesh, wound outwards; a face of a tetrahedron is split into four at the vertices of its edges.</td></tr>
-<tr><td class="name">CurrentVertices</td><td class="type">N&times;3 double</td><td>Present vertex positions in the global frame, with the vertices added in the middles of the edges of a K&times;4 mesh: the deformed mesh while the simulation runs, after it the last one (until the rest shape changes), before the first run the rest shape at <code class="phx-inline">Position</code> and <code class="phx-inline">Orientation</code>.</td></tr>
-<tr><td class="name">CurrentVelocities</td><td class="type">N&times;3 double</td><td>Present vertex velocities in the global frame, <span class="phx-unit">m/s</span>, with the vertices added in the middles of the edges: as <code class="phx-inline">CurrentVertices</code>, before the first run the <code class="phx-inline">Velocities</code>.</td></tr>
+<tr><td class="name">CurrentVertices</td><td class="type">N&times;3 double</td><td>Present vertex positions in the global frame, with the vertices added in the middles of the edges of a K&times;4 mesh: the deformed mesh while the simulation runs, after it the last one (until the rest shape changes; not saved with the body), else the rest shape at <code class="phx-inline">Position</code> and <code class="phx-inline">Orientation</code>.</td></tr>
+<tr><td class="name">CurrentVelocities</td><td class="type">N&times;3 double</td><td>Present vertex velocities in the global frame, <span class="phx-unit">m/s</span>, with the vertices added in the middles of the edges: as <code class="phx-inline">CurrentVertices</code>, else the <code class="phx-inline">Velocities</code>.</td></tr>
 <tr><td class="name">VonMisesStress</td><td class="type">N&times;1 double</td><td>Von Mises stress at the vertices, averaged over the tetrahedra around each, <span class="phx-unit">Pa</span>; zero before the simulation starts.</td></tr>
 </table>
 

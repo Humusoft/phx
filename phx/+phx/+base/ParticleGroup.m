@@ -624,7 +624,7 @@ classdef (Abstract) ParticleGroup < phx.base.Object
                 end
             catch err
                 if err.identifier == "phx:Shape:noVolumetricMesh"
-                    error(errorId, "A %s cannot fill particles yet; give their Positions instead.", class(shape));
+                    error(errorId, "A %s cannot fill particles yet; give their Vertices instead.", class(shape));
                 end
                 rethrow(err);
             end

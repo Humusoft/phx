@@ -382,6 +382,56 @@ classdef tSoftBodies < PhxTestCase
             tc.verifyEqual(acos((trace(R) - 1)/2), pi/2, "RelTol", 0.01, "A quarter turn.");
         end
 
+        function badVelocitiesLeaveTheBodyFree(tc)
+            % Velocities that no longer fit the mesh fail when a simulation
+            % creates the body and leave nothing behind: with fitting ones,
+            % a new simulation creates and moves it
+            tc.requireEngine;
+            [V, F] = tc.cube;
+            bodies = {phx.SoftBody([], "Vertices", V, "Faces", F, "Velocities", ones(8, 3)), ...
+                phx.FlexibleBody([], "Vertices", V, "Tetrahedra", delaunay(V), "Velocities", ones(8, 3))};
+            ids = ["phx:SoftBody:sizeMismatch" "phx:FlexibleBody:sizeMismatch"];
+            for k = 1:2
+                b = bodies{k};
+                b.Vertices = [V; 0 0 0];   % one more vertex, in the middle
+                if k == 2
+                    b.Tetrahedra = delaunay(b.Vertices);
+                end
+                rest = b.CurrentVertices;
+                tc.verifyError(@() phx.Simulation({b}, "Gravity", [0 0 0]), ids(k));
+                b.Velocities = [0 0 1];
+                sim = phx.Simulation({b}, "Gravity", [0 0 0]);
+                tc.addTeardown(@() tc.deleteIfValid(sim));
+                sim.step(0.2, 40, -1);
+                tc.verifyEqual(mean(b.CurrentVertices) - mean(rest), [0 0 0.2], "AbsTol", 1e-3, class(b));
+                delete(sim);
+            end
+        end
+
+        function lastStateIsNotSavedWithTheBody(tc)
+            % A body loaded from a MAT file reads its rest shape and initial
+            % velocities, as a new simulation starts from them
+            tc.requireEngine;
+            [V, F] = tc.cube;
+            bodies = {phx.SoftBody([], "Vertices", V, "Faces", F, "Position", [0 0 1], "Velocities", [1 0 0]), ...
+                phx.FlexibleBody([], "Vertices", V, "Tetrahedra", delaunay(V), "Position", [0 0 1], "Velocities", [1 0 0])};
+            file = [tempname '.mat'];
+            tc.addTeardown(@() delete(file));
+            for k = 1:2
+                b = bodies{k};
+                rest = b.CurrentVertices;
+                sim = phx.Simulation({b}, "Gravity", [0 0 0]);
+                tc.addTeardown(@() tc.deleteIfValid(sim));
+                sim.step(0.1, 20, -1);
+                delete(sim);
+                tc.assertGreaterThan(mean(b.CurrentVertices(:, 1)), 0.05, class(b) + " moved.");
+                save(file, "b");
+                S = load(file);
+                tc.verifyEqual(S.b.CurrentVertices, rest, "AbsTol", 1e-12, class(b));
+                tc.verifyEqual(S.b.CurrentVelocities, repmat([1 0 0], size(rest, 1), 1), class(b));
+            end
+        end
+
         function weldHoldsTheOverlappedVertices(tc)
             % A static slab over the top face of the cube holds its four
             % top vertices, and the hanging cube stays up

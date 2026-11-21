@@ -86,6 +86,14 @@ classdef tParticles < PhxTestCase
             tc.verifyCubicLattice(p.CurrentVertices, 0.04, "A new Radius fills again.");
         end
 
+        function shapeTakesOneRowOfVelocities(tc)
+            % Velocities given with a Shape apply to the particles it fills,
+            % whatever the order of the arguments
+            p = phx.Particles([], "Velocities", [1 0 0], "Shape", {"Box", "Size", [0.2 0.2 0.2]}, "Radius", 0.05);
+            tc.verifyEqual(p.Velocities, repmat([1 0 0], p.Count, 1));
+            tc.verifyGreaterThan(p.Count, 0);
+        end
+
         function shapeErrors(tc)
             tc.verifyError(@() phx.Particles([], "Shape", {"Box"}, "Vertices", [0 0 0]), "phx:Particles:shapeAndVertices");
             tc.verifyError(@() phx.Particles([], "Shape", {"Box", "Size", [1 1 1]}, "Radius", 0.01), ...

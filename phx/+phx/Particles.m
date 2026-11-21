@@ -90,17 +90,17 @@ classdef Particles < phx.base.ParticleGroup
             obj.Color = phx.base.Shape.newColor;
 
             % Process input arguments; a Shape is filled once they are all
-            % set, and the views of Density need the particles and their
-            % Radius, so they come last
+            % set, and the velocities and the views of Density need the
+            % particles (and their Radius), so they come last
             obj.ParentAxes = ParentAxes;
             obj.checkSources(Options);
-            views = intersect(["ParticleMass" "Mass"], string(fieldnames(Options))', "stable");
+            late = intersect(["Velocities" "ParticleMass" "Mass"], string(fieldnames(Options))', "stable");
             obj.Deferred = true;
-            phx.internal.applyArguments(rmfield(Options, views), obj);
+            phx.internal.applyArguments(rmfield(Options, late), obj);
             obj.Deferred = false;
             obj.refill;
-            for view = views
-                obj.(view) = Options.(view);
+            for name = late
+                obj.(name) = Options.(name);
             end
 
             obj.createMarker;
