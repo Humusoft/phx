@@ -149,7 +149,7 @@ classdef tBuoyancy < PhxTestCase
             % volume sits ~3 % under the analytic sphere volume the mass is
             % computed from - together well within the 0.06 m tolerance.
             tc.requireEngine;
-            b = tc.spawnBody([0 0 0.2], "Shape", {"Sphere", "Radius", 0.5, "Density", 500});
+            b = tc.spawnBody([0 0 0.2], "Shape", {"Sphere", "Radius", 0.5}, "Density", 500);
             phx.Buoyancy(b, "Level", 0, "Resolution", 16, "LinearDamping", 2000, ...
                 "AngularDamping", 20, "SurfaceSize", [0 0]);
             sim = phx.Simulation(b);
@@ -163,7 +163,7 @@ classdef tBuoyancy < PhxTestCase
 
         function denserThanLiquidBodySinks(tc)
             tc.requireEngine;
-            b = tc.spawnBody([0 0 0.5], "Shape", {"Box", "Size", [0.4 0.4 0.4], "Density", 3000});
+            b = tc.spawnBody([0 0 0.5], "Shape", {"Box", "Size", [0.4 0.4 0.4]}, "Density", 3000);
             phx.Buoyancy(b, "Level", 0, "LinearDamping", 50, "SurfaceSize", [0 0]);
             sim = phx.Simulation(b);
             tc.addTeardown(@() delete(sim));

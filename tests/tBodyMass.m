@@ -101,14 +101,17 @@ classdef tBodyMass < PhxTestCase
             tc.verifyError(@() phx.Body([], "Density", 2000, "Mass", 5), "phx:Body:densityAndMass");
         end
 
-        function shapeDensityOfPHX2IsTaken(tc)
-            % A density given to the shape (PHX 2.0) reaches the body, unless
-            % the body is given its own
-            b = phx.Body([], "Shape", {"Box", "Density", 2500});
+        function shapeDensityOfPHX2WarnsAndIsTaken(tc)
+            % A density given to the shape (PHX 2.0) warns and reaches the
+            % body, unless the body is given its own
+            b = tc.verifyWarning(@() phx.Body([], "Shape", {"Box", "Density", 2500}), "phx:Shape:densityMoved");
             tc.verifyEqual(b.Density, 2500, "RelTol", 1e-14);
-            b = phx.Body([], "Density", 800, "Shape", {"Box", "Density", 2500});
+            b = tc.verifyWarning(@() phx.Body([], "Density", 800, "Shape", {"Box", "Density", 2500}), ...
+                "phx:Shape:densityMoved");
             tc.verifyEqual(b.Density, 800, "RelTol", 1e-14);
             tc.verifyError(@() phx.shape.Box("Density", 0), "phx:Shape:badDensity");
+            b = tc.verifyWarningFree(@() phx.Body([], "Shape", {"Box"}, "Density", 2500));
+            tc.verifyEqual(b.Density, 2500, "RelTol", 1e-14);
         end
 
         function massPropertiesArePositive(tc)

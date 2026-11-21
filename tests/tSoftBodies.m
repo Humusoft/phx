@@ -89,28 +89,31 @@ classdef tSoftBodies < PhxTestCase
             tc.verifyEqual(f.Mass, 1000*0.4*0.2*0.1, "RelTol", 1e-9);
         end
 
-        function shapeSetsTheMeshAndDensity(tc)
+        function shapeSetsTheMesh(tc)
             % A shape object and the cell shorthand give the mesh the shape
-            % generates, and the density of the shape
-            box = phx.shape.Box("Size", [0.4 0.2 0.1], "Density", 1100, "ElementResolution", 1);
+            % generates
+            box = phx.shape.Box("Size", [0.4 0.2 0.1], "ElementResolution", 1);
             [V, T] = box.generateVolumetricMesh;
-            f = phx.FlexibleBody([], "Shape", box);
+            f = phx.FlexibleBody([], "Shape", box, "Density", 1100);
             tc.verifyEqual(f.Vertices, V);
             tc.verifyEqual(f.Tetrahedra, T);
-            tc.verifyEqual(f.Density, 1100);
             tc.verifyEqual(f.Mass, 1100*0.4*0.2*0.1, "RelTol", 1e-9);
-            g = phx.FlexibleBody([], "Shape", {"Box", "Size", [0.4 0.2 0.1], "Density", 1100, "ElementResolution", 1});
+            g = phx.FlexibleBody([], "Shape", {"Box", "Size", [0.4 0.2 0.1], "ElementResolution", 1});
             tc.verifyEqual(g.Tetrahedra, T);
-            tc.verifyEqual(g.Density, 1100);
         end
 
-        function densityOrMassOverridesTheShape(tc)
-            % Given to the constructor, before or after the shape (with a
-            % density given to the shape, as in PHX 2.0)
+        function shapeDensityOfPHX2WarnsAndIsTaken(tc)
+            % A density given to the shape (PHX 2.0) warns; the body takes it
+            % unless given its own Density or Mass, before or after the shape
             box = phx.shape.Box("Size", [0.4 0.2 0.1], "Density", 1100);
-            tc.verifyEqual(phx.FlexibleBody([], "Density", 500, "Shape", box).Density, 500);
-            tc.verifyEqual(phx.FlexibleBody([], "Shape", box, "Density", 500).Density, 500);
-            tc.verifyEqual(phx.FlexibleBody([], "Mass", 2, "Shape", box).Mass, 2, "RelTol", 1e-9);
+            f = tc.verifyWarning(@() phx.FlexibleBody([], "Shape", box), "phx:Shape:densityMoved");
+            tc.verifyEqual(f.Density, 1100);
+            f = tc.verifyWarning(@() phx.FlexibleBody([], "Density", 500, "Shape", box), "phx:Shape:densityMoved");
+            tc.verifyEqual(f.Density, 500);
+            f = tc.verifyWarning(@() phx.FlexibleBody([], "Shape", box, "Density", 500), "phx:Shape:densityMoved");
+            tc.verifyEqual(f.Density, 500);
+            f = tc.verifyWarning(@() phx.FlexibleBody([], "Mass", 2, "Shape", box), "phx:Shape:densityMoved");
+            tc.verifyEqual(f.Mass, 2, "RelTol", 1e-9);
         end
 
         function flexibleBodyHasItsVolumeAndItsOwnDensity(tc)
@@ -129,9 +132,9 @@ classdef tSoftBodies < PhxTestCase
 
         function curvedMeshGivesTheMass(tc)
             % The tetrahedra count the volume of their curved edges
-            sphere = phx.shape.Sphere("Diameter", 0.5, "Density", 1000);
+            sphere = phx.shape.Sphere("Diameter", 0.5);
             q = phx.FlexibleBody([], "Shape", sphere);
-            tc.verifyEqual(q.Mass, sphere.computeMass, "RelTol", 0.005);
+            tc.verifyEqual(q.Volume, sphere.computeVolume, "RelTol", 0.005);
         end
 
         function shapeMustGenerateAMesh(tc)
@@ -147,15 +150,16 @@ classdef tSoftBodies < PhxTestCase
         function softBodyShapeSetsTheSurfaceNotTheMass(tc)
             % A shape object and the cell shorthand give the surface mesh the
             % shape generates; the mass stays that of the soft body
-            box = phx.shape.Box("Size", [0.4 0.2 0.1], "Density", 1100, "ElementResolution", 1);
+            box = phx.shape.Box("Size", [0.4 0.2 0.1], "ElementResolution", 1);
             [V, F] = box.generateSurfaceMesh;
             s = phx.SoftBody([], "Shape", box, "Mass", 3);
             tc.verifyEqual(s.Vertices, V);
             tc.verifyEqual(s.Faces, F);
             tc.verifyEqual(s.Mass, 3);
-            g = phx.SoftBody([], "Shape", {"Box", "Size", [0.4 0.2 0.1], "ElementResolution", 1});
+            g = tc.verifyWarning(@() phx.SoftBody([], "Shape", {"Box", "Size", [0.4 0.2 0.1], ...
+                "Density", 1100, "ElementResolution", 1}), "phx:Shape:densityMoved");
             tc.verifyEqual(g.Faces, F);
-            tc.verifyEqual(g.Mass, 1, "The default mass, not the density of the shape.");
+            tc.verifyEqual(g.Mass, 1, "The default mass, not the density of the shape (PHX 2.0).");
         end
 
         function softBodyShapeMustGenerateAMesh(tc)

@@ -53,7 +53,7 @@ classdef tForceApplication < PhxTestCase
     methods (Test, TestTags = {'Engine'})
         function impulseMatchesTheAnalyticValue(tc, Case)
             b = tc.spawnBody(Case.Position, "EulerAngles", Case.EulerAngles, ...
-                "Shape", {"Box", "Size", [0.2 0.2 0.2], "Density", 125});
+                "Shape", {"Box", "Size", [0.2 0.2 0.2]}, "Density", 125);
             m = b.Mass;
             I = b.Inertia;
             sim = phx.Simulation(b, "Gravity", [0 0 0]);
@@ -83,7 +83,7 @@ classdef tForceApplication < PhxTestCase
             % changed, in the body frame. Set before the simulation exists,
             % they reach the engine body as it is created.
             b = tc.spawnBody(tc.Far, "EulerAngles", tc.Spin, ...
-                "Shape", {"Box", "Size", [0.2 0.2 0.2], "Density", 125});
+                "Shape", {"Box", "Size", [0.2 0.2 0.2]}, "Density", 125);
             b.AppliedForce = [2 0 0];        % local x = world y
             b.AppliedTorque = [0 0 0.001];
             m = b.Mass;
@@ -109,7 +109,7 @@ classdef tForceApplication < PhxTestCase
             % applyForce and applyTorque take one force (torque) per row:
             % two opposite forces at opposite points make a pure couple,
             % two torques add up.
-            b = tc.spawnBody([0 0 0], "Shape", {"Box", "Size", [0.2 0.2 0.2], "Density", 125});
+            b = tc.spawnBody([0 0 0], "Shape", {"Box", "Size", [0.2 0.2 0.2]}, "Density", 125);
             I = b.Inertia;
             sim = phx.Simulation(b, "Gravity", [0 0 0]);
             tc.addTeardown(@() delete(sim));
@@ -125,7 +125,7 @@ classdef tForceApplication < PhxTestCase
             % LinearAcceleration and AngularAcceleration are F/m and M/I
             % over the last step, in world axes; gravity counts, so a free
             % body reads it. Before any step they are zero.
-            b = tc.spawnBody(tc.Far, "Shape", {"Box", "Size", [0.2 0.2 0.2], "Density", 125});
+            b = tc.spawnBody(tc.Far, "Shape", {"Box", "Size", [0.2 0.2 0.2]}, "Density", 125);
             b.AppliedForce = [2 0 0];
             b.AppliedTorque = [0 0 0.001];
             m = b.Mass;

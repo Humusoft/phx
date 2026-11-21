@@ -193,6 +193,10 @@ classdef SoftBody < phx.base.Object
                 error("phx:SoftBody:badShape", ...
                     "The Shape of a soft body must be a phx.shape.* object or a cell array of its name and arguments.");
             end
+            if ~isnan(shape.Density)
+                warning("phx:Shape:densityMoved", "The density of a shape is deprecated, and a soft " + ...
+                    "body has its Mass: the density of its shape is ignored.");
+            end
 
             % The faces are cleared first, so that the drawing waits until
             % the new vertices and faces fit together

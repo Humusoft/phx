@@ -112,7 +112,7 @@ function outlet = buildFeeder(ax, b, f, Az, settle, nParts, ground)
     parts = phx.Body.empty;
     for i = 1:nParts
         parts(i) = phx.Body(ax, "Position", poolPose(b), "EulerAngles", 2*pi*rand(1, 3), "Friction", 0.5, ...
-            "Shape", {"Box", "Size", b.Part, "Density", b.Mass/prod(b.Part), "Color", [0.85 0.5 0.15]});
+            "Shape", {"Box", "Size", b.Part, "Color", [0.85 0.5 0.15]}, "Mass", b.Mass);
     end
 
     % Counting zone

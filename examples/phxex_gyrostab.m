@@ -54,27 +54,27 @@ function phxex_gyrostab(duration, spinRate, maxAmplitude)
 
     % Two identical platforms; the waves travel along y, so both see the
     % same wave phase and roll about their x axis
-    platA = phx.Body(ax, "Position", [-offset 0 0], "Shape", {"Box", "Size", platSize, "Density", 500, "Color", 1}, "Friction", surfaceMu);
-    platB = phx.Body(ax, "Position", [offset 0 0], "Shape", {"Box", "Size", platSize, "Density", 500, "Color", 1}, "Friction", surfaceMu);
+    platA = phx.Body(ax, "Position", [-offset 0 0], "Shape", {"Box", "Size", platSize, "Color", 1}, "Density", 500, "Friction", surfaceMu);
+    platB = phx.Body(ax, "Position", [offset 0 0], "Shape", {"Box", "Size", platSize, "Color", 1}, "Density", 500, "Friction", surfaceMu);
     plats = [platA platB];
 
     % Struts carrying the gimbal bearings
     line(platB.Graphics, [0 0 0 0], [-0.6 -0.6 0.6 0.6], [gyroZ 0 0 gyroZ], "LineWidth", 2, "Color", [1 1 1], "Marker", ".", "MarkerSize", 20);
 
     crates = phx.Body.empty;
-    crateShape = phx.shape.Box("Size", crateSize*[1 1 1], "Density", 400, ...
+    crateShape = phx.shape.Box("Size", crateSize*[1 1 1], ...
         "Color", [0.85 0.7 0.5], "Texture", "wood", "TextureBlend", 0.3);
     for p = 1:2
         for i = 1:4
-            crates(p, i) = phx.Body(ax, "Position", plats(p).Position + [cratePos(i, :), platSize(3)/2 + crateSize/2], "Shape", crateShape, "Friction", surfaceMu);
+            crates(p, i) = phx.Body(ax, "Position", plats(p).Position + [cratePos(i, :), platSize(3)/2 + crateSize/2], "Shape", crateShape, "Density", 400, "Friction", surfaceMu);
         end
     end
 
     % Gyro stabilizer on platform B: shaft hinged to the platform about
     % the transverse y axis (gimbal), spinning disk hinged to the shaft
     % about its z axis
-    shaft = phx.Body(ax, "Position", [offset 0 gyroZ], "Shape", {"Cylinder", "Radius", 0.04, "Height", 0.55, "Density", 2000, "Color", 0.4});
-    disk = phx.Body(ax, "Position", [offset 0 gyroZ], "Shape", {"Cylinder", "Radius", diskR, "Height", 0.06, "Density", 7800, "Color", [0.95 0.55 0.5], "Texture", "stripes", "TextureBlend", 0.5});
+    shaft = phx.Body(ax, "Position", [offset 0 gyroZ], "Shape", {"Cylinder", "Radius", 0.04, "Height", 0.55, "Color", 0.4}, "Density", 2000);
+    disk = phx.Body(ax, "Position", [offset 0 gyroZ], "Shape", {"Cylinder", "Radius", diskR, "Height", 0.06, "Color", [0.95 0.55 0.5], "Texture", "stripes", "TextureBlend", 0.5}, "Density", 7800);
     line(shaft.Graphics, [0 0], [-0.6 0.6], [0 0], "LineWidth", 2, "Color", [0.4 0.4 0.4]);
 
     % The gimbal bearing brakes by friction (a motor holding zero speed with

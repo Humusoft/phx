@@ -303,6 +303,10 @@ classdef (Abstract) ParticleGroup < phx.base.Object
                 error(obj.errorId("badShape"), ...
                     "The Shape must be a phx.shape.* object or a cell array of its name and arguments.");
             end
+            if ~isnan(shape.Density)
+                warning("phx:Shape:densityMoved", "The density of a shape is deprecated, and the " + ...
+                    "group has its own Density: the density of its shape is ignored.");
+            end
             obj.FillShape = shape;
             obj.FillSpacing = NaN;
             obj.refill;

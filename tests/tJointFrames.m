@@ -99,7 +99,7 @@ classdef tJointFrames < PhxTestCase
             column = phx.Body([], "Type", "static", "Position", [0 0 0], ...
                 "Shape", {"Box", "Size", [0.25 0.25 0.25]});
             platform = phx.Body([], "Position", [0 0 0], ...
-                "Shape", {"Box", "Size", [0.4 0.4 0.4], "Density", 200});
+                "Shape", {"Box", "Size", [0.4 0.4 0.4]}, "Density", 200);
             tc.addTeardown(@() delete([column platform]));
 
             phx.PrismaticJoint(column, platform, "AxisA", [1 0 0], "AxisB", [1 0 0]);
@@ -130,7 +130,7 @@ classdef tJointFrames < PhxTestCase
             anchor = phx.Body([], "Type", "static", "Position", [0 0 0], ...
                 "Shape", {"Box", "Size", [0.4 0.4 0.4]});
             block = phx.Body([], "Position", [0 0 1], ...
-                "Shape", {"Box", "Size", [0.4 0.4 0.4], "Density", 200});
+                "Shape", {"Box", "Size", [0.4 0.4 0.4]}, "Density", 200);
             tc.addTeardown(@() delete([anchor block]));
 
             phx.FixedJoint(anchor, block, "PointA", [0 0 0], "PointB", [0 0 0]);
@@ -160,7 +160,7 @@ classdef tJointFrames < PhxTestCase
             column = phx.Body([], "Type", "static", "Position", [0 0 tc.ZColumn], ...
                 "Shape", {"Box", "Size", [0.25 0.25 3]});
             platform = phx.Body([], "Position", [0 0 tc.ZStart], ...
-                "Shape", {"Box", "Size", [1.1 1.1 0.1], "Density", 200});
+                "Shape", {"Box", "Size", [1.1 1.1 0.1]}, "Density", 200);
 
             % Sliding axis = local Z of both joint frames, i.e. the default.
             phx.PrismaticJoint(column, platform, ...

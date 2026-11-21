@@ -302,6 +302,8 @@ classdef FlexibleBody < phx.base.Object
             obj.Tetrahedra = T;
             if ~isnan(shape.Density)
                 % A density given to the shape, as in PHX 2.0
+                warning("phx:Shape:densityMoved", "The density of a shape is deprecated: give it to the " + ...
+                    "flexible body as its Density. The body takes it unless it is given a Density or Mass of its own.");
                 obj.Density = shape.Density;
             end
         end

@@ -16,7 +16,7 @@ function phxex_rotmagdip
     poles(1) = phx.Body(ax, "Type", "static", "Position", [-15 0 0], "EulerAngles", [0 pi/2 0], "Shape", {"Cylinder", "Diameter", 5, "Height", 2}, "Collisions", false);
     poles(2) = phx.Body(ax, "Type", "static", "Position", [7.5 -13 0], "EulerAngles", [0 pi/2 2*pi/3], "Shape", {"Cylinder", "Diameter", 5, "Height", 2}, "Collisions", false);
     poles(3) = phx.Body(ax, "Type", "static", "Position", [7.5 13 0], "EulerAngles", [0 pi/2 4*pi/3], "Shape", {"Cylinder", "Diameter", 5, "Height", 2}, "Collisions", false);
-    poles(4) = phx.Body(ax, "Position", [0 0 0], "Shape", {"Box", "Size", [20 5 5], "Density", 30, "Texture", "arrows", "TextureBlend", 0.1, "TextureTransform", "fliplr", "Color", 0.5}, "Collisions", false);
+    poles(4) = phx.Body(ax, "Position", [0 0 0], "Shape", {"Box", "Size", [20 5 5], "Texture", "arrows", "TextureBlend", 0.1, "TextureTransform", "fliplr", "Color", 0.5}, "Density", 30, "Collisions", false);
     
     % Add kinematic joints
     phx.RevoluteJoint(ground, poles(4));

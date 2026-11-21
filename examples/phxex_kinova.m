@@ -119,7 +119,7 @@ function phxex_kinova(sweepTime, Tmax, smooth)
             "Shape", {"Box", "Size", [0.18 0.025 0.08], "Color", 0.3});
     end
     blade = phx.Body(ax, "Position", [rackAt rackTop + paddle(3)/2], ...
-        "Shape", {"Box", "Size", paddle, "Density", 300, "Color", [0.85 0.32 0.15]});
+        "Shape", {"Box", "Size", paddle, "Color", [0.85 0.32 0.15]}, "Density", 300);
 
     % Import the arm in the pose the run starts from, then bolt it down. Its
     % base is held by a joint rather than made static, because a motor in a

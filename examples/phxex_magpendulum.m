@@ -154,7 +154,7 @@ function phxex_magpendulum(nGrid, tMaxRun)
     % Creates a pendulum rod with a magnetic tip: a thin cylinder hanging
     % from the anchor, its dipole pole placed at the lower physical end
         rod = phx.Body(ax, "Shape", {"Cylinder", "Diameter", 0.15, "Height", L, ...
-            "Density", 50, "Color", clr}, "Collisions", false);
+            "Color", clr}, "Density", 50, "Collisions", false);
         setRod(rod, tipXY);
         % A long thin rod has a ~500:1 inertia anisotropy that makes the
         % constraint solver spin it up about its own axis; an isotropic

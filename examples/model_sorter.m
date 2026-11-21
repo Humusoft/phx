@@ -24,7 +24,7 @@ function model_sorter
 
     Disk = phx.Body("Type", "kinematic", "Position", [0 0 0.75], "Shape", {"Cylinder", "Diameter", 16, "Height", 0.5, "Axis", "z", "Color", [0.80 0.80 0.85], "Texture", "checker", "TextureBlend", 0.25}, "Friction", 0.9, "Name", "Disk"); %#ok<NASGU>
     Defl = phx.Body("Type", "kinematic", "Position", [6.5 0 1.8], "EulerAngles", [0 0 deg2rad(30)], "Shape", {"Box", "Size", [7 0.4 1.6], "Color", [0.90 0.80 0.30]}, "Friction", 0.4, "Name", "Defl"); %#ok<NASGU>
-    ChuteUp = phx.Body("Type", "static", "Position", [10.75 0 zc(10.75)], "EulerAngles", [0 deg2rad(20) 0], "Shape", {"Box", "Size", [5.5 9 0.4], "Color", [0.92 0.92 0.92], "Density", 100}, "Friction", 0, "Name", "ChuteUp"); %#ok<NASGU>
+    ChuteUp = phx.Body("Type", "static", "Position", [10.75 0 zc(10.75)], "EulerAngles", [0 deg2rad(20) 0], "Shape", {"Box", "Size", [5.5 9 0.4], "Color", [0.92 0.92 0.92]}, "Density", 100, "Friction", 0, "Name", "ChuteUp"); %#ok<NASGU>
     ChuteDn = phx.Body("Type", "static", "Position", [21.00 0 zc(21.00)-0.3], "EulerAngles", [0 deg2rad(20) 0], "Shape", {"Box", "Size", [5.0 9 0.4], "Color", [0.92 0.92 0.92]}, "Friction", 0.1, "Name", "ChuteDn"); %#ok<NASGU>
     Trap = phx.Body("Type", "kinematic", "Position", [16.00 0 zc(16.00)], "EulerAngles", [0 deg2rad(20) 0], "Shape", {"Box", "Size", [5.5 9 0.4], "Color", [0.20 0.80 0.40]}, "Friction", 0.1, "Name", "Trap"); %#ok<NASGU>
 

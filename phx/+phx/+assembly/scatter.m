@@ -40,6 +40,8 @@ function bodies = scatter(varargin)
 %     one given by Color or, without it, the body's own color from the
 %     shape palette - so the shades differ while the hue stays.
 %   - Friction: friction coefficient of all bodies, default 0.5.
+%   - Density: density of the bodies (kg/m^3), default 1000; their masses
+%     and inertias follow from the geometry.
 %   - Position, Orientation, EulerAngles: pose of the region frame in the
 %     world, default at the world origin. Same conventions as phx.Body.
 %
@@ -72,6 +74,7 @@ function bodies = build(ax, shape, n, Options)
         Options.Color double = double.empty
         Options.RandomTint (1, 1) double {mustBeInRange(Options.RandomTint, 0, 1)} = 0
         Options.Friction (1, :) double {mustBeNonnegative} = 0.5
+        Options.Density double {mustBeScalarOrEmpty, mustBePositive, mustBeFinite} = []
         Options.Position (1, 3) double = [0 0 0]
         Options.Orientation (3, 3) double = eye(3)
         Options.EulerAngles (1, 3) double = [0 0 0]
@@ -115,9 +118,15 @@ function bodies = build(ax, shape, n, Options)
     if isa(ax, "missing")
         ax = gca;
     end
+    % The density given, or the body's default (or, deprecated, a density
+    % given to the shape)
+    density = {};
+    if ~isempty(Options.Density)
+        density = {"Density", Options.Density};
+    end
     bodies = phx.Body.empty;
     for i = 1:n
-        bodies(i) = phx.Body(ax, "Shape", shape, "Friction", Options.Friction);
+        bodies(i) = phx.Body(ax, "Shape", shape, density{:}, "Friction", Options.Friction);
         T = eye(4);
         if Options.RandomOrientation
             T(1:3, 1:3) = randomRotation;

@@ -73,7 +73,7 @@ function phxex_segway(Kp, Kd, push)
     phx.Body(ax, "Position", [-4 0 1], ...
         "Shape", {"Cylinder", "Axis", "y", "Diameter", 0.2, "Height", 2, "Color", [0.9 0.9 0]});
     phx.Body(ax, "Position", [-3.8 0 2], ...
-        "Shape", {"Box", "Size", [3 2 0.05], "Color", [0.9 0.5 0.5], "Density", 100});
+        "Shape", {"Box", "Size", [3 2 0.05], "Color", [0.9 0.5 0.5]}, "Density", 100);
 
     % Tall wall, set at an angle across the course so that the ray fan reads
     % a different free distance to the left and to the right of the robot.

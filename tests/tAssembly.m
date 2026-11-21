@@ -173,6 +173,16 @@ classdef tAssembly < PhxTestCase
                 "AbsTol", 1e-12, "The same seed did not reproduce the layout.");
         end
 
+        function scatterGivesTheBodiesTheirDensity(tc)
+            % The Density option reaches every body; without it, the body's
+            % default
+            bodies = tc.verifyWarningFree(@() phx.assembly.scatter([], {"Sphere", "Diameter", 0.2}, 3, ...
+                "Density", 500));
+            tc.verifyEqual([bodies.Density], [500 500 500], "RelTol", 1e-14);
+            bodies = phx.assembly.scatter([], {"Sphere", "Diameter", 0.2}, 2);
+            tc.verifyEqual([bodies.Density], [1000 1000], "RelTol", 1e-14);
+        end
+
         function scatterRandomTintShadesTheBodies(tc)
             tc.prepareAxes;
             color = [0.4 0.55 0.7];
@@ -409,7 +419,7 @@ classdef tAssembly < PhxTestCase
 
             % A heavy ball thrown at it brings the wall down
             ball = phx.Body(gca, "Position", [-2 0 0.5], ...
-                "Shape", {"Sphere", "Radius", 0.2, "Density", 4000}, ...
+                "Shape", {"Sphere", "Radius", 0.2}, "Density", 4000, ...
                 "LinearVelocity", [10 0 0]);
             sim.addObjects(ball); % the ball joined the scene after the build
             sim.step(1.5, 300, -1);

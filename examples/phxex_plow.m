@@ -117,7 +117,7 @@ function phxex_plow(Options)
         "Colormap", turbo(64), "ColorRange", [0 10e6]);
     shift = (turn*[Options.Offset; 0; 0])';
     plate = phx.Body(ax, "Position", [Rm 0 zStart - offset + share(3)/2] + shift, "Orientation", turn, ...
-        "Shape", {"Box", "Size", share, "Density", 7800, "Color", [0.25 0.35 0.6]});
+        "Shape", {"Box", "Size", share, "Color", [0.25 0.35 0.6]}, "Density", 7800);
     phx.IntersectionWeld(tine, clamp);
     phx.IntersectionWeld(tine, plate);
 

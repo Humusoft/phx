@@ -29,11 +29,13 @@ function phxex_dambreak
     % not float, and its friction on the floor lets the wave shift it only
     % a little
     phx.Body(ax, "Position", [0.1 0 0.1], "Friction", 0.4, ...
-        "Shape", {"Box", "Size", [0.1 0.15 0.2], "Density", 2500, "Color", [0.6 0.6 0.58], "Texture", "stone", "TextureBlend", 0.3});
+        "Shape", {"Box", "Size", [0.1 0.15 0.2], "Color", [0.6 0.6 0.58], "Texture", "stone", "TextureBlend", 0.3}, ...
+        "Density", 2500);
 
     % Crate of light wood resting on top of the column
     phx.Body(ax, "Position", [-0.5 0 0.43], "Friction", 0.3, ...
-        "Shape", {"Box", "Size", [0.1 0.1 0.06], "Density", 400, "Color", [0.85 0.65 0.4], "Texture", "wood", "TextureBlend", 0.3});
+        "Shape", {"Box", "Size", [0.1 0.1 0.06], "Color", [0.85 0.65 0.4], "Texture", "wood", "TextureBlend", 0.3}, ...
+        "Density", 400);
 
     % Simulation; contact tolerances for parts of centimetres, steps of
     % 0.25 ms as the liquid's sound speed and spacing need

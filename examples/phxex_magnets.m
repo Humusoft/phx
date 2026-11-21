@@ -56,9 +56,9 @@ function phxex_magnets(nBalls, annealTime, seed)
 
     % Spherical magnets: spheres with the north half painted red and
     % the south half blue; the dipole axis runs through the texture poles
-    shp = phx.shape.Sphere("Diameter", d, "Density", rho, "Texture", [1; 0], "TextureColormap", [0.35 0.45 1; 1 0.35 0.3]);
+    shp = phx.shape.Sphere("Diameter", d, "Texture", [1; 0], "TextureColormap", [0.35 0.45 1; 1 0.35 0.3]);
     balls = phx.assembly.scatter(ax, shp, nBalls, "Region", [arena - 2, arena - 2, 1], ...
-        "Position", [0 0 1], "Spacing", 1.1*d, "RandomOrientation", true, "Friction", mu);
+        "Position", [0 0 1], "Spacing", 1.1*d, "RandomOrientation", true, "Density", rho, "Friction", mu);
 
     % One dipole group for all magnets; the poles sit on the local Z axis
     phx.Dipole(balls, "Charge", q*ones(nBalls, 1), "Attractivity", -1, ...

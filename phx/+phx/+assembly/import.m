@@ -801,9 +801,9 @@ function [bodies, joints] = importOBJ(ax, file, Options)
 
         shape = phx.shape.Mesh.fromGroup(groups(i), "Envelope", Options.Envelope, ...
             "FlipFaces", Options.FlipFaces, "Scale", Options.Scale, ...
-            "Centered", true, "Density", Options.Density);
+            "Centered", true);
 
-        b = phx.Body(ax, "Name", char(names(i)), "Shape", shape);
+        b = phx.Body(ax, "Name", char(names(i)), "Shape", shape, "Density", Options.Density);
         T = TBase;
         T(1:3, 4) = TBase(1:3, 4) + TBase(1:3, 1:3)*(center.*Options.Scale)';
         b.Transform = T;
@@ -836,8 +836,8 @@ function [bodies, joints] = importMeshFile(ax, file, Options)
 
     [~, name] = fileparts(file);
     shape = phx.shape.Mesh("Source", file, "Envelope", Options.Envelope, ...
-        "FlipFaces", Options.FlipFaces, "Scale", Options.Scale, "Density", Options.Density);
-    b = phx.Body(ax, "Name", char(name), "Shape", shape);
+        "FlipFaces", Options.FlipFaces, "Scale", Options.Scale);
+    b = phx.Body(ax, "Name", char(name), "Shape", shape, "Density", Options.Density);
     b.Transform = TBase;
 
     joints = struct;

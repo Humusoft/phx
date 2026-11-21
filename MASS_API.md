@@ -180,6 +180,12 @@ Each a step of its own, reviewed before the next:
    density: nothing to change until the warning of phase 4.)
 4. `phx.assembly` builders and the demos, with the warning `phx:Shape:densityMoved`
    for a density given to a shape (not before: until the demos move, it would warn in
-   every one of them).
+   every one of them). (Done: the warning in `phx.Body`, `phx.FlexibleBody` (taken
+   unless the body has its own), `phx.SoftBody` and the particle groups (ignored);
+   `chain`, `wall` and `import` give their `Density` option to the bodies;
+   `scatter` has a `Density` option of its own (only passed when given, so that a
+   PHX 2.0 shape density still reaches the bodies); 24 demos, the two `model_*`
+   scene builders and the Spawner code of `phxex_sim_sorter.slx` (saved back as
+   R2026a) give the density to the bodies. The `saved_*.mat` files are phase 5.)
 5. Saved scenes: loading, resaving the `saved_*.mat` files.
 6. Help, user guide, skills, upgrade guide.

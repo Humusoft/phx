@@ -381,6 +381,8 @@ classdef Body < phx.base.Object
             % PHX 2.0
             density = obj.Density;
             if ~isnan(shape.Density)
+                warning("phx:Shape:densityMoved", "The density of a shape is deprecated: give it to the body " + ...
+                    "as its Density. The body takes it unless it is given a Density or Mass of its own.");
                 density = shape.Density;
             end
 
