@@ -27,8 +27,8 @@ for the present points; a deformable body cannot be given a velocity at all.
 |---|---|---|
 | `Vertices` (N×3, body frame) | the **rest shape**: the definition every build of the engine body starts from; the run never changes it | the **live points** in the frame of the group: before a simulation the starting layout, during it read and written in the engine, after it the last state, from which the next simulation goes on |
 | `CurrentVertices` (N×3, world, read-only) | during the run from the engine; after it the last state (kept when the simulation ends); before the first one the rest shape at `Position`/`Orientation` | `Vertices` placed at `Position`/`Orientation` |
-| `Velocities` (N×3, world) | the **initial** vertex velocities (definition, like `Vertices`); zeros by default | the **live** velocities, as `Vertices` |
-| `CurrentVelocities` (N×3, world, read-only) | during the run from the engine, after it the last state, before it `Velocities` | = `Velocities` |
+| `Velocities` (N×3, body or group frame) | the **initial** vertex velocities (definition, like `Vertices`); zeros by default | the **live** velocities, as `Vertices` |
+| `CurrentVelocities` (N×3, world, read-only) | during the run from the engine, after it the last state, before it `Velocities` turned into the world | `Velocities` turned into the world |
 | `Position`, `Orientation` (and `AxisAngle`, `EulerAngles`, `Quaternion`) | where the rest shape is placed when the body is built | where the group is placed |
 | `Shape` | sets `Vertices` (and `Faces` / `Tetrahedra`) | sets `Vertices`: the lattice of the shape, in its frame |
 
@@ -46,7 +46,12 @@ for the present points; a deformable body cannot be given a velocity at all.
   back the rest shape while the drawing shows the deformed one).
 - `Velocities` accept a single row 1×3 for all points, as `Inertia` accepts a scalar;
   otherwise one row per point.
-- World frame for velocities, as `phx.Body.LinearVelocity`.
+- Velocities in the frame of the body or group, like `Vertices` (decided after the
+  review, 2026-11-21; first proposed in the world frame, as `phx.Body.LinearVelocity`):
+  one rule for all four classes, without `Current` the own frame, with it the world;
+  `Position`/`Orientation` place the initial state as a whole, motion included, and a
+  spin is `cross(w, Vertices)` at any orientation. `add`, `applyForce` and the
+  `Current` properties stay in the world.
 - `CurrentVertices` and `CurrentVelocities` exist on all four classes, so that code
   reading the present points of any of them needs one name.
 

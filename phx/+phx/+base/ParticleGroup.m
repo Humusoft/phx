@@ -32,8 +32,8 @@ classdef (Abstract) ParticleGroup < phx.base.Object
         % Point marker that draws the particles
         hM
 
-        % Points in the frame of the group and velocities in the world
-        % frame (3xN), while the engine does not hold them
+        % Points and velocities in the frame of the group (3xN), while the
+        % engine does not hold them
         StoredPositions = zeros(3, 0)
         StoredVelocities = zeros(3, 0)
 
@@ -114,9 +114,9 @@ classdef (Abstract) ParticleGroup < phx.base.Object
         % the next simulation goes on
         Vertices (:, 3) double {mustBeFinite}
 
-        % Velocities of the particles in the world frame (Nx3, m/s), like
-        % Vertices before, during and after a simulation; one row sets all
-        % of them alike
+        % Velocities of the particles in the frame of the group (Nx3, m/s),
+        % like Vertices before, during and after a simulation; one row sets
+        % all of them alike
         Velocities (:, 3) double {mustBeFinite}
     end
 
@@ -126,8 +126,7 @@ classdef (Abstract) ParticleGroup < phx.base.Object
         CurrentVertices (:, 3) double
 
         % Velocities of the particles in the world frame (Nx3, m/s): the
-        % Velocities, under the name the soft and flexible bodies read
-        % their present velocities by
+        % Velocities turned by Orientation
         CurrentVelocities (:, 3) double
 
         % Number of particles
@@ -163,7 +162,7 @@ classdef (Abstract) ParticleGroup < phx.base.Object
                 phxEngine('add', obj.WorldHandle, obj.ObjectHandle, positions', velocities');
             else
                 obj.StoredPositions = [obj.StoredPositions obj.toGroup(positions)'];
-                obj.StoredVelocities = [obj.StoredVelocities velocities'];
+                obj.StoredVelocities = [obj.StoredVelocities (velocities*obj.Orientation)'];
             end
             obj.Shades = [obj.Shades rand(1, size(positions, 1))];
             obj.redraw;
@@ -293,7 +292,11 @@ classdef (Abstract) ParticleGroup < phx.base.Object
         end
 
         function value = get.CurrentVelocities(obj)
-            value = obj.Velocities;
+            if obj.isLive
+                value = phxEngine('get', obj.WorldHandle, obj.ObjectHandle, 'velocities')';
+            else
+                value = obj.StoredVelocities'*obj.Orientation';
+            end
         end
 
         function value = get.Positions(obj)
@@ -308,7 +311,7 @@ classdef (Abstract) ParticleGroup < phx.base.Object
 
         function value = get.Velocities(obj)
             if obj.isLive
-                value = phxEngine('get', obj.WorldHandle, obj.ObjectHandle, 'velocities')';
+                value = phxEngine('get', obj.WorldHandle, obj.ObjectHandle, 'velocities')'*obj.Orientation;
             else
                 value = obj.StoredVelocities';
             end
@@ -321,7 +324,7 @@ classdef (Abstract) ParticleGroup < phx.base.Object
                 error(obj.errorId("sizeMismatch"), "Give one velocity per particle, or one for all.");
             end
             if obj.isLive
-                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'velocities', value');
+                phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'velocities', (value*obj.Orientation')');
             else
                 obj.StoredVelocities = value';
             end
@@ -588,7 +591,7 @@ classdef (Abstract) ParticleGroup < phx.base.Object
                 obj.WorldHandle = world;
                 obj.ObjectHandle = obj.createGroup(world);
                 if any(obj.StoredVelocities, "all")
-                    phxEngine('set', world, obj.ObjectHandle, 'velocities', obj.StoredVelocities);
+                    phxEngine('set', world, obj.ObjectHandle, 'velocities', obj.Orientation*obj.StoredVelocities);
                 end
                 obj.Friction = obj.Friction;
                 obj.Restitution = obj.Restitution;

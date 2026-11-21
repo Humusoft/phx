@@ -145,11 +145,12 @@ classdef FlexibleBody < phx.base.Object
         % the mesh.
         Mass (1, 1) double {mustBePositive, mustBeFinite}
 
-        % Initial velocities of the vertices in the world frame (Nx3, m/s,
-        % one row per row of Vertices), read when the simulation creates the
-        % body; one row sets all of them alike. The vertices added in the
-        % middles of the edges of a Kx4 mesh get the mean of the two ends.
-        % Zero by default.
+        % Initial velocities of the vertices in the body frame (Nx3, m/s, one
+        % row per row of Vertices), turned with the rest shape by
+        % Orientation and read when the simulation creates the body; one
+        % row sets all of them alike. The vertices added in the middles of
+        % the edges of a Kx4 mesh get the mean of the two ends. Zero by
+        % default.
         Velocities (:, 3) double {mustBeFinite}
     end
 
@@ -556,12 +557,14 @@ classdef FlexibleBody < phx.base.Object
         end
 
         function W = meshVelocities(obj)
-            % The Velocities of the vertices handed to the engine: those of
-            % the middles of the edges of a Kx4 mesh the means of their ends
+            % The Velocities of the vertices handed to the engine, in the
+            % world frame: those of the middles of the edges of a Kx4 mesh
+            % the means of their ends
             W = obj.checkVelocities(obj.Velocities);
             if size(obj.Tetrahedra, 2) == 4
                 W = phx.internal.Geometry.quadraticTetrahedra(W, obj.Tetrahedra);
             end
+            W = W*obj.Orientation';
         end
 
         function recolor(obj)

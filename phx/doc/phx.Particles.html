@@ -24,7 +24,8 @@ redraw instead of a <a href="phx.Body.html">phx.Body</a> each, so that many thou
 fast. A group holds at most 10&nbsp;000 particles; use several groups for more.</p>
 <p>The particle centres are the <code class="phx-inline">Vertices</code>, in the frame of the group
 that <code class="phx-inline">Position</code> and <code class="phx-inline">Orientation</code> place (by
-default the global frame); <code class="phx-inline">CurrentVertices</code> are the same points in the
+default the global frame), and so are their <code class="phx-inline">Velocities</code>;
+<code class="phx-inline">CurrentVertices</code> and <code class="phx-inline">CurrentVelocities</code> are the same in the
 global frame. They have no rest shape: <code class="phx-inline">Vertices</code> and
 <code class="phx-inline">Velocities</code> are the state itself, read and set as N&times;3 arrays
 before, during and after a run, and a new simulation goes on from where the last one ended.
@@ -86,9 +87,9 @@ error.</p>
 <table class="phx-tbl">
 <tr><th>Property</th><th>Type</th><th>Description</th></tr>
 <tr><td class="name">Vertices</td><td class="type">N&times;3 double</td><td>Particle centres in the frame of the group, <span class="phx-unit">m</span>: before a simulation where it starts from, during it the present ones (read and written in the engine), after it the last ones, from which the next simulation goes on. Setting it during the simulation needs one row per particle; before it, any number of rows replaces the particles.</td></tr>
-<tr><td class="name">Velocities</td><td class="type">N&times;3 double</td><td>Velocities of the particles in the global frame, <span class="phx-unit">m/s</span>, like <code class="phx-inline">Vertices</code> before, during and after a simulation; one row sets all of them alike.</td></tr>
+<tr><td class="name">Velocities</td><td class="type">N&times;3 double</td><td>Velocities of the particles in the frame of the group, <span class="phx-unit">m/s</span>, like <code class="phx-inline">Vertices</code> before, during and after a simulation; one row sets all of them alike.</td></tr>
 <tr><td class="name">CurrentVertices</td><td class="type">N&times;3 double (read-only)</td><td>Particle centres in the global frame: <code class="phx-inline">Vertices</code> placed at <code class="phx-inline">Position</code> and <code class="phx-inline">Orientation</code>.</td></tr>
-<tr><td class="name">CurrentVelocities</td><td class="type">N&times;3 double (read-only)</td><td>The <code class="phx-inline">Velocities</code>, under the name the soft and flexible bodies read their present velocities by.</td></tr>
+<tr><td class="name">CurrentVelocities</td><td class="type">N&times;3 double (read-only)</td><td>Velocities of the particles in the global frame: the <code class="phx-inline">Velocities</code> turned by <code class="phx-inline">Orientation</code>.</td></tr>
 <tr><td class="name">Count</td><td class="type">double (read-only)</td><td>Number of particles.</td></tr>
 <tr><td class="name">Positions</td><td class="type">N&times;3 double</td><td>Name of PHX 2.0, deprecated: reads <code class="phx-inline">CurrentVertices</code> and sets the particles from points in the global frame, with a warning.</td></tr>
 </table>

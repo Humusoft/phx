@@ -108,6 +108,23 @@ classdef tSoftBodies < PhxTestCase
             end
         end
 
+        function velocitiesTurnWithTheRestShape(tc)
+            % Velocities are in the body frame: a spin about the body's z
+            % axis, cross(w, Vertices), is one about the turned axis in the
+            % world, for every vertex including those of the edges
+            [V, F] = tc.cube;
+            R = phx.internal.Math.rot321([pi/2 0 0.3]);
+            w = [0 0 2];
+            bodies = {phx.SoftBody([], "Vertices", V, "Faces", F), ...
+                phx.FlexibleBody([], "Vertices", V, "Tetrahedra", delaunay(V))};
+            for k = 1:2
+                b = bodies{k};
+                set(b, "Position", [1 2 3], "Orientation", R, "Velocities", cross(repmat(w, 8, 1), V));
+                X = b.CurrentVertices - [1 2 3];
+                tc.verifyEqual(b.CurrentVelocities, cross(repmat(w*R', size(X, 1), 1), X), "AbsTol", 1e-12, class(b));
+            end
+        end
+
         function linearMeshGetsEdgeVertices(tc)
             V = tc.cube;
             T = delaunay(V);
@@ -356,6 +373,26 @@ classdef tSoftBodies < PhxTestCase
                     class(b) + ": the last state stays until the rest shape changes.");
                 b.Position = [0 0 2];
                 tc.verifyEqual(b.CurrentVelocities, zeros(n, 3), class(b));
+            end
+        end
+
+        function turnedBodiesMoveAlongTheirAxes(tc)
+            % A body turned a quarter about z and given Velocities along its
+            % x axis moves along world y
+            tc.requireEngine;
+            [V, F] = tc.cube;
+            bodies = {phx.SoftBody([], "Vertices", V, "Faces", F), ...
+                phx.FlexibleBody([], "Vertices", V, "Tetrahedra", delaunay(V))};
+            for k = 1:2
+                b = bodies{k};
+                set(b, "Position", [0 0 1], "EulerAngles", [0 0 pi/2], "Velocities", [1 0 0]);
+                rest = b.CurrentVertices;
+                sim = phx.Simulation({b}, "Gravity", [0 0 0]);
+                tc.addTeardown(@() tc.deleteIfValid(sim));
+                sim.step(0.2, 40, -1);
+                tc.verifyEqual(mean(b.CurrentVertices) - mean(rest), [0 0.2 0], "AbsTol", 1e-4, class(b));
+                tc.verifyEqual(mean(b.CurrentVelocities), [0 1 0], "AbsTol", 1e-4, class(b));
+                delete(sim);
             end
         end
 

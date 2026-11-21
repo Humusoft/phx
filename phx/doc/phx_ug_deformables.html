@@ -38,14 +38,14 @@ them to the simulation, and they collide with the rigid bodies of the scene.</p>
 <p>Soft and flexible bodies collide with rigid bodies and particles, not with each other. Their mesh,
 <code class="phx-inline">Vertices</code> in the body frame, is the rest shape: it is placed at
 <code class="phx-inline">Position</code> and <code class="phx-inline">Orientation</code> and read,
-together with the material and the initial <code class="phx-inline">Velocities</code> of the vertices,
-once, when the simulation creates the object; every new simulation starts again from it. The other
+together with the material and the initial <code class="phx-inline">Velocities</code> of the vertices
+(in the body frame as well), once, when the simulation creates the object; every new simulation starts again from it. The other
 settings, such as <code class="phx-inline">LinearDamping</code> or
 <code class="phx-inline">Friction</code>, apply at any time. The present state is in
 <code class="phx-inline">CurrentVertices</code> and <code class="phx-inline">CurrentVelocities</code>,
 in the global frame: the deformed mesh while the simulation runs, the last one after it.</p>
-<p>Particles have no rest shape: their <code class="phx-inline">Vertices</code> (in the frame of the
-group) and <code class="phx-inline">Velocities</code> are the state itself, and a new simulation goes
+<p>Particles have no rest shape: their <code class="phx-inline">Vertices</code> and
+<code class="phx-inline">Velocities</code> (in the frame of the group) are the state itself, and a new simulation goes
 on from where the last one ended. They have <code class="phx-inline">CurrentVertices</code> and
 <code class="phx-inline">CurrentVelocities</code> too, so that code reading the present points of any
 of these objects uses one name.</p>
@@ -178,9 +178,8 @@ simulation runs.</li>
 <p><a href="phx.Particles.html">phx.Particles</a> is a group of spheres of one
 <code class="phx-inline">Radius</code> and <code class="phx-inline">Density</code> that collide with
 all bodies and with each other. The group reads their state as N&times;3 arrays
-(<code class="phx-inline">Vertices</code>, in the frame of the group that
-<code class="phx-inline">Position</code> and <code class="phx-inline">Orientation</code> place, and
-<code class="phx-inline">Velocities</code>) and draws them as one graphics object, so many thousands
+(<code class="phx-inline">Vertices</code> and <code class="phx-inline">Velocities</code>, in the frame of the
+group that <code class="phx-inline">Position</code> and <code class="phx-inline">Orientation</code> place) and draws them as one graphics object, so many thousands
 of them stay fast; a group holds up to 10&nbsp;000 particles. A <code class="phx-inline">"Shape"</code>
 fills with particles touching each other, in the frame of the group. Particles can be added
 (<code class="phx-inline">add</code>, in the global frame) and removed

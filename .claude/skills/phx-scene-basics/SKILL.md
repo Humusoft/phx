@@ -389,9 +389,10 @@ gravel.add(Pnew); gravel.remove(gravel.CurrentVertices(:, 3) < -1);   % world; a
   `[V, F]` themselves, e.g. to scale a sphere surface into an ellipsoid.
 - The mesh (`Vertices`, body frame) is the rest shape, placed at `Position`/`Orientation`
   (or `EulerAngles`, `AxisAngle`, `Quaternion`, as on `Body`) when the simulation starts;
-  mesh, material and the initial vertex `Velocities` (world, N×3 or one 1×3 row for all)
-  are read then, the friction/`LinearDamping`/pressure settings at any time. Every new
-  simulation starts again from the rest shape. `CurrentVertices` / `CurrentVelocities`
+  mesh, material and the initial vertex `Velocities` (body frame like `Vertices`, so
+  `cross(w, Vertices)` spins it about its own axis; N×3 or one 1×3 row for all) are read
+  then, the friction/`LinearDamping`/pressure settings at any time. Every new simulation
+  starts again from the rest shape. `CurrentVertices` / `CurrentVelocities`
   (world, read-only) give the present state: the engine's during a run, the last one after
   it. `FlexibleBody.VonMisesStress` gives the stress per vertex (colour it with
   `Colormap`, an N×3 matrix such as `turbo(64)`, and `ColorRange`).
@@ -406,9 +407,10 @@ gravel.add(Pnew); gravel.remove(gravel.CurrentVertices(:, 3) < -1);   % world; a
 - Masses: `FlexibleBody.Mass` (total) and `Particles.Mass` (total) / `ParticleMass` (one
   particle) are settable views of `Density`; set one of them, not both.
 - `Particles`: at most 10 000 per group (use more groups). No rest shape: `Vertices`
-  (group frame) and `Velocities` (world; one 1×3 row sets all) are the live state before,
-  during and after a run, and a new run goes on from the last state; `CurrentVertices`
-  (world) and `CurrentVelocities` read them under the mesh names. `Position`/`Orientation`
+  and `Velocities` (group frame; one 1×3 row sets all) are the live state before, during
+  and after a run, and a new run goes on from the last state; `CurrentVertices` and
+  `CurrentVelocities` read them in the world. Rule for all four classes: no `Current`
+  = own frame, `Current` = world. `Position`/`Orientation`
   of a running group are an error. `"Shape"` fills a shape on a lattice of the particle
   diameter (refilled when `Radius` changes, until the run). `add(P, V)` takes world
   points. `applyForce(F)` (world frame; 1×3 = the whole F on every particle, N×3 = one row

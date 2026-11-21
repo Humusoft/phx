@@ -97,8 +97,9 @@ classdef SoftBody < phx.base.Object
 
     % Initial motion, read when the simulation creates the soft body
     properties (Dependent)
-        % Velocities of the vertices in the world frame (Nx3, m/s); one row
-        % sets all of them alike. Zero by default.
+        % Velocities of the vertices in the body frame (Nx3, m/s), turned
+        % with the rest shape by Orientation; one row sets all of them
+        % alike. Zero by default.
         Velocities (:, 3) double {mustBeFinite}
     end
 
@@ -356,7 +357,7 @@ classdef SoftBody < phx.base.Object
             elseif ~isempty(obj.LastVelocities)
                 value = obj.LastVelocities;
             else
-                value = obj.checkVelocities(obj.Velocities);
+                value = obj.checkVelocities(obj.Velocities)*obj.Orientation';
             end
         end
     end
@@ -446,7 +447,7 @@ classdef SoftBody < phx.base.Object
         function valid = initObject(obj, world)
             if isempty(obj.ObjectHandle)
                 % Checked first: a failure leaves no engine body behind
-                W = obj.checkVelocities(obj.Velocities);
+                W = obj.checkVelocities(obj.Velocities)*obj.Orientation';   % to the world
                 obj.WorldHandle = world;
                 T = [obj.Orientation obj.Position'; 0 0 0 1];
                 obj.ObjectHandle = phxEngine('add', world, 'softbody', obj.Vertices', obj.Faces', ...

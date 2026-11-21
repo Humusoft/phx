@@ -101,8 +101,9 @@ classdef tParticles < PhxTestCase
         end
 
         function verticesAreInTheFrameOfTheGroup(tc)
-            % Position and Orientation place the Vertices; CurrentVertices
-            % are in the world frame; add takes world points
+            % Position and Orientation place the Vertices and turn the
+            % Velocities; CurrentVertices and CurrentVelocities are in the
+            % world frame; add takes world points
             R = phx.internal.Math.rot321([0 0 pi/2]);
             p = phx.Particles([], "Vertices", [1 0 0; 2 0 0], "Position", [0 0 1], "EulerAngles", [0 0 pi/2]);
             tc.verifyEqual(p.Vertices, [1 0 0; 2 0 0]);
@@ -112,7 +113,8 @@ classdef tParticles < PhxTestCase
             bbox = p.boundingBox;
             tc.verifyEqual(bbox(2, :), [0 3 1] + p.Radius, "AbsTol", 1e-12);
             p.Velocities = [1 0 0; 0 1 0; 0 0 1];
-            tc.verifyEqual(p.CurrentVelocities, p.Velocities, "CurrentVelocities read the Velocities.");
+            tc.verifyEqual(p.CurrentVelocities, p.Velocities*R', "AbsTol", 1e-12, ...
+                "CurrentVelocities are the Velocities turned into the world.");
         end
 
         function positionsOfPHX2WarnAndAreWorldPoints(tc)
@@ -177,22 +179,35 @@ classdef tParticles < PhxTestCase
 
         function turnedGroupKeepsItsFrameThroughTheRun(tc)
             % A group off the origin and turned: the engine takes the world
-            % points, Vertices read the group frame during and after the
-            % run, and a new simulation goes on from where the last ended
+            % points, Vertices and Velocities read the group frame during
+            % and after the run, CurrentVertices and CurrentVelocities the
+            % world, and a new simulation goes on from where the last ended
             tc.requireEngine;
             R = phx.internal.Math.rot321([0 0 pi/2]);
             p = phx.Particles([], "Vertices", [1 0 0], "Position", [0 0 1], "EulerAngles", [0 0 pi/2], "Radius", tc.R);
             sim = tc.simulate({p}, [0 0 0]);
             tc.verifyEqual(p.CurrentVertices, [0 1 1], "AbsTol", 1e-6);
-            p.Velocities = [0 1 0];
+            p.Velocities = [1 0 0];
+            tc.verifyEqual(p.CurrentVelocities, [0 1 0], "AbsTol", 1e-6, "Group x is world y.");
             sim.step(0.2, 0.2/tc.Dt, -1);
-            tc.verifyEqual(p.Vertices, [1.2 0 0], "AbsTol", 1e-6, "Moving along world y is along group x.");
+            tc.verifyEqual(p.Vertices, [1.2 0 0], "AbsTol", 1e-6, "Moving along group x.");
+            tc.verifyEqual(p.Velocities, [1 0 0], "AbsTol", 1e-6);
             delete(sim);
             tc.verifyEqual(p.Vertices, [1.2 0 0], "AbsTol", 1e-6);
+            tc.verifyEqual(p.Velocities, [1 0 0], "AbsTol", 1e-6);
             tc.verifyEqual(p.CurrentVertices, [1.2 0 0]*R' + [0 0 1], "AbsTol", 1e-6);
+            tc.verifyEqual(p.CurrentVelocities, [0 1 0], "AbsTol", 1e-6);
+            p.EulerAngles = [0 0 pi];
+            tc.verifyEqual(p.CurrentVelocities, [-1 0 0], "AbsTol", 1e-12, "Turning the group turns its motion.");
+            p.EulerAngles = [0 0 pi/2];
             sim = tc.simulate({p}, [0 0 0]);
             tc.verifyEqual(p.CurrentVertices, [0 1.2 1], "AbsTol", 1e-6);
+            tc.verifyEqual(p.CurrentVelocities, [0 1 0], "AbsTol", 1e-6);
+            p.add([0 0 3], [0 0 2]);
+            tc.verifyEqual(p.Velocities(2, :), [0 0 2], "AbsTol", 1e-6, "Turned about z, z stays.");
             delete(sim);
+            p.add([1 0 0], [1 0 0]);
+            tc.verifyEqual(p.Velocities(3, :), [0 -1 0], "AbsTol", 1e-12, "add takes world velocities.");
         end
     end
 
