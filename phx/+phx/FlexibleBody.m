@@ -37,10 +37,10 @@ classdef FlexibleBody < phx.base.Object
 %       flex = phx.FlexibleBody(gca, Mesh=gm.Mesh);
 %
 %   phx.FlexibleBody(axes, Shape=shape) fills a shape with the mesh of
-%   tetrahedra it generates and takes its Density; the shape is a
-%   phx.shape.* object or a cell array of a shape name and its arguments,
-%   as phx.Body takes it. The ElementResolution of the shape sets how fine
-%   the mesh is:
+%   tetrahedra it generates; the shape is a phx.shape.* object or a cell
+%   array of a shape name and its arguments, as phx.Body takes it. The
+%   ElementResolution of the shape sets how fine the mesh is; the material
+%   is the Density (or Mass) of the flexible body:
 %
 %       flex = phx.FlexibleBody(gca, Shape={"Box", "Size", [1 0.1 0.1]});
 %
@@ -70,12 +70,11 @@ classdef FlexibleBody < phx.base.Object
         NormalMap
     end
 
-    % Declared before the mesh and the material, so that given to the
-    % constructor, a Density or Mass overrides the one of the shape
     properties (Dependent, GetAccess = private)
-        % Shape filled with a mesh of tetrahedra, which sets Vertices,
-        % Tetrahedra and Density: a phx.shape.* object that can generate
-        % the mesh, or a cell array of its name and constructor arguments
+        % Shape filled with a mesh of tetrahedra, which sets Vertices and
+        % Tetrahedra: a phx.shape.* object that can generate the mesh, or a
+        % cell array of its name and constructor arguments. A density given
+        % to the shape (as in PHX 2.0) sets the Density.
         Shape
     end
 
@@ -123,11 +122,17 @@ classdef FlexibleBody < phx.base.Object
         % Vertices and Tetrahedra, and reads them back in this form
         Mesh
 
-        % Mass of the body (kg), the Density times the volume of the mesh;
-        % setting it sets the Density for the present mesh, which a later
-        % change of the mesh keeps. Given to the constructor, it is taken
-        % after the mesh and overrides a Density given there.
+        % Mass of the body (kg), the Density times the Volume; setting it
+        % sets the Density for the present mesh, which a later change of the
+        % mesh keeps. The constructor takes either a Density or a Mass, after
+        % the mesh.
         Mass (1, 1) double {mustBePositive, mustBeFinite}
+    end
+
+    properties (Dependent, SetAccess = private)
+        % Volume of the mesh (m^3): of the tetrahedra handed to the engine,
+        % curved ones included
+        Volume (1, 1) double
     end
 
     % Settings that apply at any time
@@ -192,7 +197,17 @@ classdef FlexibleBody < phx.base.Object
             if isfield(Options, "Shape") && any(isfield(Options, ["Vertices", "Tetrahedra", "Mesh"]))
                 error("phx:FlexibleBody:shapeAndMesh", "Give a flexible body either a Shape or a mesh (Vertices and Tetrahedra, or Mesh), not both.");
             end
-            phx.internal.applyArguments(Options, obj);
+            if isfield(Options, "Density") && isfield(Options, "Mass")
+                error("phx:FlexibleBody:densityAndMass", "Give a flexible body either a Density or a Mass, not both.");
+            end
+            % The material after the mesh, whatever the order of the
+            % arguments: it overrides a density given to the shape, and the
+            % mass needs the volume
+            material = intersect(fieldnames(Options), ["Density", "Mass"]);
+            phx.internal.applyArguments(rmfield(Options, material), obj);
+            for name = reshape(string(material), 1, [])
+                obj.(name) = Options.(name);
+            end
             if isempty(obj.Tetrahedra)
                 error("phx:FlexibleBody:noMesh", "A flexible body needs a mesh: give its Vertices and Tetrahedra, a Mesh or a Shape.");
             end
@@ -387,6 +402,10 @@ classdef FlexibleBody < phx.base.Object
             [~, k] = ismember(sort(value(:, [3 1]), 2), ends, "rows");
             six = [value middle(i) middle(j) middle(k)];
             value = [six(:, [1 4 6]); six(:, [4 2 5]); six(:, [6 5 3]); six(:, [4 5 6])];
+        end
+
+        function value = get.Volume(obj)
+            value = obj.volume;
         end
 
         function value = get.Mass(obj)

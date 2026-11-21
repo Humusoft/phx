@@ -105,11 +105,26 @@ classdef tSoftBodies < PhxTestCase
         end
 
         function densityOrMassOverridesTheShape(tc)
-            % Given to the constructor, before or after the shape
+            % Given to the constructor, before or after the shape (with a
+            % density given to the shape, as in PHX 2.0)
             box = phx.shape.Box("Size", [0.4 0.2 0.1], "Density", 1100);
             tc.verifyEqual(phx.FlexibleBody([], "Density", 500, "Shape", box).Density, 500);
             tc.verifyEqual(phx.FlexibleBody([], "Shape", box, "Density", 500).Density, 500);
             tc.verifyEqual(phx.FlexibleBody([], "Mass", 2, "Shape", box).Mass, 2, "RelTol", 1e-9);
+        end
+
+        function flexibleBodyHasItsVolumeAndItsOwnDensity(tc)
+            % The shape gives the mesh, the body the material: Volume of the
+            % tetrahedra, Mass = Density*Volume, 1000 kg/m^3 by default;
+            % Density and Mass together are refused
+            shape = {"Box", "Size", [0.4 0.2 0.1], "ElementResolution", 1};
+            f = phx.FlexibleBody([], "Shape", shape);
+            tc.verifyEqual(f.Volume, 0.4*0.2*0.1, "RelTol", 1e-9);
+            tc.verifyEqual(f.Density, 1000);
+            f.Density = 800;
+            tc.verifyEqual(f.Mass, 800*f.Volume, "RelTol", 1e-14);
+            tc.verifyError(@() phx.FlexibleBody([], "Shape", shape, "Density", 800, "Mass", 2), ...
+                "phx:FlexibleBody:densityAndMass");
         end
 
         function curvedMeshGivesTheMass(tc)

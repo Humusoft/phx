@@ -173,7 +173,11 @@ Each a step of its own, reviewed before the next:
    saved before keeps its saved mass and inertia; its volume comes from its shape, or
    for a saved mesh, whose geometry only the graphics keep, from its mass and the
    density of its shape.)
-3. `phx.FlexibleBody` (and the shape density of the others); tests.
+3. `phx.FlexibleBody` (and the shape density of the others); tests. (Done:
+   `FlexibleBody.Volume`; the constructor takes `Density` or `Mass` (both is an error)
+   after the mesh, whatever the order of the arguments; a density given to the shape
+   still sets the `Density`. `SoftBody`, `Particles` and `Liquid` never read the shape's
+   density: nothing to change until the warning of phase 4.)
 4. `phx.assembly` builders and the demos, with the warning `phx:Shape:densityMoved`
    for a density given to a shape (not before: until the demos move, it would warn in
    every one of them).
