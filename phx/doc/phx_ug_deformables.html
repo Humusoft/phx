@@ -16,7 +16,7 @@
 <p class="phx-purpose">Objects that deform, and granular material in bulk</p>
 
 <h2 class="phx-h2">Overview</h2>
-<p>Besides rigid bodies, a scene can hold three kinds of objects made of many points. All three are
+<p>Besides rigid bodies, a scene can hold four kinds of objects made of many points. All four are
 top-level objects like a <a href="phx.Body.html">phx.Body</a>: create them in the axes, or hand
 them to the simulation, and they collide with the rigid bodies of the scene.</p>
 
@@ -33,6 +33,10 @@ them to the simulation, and they collide with the rigid bodies of the scene.</p>
 <tr><td class="name"><a href="phx.Particles.html">phx.Particles</a></td>
     <td>Many small spheres of one radius, read and drawn all at once.</td>
     <td>Sand, gravel, grain, beads.</td></tr>
+<tr><td class="name"><a href="phx.Liquid.html">phx.Liquid</a></td>
+    <td>Particles kept apart by the pressure of the liquid (smoothed particle hydrodynamics), drawn
+    as a smooth surface.</td>
+    <td>Water in tanks, sloshing, dam breaks, floating bodies.</td></tr>
 </table>
 
 <p>Soft and flexible bodies collide with rigid bodies and particles, not with each other. Their mesh,
@@ -44,7 +48,7 @@ settings, such as <code class="phx-inline">LinearDamping</code> or
 <code class="phx-inline">Friction</code>, apply at any time. The present state is in
 <code class="phx-inline">CurrentVertices</code> and <code class="phx-inline">CurrentVelocities</code>,
 in the global frame: the deformed mesh while the simulation runs, the last one after it.</p>
-<p>Particles have no rest shape: their <code class="phx-inline">Vertices</code> and
+<p>Particles and liquids have no rest shape: their <code class="phx-inline">Vertices</code> and
 <code class="phx-inline">Velocities</code> (in the frame of the group) are the state itself, and a new simulation goes
 on from where the last one ended. They have <code class="phx-inline">CurrentVertices</code> and
 <code class="phx-inline">CurrentVelocities</code> too, so that code reading the present points of any
@@ -206,6 +210,39 @@ engine tolerances to their size with the <code class="phx-inline">LengthScale</c
 <a href="phx.engine.Settings.html">phx.engine.Settings</a>, as above; the default suits parts of
 about a metre and makes small particles slower to simulate.</p>
 
+<h2 class="phx-h2">Liquids</h2>
+<p><a href="phx.Liquid.html">phx.Liquid</a> is a body of liquid made of particles that do not collide
+with each other: the pressure of the liquid keeps them apart. It flows, splashes and fills containers,
+and a body in it floats and is carried by the flow, the liquid and the body pushing on each other. A
+<code class="phx-inline">"Shape"</code> fills with particles <code class="phx-inline">Spacing</code>
+apart; <code class="phx-inline">Vertices</code>, <code class="phx-inline">Velocities</code>,
+<code class="phx-inline">add</code>, <code class="phx-inline">remove</code> and
+<code class="phx-inline">applyForce</code> work as for particles. The liquid has a
+<code class="phx-inline">Density</code>, a <code class="phx-inline">Viscosity</code> and a
+<code class="phx-inline">SoundSpeed</code>, how stiff it is against compression, and reports the
+<code class="phx-inline">Densities</code> and <code class="phx-inline">Pressures</code> of its
+particles while the simulation runs.</p>
+
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+phx.assembly.arena(gca, <span class="str">"Size"</span>, [0.8 0.3 0.4], <span class="str">"Thickness"</span>, 0.04);
+water = phx.Liquid(gca, <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [0.2 0.3 0.3]}, <span class="str">"Position"</span>, [-0.3 0 0.15]);
+crate = phx.Body(gca, <span class="str">"Position"</span>, [-0.3 0 0.33], <span class="str">"Density"</span>, 400, ...
+    <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [0.08 0.08 0.05], <span class="str">"Color"</span>, [0.85 0.65 0.4]});
+sim = phx.Simulation(gca, <span class="str">"EngineSettings"</span>, phx.engine.Settings(<span class="str">"LengthScale"</span>, 0.02));
+sim.step(1.5, 6000, 40);             <span class="cmt">% the column collapses and carries the crate along the tank</span></pre>
+
+<p>The liquid is explicit in time, so its step is short: keep the simulation step (the interval
+over the substeps) under <code class="phx-inline">0.4*Spacing/(SoundSpeed + v)</code>,
+<code class="phx-inline">v</code> the fastest flow. The example above steps by 0.25&nbsp;ms for a
+<code class="phx-inline">Spacing</code> of 2&nbsp;cm and the default
+<code class="phx-inline">SoundSpeed</code> of 20&nbsp;m/s. A <code class="phx-inline">SoundSpeed</code>
+of about ten times the fastest flow keeps the liquid nearly incompressible; a higher one only
+shortens the step. As for particles, set the <code class="phx-inline">LengthScale</code> to about
+the <code class="phx-inline">Spacing</code>, or the default contact margin rounds thin walls and lets
+the liquid into the corners of a tank. A body that only floats on still water of a flat surface is
+far cheaper with <a href="phx.Buoyancy.html">phx.Buoyancy</a>.</p>
+
 <div class="phx-note">
 <span class="lbl">Cost.</span> Deformable bodies and particles are solved point by point, so they
 cost far more per step than rigid bodies of the same size. Start with a coarse mesh or large
@@ -221,6 +258,10 @@ airbag.</li>
 <li><code>phxex_soilparticles</code> &mdash; an excavator bucket scooping gravel made of
 particles.</li>
 <li><code>phxex_plow</code> &mdash; a flexible spring tine plowing granular soil.</li>
+<li><code>phxex_dambreak</code> &mdash; a water column collapsing in a tank and carrying a floating
+crate.</li>
+<li><code>phxex_balancewater</code> &mdash; a half-filled water ball rolled from stop to stop by a
+tilting platform.</li>
 </ul>
 
 <div class="phx-seealso">
@@ -229,6 +270,7 @@ particles.</li>
 <a href="phx.FlexibleBody.html">phx.FlexibleBody</a>,
 <a href="phx.IntersectionWeld.html">phx.IntersectionWeld</a>,
 <a href="phx.Particles.html">phx.Particles</a>,
+<a href="phx.Liquid.html">phx.Liquid</a>,
 <a href="phx.engine.Settings.html">phx.engine.Settings</a>
 </div>
 

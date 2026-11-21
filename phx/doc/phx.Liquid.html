@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.Liquid</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.Liquid</div>
+
+<h1 class="phx-title">phx.Liquid</h1>
+<p class="phx-purpose">Liquid of particles (weakly compressible SPH)</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.Liquid &nbsp;|&nbsp; Superclass: phx.base.ParticleGroup</p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.Liquid</code> is a body of liquid made of particles. Unlike
+<a href="phx.Particles.html">phx.Particles</a>, the particles do not collide with each other: the
+pressure of the liquid keeps them apart instead (smoothed particle hydrodynamics, weakly
+compressible). The liquid flows, splashes and fills containers; it collides with all bodies, and a
+dynamic body in it floats and is pushed by it, its weight and the forces of the liquid acting on
+each other. For a body floating on still water of a flat surface,
+<a href="phx.Buoyancy.html">phx.Buoyancy</a> is far cheaper.</p>
+<p>The particles are the same as those of <a href="phx.Particles.html">phx.Particles</a>: their
+centres are the <code class="phx-inline">Vertices</code>, in the frame of the liquid that
+<code class="phx-inline">Position</code> and <code class="phx-inline">Orientation</code> place (by
+default the global frame), and so are their <code class="phx-inline">Velocities</code>;
+<code class="phx-inline">CurrentVertices</code> and <code class="phx-inline">CurrentVelocities</code>
+are the same in the global frame. They are the state itself, read and set as N&times;3 arrays before,
+during and after a run, and a new simulation goes on from where the last one ended. Particles can be
+added and removed at any time, also while the simulation runs. A liquid is a top-level object: hand it
+to the simulation like a body. It is drawn as a smooth surface over the particles, or as the
+particles themselves.</p>
+<p>The liquid is explicit in time: the simulation step (the interval over the substeps of
+<code class="phx-inline">sim.step</code>) must stay under
+<code class="phx-inline">0.4*Spacing/(SoundSpeed + v)</code>, <code class="phx-inline">v</code> the
+fastest flow, for example 0.25&nbsp;ms at a <code class="phx-inline">Spacing</code> of 2&nbsp;cm and
+a <code class="phx-inline">SoundSpeed</code> of 30&nbsp;m/s. The particles touch the walls with a
+radius of <code class="phx-inline">Spacing/2</code>: give the simulation an engine
+<code class="phx-inline">LengthScale</code> of the order of the <code class="phx-inline">Spacing</code>
+(<a href="phx.engine.Settings.html">phx.engine.Settings</a>), or the default contact margin of
+4&nbsp;cm rounds thin walls and lets the liquid into the corners of a tank.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">w = phx.Liquid(ax,"Shape",shape)</span>
+<span class="phx-syntax">w = phx.Liquid(ax,"Vertices",P)</span>
+<span class="phx-syntax">w = phx.Liquid(___,Name,Value)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">w = phx.Liquid(ax,"Shape",shape)</code> fills a shape with the liquid,
+on a cubic lattice of the <code class="phx-inline">Spacing</code>, in the frame of the liquid, and
+draws it into the axes <code class="phx-inline">ax</code>; <code class="phx-inline">[]</code> draws
+nothing. The shape is a <code class="phx-inline">phx.shape.*</code> object or a cell array of a shape
+name and its arguments, as <a href="phx.Body.html">phx.Body</a> takes it; Box, Sphere, Cylinder,
+Cone, Capsule and Tube can be filled. A column of water 0.2&nbsp;m wide and 0.4&nbsp;m high on the
+floor:</p>
+<pre class="phx-code">water = phx.Liquid(gca, <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [0.2 0.4 0.4]}, ...
+    <span class="str">"Position"</span>, [-0.5 0 0.2], <span class="str">"Spacing"</span>, 0.02, <span class="str">"SoundSpeed"</span>, 30);</pre>
+<p><code class="phx-inline">w = phx.Liquid(ax,"Vertices",P)</code> creates the liquid's particles
+at the rows of <code class="phx-inline">P</code> (N&times;3, in the frame of the liquid) instead,
+best on a cubic lattice of the <code class="phx-inline">Spacing</code>. A liquid may also start empty
+and get its particles by <code class="phx-inline">add</code>. A shape and
+<code class="phx-inline">Vertices</code> in one constructor call are an error.</p>
+</div>
+
+<h2 class="phx-h2">Properties</h2>
+<h3 class="phx-h3">Particles (read when the simulation starts)</h3>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">Shape</td><td class="type">shape object or cell array</td><td>Shape filled with the liquid on a cubic lattice of the <code class="phx-inline">Spacing</code>, in the frame of the liquid (write-only): sets <code class="phx-inline">Vertices</code>. Filled again when <code class="phx-inline">Spacing</code> changes, until the simulation creates the liquid; setting <code class="phx-inline">Vertices</code> replaces it.</td></tr>
+<tr><td class="name">Position</td><td class="dflt">[0 0 0]</td><td>Position of the liquid's frame, <span class="phx-unit">m</span>. It stays during a run; setting it then is an error.</td></tr>
+<tr><td class="name">Orientation</td><td class="dflt">eye(3)</td><td>Orientation of the liquid's frame, likewise.</td></tr>
+<tr><td class="name">AxisAngle</td><td class="type">1&times;4 double</td><td>Axis-angle rotation <code class="phx-inline">[x y z angle]</code> of the liquid's frame (dependent, a view of <code class="phx-inline">Orientation</code>).</td></tr>
+<tr><td class="name">EulerAngles</td><td class="type">1&times;3 double</td><td>Euler angles of the liquid's frame for z&rarr;y&rarr;x order, as <a href="phx.Body.html">phx.Body</a> takes them (dependent).</td></tr>
+<tr><td class="name">Quaternion</td><td class="type">1&times;4 double</td><td>Quaternion <code class="phx-inline">[w x y z]</code> of the liquid's frame (dependent).</td></tr>
+<tr><td class="name">Spacing</td><td class="dflt">0.02</td><td>Rest spacing of the particles, <span class="phx-unit">m</span>: the particles of a liquid at rest lie this far apart, their radius is half of it, and the pressure reaches over twice it.</td></tr>
+</table>
+
+<h3 class="phx-h3">Liquid (apply at any time)</h3>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">Density</td><td class="dflt">1000</td><td>Density of the liquid at rest, <span class="phx-unit">kg/m&sup3;</span>.</td></tr>
+<tr><td class="name">SoundSpeed</td><td class="dflt">20</td><td>Speed of sound in the liquid, <span class="phx-unit">m/s</span>: how stiff it is against compression. Ten times the fastest flow keeps the density within about 1&nbsp;%; the step must be shorter the faster the sound.</td></tr>
+<tr><td class="name">Viscosity</td><td class="dflt">0.1</td><td>Viscosity coefficient (Monaghan's artificial viscosity, no unit): 0.1 lets the liquid flow freely and calms its noise, 1 is a thick liquid.</td></tr>
+</table>
+
+<h3 class="phx-h3">Settings (apply at any time)</h3>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">Friction</td><td class="dflt">0</td><td>Friction coefficient of the particles on bodies; a contact combines the values of both as their geometric mean, <code class="phx-inline">sqrt(mu1*mu2)</code>. The default lets the liquid slide along walls.</td></tr>
+<tr><td class="name">Restitution</td><td class="dflt">0</td><td>Restitution (bounciness) coefficient, 0 = no bounce; a contact bounces with the smaller of the two values.</td></tr>
+<tr><td class="name">LinearDamping</td><td class="dflt">0</td><td>Damping of the particle velocities, dv/dt&nbsp;=&nbsp;&minus;LinearDamping&middot;v, <span class="phx-unit">1/s</span>.</td></tr>
+<tr><td class="name">Style</td><td class="dflt">"surface"</td><td>How the liquid is drawn: <code class="phx-inline">"surface"</code>, its surface, smooth over the particles (each redraw computes it, some 15&nbsp;ms for 4000 particles), or <code class="phx-inline">"points"</code>, its particles.</td></tr>
+<tr><td class="name">Color</td><td class="dflt">[0.22 0.5 0.85]</td><td>Color of the surface or of the points.</td></tr>
+<tr><td class="name">MarkerSize</td><td class="dflt">6</td><td>Size of the drawn points, <span class="phx-unit">points</span>, when <code class="phx-inline">Style</code> is <code class="phx-inline">"points"</code>.</td></tr>
+<tr><td class="name">RandomTint</td><td class="dflt">0</td><td>Random shade variation between the drawn points: each is drawn in <code class="phx-inline">Color*(1 - rand*RandomTint)</code>, its random number kept for good.</td></tr>
+</table>
+
+<h3 class="phx-h3">State</h3>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type</th><th>Description</th></tr>
+<tr><td class="name">Vertices</td><td class="type">N&times;3 double</td><td>Particle centres in the frame of the liquid, <span class="phx-unit">m</span>: before a simulation where it starts from, during it the present ones (read and written in the engine), after it the last ones, from which the next simulation goes on. Setting it during the simulation needs one row per particle; before it, any number of rows replaces the particles.</td></tr>
+<tr><td class="name">Velocities</td><td class="type">N&times;3 double</td><td>Velocities of the particles in the frame of the liquid, <span class="phx-unit">m/s</span>, like <code class="phx-inline">Vertices</code> before, during and after a simulation; one row sets all of them alike.</td></tr>
+<tr><td class="name">CurrentVertices</td><td class="type">N&times;3 double (read-only)</td><td>Particle centres in the global frame: <code class="phx-inline">Vertices</code> placed at <code class="phx-inline">Position</code> and <code class="phx-inline">Orientation</code>.</td></tr>
+<tr><td class="name">CurrentVelocities</td><td class="type">N&times;3 double (read-only)</td><td>Velocities of the particles in the global frame: the <code class="phx-inline">Velocities</code> turned by <code class="phx-inline">Orientation</code>.</td></tr>
+<tr><td class="name">Count</td><td class="type">double (read-only)</td><td>Number of particles.</td></tr>
+<tr><td class="name">Densities</td><td class="type">N&times;1 double (read-only)</td><td>Densities of the particles at their present positions, <span class="phx-unit">kg/m&sup3;</span>; empty outside a running simulation.</td></tr>
+<tr><td class="name">Pressures</td><td class="type">N&times;1 double (read-only)</td><td>Pressures of the particles at their present positions, <span class="phx-unit">Pa</span>; empty outside a running simulation.</td></tr>
+<tr><td class="name">ParticleMass</td><td class="type">double (read-only)</td><td>Mass of one particle, <span class="phx-unit">kg</span>, that of a cube of <code class="phx-inline">Spacing</code> of the liquid (0.990&nbsp;<code class="phx-inline">Density*Spacing^3</code>: a particle inside a cubic lattice of the <code class="phx-inline">Spacing</code> then reads exactly the <code class="phx-inline">Density</code>).</td></tr>
+<tr><td class="name">Mass</td><td class="type">double (read-only)</td><td>Total mass of the liquid, <span class="phx-unit">kg</span>, <code class="phx-inline">Count*ParticleMass</code>.</td></tr>
+<tr><td class="name">Positions</td><td class="type">N&times;3 double</td><td>Name of PHX 2.0, deprecated: reads <code class="phx-inline">CurrentVertices</code> and sets the particles from points in the global frame, with a warning.</td></tr>
+</table>
+
+<h2 class="phx-h2">Object Functions</h2>
+<table class="phx-tbl">
+<tr><th>Function</th><th>Description</th></tr>
+<tr><td class="name">add(w,P)<br>add(w,P,V)</td><td>Add particles at the rows of <code class="phx-inline">P</code> (N&times;3, global frame), at rest or with the velocities <code class="phx-inline">V</code> (global frame).</td></tr>
+<tr><td class="name">remove(w,index)</td><td>Remove the particles of the given indices or logical mask; the others keep their order.</td></tr>
+<tr><td class="name">applyForce(w,F)</td><td>Apply the force <code class="phx-inline">F</code>, <span class="phx-unit">N</span>, in the world frame: 1&times;3 acts on every particle of the liquid, each getting the whole <code class="phx-inline">F</code>; N&times;3 gives each particle its own row, in the order of <code class="phx-inline">Vertices</code>. The forces act at the particle centres during the next engine step only, one substep of <code class="phx-inline">sim.step</code> (call it from a <a href="phx.Function.html">phx.Function</a> for a force in every substep); only in a running simulation.</td></tr>
+<tr><td class="name">boundingBox</td><td>Axis-aligned bounding box of all particles of one or more particle groups, their radius included, a 2&times;3 matrix [min; max].</td></tr>
+</table>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">Dam break with a floating crate</h4>
+<pre class="phx-code">clf; view(3); axis equal; grid on; camlight headlight;
+
+phx.assembly.arena(gca, <span class="str">"Size"</span>, [0.8 0.3 0.4], <span class="str">"Thickness"</span>, 0.04);
+water = phx.Liquid(gca, <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [0.2 0.3 0.3]}, <span class="str">"Position"</span>, [-0.3 0 0.15]);
+phx.Body(gca, <span class="str">"Position"</span>, [-0.3 0 0.33], <span class="str">"Density"</span>, 400, ...
+    <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [0.08 0.08 0.05], <span class="str">"Color"</span>, [0.85 0.65 0.4]});
+
+<span class="cmt">% Contact tolerances for a Spacing of 2 cm, steps of 0.25 ms</span>
+sim = phx.Simulation(gca, <span class="str">"EngineSettings"</span>, phx.engine.Settings(<span class="str">"LengthScale"</span>, 0.02));
+sim.step(1.5, 6000, 40);</pre>
+
+<h4 class="phx-h4">Pressure of water at rest</h4>
+<p>A tank filled with water, drawn as its particles; after a second the pressures of the particles
+grow with the depth, close to &rho;gh.</p>
+<pre class="phx-code">clf; view(3); axis equal; grid on;
+
+phx.assembly.arena(gca, <span class="str">"Size"</span>, [0.2 0.2 0.3], <span class="str">"Thickness"</span>, 0.04);
+water = phx.Liquid(gca, <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [0.2 0.2 0.2]}, <span class="str">"Position"</span>, [0 0 0.1], ...
+    <span class="str">"Style"</span>, <span class="str">"points"</span>, <span class="str">"MarkerSize"</span>, 8);
+
+sim = phx.Simulation(gca, <span class="str">"EngineSettings"</span>, phx.engine.Settings(<span class="str">"LengthScale"</span>, 0.02));
+sim.step(1, 4000, 40);
+
+z = water.CurrentVertices(:, 3);
+h = max(z) + water.Spacing/2 - z;
+figure; plot(water.Pressures, z, <span class="str">"."</span>, water.Density*9.81*h, z, <span class="str">"-"</span>);
+xlabel(<span class="str">"Pressure (Pa)"</span>); ylabel(<span class="str">"Height (m)"</span>); legend(<span class="str">"Particles"</span>, <span class="str">"\rho g h"</span>);</pre>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.Particles.html">phx.Particles</a>,
+<a href="phx.Buoyancy.html">phx.Buoyancy</a>,
+<a href="phx.Simulation.html">phx.Simulation</a>,
+<a href="phx.engine.Settings.html">phx.engine.Settings</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_deformables.html">Soft bodies, flexible bodies and particles</a>,
+<a href="phx_ug_bodies.html">Bodies and shapes</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

@@ -46,6 +46,7 @@
 %   phx.FlexibleBody          - Deformable solid made of tetrahedra
 %   phx.IntersectionWeld      - Rigid body welded into a soft body where they overlap
 %   phx.Particles             - Group of sphere particles simulated and drawn in bulk
+%   phx.Liquid                - Liquid of particles (weakly compressible SPH)
 %
 % Forces and fields
 %   phx.Thruster              - Body-fixed thrust actuator

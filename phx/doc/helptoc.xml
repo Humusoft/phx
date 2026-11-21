@@ -84,6 +84,7 @@
             <tocitem target="phx.FlexibleBody.html">phx.FlexibleBody</tocitem>
             <tocitem target="phx.IntersectionWeld.html">phx.IntersectionWeld</tocitem>
             <tocitem target="phx.Particles.html">phx.Particles</tocitem>
+            <tocitem target="phx.Liquid.html">phx.Liquid</tocitem>
         </tocitem>
 
         <tocitem target="phx.Thruster.html">Forces and fields
