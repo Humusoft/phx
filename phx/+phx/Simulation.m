@@ -146,7 +146,9 @@ classdef Simulation < phx.base.Object
         %     (phx:Simulation:initialOverlap) or sinking deep into each other
         %     later (deepPenetration), a joint pulled apart (jointGap), a body
         %     that moves a large part of LengthScale in one step (fastBody), NaN
-        %     or Inf (nonfinite)
+        %     or Inf (nonfinite). The penetration warnings look at rigid
+        %     contacts only: a compliant contact (Body.ContactStiffness) sinks
+        %     by design.
         %   summary - the warnings, and one line per call of step
         %   detailed - the warnings, and a few lines per call of step that also
         %     name the bodies and joints concerned
@@ -401,8 +403,12 @@ classdef Simulation < phx.base.Object
         %       relative to what the joints and contacts changed that body's
         %       velocity in the step; the quantity of JointTolerance and
         %       ContactTolerance of phx.engine.Settings
-        %     Penetration, PenetratingBodies - deepest penetration (m) and the
-        %       two bodies concerned
+        %     Penetration, PenetratingBodies - deepest penetration of a rigid
+        %       contact (m) and the two bodies concerned
+        %     CompliantPenetration, CompliantBodies - deepest penetration of a
+        %       compliant contact (Body.ContactStiffness), m, and its two
+        %       bodies: the deflection of its spring, F/k, which the
+        %       penetration warnings leave out
         %     JointGap, GapJoint - widest joint gap (m) and the joint concerned
         %     MaxSpeed, FastestBody - highest speed (m/s) and its body
         %     MaxAngularSpeed, FastestTurningBody - highest angular speed
@@ -502,6 +508,11 @@ classdef Simulation < phx.base.Object
             if D.steps == 0
                 return
             end
+            if ~isfield(D, "compliantpenetration")
+                % An engine without compliant contacts (before protocol 2 step Y)
+                D.compliantpenetration = 0;
+                D.compliantbodies = zeros(1, 0, "uint64");
+            end
             scale = 1;
             if ~isempty(obj.EngineSettings)
                 scale = obj.EngineSettings.LengthScale;
@@ -513,6 +524,7 @@ classdef Simulation < phx.base.Object
                 "JointIslandsAtCap", D.jointislandsatcap, "ContactIslandsAtCap", D.contactislandsatcap, ...
                 "JointResidual", D.residualjoints, "ContactResidual", D.residualcontacts, ...
                 "Penetration", D.penetration, "PenetratingBodies", {obj.diagnosticObjects(D.penetrationbodies)}, ...
+                "CompliantPenetration", D.compliantpenetration, "CompliantBodies", {obj.diagnosticObjects(D.compliantbodies)}, ...
                 "JointGap", D.jointgap, "GapJoint", {obj.diagnosticObjects(D.gapjoint)}, ...
                 "MaxSpeed", D.speed, "FastestBody", {obj.diagnosticObjects(D.fastestbody)}, ...
                 "MaxAngularSpeed", D.angularspeed, "FastestTurningBody", {obj.diagnosticObjects(D.fastestturningbody)}, ...
@@ -591,6 +603,9 @@ classdef Simulation < phx.base.Object
                 fprintf("  residual:    joints %.2g (%d islands at the cap), contacts %.2g (%d islands at the cap)\n", ...
                     R.JointResidual, R.JointIslandsAtCap, R.ContactResidual, R.ContactIslandsAtCap);
                 fprintf("  penetration: %s, %s\n", mm(R.Penetration), obj.describe(R.PenetratingBodies));
+                if R.CompliantPenetration > 0
+                    fprintf("  compliant:   %s, %s\n", mm(R.CompliantPenetration), obj.describe(R.CompliantBodies));
+                end
                 fprintf("  joint gap:   %s, %s\n", mm(R.JointGap), obj.describe(R.GapJoint));
                 fprintf("  fastest:     %.3g m/s, %s; %.3g rad/s, %s\n", R.MaxSpeed, obj.describe(R.FastestBody), ...
                     R.MaxAngularSpeed, obj.describe(R.FastestTurningBody));
@@ -868,8 +883,11 @@ classdef Simulation < phx.base.Object
             D.maxiterations = max(A.maxiterations, B.maxiterations);
             D.residualjoints = max(A.residualjoints, B.residualjoints);       % max ignores NaN
             D.residualcontacts = max(A.residualcontacts, B.residualcontacts);
-            for p = ["penetration" "penetrationbodies"; "jointgap" "gapjoint"; "speed" "fastestbody"; ...
-                    "angularspeed" "fastestturningbody"]'
+            for p = ["penetration" "penetrationbodies"; "compliantpenetration" "compliantbodies"; ...
+                    "jointgap" "gapjoint"; "speed" "fastestbody"; "angularspeed" "fastestturningbody"]'
+                if ~isfield(A, p(1))
+                    continue
+                end
                 if A.(p(1)) > B.(p(1))
                     D.(p(1)) = A.(p(1));
                     D.(p(2)) = A.(p(2));

@@ -44,7 +44,8 @@ keeps the worst value. Fields:
   judge them by `Penetration`, not by `ContactResidual`. Neither residual has a warning:
   failures show in `JointGap` and `Penetration`, and joints held against a motor limit or
   friction keep a residual that more iterations or a smaller `dt` do not remove.
-- `Penetration` (m) + `PenetratingBodies`, `JointGap` (m) + `GapJoint` (fixed, revolute,
+- `Penetration` (m, rigid contacts) + `PenetratingBodies`, `CompliantPenetration` (m, compliant
+  contacts: their deflection F/k, no warning) + `CompliantBodies`, `JointGap` (m) + `GapJoint` (fixed, revolute,
   spherical joints, and cylindrical ones across their axis), `MaxSpeed` (m/s) + `FastestBody`, `MaxAngularSpeed` +
   `FastestTurningBody`, `NonfiniteSteps` + `NonfiniteBody` — the objects are the scene's
   `phx.*` objects in cell arrays, so you can read their `Name`, pose or mass directly.
@@ -110,11 +111,12 @@ How to use it when debugging:
 - **Negative time steps are refused** (`phx:engine:badArgument`): the engine only steps
   forward.
 - **Compliant contacts sink by design.** A body with a finite `ContactStiffness` rests
-  `F/ContactStiffness` deep in its support, and `Penetration` in the diagnostics reports that
-  depth too; `deepPenetration` fires once it passes 10 % of `LengthScale`. That is the
-  stiffness being too low for the load, not a solver failure: raise `ContactStiffness`, do
-  not lower `dt`. Soft bodies, flexible bodies and particles keep rigid contacts. Whether a
-  scene should use compliant contacts at all: **phx-scene-basics**.
+  `F/ContactStiffness` deep in its support. The diagnostics report that depth apart, as
+  `CompliantPenetration`; `Penetration` and its warnings look at rigid contacts only. A
+  compliant contact deeper than wanted is a stiffness too low for the load, not a solver
+  failure: raise `ContactStiffness`, do not lower `dt`. Soft bodies, flexible bodies and
+  particles keep rigid contacts. Whether a scene should use compliant contacts at all:
+  **phx-scene-basics**.
 
 ## phx.engine.Settings — initial engine config
 

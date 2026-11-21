@@ -249,7 +249,8 @@ other by more than 10&nbsp;% of <code class="phx-inline">LengthScale</code></td>
 <td>Place the bodies apart. The engine pushes them out over the first steps, often violently;
 <code class="phx-inline">deepPenetration</code> stays silent until it has done so.</td></tr>
 <tr><td class="name">phx:Simulation:deepPenetration</td><td>later, bodies sink into each other by more than
-10&nbsp;% of <code class="phx-inline">LengthScale</code></td>
+10&nbsp;% of <code class="phx-inline">LengthScale</code> (rigid contacts; a compliant contact sinks by
+design, see <code class="phx-inline">CompliantPenetration</code>)</td>
 <td>Reduce the step; check <code class="phx-inline">LengthScale</code> and the mass ratios.</td></tr>
 <tr><td class="name">phx:Simulation:jointGap</td><td>a joint is pulled apart by more than 5&nbsp;% of
 <code class="phx-inline">LengthScale</code></td>
@@ -332,7 +333,8 @@ Window.</p>
 <tr><td class="name">Iterations, MaxIterations</td><td>Velocity iterations per island, mean and most.</td></tr>
 <tr><td class="name">JointIslandsAtCap, ContactIslandsAtCap</td><td>Number of islands that ran to their cap without meeting their tolerances, summed over the steps: islands holding a joint, spring or rope (cap <code class="phx-inline">JointIterations</code>; <code class="phx-inline">ContactIterations</code> for springs and ropes alone), and islands of contacts only (cap <code class="phx-inline">ContactIterations</code>).</td></tr>
 <tr><td class="name">JointResidual, ContactResidual</td><td>Largest relative residual of a joint and of a contact (see <a href="#diagnostics">Diagnostics</a>); <code class="phx-inline">NaN</code> when there were none.</td></tr>
-<tr><td class="name">Penetration, PenetratingBodies</td><td>Deepest penetration, <span class="phx-unit">m</span>, and a cell array of the two bodies concerned.</td></tr>
+<tr><td class="name">Penetration, PenetratingBodies</td><td>Deepest penetration of a rigid contact, <span class="phx-unit">m</span>, and a cell array of the two bodies concerned.</td></tr>
+<tr><td class="name">CompliantPenetration, CompliantBodies</td><td>Deepest penetration of a compliant contact (<a href="phx.Body.html"><code class="phx-inline">ContactStiffness</code></a>), <span class="phx-unit">m</span>, and its two bodies: the deflection of its spring, <var>F</var>/<var>k</var>. It is the contact law, not an error, so no warning looks at it.</td></tr>
 <tr><td class="name">JointGap, GapJoint</td><td>Widest joint gap, <span class="phx-unit">m</span>, and the joint concerned (in a cell array).</td></tr>
 <tr><td class="name">MaxSpeed, FastestBody</td><td>Highest speed of a dynamic body, <span class="phx-unit">m/s</span>, and the body.</td></tr>
 <tr><td class="name">MaxAngularSpeed, FastestTurningBody</td><td>Highest angular speed, <span class="phx-unit">rad/s</span>, and the body.</td></tr>

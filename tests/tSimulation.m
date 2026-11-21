@@ -136,6 +136,26 @@ classdef tSimulation < PhxTestCase
             tc.verifyEqual(0.1 - box.Position(3), 10*g/2e6, "RelTol", 0.01, "Stiffness changed while running");
         end
 
+        function compliantContactSinksWithoutAPenetrationWarning(tc)
+            % A compliant box sunk 9.8 mm, twice the deepPenetration limit of
+            % LengthScale 0.05, raises no warning: the diagnostics report its
+            % depth as CompliantPenetration with its bodies, and Penetration
+            % as that of the rigid contacts
+            g = 9.81;
+            floor = tc.spawnBody([0 0 -0.5], "Type", "static", "Shape", {"Box", "Size", [4 4 1]});
+            box = tc.spawnBody([0 0 0.1], "Shape", {"Box", "Size", 0.2*[1 1 1]}, "Mass", 10, ...
+                "ContactStiffness", 1e4, "ContactDamping", 2*sqrt(1e5));
+            sim = phx.Simulation([floor box], "Gravity", [0 0 -g], "DiagnosticInfo", "warnings", ...
+                "EngineSettings", phx.engine.Settings("LengthScale", 0.05));
+            tc.addTeardown(@() delete(sim));
+            tc.verifyWarningFree(@() sim.step(1, 240, -1));
+            r = sim.getDiagnosticReport;
+            tc.verifyEqual(r.CompliantPenetration, 10*g/1e4, "RelTol", 0.02);
+            tc.verifyTrue(any(cellfun(@(b) b == box, r.CompliantBodies)) && any(cellfun(@(b) b == floor, r.CompliantBodies)), ...
+                "The compliant contact is the box's on the floor.");
+            tc.verifyLessThan(r.Penetration, 1e-3);
+        end
+
         function contactDampingSetsTheRebound(tc)
             % A 1 kg ball dropped 0.2 m onto a rigid floor, k 1e5 and the
             % damping ratio 0.3 (c 190 N s/m), rebounds with 0.437 of its

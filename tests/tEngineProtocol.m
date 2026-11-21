@@ -1497,6 +1497,25 @@ classdef tEngineProtocol < PhxTestCase
             tc.verifyLessThan(0.1 - p(3), 1e-3, "Penetration of the hard contact");
         end
 
+        function diagnosticsTellCompliantFromRigidPenetration(tc)
+            % A compliant box sunk m g / k (9.8 mm) is reported as
+            % compliantpenetration with its bodies, not as penetration,
+            % which a rigid box beside it keeps at the rigid contact's depth
+            w = tc.newWorld;
+            phxEngine('set', w, uint64(0), 'settings', struct('diagnostics', true));
+            floor = tc.addFloor(w);
+            soft = tc.addBox(w, 2, [0 0 0.1], 0.2*[1 1 1], 10);
+            phxEngine('set', w, soft, 'contact', [1e4 2*sqrt(1e5)]);
+            tc.addBox(w, 2, [1 0 0.1], 0.2*[1 1 1], 10);
+            tc.settle(w, 1);
+            phxEngine('get', w, uint64(0), 'diagnostics');
+            tc.settle(w, 0.1);
+            D = phxEngine('get', w, uint64(0), 'diagnostics');
+            tc.verifyEqual(D.compliantpenetration, 10*tc.G/1e4, "RelTol", 0.02, "Depth of the compliant contact");
+            tc.verifyEqual(sort(D.compliantbodies), sort([floor soft]), "Bodies of the compliant contact");
+            tc.verifyLessThan(D.penetration, 2e-3, "Penetration of the rigid contacts");
+        end
+
         function contactRejectsBadValues(tc)
             w = tc.newWorld;
             h = tc.addBox(w, 2, [0 0 1], 0.2*[1 1 1]);
