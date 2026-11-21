@@ -88,13 +88,15 @@ classdef Capsule < phx.base.Shape
             setappdata(primitive, "phxShape", obj);
         end
 
-        function [mass, inertia, center] = computeMass(obj)
+        function [volume, inertia, center] = computeVolume(obj)
+            % The cylinder and the two halves of the sphere (at unit density,
+            % their masses are their volumes)
             r = obj.Diameter/2;
             rq = r^2;
             h = obj.Height;
-            mc = obj.Density*pi*rq*h;
-            ms = obj.Density*pi*r^3*4/3;
-            mass = mc + ms;
+            mc = pi*rq*h;
+            ms = pi*r^3*4/3;
+            volume = mc + ms;
             is = rq*ms*2/5;
             ia = mc*rq/2 + is;
             io = mc*(h^2 + 3*rq)/12 + is + ms*(h/2)^2;

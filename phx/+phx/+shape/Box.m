@@ -70,11 +70,11 @@ classdef Box < phx.base.Shape
             setappdata(primitive, "phxShape", obj);
         end
 
-        function [mass, inertia, center] = computeMass(obj)
+        function [volume, inertia, center] = computeVolume(obj)
             s = obj.Size;
-            mass = obj.Density*s(1)*s(2)*s(3);
+            volume = s(1)*s(2)*s(3);
             q = s.^2;
-            inertia = [q(2) + q(3), q(1) + q(3), q(1) + q(2)]*mass/12;
+            inertia = [q(2) + q(3), q(1) + q(3), q(1) + q(2)]*volume/12;
             center = [0 0 0];
         end
 

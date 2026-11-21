@@ -28,7 +28,7 @@ classdef tShapeMass < PhxTestCase
             s = phx.shape.Sphere("Diameter", 2, "Density", 1000); % r = 1
             [m, I] = s.computeMass;
             tc.verifyEqual(m, 1000*4/3*pi, "RelTol", 1e-12);
-            tc.verifyEqual(I, 1^2*m*2/5, "RelTol", 1e-12); % 2/5 m r^2
+            tc.verifyEqual(I, [1 1 1]*1^2*m*2/5, "RelTol", 1e-12); % 2/5 m r^2
         end
 
         function cylinderDefaultAxisInertia(tc)
@@ -175,6 +175,65 @@ classdef tShapeMass < PhxTestCase
             tc.verifyError(@() phx.shape.Cone("Diameter", [1 -1]), "phx:Cone:badSize");
             tc.verifyError(@() phx.shape.Cone("Diameter", [1 1 1]), "phx:Cone:badSize");
             tc.verifyError(@() phx.shape.Cone("Diameter", [0 0]), "phx:Cone:badSize");
+        end
+
+        function volumeIsTheGeometryOfTheMass(tc)
+            % computeVolume gives the volume, the moments of the volume at
+            % unit density (a row of three) and its centre; computeMass is
+            % those at the shape's Density, every shape alike
+            res = fullfile(fileparts(fileparts(mfilename("fullpath"))), "examples", "res");
+            shapes = {
+                phx.shape.Box("Size", [0.3 0.5 0.7], "Density", 2500)
+                phx.shape.BoxShell("Size", [1 0.6 0.4], "WallThickness", 0.03, "Density", 7800)
+                phx.shape.Capsule("Diameter", 0.4, "Height", 1.1, "Axis", "x", "Density", 900)
+                phx.shape.CapsuleShell("Diameter", 0.5, "Height", 0.8, "WallThickness", 0.02, "Density", 2700)
+                phx.shape.Cone("Radius", [0.3 0.1], "Height", 0.6, "Axis", "y", "Density", 1200)
+                phx.shape.Cylinder("Diameter", 0.25, "Height", 0.9, "Density", 500)
+                phx.shape.Extrusion("Profile", [0 0; 1 0; 1 0.5; 0 0.5], "Spine", [0 0 0; 0 0 1], "Density", 650)
+                phx.shape.Mesh("Source", fullfile(res, "BuggyBody.stl"), "Scale", 0.001, "Envelope", "convex", "Density", 300)
+                phx.shape.Revolution("Profile", [0.2 0; 0.3 0.5; 0.1 1], "Density", 1500)
+                phx.shape.Rock("Diameter", 0.4, "Density", 2600)
+                phx.shape.Sphere("Diameter", 0.33, "Density", 7800)
+                phx.shape.SphereShell("Diameter", 1, "WallThickness", 0.05, "Density", 1100)
+                phx.shape.Tube("Diameter", 0.3, "Height", 0.5, "WallThickness", 0.04, "Density", 4000)
+                };
+            for k = 1:numel(shapes)
+                s = shapes{k};
+                [V, J, c] = s.computeVolume;
+                [m, I, cm] = s.computeMass;
+                tc.verifySize(J, [1 3], class(s));
+                tc.verifyGreaterThan([V J], 0, class(s));
+                tc.verifyEqual(m, s.Density*V, "RelTol", 1e-14, class(s));
+                tc.verifyEqual(I, s.Density*J, "RelTol", 1e-14, class(s));
+                tc.verifyEqual(cm, c, class(s));
+            end
+        end
+
+        function volumesOfTheSolids(tc)
+            % Closed forms of the volume and of its moments per unit
+            % density: box, sphere, cylinder, sphere shell
+            [V, J] = phx.shape.Box("Size", [1 2 3]).computeVolume;
+            tc.verifyEqual(V, 6, "RelTol", 1e-14);
+            tc.verifyEqual(J, [4 + 9, 1 + 9, 1 + 4]*6/12, "RelTol", 1e-14);
+            [V, J] = phx.shape.Sphere("Diameter", 2).computeVolume;
+            tc.verifyEqual(V, 4/3*pi, "RelTol", 1e-14);
+            tc.verifyEqual(J, [1 1 1]*2/5*4/3*pi, "RelTol", 1e-14);
+            [V, J] = phx.shape.Cylinder("Diameter", 2, "Height", 4).computeVolume;
+            tc.verifyEqual(V, 4*pi, "RelTol", 1e-14);
+            tc.verifyEqual(J, [(16 + 3)/12, (16 + 3)/12, 1/2]*4*pi, "RelTol", 1e-14);
+            [V, J] = phx.shape.SphereShell("Diameter", 2, "WallThickness", 0.5).computeVolume;
+            tc.verifyEqual(V, 4/3*pi*(1 - 0.125), "RelTol", 1e-14);
+            tc.verifyEqual(J, [1 1 1]*8/15*pi*(1 - 0.5^5), "RelTol", 1e-14);
+        end
+
+        function terrainHasPlaceholders(tc)
+            % A height field encloses no volume: fixed placeholders, 1 m^3
+            % with moments that give 1000 kg and 100 kg*m^2 at 1000 kg/m^3
+            s = phx.shape.Terrain("Height", zeros(5));
+            [V, J, c] = s.computeVolume;
+            tc.verifyEqual([V J c], [1 0.1 0.1 0.1 0 0 0]);
+            [m, I] = s.computeMass;
+            tc.verifyEqual([m I], [1000 100 100 100]);
         end
     end
 

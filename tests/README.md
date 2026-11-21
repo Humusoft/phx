@@ -30,7 +30,7 @@ Prefer headless bodies (`[]` axes) unless the test is about the drawing.
 | File | Needs | Tag | What it locks in |
 |------|-------|-----|------------------|
 | `tPhxMath` | nothing | — | rotation matrices, point transform, decomposition round-trips, `alignZ` |
-| `tShapeMass` | nothing | — | analytic mass & inertia of Box/Sphere/Cylinder |
+| `tShapeMass` | nothing | — | analytic mass & inertia of the solids; `computeVolume` (volume, moments per unit density, centre) of every shape, `computeMass` as those at the shape's `Density`, the `Terrain` placeholders |
 | `tShapeMesh` | nothing | — | meshes the shapes generate for flexible and soft bodies: the divisions `ElementResolution` gives, a volumetric mesh that fills the shape exactly with matching faces, a closed outward surface mesh without inner vertices, the geodesic surface and the curved quadratic volume of a sphere, the curved volume of a cylinder and of a truncated or sharp cone along their axes and their divisions, the evenly spaced ring surface of a cone, the volume of a capsule joined from a cylinder and two half balls and its ring surface, the polar volume and ring surface of a straight, tapered or end-closed tube wall, the errors of shapes that generate none |
 | `tBodyKinematics` | graphics | `Graphics` | pose property round-trips, input validation |
 | `tInternals` | nothing (one `Graphics` case) | — / `Graphics` | the undocumented MATLAB internals PHX deliberately uses (perf) still exist and behave |

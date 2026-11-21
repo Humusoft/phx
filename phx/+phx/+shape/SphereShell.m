@@ -102,12 +102,12 @@ classdef SphereShell < phx.base.Shape
             setappdata(primitive, "phxShape", obj);
         end
 
-        function [mass, inertia, center] = computeMass(obj)
+        function [volume, inertia, center] = computeVolume(obj)
             obj.checkWall;
             ro = obj.Diameter/2;
             ri = obj.InnerDiameter/2;
-            mass = obj.Density*pi*(ro^3 - ri^3)*4/3;
-            inertia = mass*2/5*(ro^5 - ri^5)/(ro^3 - ri^3);
+            volume = pi*(ro^3 - ri^3)*4/3;
+            inertia = [1 1 1]*volume*2/5*(ro^5 - ri^5)/(ro^3 - ri^3);
             center = [0 0 0];
         end
     end

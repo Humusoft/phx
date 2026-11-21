@@ -84,12 +84,12 @@ classdef Cylinder < phx.base.Shape
             setappdata(primitive, "phxShape", obj);
         end
 
-        function [mass, inertia, center] = computeMass(obj)
+        function [volume, inertia, center] = computeVolume(obj)
             rq = (obj.Diameter/2)^2;
             h = obj.Height;
-            mass = obj.Density*pi*rq*h;
-            ia = mass*rq/2;
-            io = mass*(h^2 + 3*rq)/12;
+            volume = pi*rq*h;
+            ia = volume*rq/2;
+            io = volume*(h^2 + 3*rq)/12;
             inertia = phx.internal.Geometry.switchZAxis(obj.Axis, [io io ia]);
             center = [0 0 0];
         end

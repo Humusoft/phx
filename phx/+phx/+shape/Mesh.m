@@ -130,12 +130,12 @@ classdef Mesh < phx.base.Shape
             end
         end
 
-        function [mass, inertia, center] = computeMass(obj)
-            % Weigh the body where it is drawn. Centered moves the origin to
-            % the centre of the bounding box for display, and the centre of
-            % mass has to follow: integrating the raw vertices instead puts
+        function [volume, inertia, center] = computeVolume(obj)
+            % Integrate the solid where it is drawn. Centered moves the origin
+            % to the centre of the bounding box for display, and the centre of
+            % volume has to follow: integrating the raw vertices instead puts
             % it where the model sits in the source file. The moments are
-            % about the centre of mass.
+            % about the centre of volume.
             [V, F] = obj.mergedGeometry;
             if obj.Centered
                 V = V - obj.Center;
@@ -144,14 +144,14 @@ classdef Mesh < phx.base.Shape
             if prod(obj.Scale) < 0
                 F = fliplr(F); % mirrored, see drawSubmesh
             end
-            [mass, ~, Icm, center] = phx.internal.Geometry.meshMass(V, F, obj.Density);
+            [volume, ~, Icm, center] = phx.internal.Geometry.meshMass(V, F, 1);
             inertia = Icm([1 5 9]);
-            if ~(mass > 0) || any(~isfinite(inertia)) || any(inertia <= 0) || any(~isfinite(center))
+            if ~(volume > 0) || any(~isfinite(inertia)) || any(inertia <= 0) || any(~isfinite(center))
                 % Non-solid or open mesh: fall back to the bounding box
                 s = obj.BBox.*abs(obj.Scale);
-                mass = obj.Density*s(1)*s(2)*s(3);
+                volume = s(1)*s(2)*s(3);
                 q = s.^2;
-                inertia = [q(2) + q(3), q(1) + q(3), q(1) + q(2)]*mass/12;
+                inertia = [q(2) + q(3), q(1) + q(3), q(1) + q(2)]*volume/12;
                 if obj.Centered
                     center = [0 0 0];
                 else

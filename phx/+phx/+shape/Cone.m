@@ -108,20 +108,20 @@ classdef Cone < phx.base.Shape
             setappdata(primitive, "phxShape", obj);
         end
 
-        function [mass, inertia, center] = computeMass(obj)
+        function [volume, inertia, center] = computeVolume(obj)
             % A solid of revolution of radius r(z), linear in z, integrated
             % by the 3-point Gauss rule, exact for the polynomials of up to
-            % the fifth degree here: mass, centre of mass zc, the moment
-            % about the axis and the transverse one about zc
+            % the fifth degree here: volume, centre zc, the moment about the
+            % axis and the transverse one about zc
             r = obj.Radius;
             h = obj.Height;
             s = [-sqrt(3/5) 0 sqrt(3/5)];
             g = [5 8 5]/18;
             z = s*h/2;
             rz = r(1) + (r(2) - r(1))*(z/h + 0.5);
-            dm = obj.Density*pi*rz.^2.*g*h;
-            mass = sum(dm);
-            zc = sum(dm.*z)/mass;
+            dm = pi*rz.^2.*g*h;
+            volume = sum(dm);
+            zc = sum(dm.*z)/volume;
             ia = sum(dm.*rz.^2/2);
             io = sum(dm.*(rz.^2/4 + (z - zc).^2));
             inertia = phx.internal.Geometry.switchZAxis(obj.Axis, [io io ia]);

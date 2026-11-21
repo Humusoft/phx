@@ -56,12 +56,21 @@ classdef Terrain < phx.base.Shape
             setappdata(primitive, "phxShape", obj);
         end
 
-        function [mass, inertia, center] = computeMass(~)
-            % A terrain is meant to be static, where mass and inertia play no
-            % part; these are fixed placeholders for the unusual dynamic case
-            mass = 1000;
-            inertia = [100 100 100];
+        function [volume, inertia, center] = computeVolume(~)
+            % A height field encloses no volume, and a terrain is meant to
+            % be static, where mass and inertia play no part: fixed
+            % placeholders for the unusual dynamic case (at the default
+            % density 1000 kg and 100 kg*m^2)
+            volume = 1;
+            inertia = [0.1 0.1 0.1];
             center = [0 0 0];
+        end
+
+        function [mass, inertia, center] = computeMass(obj)
+            % A terrain has no Density: its placeholders at 1000 kg/m^3
+            [volume, inertia, center] = obj.computeVolume;
+            mass = 1000*volume;
+            inertia = 1000*inertia;
         end
     end
 

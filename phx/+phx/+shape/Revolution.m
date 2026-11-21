@@ -98,12 +98,12 @@ classdef Revolution < phx.base.Shape
             setappdata(primitive, "phxShape", obj);
         end
 
-        function [mass, inertia, center] = computeMass(obj)
-            % Weigh the solid the profile bounds; see solidProfile
+        function [volume, inertia, center] = computeVolume(obj)
+            % Integrate the solid the profile bounds; see solidProfile
             [V, ~, F] = phx.internal.Geometry.revolution(obj.solidProfile, obj.Segments, false, false);
             V = phx.internal.Geometry.switchZAxis(obj.Axis, V);
 
-            [mass, ~, Icm, center] = phx.internal.Geometry.meshMass(V, F, obj.Density);
+            [volume, ~, Icm, center] = phx.internal.Geometry.meshMass(V, F, 1);
             inertia = Icm([1 5 9]);
         end
 

@@ -79,9 +79,12 @@ classdef Shape
         % Draw the shape into the target (axes or hgtransform)
         drawTo(obj, target)
 
-        % Compute mass, principal moments of inertia about the centre of
-        % mass, and the centre of mass (shape axes, relative to its origin)
-        [mass, inertia, center] = computeMass(obj)
+        % Compute the volume (m^3), the principal moments of inertia of the
+        % volume at unit density about its centre (1x3, kg*m^2 per kg/m^3,
+        % that is m^5), and the centre of the volume (shape axes, relative
+        % to its origin): the geometry, which a density turns into mass
+        % properties
+        [volume, inertia, center] = computeVolume(obj)
     end
 
     methods (Abstract, Access = {?phx.base.Shape, ?phx.base.Object})
@@ -131,6 +134,21 @@ classdef Shape
             if ~isstring(obj.Texture) && ismatrix(obj.Texture)
                 obj.TextureData = phx.base.Shape.matrixTexture(obj.Texture, cmap);
             end
+        end
+
+        function [mass, inertia, center] = computeMass(obj)
+        %computeMass Mass properties of the shape at its Density.
+        %
+        %   [mass, inertia, center] = computeMass(shape) returns the mass
+        %   (kg), the principal moments of inertia about the centre of mass
+        %   (1x3, kg*m^2) and the centre of mass (shape axes, relative to its
+        %   origin) of the shape's volume at its Density.
+        %
+        % See also phx.base.Shape.computeVolume
+
+            [volume, inertia, center] = obj.computeVolume;
+            mass = obj.Density*volume;
+            inertia = obj.Density*inertia;
         end
 
         function obj = nextColor(obj)

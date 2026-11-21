@@ -41,12 +41,12 @@ classdef tSphereShell < PhxTestCase
             [m, I, c] = s.computeMass;
             ro = 0.5; ri = 0.4;
             tc.verifyEqual(m, 1000*4/3*pi*(ro^3 - ri^3), "RelTol", 1e-12);
-            tc.verifyEqual(I, 2/5*m*(ro^5 - ri^5)/(ro^3 - ri^3), "RelTol", 1e-12);
+            tc.verifyEqual(I, [1 1 1]*2/5*m*(ro^5 - ri^5)/(ro^3 - ri^3), "RelTol", 1e-12);
             tc.verifyEqual(c, [0 0 0]);
             % A thin wall tends to the surface's 2/3 m r^2
             s.WallThickness = 1e-4;
             [m, I] = s.computeMass;
-            tc.verifyEqual(I, 2/3*m*0.5^2, "RelTol", 1e-3);
+            tc.verifyEqual(I, [1 1 1]*2/3*m*0.5^2, "RelTol", 1e-3);
         end
     end
 

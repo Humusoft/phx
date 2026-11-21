@@ -99,10 +99,10 @@ classdef Extrusion < phx.base.Shape
             setappdata(primitive, "phxShape", obj);
         end
 
-        function [mass, inertia, center] = computeMass(obj)
+        function [volume, inertia, center] = computeVolume(obj)
             [V, ~, F] = phx.internal.Geometry.extrusion(obj.Spine, obj.Scale, obj.Profile, true, true);
             V = phx.internal.Geometry.switchZAxis(obj.Axis, V);
-            [mass, ~, Icm, center] = phx.internal.Geometry.meshMass(V, F, obj.Density);
+            [volume, ~, Icm, center] = phx.internal.Geometry.meshMass(V, F, 1);
             inertia = Icm([1 5 9]);
         end
 

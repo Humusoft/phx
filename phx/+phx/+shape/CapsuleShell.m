@@ -110,12 +110,12 @@ classdef CapsuleShell < phx.base.Shape
             setappdata(primitive, "phxShape", obj);
         end
 
-        function [mass, inertia, center] = computeMass(obj)
+        function [volume, inertia, center] = computeVolume(obj)
             % The solid capsule of the outer face less that of the cavity
             obj.checkWall;
-            [mo, io, ao] = solidCapsule(obj.Diameter/2, obj.Height, obj.Density);
-            [mi, ii, ai] = solidCapsule(obj.InnerDiameter/2, obj.Height, obj.Density);
-            mass = mo - mi;
+            [mo, io, ao] = solidCapsule(obj.Diameter/2, obj.Height, 1);
+            [mi, ii, ai] = solidCapsule(obj.InnerDiameter/2, obj.Height, 1);
+            volume = mo - mi;
             inertia = phx.internal.Geometry.switchZAxis(obj.Axis, [io - ii, io - ii, ao - ai]);
             center = [0 0 0];
         end

@@ -103,7 +103,7 @@ classdef BoxShell < phx.base.Shape
             setappdata(primitive, "phxShape", obj);
         end
 
-        function [mass, inertia, center] = computeMass(obj)
+        function [volume, inertia, center] = computeVolume(obj)
             % Integrated over a fine mesh of both faces, the inner one turned
             % inside out, so that it encloses the wall alone (the flat sides
             % exact, the rounded edges to well under 0.1 %)
@@ -112,7 +112,7 @@ classdef BoxShell < phx.base.Shape
             core = obj.core;
             [V, ~, F] = roundedBox(core, obj.InnerEdgeRadius + obj.WallThickness, n);
             [Vi, ~, Fi] = roundedBox(core, obj.InnerEdgeRadius, n);
-            [mass, ~, Icm] = phx.internal.Geometry.meshMass([V; Vi], [F; fliplr(Fi) + size(V, 1)], obj.Density);
+            [volume, ~, Icm] = phx.internal.Geometry.meshMass([V; Vi], [F; fliplr(Fi) + size(V, 1)], 1);
             inertia = Icm([1 5 9]);
             center = [0 0 0];
         end
