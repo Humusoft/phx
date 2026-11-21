@@ -27,9 +27,9 @@ rolls and can carry a load inside.</p>
 <p>The collision shape is an ideal spherical shell, independent of the visual details, built into the
 engine: it collides with all other shapes, meshes, terrains and other shells included, as cheaply as
 a sphere, far cheaper than an inverted triangle mesh would. A convex body in the cavity touches the wall
-with every corner of its face towards it, so a box rests there on its corners. The shell has no
-continuous collision detection: a body that passes through the wall within one step, faster than the
-wall thickness plus its own size per step, goes through it. Mass properties are those of the ideal
+with every corner of its face towards it, so a box rests there on its corners. As any thin wall, the
+shell lets through a body that moves farther in one step than the wall thickness plus its own size;
+shorten the step for fast bodies. Mass properties are those of the ideal
 shell and <code class="phx-inline">Density</code>.</p>
 
 <p>The shape draws its outer face and its inner face, turned to the cavity, each a latitude-longitude grid
@@ -91,6 +91,7 @@ sim.step(3, 600, 1);</pre>
 <a href="phx.Body.html">phx.Body</a>,
 <a href="phx.shape.Sphere.html">phx.shape.Sphere</a>,
 <a href="phx.shape.CapsuleShell.html">phx.shape.CapsuleShell</a>,
+<a href="phx.shape.BoxShell.html">phx.shape.BoxShell</a>,
 <a href="phx.shape.Tube.html">phx.shape.Tube</a>,
 <a href="phx.Particles.html">phx.Particles</a>,
 <a href="phx.base.Shape.html">phx.base.Shape</a>

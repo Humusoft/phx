@@ -13,10 +13,9 @@ classdef SphereShell < phx.base.Shape
 %
 %   Collision shape and mass properties are modeled as an ideal spherical
 %   shell, independent of the visual details. The shell collides with all
-%   other shapes, meshes, terrains and shells included, but has no
-%   continuous collision detection: a body passing through the wall in one
-%   step, faster than the wall thickness plus its own size per step, goes
-%   through it.
+%   other shapes, meshes, terrains and shells included. As any thin wall,
+%   it lets through a body that moves farther in one step than the wall
+%   thickness plus its own size; shorten the step for fast bodies.
 %
 %   phx.shape.SphereShell() creates a shape with default parameters.
 %
@@ -93,7 +92,7 @@ classdef SphereShell < phx.base.Shape
             [Vi, Ni, Fi, Ti] = phx.internal.Geometry.sphere(obj.InnerDiameter, obj.Segments);
             V = [V; Vi];
             N = [N; -Ni];
-            F = [F; fliplr(Fi) + size(Vi, 1)];
+            F = [F; fliplr(Fi) + size(V, 1) - size(Vi, 1)];   % V holds both faces now
             T = [T; Ti];
             % Alpha is the opacity of the wall, which a line of sight
             % crosses at two faces: each takes 1 - sqrt(1 - Alpha)

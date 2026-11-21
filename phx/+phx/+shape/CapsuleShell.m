@@ -14,10 +14,9 @@ classdef CapsuleShell < phx.base.Shape
 %
 %   Collision shape and mass properties are modeled as an ideal capsule
 %   shell, independent of the visual details. The shell collides with all
-%   other shapes, meshes, terrains and shells included, but has no
-%   continuous collision detection: a body passing through the wall in one
-%   step, faster than the wall thickness plus its own size per step, goes
-%   through it.
+%   other shapes, meshes, terrains and shells included. As any thin wall,
+%   it lets through a body that moves farther in one step than the wall
+%   thickness plus its own size; shorten the step for fast bodies.
 %
 %   phx.shape.CapsuleShell() creates a shape with default parameters.
 %
@@ -99,7 +98,7 @@ classdef CapsuleShell < phx.base.Shape
             [Vi, Ni, Fi, Ti] = obj.face(obj.InnerDiameter);
             V = [V; Vi];
             N = [N; -Ni];
-            F = [F; fliplr(Fi) + size(Vi, 1)];
+            F = [F; fliplr(Fi) + size(V, 1) - size(Vi, 1)];   % V holds both faces now
             T = [T; Ti];
             [V, N] = phx.internal.Geometry.switchZAxis(obj.Axis, V, N);
 

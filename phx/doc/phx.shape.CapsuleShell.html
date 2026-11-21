@@ -31,9 +31,8 @@ rolls like a cylinder.</p>
 engine as <a href="phx.shape.SphereShell.html">phx.shape.SphereShell</a> is, with the same behaviour: it
 collides with all other shapes, meshes, terrains and other shells included, as cheaply as a capsule; a
 convex body in the cavity rests on the corners of its face towards the wall, and a capsule shell lying in
-another shell rests on both its ends. It has no continuous collision detection: a body that passes
-through the wall within one step, faster than the wall thickness plus its own size per step, goes
-through it. Mass properties are those of the solid capsule of the outer face less that of the cavity, with
+another shell rests on both its ends. As any thin wall, it lets through a body that moves farther in
+one step than the wall thickness plus its own size; shorten the step for fast bodies. Mass properties are those of the solid capsule of the outer face less that of the cavity, with
 <code class="phx-inline">Density</code>.</p>
 
 <p>The shape draws its outer face and its inner face, turned to the cavity, each a revolved profile of
@@ -97,6 +96,7 @@ sim.step(3, 600, 1);</pre>
 <a href="phx.Body.html">phx.Body</a>,
 <a href="phx.shape.Capsule.html">phx.shape.Capsule</a>,
 <a href="phx.shape.SphereShell.html">phx.shape.SphereShell</a>,
+<a href="phx.shape.BoxShell.html">phx.shape.BoxShell</a>,
 <a href="phx.Particles.html">phx.Particles</a>,
 <a href="phx.base.Shape.html">phx.base.Shape</a>
 </div>

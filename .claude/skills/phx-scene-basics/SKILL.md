@@ -232,11 +232,12 @@ phx.Body("Shape", {"Capsule",  "Radius", 0.25, "Height", 1});
 phx.Body("Shape", {"Tube",     "InnerDiameter", [0.1 0.5], "Height", 1});  % funnel; 0.5 = straight
 phx.Body("Shape", {"SphereShell",  "Diameter", 1.2, "WallThickness", 0.04});   % hollow ball / tank
 phx.Body("Shape", {"CapsuleShell", "Diameter", 0.6, "Height", 1, "Axis", "x", "WallThickness", 0.02});
+phx.Body("Shape", {"BoxShell", "Size", [1.2 0.6 0.8], "WallThickness", 0.02});   % aquarium / crate
 phx.Body("Shape", {"path/to/model.stl", "Scale", 0.06*[1 1 1], "Material", "glossy"});
 ```
 
 Available: `Box`, `Sphere`, `Cylinder`, `Tube`, `Cone`, `Capsule`, `SphereShell`,
-`CapsuleShell`, `Mesh`, `Extrusion`, `Revolution`, `Rock`, `Terrain`. Sizing properties are
+`CapsuleShell`, `BoxShell`, `Mesh`, `Extrusion`, `Revolution`, `Rock`, `Terrain`. Sizing properties are
 shape-specific — `Box` uses `Size`; round shapes accept **`Radius`** *or* `Diameter`
 (interchangeable), and the axial extent is **`Height`** (not `Length`) with a modeling
 `Axis` (`"x"`/`"y"`/`"z"`) on `Cylinder`/`Cone`/`Capsule`/`Tube`. `Cone` sizes and the `Tube`
@@ -303,23 +304,27 @@ What the `Profile` encloses:
   weighed as the solid closed there by a disc square to the axis — what `"convex"`,
   `"cones"` and `"cylinder"` collide with. Not a way to make a hollow part: with
   `"concave"` it collides as a paper-thin shell yet weighs as the solid. A plain straight
-  pipe is `phx.shape.Tube`; a closed hollow ball or capsule is `phx.shape.SphereShell` /
-  `phx.shape.CapsuleShell`.
+  pipe is `phx.shape.Tube`; a closed hollow ball, capsule or box is `phx.shape.SphereShell` /
+  `phx.shape.CapsuleShell` / `phx.shape.BoxShell`.
 
-**Hollow shapes — `SphereShell`, `CapsuleShell`.** A wall of `WallThickness` inside the
-outer `Diameter` (the wall grows inwards; `InnerDiameter` reads the cavity; `CapsuleShell`
-adds `Height` of the cylindrical part and `Axis`, as `Capsule`). The wall is solid from
-**both** sides: what is in the cavity stays in, what is outside rests on it. They are
-analytic engine shapes, as cheap as a sphere/capsule and colliding with everything (meshes,
-terrains, other shells), so they are the tank of choice for `phx.Particles` and liquids —
-an inverted triangle mesh costs several times more and holds a liquid only if wound
-inwards. A static one is a tank, a dynamic one a hollow ball or a rolling drum that can
-carry a load. No continuous collision: a body crossing the wall within one step goes
-through, so keep steps short for fast bodies. `WallThickness` must stay below the outer
-radius (`phx:SphereShell:badWallThickness` / `phx:CapsuleShell:badWallThickness`, checked
-when the shape is used). Give the wall `"Alpha", 0.4` or so to see what it holds (opacity of
-the whole wall, see phx-logging-view). They generate no meshes for
-FlexibleBody/SoftBody.
+**Hollow shapes — `SphereShell`, `CapsuleShell`, `BoxShell`.** A wall of `WallThickness`
+inside the outer `Diameter` (sphere, capsule) or `Size` (box); the wall grows inwards,
+`InnerDiameter` / `InnerSize` read the cavity. `CapsuleShell` adds `Height` of the
+cylindrical part and `Axis`, as `Capsule`. `BoxShell` rounds the cavity's edges by
+`InnerEdgeRadius` (default 0, sharp) and its outer edges by that plus the wall — drawn and
+colliding so, the wall equally thick everywhere. The wall is solid from **both** sides:
+what is in the cavity stays in, what is outside rests on it; in a box cavity a body touches
+every wall it reaches, corners included. They are analytic engine shapes, as cheap as a
+sphere/capsule/box and colliding with everything (meshes, terrains, other shells), so they
+are the tank of choice for `phx.Particles` and liquids — an inverted triangle mesh costs
+several times more and holds a liquid only if wound inwards, and a tank of `arena` plates is
+several bodies that cannot move as one. A static one is a tank, a dynamic one a hollow ball,
+a rolling drum or a closed crate that can carry a load. As any thin wall, it lets through a
+body that moves farther in one step than the wall thickness plus its own size, so keep steps
+short for fast bodies. The wall must leave a cavity (`phx:SphereShell:badWallThickness`,
+`phx:CapsuleShell:...`, `phx:BoxShell:...`, checked when the shape is used). Give the wall
+`"Alpha", 0.4` or so to see what it holds (opacity of the whole wall, see
+phx-logging-view). They generate no meshes for FlexibleBody/SoftBody.
 
 ## Deformable bodies and particles
 
@@ -362,9 +367,9 @@ gravel.add(Pnew); gravel.remove(gravel.Positions(:, 3) < -1);   % any time, also
 - `"Shape"` meshes a `phx.shape.*` object or a `{name, args...}` cell (not together with
   a mesh). `Box`, `Sphere`, `Cylinder`, `Cone`, `Capsule` and `Tube` generate meshes;
   `Revolution`, `Extrusion` and `Mesh` raise `phx:Shape:noVolumetricMesh` /
-  `noSurfaceMesh` until a future release (`Rock`, `Terrain`, `SphereShell`, `CapsuleShell`
-  too): give those a PDE Toolbox
-  `"Mesh"` or `Vertices` of your own. A FlexibleBody takes the shape's `Density` (a
+  `noSurfaceMesh` until a future release (`Rock`, `Terrain`, and the shells `SphereShell`,
+  `CapsuleShell`, `BoxShell` too): give those a PDE Toolbox `"Mesh"` or `Vertices` of your
+  own. A FlexibleBody takes the shape's `Density` (a
   `Density`/`Mass` given to the constructor wins), a SoftBody only its geometry.
 - `ElementResolution` of the shape (like `Segments` for drawing) sets the fineness as cell
   counts, independent of the size. A scalar counts cells across the thinnest section, the

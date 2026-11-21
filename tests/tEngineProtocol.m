@@ -509,6 +509,122 @@ classdef tEngineProtocol < PhxTestCase
         end
     end
 
+    % Box shell (protocol 2, step Y): a static shell of outer half extents
+    % [0.6 0.4 0.5], a 4 cm wall and a cavity rounded by 1 cm, its core of
+    % half extents [0.55 0.35 0.45], its cavity reaching [0.56 0.36 0.46]
+    methods (Test, TestTags = {'Engine'})
+        function boxShellHoldsBodiesInsideAndBearsThemOutside(tc)
+            % A ball thrown about in the cavity never gets past the inner
+            % face, edges and corners included (each flat wall in reach gives
+            % its own contact, as separate plates would), a ball dropped on
+            % the flat top rests on it, and a box let down in the cavity comes
+            % to rest on its four lowest corners on the floor
+            core = [0.55 0.35 0.45];
+            w = tc.newWorld;
+            tEngineProtocol.addBoxShell(w, 0, [0.6 0.4 0.5], 0.04, 0.01);
+            r = 0.05;
+            I = 0.4*r^2*[1 1 1];
+            in = phxEngine('add', w, 'sphere', 2, r, tEngineProtocol.pose([0.2 0.1 0]), 1, I);
+            on = phxEngine('add', w, 'sphere', 2, r, tEngineProtocol.pose([0.1 0.05 0.8]), 1, I);
+            phxEngine('set', w, in, 'linvel', [4 3 2]);
+            farthest = -inf;
+            for k = 1:400
+                phxEngine('step', w, tc.Dt);
+                farthest = max(farthest, tEngineProtocol.fromBox(reshape(phxEngine('get', w, in, 'position'), 3, 1), core));
+            end
+            tc.verifyLessThan(farthest, 0.01 - r + 2e-3, "Farthest the inner ball's centre got from the core (m)");
+            p = phxEngine('get', w, on, 'position');
+            tc.verifyEqual(p(3), 0.5 + r, "AbsTol", 2e-3, "Height of the ball resting on the top (m)");
+
+            w = tc.newWorld;
+            tEngineProtocol.addBoxShell(w, 0, [0.6 0.4 0.5], 0.04, 0.01);
+            half = [0.1 0.08 0.05];
+            box = tc.addBox(w, 2, [0.1 0.05 -0.3], 2*half);
+            tc.settle(w, 2);
+            T = phxEngine('get', w, box, 'transform');
+            [a, b, c] = ndgrid([-1 1], [-1 1], [-1 1]);
+            corners = T*[a(:)*half(1) b(:)*half(2) c(:)*half(3) ones(8, 1)]';
+            z = sort(corners(3, :));
+            tc.verifyEqual(z(1:4), -0.46*[1 1 1 1], "AbsTol", 2e-3, "Heights of the four lowest corners (m)");
+            tc.verifyLessThan(norm(phxEngine('get', w, box, 'linvel')), 1e-3, "The box comes to rest.");
+        end
+
+        function boxShellCornerTouchesEveryWall(tc)
+            % Pulled into a lower corner of the cavity, a box rests against
+            % the floor and both walls it reaches (the pull along the floor
+            % beats the friction on the floor and on the walls)
+            w = tc.newWorld([-8 -8 -4]);
+            tEngineProtocol.addBoxShell(w, 0, [0.6 0.4 0.5], 0.04, 0.01);
+            half = [0.1 0.08 0.05];
+            box = tc.addBox(w, 2, [0 0 -0.3], 2*half);
+            tc.settle(w, 3);
+            T = phxEngine('get', w, box, 'transform');
+            [a, b, c] = ndgrid([-1 1], [-1 1], [-1 1]);
+            corners = T*[a(:)*half(1) b(:)*half(2) c(:)*half(3) ones(8, 1)]';
+            tc.verifyEqual(min(corners(1:3, :), [], 2), -[0.56; 0.36; 0.46], "AbsTol", 3e-3, ...
+                "Lowest x, y and z of the box's corners (m)");
+            tc.verifyLessThan(norm(phxEngine('get', w, box, 'linvel')), 1e-3, "The box comes to rest.");
+        end
+
+        function boxShellsNestAndStack(tc)
+            % A box shell thrown about in a spherical shell stays in it with
+            % every corner of its core, and a small box shell dropped on a
+            % large one rests on its flat top
+            w = tc.newWorld;
+            tEngineProtocol.addShell(w, 0, 2, 0.05);
+            inner = tEngineProtocol.addBoxShell(w, 2, [0.3 0.2 0.15], 0.02, 0.005, [0 0 -1], 2);
+            phxEngine('set', w, inner, 'linvel', [2 1 -1]);
+            phxEngine('set', w, inner, 'angvel', [1 2 3]);
+            core = [0.3 0.2 0.15] - 0.025;
+            [a, b, c] = ndgrid([-1 1], [-1 1], [-1 1]);
+            corners = [a(:)*core(1) b(:)*core(2) c(:)*core(3) ones(8, 1)]';
+            reach = 0;
+            for k = 1:400
+                phxEngine('step', w, tc.Dt);
+                T = phxEngine('get', w, inner, 'transform');
+                reach = max(reach, max(vecnorm(T(1:3, :)*corners)));
+            end
+            tc.verifyLessThan(reach, 1.975 - 0.025 + 2e-3, "Farthest a core corner got from the centre (m)");
+
+            w = tc.newWorld;
+            tEngineProtocol.addBoxShell(w, 0, [0.6 0.4 0.5], 0.04, 0.01);
+            top = tEngineProtocol.addBoxShell(w, 2, [0.2 0.2 0.1], 0.02, 0, [0.1 0 0.8]);
+            tc.settle(w, 2);
+            p = phxEngine('get', w, top, 'position');
+            tc.verifyEqual(p(3), 0.6, "AbsTol", 2e-3, "Height of the small shell resting on the large one (m)");
+        end
+
+        function raycastHitsTheBoxShellFaces(tc)
+            % From the cavity a ray hits the inner faces, from outside the
+            % outer face and the rounded outer corner; from inside the wall it
+            % passes out
+            w = tc.newWorld([0 0 0]);
+            h = tEngineProtocol.addBoxShell(w, 0, [0.6 0.4 0.5], 0.04, 0.01);
+            diagonal = [1 1 1]/sqrt(3);
+            O = [0 0 0; 0 0 0; 3 0 0; 3*diagonal; 0 0 0.48]';
+            E = [2 0 0; 0 0 2; 0 0 0; 0 0 0; 0 0 3]';
+            [p, n, d, ids] = phxEngine('raycast', w, O, E);
+            tc.verifyEqual(ids(1:4), [h h h h]);
+            tc.verifyEqual(p(:, 1:3), [0.56 0 0; 0 0 0.46; 0.6 0 0]', "AbsTol", 1e-5);
+            tc.verifyEqual(n(:, 1:3), [-1 0 0; 0 0 -1; 1 0 0]', "AbsTol", 1e-5);
+            tc.verifyEqual(d(1:3), [0.56 0.46 2.4], "AbsTol", 1e-5);
+            tc.verifyEqual(tEngineProtocol.fromBox(p(:, 4), [0.55 0.35 0.45]), 0.05, "AbsTol", 1e-5, ...
+                "The diagonal ray hits the outer face 5 cm from the core.");
+            tc.verifyEqual(ids(5), uint64(0), "A ray starting in the wall passes out of it.");
+        end
+
+        function boxShellArgumentsAreChecked(tc)
+            % A positive wall, a rounding not negative, and a core left in
+            % every direction
+            w = tc.newWorld;
+            P = tEngineProtocol.pose([0 0 0]);
+            tc.verifyError(@() phxEngine('add', w, 'boxshell', 0, [0.6 0.4 0.5], 0.04, -0.01, P, 0, [0 0 0]), "phx:engine:badArgument");
+            tc.verifyError(@() phxEngine('add', w, 'boxshell', 0, [0.6 0.4 0.04], 0.04, 0.01, P, 0, [0 0 0]), "phx:engine:badArgument");
+            tc.verifyError(@() phxEngine('add', w, 'boxshell', 0, [0.6 0.4 0.5], 0, 0.01, P, 0, [0 0 0]), "phx:engine:badArgument");
+            tc.verifyError(@() phxEngine('add', w, 'boxshell', 0, [0.6 0.4 0.5]), "phx:engine:badArgument");
+        end
+    end
+
     % Body fields
     methods (Test, TestTags = {'Engine'})
         function transformTeleportsTheBody(tc)
@@ -2717,6 +2833,24 @@ classdef tEngineProtocol < PhxTestCase
             tc.verifyLessThan(max(phxEngine('get', w, g, 'density')), 1000*1.03);
         end
 
+        function fluidStaysInABoxShell(tc)
+            % Liquid filling the lower half of a box shell with a sharp cavity
+            % of half extents [0.13 0.08 0.1] stays in it
+            d = 0.02;
+            w = tc.newLiquidWorld;
+            tEngineProtocol.addBoxShell(w, 0, [0.15 0.1 0.12], 0.02, 0);
+            limit = [0.13 0.08 0.1] - d/2;
+            [x, y, z] = ndgrid(-limit(1):d:limit(1), -limit(2):d:limit(2), -limit(3):d:0);
+            g = phxEngine('add', w, 'particles', [x(:) y(:) z(:)]', d/2, 0.01, false);
+            phxEngine('set', w, g, 'fluid', struct("density", 1000, "soundspeed", 20, "viscosity", 0.1));
+            for k = 1:1200
+                phxEngine('step', w, 2.5e-4);
+            end
+            X = phxEngine('get', w, g, 'positions');
+            tc.verifyLessThan(max(abs(X), [], 2)', limit + 2e-3, "Largest |x|, |y| and |z| of the particle centres (m)");
+            tc.verifyLessThan(max(phxEngine('get', w, g, 'density')), 1000*1.03);
+        end
+
         function fluidFloatsADynamicBox(tc)
             % A box of half the liquid's density floats: it neither sinks nor
             % leaves the surface, its draft near half its height. (The
@@ -3426,6 +3560,31 @@ classdef tEngineProtocol < PhxTestCase
             % end cap at half its cylinder plus that radius
             s.capsuleShellLying = row(@(w, P) phxEngine('add', w, 'capsuleshell', 2, 0.2, 0.6, 'x', 0.04, P, 1, I), 0.22);
             s.capsuleShellStanding = row(@(w, P) phxEngine('add', w, 'capsuleshell', 2, 0.2, 0.6, 'z', 0.04, P, 1, I), 0.52);
+            % A box shell rests on its flat outer bottom
+            s.boxShell = row(@(w, P) phxEngine('add', w, 'boxshell', 2, [0.3 0.2 0.4], 0.04, 0.01, P, 1, I), 0.4);
+        end
+
+        function h = addBoxShell(w, type, half, thickness, innerRadius, position, mass)
+            % Box shell of the given outer half extents, wall and rounding
+            % of the cavity; a dynamic one gets the inertia of a solid box
+            arguments
+                w
+                type
+                half (1, 3) double
+                thickness
+                innerRadius
+                position (1, 3) double = [0 0 0]
+                mass (1, 1) double = 1
+            end
+            h = phxEngine('add', w, 'boxshell', type, half, thickness, innerRadius, ...
+                tEngineProtocol.pose(position), mass, mass*(sum(half.^2) - half.^2)/3);
+        end
+
+        function d = fromBox(P, half)
+            % Signed distances of the points P (3xN) from the centred box of
+            % the given half extents (negative inside)
+            q = abs(P) - half(:);
+            d = vecnorm(max(q, 0), 2, 1) + min(max(q, [], 1), 0);
         end
 
         function h = addCapsuleShell(w, type, radius, height, axis, thickness, position, mass)

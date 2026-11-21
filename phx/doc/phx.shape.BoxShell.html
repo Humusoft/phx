@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phx.shape.BoxShell</title>
+<link rel="stylesheet" href="phx.css">
+</head>
+<body>
+<div class="phx-topbar"></div>
+<div class="phx-wrap">
+
+<div class="phx-crumb"><a href="phx_product_page.html">PHX</a> &rsaquo; phx.shape.BoxShell</div>
+
+<h1 class="phx-title">phx.shape.BoxShell</h1>
+<p class="phx-purpose">Box shell shape with a wall of given thickness</p>
+<p class="phx-classref">Class&nbsp;&nbsp;phx.shape.BoxShell &nbsp;|&nbsp; Superclass: <a href="phx.base.Shape.html">phx.base.Shape</a></p>
+
+<h2 class="phx-h2">Description</h2>
+<p><code class="phx-inline">phx.shape.BoxShell</code> is a hollow box: a wall of
+<code class="phx-inline">WallThickness</code> inside the outer <code class="phx-inline">Size</code>, solid
+from both sides like a vessel of sheet metal. A body outside the shell touches its outer face, a body
+inside it, in the cavity, its inner face: a static shell is a tank or an aquarium for bodies,
+<a href="phx.Particles.html">particles</a> and liquids, a dynamic one a closed crate that can carry a load.</p>
+
+<p>The edges and corners of the cavity are rounded by <code class="phx-inline">InnerEdgeRadius</code>, sharp
+by default, and those outside by <code class="phx-inline">InnerEdgeRadius + WallThickness</code>, as a bent
+sheet is: the wall has the same thickness everywhere. The shell is drawn with that rounding and collides
+with it.</p>
+
+<p>The collision shape is an ideal box shell, independent of the visual details, built into the engine as
+<a href="phx.shape.SphereShell.html">phx.shape.SphereShell</a> is, with the same behaviour: it collides
+with all other shapes, meshes, terrains and other shells included, as cheaply as a box. In the cavity
+every flat wall a body reaches gives it its own contact, so a ball heading into a corner or a box pushed
+into one touches every wall it meets. As any thin wall, the shell lets through a body that moves farther in
+one step than the wall thickness plus its own size; shorten the step for fast bodies. Mass properties are
+those of the rounded box less its cavity, with <code class="phx-inline">Density</code>.</p>
+
+<p>The shape draws its outer face and its inner face, turned to the cavity, their rounded edges with
+<code class="phx-inline">Segments</code> segments per full turn; a texture is projected onto each side.
+<code class="phx-inline">Alpha</code> is the opacity of the wall as a whole: each face is drawn with the
+opacity <code class="phx-inline">1 - sqrt(1 - Alpha)</code>.</p>
+
+<h2 class="phx-h2">Creation</h2>
+<h3 class="phx-h3">Syntax</h3>
+<span class="phx-syntax">shape = phx.shape.BoxShell</span>
+<span class="phx-syntax">shape = phx.shape.BoxShell(Name,Value)</span>
+
+<h3 class="phx-h3">Description</h3>
+<div class="phx-desc">
+<p><code class="phx-inline">shape = phx.shape.BoxShell</code> creates a 1 m cube shell with a 5 cm wall and a
+sharp cavity. <code class="phx-inline">phx.shape.BoxShell(Name,Value)</code> sets properties with name-value
+arguments.</p>
+</div>
+
+<h2 class="phx-h2">Properties</h2>
+<h3 class="phx-h3">Geometry</h3>
+<table class="phx-tbl">
+<tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
+<tr><td class="name">Size</td><td class="dflt">[1 1 1]</td><td>Outer size of the shell <code class="phx-inline">[x y z]</code>, <span class="phx-unit">m</span>; positive. A <a href="phx.shape.Box.html">phx.shape.Box</a> of the same <code class="phx-inline">Size</code> has the same outside, its edges sharp.</td></tr>
+<tr><td class="name">WallThickness</td><td class="dflt">0.05</td><td>Thickness of the wall, inwards from the outer size, <span class="phx-unit">m</span>; positive.</td></tr>
+<tr><td class="name">InnerEdgeRadius</td><td class="dflt">0</td><td>Radius of the rounded edges and corners of the cavity, <span class="phx-unit">m</span>; 0 keeps them sharp. The outer edges are rounded by this radius plus <code class="phx-inline">WallThickness</code>.</td></tr>
+<tr><td class="name">InnerSize</td><td class="type">double (dependent, read-only)</td><td>Size of the cavity, <code class="phx-inline">Size - 2*WallThickness</code>, <span class="phx-unit">m</span>.</td></tr>
+<tr><td class="name">Segments</td><td class="dflt">24</td><td>Number of segments of the rounded edges per full turn.</td></tr>
+<tr><td class="name">Density</td><td class="dflt">1000</td><td>Volumetric density of the wall, <span class="phx-unit">kg/m&sup3;</span>.</td></tr>
+</table>
+
+<p>Appearance properties, <code class="phx-inline">Alpha</code> among them, are inherited from
+<a href="phx.base.Shape.html">phx.base.Shape</a>.</p>
+
+<div class="phx-note">
+<span class="lbl">Note.</span> Half of <code class="phx-inline">Size</code> must exceed
+<code class="phx-inline">WallThickness + InnerEdgeRadius</code> in every direction. This is checked where
+the shape is used (drawn, weighed or simulated), not when a property is set, so they may be set in any
+order; a shape without a cavity is an error (<code class="phx-inline">phx:BoxShell:badWallThickness</code>).
+A solid box is a <a href="phx.shape.Box.html">phx.shape.Box</a>.
+</div>
+
+<h2 class="phx-h2">Examples</h2>
+<h4 class="phx-h4">Particles in a see-through aquarium</h4>
+<pre class="phx-code">phx.extra.Viewer(<span class="str">"clear"</span>, <span class="str">"DefaultCameraPosition"</span>, [2.5 -2.5 2]);
+
+phx.Body(<span class="str">"Type"</span>, <span class="str">"static"</span>, <span class="str">"Position"</span>, [0 0 0.4], <span class="str">"Shape"</span>, ...
+    {<span class="str">"BoxShell"</span>, <span class="str">"Size"</span>, [1.2 0.6 0.8], <span class="str">"WallThickness"</span>, 0.02, ...
+    <span class="str">"InnerEdgeRadius"</span>, 0.01, <span class="str">"Alpha"</span>, 0.4});
+phx.Particles(gca, <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [0.5 0.4 0.3]}, ...
+    <span class="str">"Position"</span>, [-0.2 0 0.5], <span class="str">"Radius"</span>, 0.02);
+
+sim = phx.Simulation;
+sim.step(3, 600, 1);</pre>
+
+<div class="phx-seealso">
+<span class="lbl">See also</span>
+<a href="phx.Body.html">phx.Body</a>,
+<a href="phx.shape.Box.html">phx.shape.Box</a>,
+<a href="phx.shape.SphereShell.html">phx.shape.SphereShell</a>,
+<a href="phx.shape.CapsuleShell.html">phx.shape.CapsuleShell</a>,
+<a href="phx.Particles.html">phx.Particles</a>,
+<a href="phx.base.Shape.html">phx.base.Shape</a>
+</div>
+
+<div class="phx-seealso">
+<span class="lbl">Topics</span>
+<a href="phx_ug_bodies.html">Bodies and shapes</a>
+</div>
+
+<div class="phx-foot">Copyright 2026 HUMUSOFT s.r.o. &middot; PHX Toolbox reference</div>
+
+</div>
+</body>
+</html>

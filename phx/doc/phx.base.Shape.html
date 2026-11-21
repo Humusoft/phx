@@ -38,7 +38,7 @@ and are settable as <code class="phx-inline">Name,Value</code> pairs in any shap
 <tr><td class="name">Style</td><td class="dflt">"smooth"</td>
 <td>Surface style: <code class="phx-inline">"smooth"</code>, <code class="phx-inline">"edged"</code>, <code class="phx-inline">"flat"</code> or <code class="phx-inline">"wireframe"</code>.</td></tr>
 <tr><td class="name">Alpha</td><td class="dflt">1</td>
-<td>Opacity of the surface, 0 (invisible) to 1 (opaque), as the <code class="phx-inline">FaceAlpha</code> of MATLAB graphics; it multiplies the alpha channel of a texture. The hollow shapes <a href="phx.shape.SphereShell.html">SphereShell</a> and <a href="phx.shape.CapsuleShell.html">CapsuleShell</a> take it as the opacity of their whole wall.</td></tr>
+<td>Opacity of the surface, 0 (invisible) to 1 (opaque), as the <code class="phx-inline">FaceAlpha</code> of MATLAB graphics; it multiplies the alpha channel of a texture. The hollow shapes <a href="phx.shape.SphereShell.html">SphereShell</a>, <a href="phx.shape.CapsuleShell.html">CapsuleShell</a> and <a href="phx.shape.BoxShell.html">BoxShell</a> take it as the opacity of their whole wall.</td></tr>
 <tr><td class="name">ForcePatch</td><td class="dflt">false</td>
 <td>Force the use of a <code class="phx-inline">patch</code> object for drawing instead of the fast world primitive.</td></tr>
 <tr><td class="name">Texture</td><td class="type">string | matrix</td>
@@ -93,7 +93,8 @@ coordinates project the image onto each face along the axis closest to its norma
 <tr><td class="name">[V,F] = generateSurfaceMesh(obj)</td><td>Triangle mesh of the surface, as <a href="phx.SoftBody.html">phx.SoftBody</a> takes it, its vertices spaced about evenly and its triangles counter-clockwise seen from outside. By default the boundary of the volumetric mesh; the round shapes generate their own. A shape that generates none raises <code class="phx-inline">phx:Shape:noSurfaceMesh</code>.</td></tr>
 </table>
 <p>Box, Sphere, Cylinder, Cone, Capsule and Tube generate both meshes; Revolution, Extrusion and Mesh
-will in a future release, and Rock, Terrain, SphereShell and CapsuleShell generate none. See
+will in a future release, and Rock, Terrain and the shells SphereShell, CapsuleShell and BoxShell
+generate none. See
 <a href="phx_ug_deformables.html#shapes">Meshes from shapes</a>.</p>
 
 <h3 class="phx-h3" id="builtin">Built-in textures</h3>

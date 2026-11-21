@@ -300,8 +300,8 @@ carries data (group, state, a mapped value) rather than shape: it renders the au
 independent of it: `"smooth"` (default), `"edged"`, `"flat"` or `"wireframe"`.
 
 **Alpha.** `Alpha` is the opacity of the surface, 0 (invisible) to 1 (opaque, the
-default), as MATLAB's `FaceAlpha`; it multiplies a texture's alpha. On `SphereShell` and
-`CapsuleShell` it is the opacity of the whole wall (each of its two faces gets
+default), as MATLAB's `FaceAlpha`; it multiplies a texture's alpha. On `SphereShell`,
+`CapsuleShell` and `BoxShell` it is the opacity of the whole wall (each of its two faces gets
 1 - sqrt(1 - Alpha)), the way to show what a tank holds.
 
 **Textures.** `Texture` takes the name of a built-in texture, an image file path, or an

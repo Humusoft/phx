@@ -52,6 +52,7 @@
             <tocitem target="phx.shape.Capsule.html">phx.shape.Capsule</tocitem>
             <tocitem target="phx.shape.SphereShell.html">phx.shape.SphereShell</tocitem>
             <tocitem target="phx.shape.CapsuleShell.html">phx.shape.CapsuleShell</tocitem>
+            <tocitem target="phx.shape.BoxShell.html">phx.shape.BoxShell</tocitem>
             <tocitem target="phx.shape.Mesh.html">phx.shape.Mesh</tocitem>
             <tocitem target="phx.shape.Extrusion.html">phx.shape.Extrusion</tocitem>
             <tocitem target="phx.shape.Revolution.html">phx.shape.Revolution</tocitem>
