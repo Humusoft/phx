@@ -42,6 +42,12 @@ classdef SoftBody < phx.base.Object
         % the rest shape changes; empty before
         LastVertices = zeros(0, 3)
 
+        % Their velocities (Nx3, world), likewise
+        LastVelocities = zeros(0, 3)
+
+        % Velocities as set: one row per vertex, or one for all
+        InitialVelocities = [0 0 0]
+
         % Drawn as a TriangleStrip (in the Viewer), with the map that sums
         % the face normals into vertex normals (faces x vertices); else as
         % a patch
@@ -81,6 +87,13 @@ classdef SoftBody < phx.base.Object
         % Compliance of the bend edges across each pair of adjacent triangles
         % (m/N); Inf leaves them out
         BendCompliance (1, 1) double {mustBeNonnegative} = Inf
+    end
+
+    % Initial motion, read when the simulation creates the soft body
+    properties (Dependent)
+        % Velocities of the vertices in the world frame (Nx3, m/s); one row
+        % sets all of them alike. Zero by default.
+        Velocities (:, 3) double {mustBeFinite}
     end
 
     % The orientation of the rest shape in other forms, views of Orientation
@@ -125,6 +138,11 @@ classdef SoftBody < phx.base.Object
         % changes), before the first the rest shape at Position and
         % Orientation
         CurrentVertices (:, 3) double
+
+        % Present vertex velocities in the world frame (Nx3, m/s): during a
+        % run those of the engine, after it the last ones (until the rest
+        % shape changes), before the first the Velocities
+        CurrentVelocities (:, 3) double
     end
 
     methods
@@ -296,14 +314,39 @@ classdef SoftBody < phx.base.Object
                 value = obj.Vertices*obj.Orientation' + obj.Position;
             end
         end
+
+        function value = get.Velocities(obj)
+            value = obj.InitialVelocities;
+            if size(value, 1) == 1
+                value = repmat(value, size(obj.Vertices, 1), 1);
+            end
+        end
+
+        function set.Velocities(obj, value)
+            if size(value, 1) ~= 1 && ~isempty(obj.Vertices)
+                obj.checkVelocities(value);
+            end
+            obj.InitialVelocities = value;
+        end
+
+        function value = get.CurrentVelocities(obj)
+            if ~isempty(obj.ObjectHandle)
+                value = phxEngine('get', obj.WorldHandle, obj.ObjectHandle, 'velocities')';
+            elseif ~isempty(obj.LastVelocities)
+                value = obj.LastVelocities;
+            else
+                value = obj.checkVelocities(obj.Velocities);
+            end
+        end
     end
 
     methods (Access = ?phx.base.Object)
         function state = stateTransfer(obj, state)
             % The engine keeps no state that could be written back: the
             % soft body starts again from its rest shape when it is created
-            % anew. The last vertices stay drawn and in CurrentVertices,
-            % until the rest shape changes.
+            % anew. The last vertices stay drawn and with their velocities
+            % in CurrentVertices and CurrentVelocities, until the rest shape
+            % changes.
             arguments
                 obj
                 state = []
@@ -311,8 +354,10 @@ classdef SoftBody < phx.base.Object
 
             if isempty(state)
                 state.Vertices = obj.CurrentVertices;
+                state.Velocities = obj.CurrentVelocities;
             else
                 obj.LastVertices = state.Vertices;
+                obj.LastVelocities = state.Velocities;
                 if isvalid(obj.hP)
                     obj.showVertices(state.Vertices');
                 end
@@ -327,11 +372,20 @@ classdef SoftBody < phx.base.Object
             end
         end
 
+        function value = checkVelocities(obj, value)
+            % Velocities of another number of rows than the vertices fail
+            if size(value, 1) ~= size(obj.Vertices, 1)
+                error("phx:SoftBody:sizeMismatch", "Give the soft body one velocity per vertex " + ...
+                    "(%d), or one for all.", size(obj.Vertices, 1));
+            end
+        end
+
         function redrawRestShape(obj)
             % The mesh drawn before the simulation creates the soft body;
             % Vertices and Faces are set one after the other, so the patch
             % takes them only once they fit together
             obj.LastVertices = zeros(0, 3);   % a new rest shape: the last run is over
+            obj.LastVelocities = zeros(0, 3);
             if isempty(obj.hP) || ~isempty(obj.ObjectHandle) || any(obj.Faces > size(obj.Vertices, 1), "all")
                 return
             end
@@ -380,6 +434,9 @@ classdef SoftBody < phx.base.Object
                 obj.Damping = obj.Damping;
                 obj.Friction = obj.Friction;
                 obj.Restitution = obj.Restitution;
+                if any(obj.InitialVelocities, "all")
+                    phxEngine('set', world, obj.ObjectHandle, 'velocities', obj.checkVelocities(obj.Velocities)');
+                end
             end
             valid = true;
         end

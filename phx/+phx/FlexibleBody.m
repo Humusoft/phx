@@ -64,6 +64,12 @@ classdef FlexibleBody < phx.base.Object
         % the rest shape changes; empty before
         LastVertices = zeros(0, 3)
 
+        % Their velocities (Nx3, world), likewise
+        LastVelocities = zeros(0, 3)
+
+        % Velocities as set: one row per vertex, or one for all
+        InitialVelocities = [0 0 0]
+
         % Drawn as a TriangleStrip of the surface (in the Viewer), with its
         % vertices (indices into the mesh), its triangles (Mx3, numbered as
         % its vertices) and the map that sums the face normals into vertex
@@ -131,6 +137,13 @@ classdef FlexibleBody < phx.base.Object
         % mesh keeps. The constructor takes either a Density or a Mass, after
         % the mesh.
         Mass (1, 1) double {mustBePositive, mustBeFinite}
+
+        % Initial velocities of the vertices in the world frame (Nx3, m/s,
+        % one row per row of Vertices), read when the simulation creates the
+        % body; one row sets all of them alike. The vertices added in the
+        % middles of the edges of a Kx4 mesh get the mean of the two ends.
+        % Zero by default.
+        Velocities (:, 3) double {mustBeFinite}
     end
 
     properties (Dependent, SetAccess = private)
@@ -185,6 +198,12 @@ classdef FlexibleBody < phx.base.Object
         % shape changes), before the first the rest shape at Position and
         % Orientation
         CurrentVertices (:, 3) double
+
+        % Present vertex velocities in the world frame (Nx3, m/s, with the
+        % vertices added in the middles of the edges of a Kx4 mesh): during
+        % a run those of the engine, after it the last ones (until the rest
+        % shape changes), before the first the Velocities
+        CurrentVelocities (:, 3) double
     end
 
     methods
@@ -438,14 +457,39 @@ classdef FlexibleBody < phx.base.Object
                 value = obj.mesh*obj.Orientation' + obj.Position;
             end
         end
+
+        function value = get.Velocities(obj)
+            value = obj.InitialVelocities;
+            if size(value, 1) == 1
+                value = repmat(value, size(obj.Vertices, 1), 1);
+            end
+        end
+
+        function set.Velocities(obj, value)
+            if size(value, 1) ~= 1 && ~isempty(obj.Vertices)
+                obj.checkVelocities(value);
+            end
+            obj.InitialVelocities = value;
+        end
+
+        function value = get.CurrentVelocities(obj)
+            if ~isempty(obj.ObjectHandle)
+                value = phxEngine('get', obj.WorldHandle, obj.ObjectHandle, 'velocities')';
+            elseif ~isempty(obj.LastVelocities)
+                value = obj.LastVelocities;
+            else
+                value = obj.meshVelocities;
+            end
+        end
     end
 
     methods (Access = ?phx.base.Object)
         function state = stateTransfer(obj, state)
             % The engine keeps no state that could be written back: the body
             % starts again from its rest shape when it is created anew. The
-            % last vertices stay drawn and in CurrentVertices, until the rest
-            % shape changes.
+            % last vertices stay drawn and with their velocities in
+            % CurrentVertices and CurrentVelocities, until the rest shape
+            % changes.
             arguments
                 obj
                 state = []
@@ -453,8 +497,10 @@ classdef FlexibleBody < phx.base.Object
 
             if isempty(state)
                 state.Vertices = obj.CurrentVertices;
+                state.Velocities = obj.CurrentVelocities;
             else
                 obj.LastVertices = state.Vertices;
+                obj.LastVelocities = state.Velocities;
                 if isvalid(obj.hP)
                     obj.showVertices(state.Vertices');
                 end
@@ -476,6 +522,23 @@ classdef FlexibleBody < phx.base.Object
             T = obj.Tetrahedra;
             if size(T, 2) == 4
                 [V, T] = phx.internal.Geometry.quadraticTetrahedra(V, T);
+            end
+        end
+
+        function value = checkVelocities(obj, value)
+            % Velocities of another number of rows than the vertices fail
+            if size(value, 1) ~= size(obj.Vertices, 1)
+                error("phx:FlexibleBody:sizeMismatch", "Give the flexible body one velocity per " + ...
+                    "vertex (%d), or one for all.", size(obj.Vertices, 1));
+            end
+        end
+
+        function W = meshVelocities(obj)
+            % The Velocities of the vertices handed to the engine: those of
+            % the middles of the edges of a Kx4 mesh the means of their ends
+            W = obj.checkVelocities(obj.Velocities);
+            if size(obj.Tetrahedra, 2) == 4
+                W = phx.internal.Geometry.quadraticTetrahedra(W, obj.Tetrahedra);
             end
         end
 
@@ -553,6 +616,7 @@ classdef FlexibleBody < phx.base.Object
             % vertices and tetrahedra are set one after the other, so the
             % patch takes them only once they fit together
             obj.LastVertices = zeros(0, 3);   % a new rest shape: the last run is over
+            obj.LastVelocities = zeros(0, 3);
             if isempty(obj.hP) || ~isempty(obj.ObjectHandle) || isempty(obj.Tetrahedra) ...
                     || any(obj.Tetrahedra > size(obj.Vertices, 1), "all")
                 return
@@ -607,6 +671,9 @@ classdef FlexibleBody < phx.base.Object
                 obj.Tolerance = obj.Tolerance;
                 obj.Damping = obj.Damping;
                 obj.Friction = obj.Friction;
+                if any(obj.InitialVelocities, "all")
+                    phxEngine('set', world, obj.ObjectHandle, 'velocities', obj.meshVelocities');
+                end
             end
         end
 

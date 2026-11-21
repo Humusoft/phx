@@ -115,7 +115,8 @@ classdef (Abstract) ParticleGroup < phx.base.Object
         Vertices (:, 3) double {mustBeFinite}
 
         % Velocities of the particles in the world frame (Nx3, m/s), like
-        % Vertices before, during and after a simulation
+        % Vertices before, during and after a simulation; one row sets all
+        % of them alike
         Velocities (:, 3) double {mustBeFinite}
     end
 
@@ -314,8 +315,10 @@ classdef (Abstract) ParticleGroup < phx.base.Object
         end
 
         function set.Velocities(obj, value)
-            if size(value, 1) ~= obj.Count
-                error(obj.errorId("sizeMismatch"), "Give one velocity per particle.");
+            if size(value, 1) == 1
+                value = repmat(value, obj.Count, 1);
+            elseif size(value, 1) ~= obj.Count
+                error(obj.errorId("sizeMismatch"), "Give one velocity per particle, or one for all.");
             end
             if obj.isLive
                 phxEngine('set', obj.WorldHandle, obj.ObjectHandle, 'velocities', value');

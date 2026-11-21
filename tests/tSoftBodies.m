@@ -55,6 +55,42 @@ classdef tSoftBodies < PhxTestCase
             tc.verifyEqual(f.Mass, 16, "RelTol", 1e-9, "A new mesh keeps the Density.");
         end
 
+        function velocitiesAreRowsOrOneForAll(tc)
+            % Velocities are zero by default, one row sets all vertices
+            % alike, a matrix of another number of rows fails, given before
+            % the mesh as well; before a run CurrentVelocities read them,
+            % on a Kx4 mesh with the vertices of the edges between their
+            % ends
+            [V, F] = tc.cube;
+            s = phx.SoftBody([], "Vertices", V, "Faces", F);
+            tc.verifyEqual(s.Velocities, zeros(8, 3));
+            tc.verifyEqual(s.CurrentVelocities, zeros(8, 3));
+            s.Velocities = [1 2 3];
+            tc.verifyEqual(s.Velocities, repmat([1 2 3], 8, 1));
+            tc.verifyEqual(s.CurrentVelocities, repmat([1 2 3], 8, 1));
+            tc.verifyError(@() set(s, "Velocities", zeros(7, 3)), "phx:SoftBody:sizeMismatch");
+            W = cross(repmat([0 0 2], 8, 1), V);
+            s = phx.SoftBody([], "Velocities", W, "Vertices", V, "Faces", F);
+            tc.verifyEqual(s.Velocities, W);
+
+            T = delaunay(V);
+            f = phx.FlexibleBody([], "Velocities", W, "Vertices", V, "Tetrahedra", T);
+            tc.verifyEqual(f.Velocities, W);
+            X = f.CurrentVertices;
+            tc.verifyEqual(f.CurrentVelocities, cross(repmat([0 0 2], size(X, 1), 1), X), "AbsTol", 1e-12, ...
+                "The vertices of the edges move as the turning body.");
+            f.Velocities = [0 0 1];
+            tc.verifyEqual(f.CurrentVelocities, repmat([0 0 1], size(X, 1), 1));
+            tc.verifyError(@() set(f, "Velocities", zeros(7, 3)), "phx:FlexibleBody:sizeMismatch");
+            f.Vertices = [V; 0 0 0];
+            tc.verifyEqual(f.Velocities, repmat([0 0 1], 9, 1), "One row follows the mesh.");
+            f.Vertices = V;
+            f.Velocities = W;
+            f.Vertices = [V; 0 0 0];
+            tc.verifyError(@() f.CurrentVelocities, "phx:FlexibleBody:sizeMismatch", ...
+                "Rows that no longer fit the mesh fail when they are used.");
+        end
+
         function linearMeshGetsEdgeVertices(tc)
             V = tc.cube;
             T = delaunay(V);
@@ -273,6 +309,60 @@ classdef tSoftBodies < PhxTestCase
                 b.Position = [0 0 2];
                 tc.verifyEqual(b.CurrentVertices, rest + [0 0 1], "AbsTol", 1e-12, class(b));
             end
+        end
+
+        function initialVelocitiesMoveTheBodies(tc)
+            % Without gravity, Velocities given alike carry the bodies at
+            % that velocity; CurrentVelocities read them from the engine
+            % during the run and keep the last ones after it, until the rest
+            % shape changes, while Velocities stay as given
+            tc.requireEngine;
+            [V, F] = tc.cube;
+            v = [0.5 0 -0.2];
+            t = 0.4;
+            bodies = {phx.SoftBody([], "Vertices", V, "Faces", F, "Position", [0 0 1], "Velocities", v), ...
+                phx.FlexibleBody([], "Vertices", V, "Tetrahedra", delaunay(V), "Position", [0 0 1], "Velocities", v)};
+            for k = 1:2
+                b = bodies{k};
+                rest = b.CurrentVertices;
+                n = size(rest, 1);
+                sim = phx.Simulation({b}, "Gravity", [0 0 0]);
+                tc.addTeardown(@() tc.deleteIfValid(sim));
+                sim.step(t, 80, -1);
+                tc.verifyEqual(b.CurrentVertices, rest + v*t, "AbsTol", 1e-4, class(b) + " moves at v.");
+                tc.verifyEqual(b.CurrentVelocities, repmat(v, n, 1), "AbsTol", 1e-4, class(b));
+                delete(sim);
+                tc.verifyEqual(b.CurrentVelocities, repmat(v, n, 1), "AbsTol", 1e-4, class(b) + " after the run.");
+                tc.verifyEqual(b.Velocities, repmat(v, size(V, 1), 1), class(b) + " keeps its Velocities.");
+                b.Velocities = [0 0 0];
+                tc.verifyEqual(b.CurrentVelocities, repmat(v, n, 1), "AbsTol", 1e-4, ...
+                    class(b) + ": the last state stays until the rest shape changes.");
+                b.Position = [0 0 2];
+                tc.verifyEqual(b.CurrentVelocities, zeros(n, 3), class(b));
+            end
+        end
+
+        function spinningFlexibleBodyKeepsItsShape(tc)
+            % Velocities of a rigid turn spin a flexible body about its
+            % centre without straining it: after a second at pi/2 rad/s it
+            % has turned by a quarter, its shape kept. (The axis wobbles a
+            % little: the masses lumped at the vertices of a Delaunay mesh
+            % of a cube are not symmetric about z.)
+            tc.requireEngine;
+            V = tc.cube;
+            f = phx.FlexibleBody([], "Vertices", V, "Tetrahedra", delaunay(V), "YoungsModulus", 1e7, ...
+                "Velocities", cross(repmat([0 0 pi/2], 8, 1), V));
+            rest = f.CurrentVertices;
+            sim = phx.Simulation({f}, "Gravity", [0 0 0]);
+            tc.addTeardown(@() tc.deleteIfValid(sim));
+            sim.step(1, 400, -1);
+            X = f.CurrentVertices;
+            tc.verifyEqual(mean(X), [0 0 0], "AbsTol", 1e-9, "The centre stays.");
+            distances = @(P) vecnorm(permute(P, [1 3 2]) - permute(P, [3 1 2]), 2, 3);
+            tc.verifyEqual(distances(X), distances(rest), "AbsTol", 1e-4, "The shape is kept.");
+            [U, ~, W] = svd(rest'*X);
+            R = W*diag([1 1 sign(det(W*U'))])*U';
+            tc.verifyEqual(acos((trace(R) - 1)/2), pi/2, "RelTol", 0.01, "A quarter turn.");
         end
 
         function weldHoldsTheOverlappedVertices(tc)

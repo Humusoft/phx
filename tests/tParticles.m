@@ -65,7 +65,9 @@ classdef tParticles < PhxTestCase
             tc.verifyError(@() p.add([0 0 0], [0 0 0; 1 1 1]), "phx:Particles:sizeMismatch");
             tc.verifyError(@() p.remove(3), "phx:Particles:badIndex");
             tc.verifyError(@() p.remove([true false true]), "phx:Particles:sizeMismatch");
-            tc.verifyError(@() set(p, "Velocities", [0 0 0]), "phx:Particles:sizeMismatch");
+            tc.verifyError(@() set(p, "Velocities", zeros(3)), "phx:Particles:sizeMismatch");
+            p.Velocities = [1 2 3];
+            tc.verifyEqual(p.Velocities, [1 2 3; 1 2 3], "One row sets all particles alike.");
             tc.verifyError(@() p.applyForce([0 0 1]), "phx:Particles:notSimulated");
             tc.verifyError(@() phx.Particles([], "Vertices", zeros(phx.Particles.MaxCount + 1, 3)), ...
                 "phx:Particles:tooMany");

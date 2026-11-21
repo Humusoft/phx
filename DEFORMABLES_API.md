@@ -143,6 +143,11 @@ Each a step of its own, reviewed before the next:
    (tools/jolt, JOLT_CHANGES.md); contract tests; MEX built. (Done: the soft body field
    `velocities`, protocol 2 step Z, JOLT_CHANGES.md item 45, Jolt `94b834c`: setting
    velocities restarts BDF2 with a backward Euler step; a pinned vertex keeps zero.)
-4. `Velocities` and `CurrentVelocities` of soft and flexible bodies; tests.
+4. `Velocities` and `CurrentVelocities` of soft and flexible bodies; tests. (Done:
+   `Velocities` read when the body is created, like the rest shape; kept as set, so
+   that one row follows a new mesh, while rows that no longer fit fail
+   (`phx:<Class>:sizeMismatch`) when they are set or used; the vertices of the edges of
+   a Kx4 mesh get the mean of their ends. The last velocities kept after a run as the
+   last vertices are. A single row expands on the particle groups too.)
 5. `LinearDamping` of soft and flexible bodies with the `Damping` alias; tests.
 6. Demos, help, user guide, skills, upgrade guide.
