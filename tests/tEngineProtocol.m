@@ -2769,6 +2769,29 @@ classdef tEngineProtocol < PhxTestCase
             tc.verifyError(@() phxEngine('get', w, g, 'pressure'), "phx:engine:badArgument");
         end
 
+        function fluidGroupIsCreatedAsALiquid(tc)
+            % add with a fluid struct (step AA): a liquid from the start,
+            % its mass the liquid's whatever mass is given (the interior of a
+            % lattice reads the rest density), more particles than a world
+            % holds bodies; [] makes a plain group, an invalid struct fails.
+            r = 0.01;
+            S = struct("density", 1000, "soundspeed", 20, "viscosity", 0.1);
+            w = tc.newWorld([0 0 0]);
+            [x, y, z] = ndgrid(-2:2);
+            g = phxEngine('add', w, 'particles', 2*r*[x(:) y(:) z(:)]', r, 0.123, false, S);
+            tc.verifyEqual(phxEngine('get', w, g, 'fluid'), S);
+            rho = phxEngine('get', w, g, 'density');
+            tc.verifyEqual(rho(63), S.density, "RelTol", 1e-6, "The centre of the lattice reads rho0.");
+            [x, y, z] = ndgrid(0:49, 0:49, 0:27);
+            g = phxEngine('add', w, 'particles', 2*r*[x(:) y(:) z(:)]', r, 0.01, false, S);
+            tc.verifyEqual(phxEngine('get', w, g, 'count'), 70000);
+            tc.verifySize(phxEngine('get', w, g, 'pressure'), [1 70000]);
+            g = phxEngine('add', w, 'particles', [0; 0; 0], r, 0.01, false, []);
+            tc.verifyEqual(phxEngine('get', w, g, 'fluid'), []);
+            tc.verifyError(@() phxEngine('add', w, 'particles', [0; 0; 0], r, 0.01, false, rmfield(S, "viscosity")), ...
+                "phx:engine:badArgument");
+        end
+
         function fluidLatticeReadsTheRestDensity(tc)
             % A simple cubic lattice of spacing 2 r: its interior particle
             % reads the rest density, whatever mass the group was made with;

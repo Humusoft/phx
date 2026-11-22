@@ -34,15 +34,23 @@ during and after a run, and a new simulation goes on from where the last one end
 added and removed at any time, also while the simulation runs. A liquid is a top-level object: hand it
 to the simulation like a body. It is drawn as a smooth surface over the particles, or as the
 particles themselves.</p>
-<p>The liquid is explicit in time: the simulation step (the interval over the substeps of
-<code class="phx-inline">sim.step</code>) must stay under
-<code class="phx-inline">0.4*Spacing/(SoundSpeed + v)</code>, <code class="phx-inline">v</code> the
-fastest flow, for example 0.25&nbsp;ms at a <code class="phx-inline">Spacing</code> of 2&nbsp;cm and
-a <code class="phx-inline">SoundSpeed</code> of 30&nbsp;m/s. The particles touch the walls with a
-radius of <code class="phx-inline">Spacing/2</code>: give the simulation an engine
-<code class="phx-inline">LengthScale</code> of the order of the <code class="phx-inline">Spacing</code>
-(<a href="phx.engine.Settings.html">phx.engine.Settings</a>), or the default contact margin of
-4&nbsp;cm rounds thin walls and lets the liquid into the corners of a tank.</p>
+<p>The liquid is explicit in time: keep the simulation step (the interval over the substeps of
+<code class="phx-inline">sim.step</code>) under
+<code class="phx-inline">Spacing/(SoundSpeed + v)</code>, <code class="phx-inline">v</code> the
+fastest flow, for example 0.5&nbsp;ms at a <code class="phx-inline">Spacing</code> of 2&nbsp;cm, a
+<code class="phx-inline">SoundSpeed</code> of 30&nbsp;m/s and flows of up to 4&nbsp;m/s. The liquid
+stays stable to about 1.5 times that step and breaks up from about twice; below it the step does not
+change the accuracy, which <code class="phx-inline">Spacing</code>,
+<code class="phx-inline">Viscosity</code> and <code class="phx-inline">SoundSpeed</code> set. The
+particles touch the walls with a radius of <code class="phx-inline">Spacing/2</code>: give the
+simulation an engine <code class="phx-inline">LengthScale</code> of the order of the
+<code class="phx-inline">Spacing</code> (<a href="phx.engine.Settings.html">phx.engine.Settings</a>),
+or the default contact margin of 4&nbsp;cm rounds thin walls and lets the liquid into the corners of
+a tank.</p>
+<p>Checked against the SPHERIC dam-break benchmark (a column of water collapsing onto a box): water
+heights within 2&ndash;3&nbsp;cm and mean pressures 10&ndash;20&nbsp;% low (more next to an edge), but
+the pressures, and with them the forces on bodies, are noisy and impact peaks 1.5&ndash;2 times too
+high.</p>
 
 <h2 class="phx-h2">Creation</h2>
 <h3 class="phx-h3">Syntax</h3>
@@ -85,8 +93,8 @@ and get its particles by <code class="phx-inline">add</code>. A shape and
 <table class="phx-tbl">
 <tr><th>Property</th><th>Type / Default</th><th>Description</th></tr>
 <tr><td class="name">Density</td><td class="dflt">1000</td><td>Density of the liquid at rest, <span class="phx-unit">kg/m&sup3;</span>.</td></tr>
-<tr><td class="name">SoundSpeed</td><td class="dflt">20</td><td>Speed of sound in the liquid, <span class="phx-unit">m/s</span>: how stiff it is against compression. Ten times the fastest flow keeps the density within about 1&nbsp;%; the step must be shorter the faster the sound.</td></tr>
-<tr><td class="name">Viscosity</td><td class="dflt">0.1</td><td>Viscosity coefficient (Monaghan's artificial viscosity, no unit): 0.1 lets the liquid flow freely and calms its noise, 1 is a thick liquid.</td></tr>
+<tr><td class="name">SoundSpeed</td><td class="dflt">20</td><td>Speed of sound in the liquid, <span class="phx-unit">m/s</span>: how stiff it is against compression. Ten times the fastest flow keeps the density within a few per cent; the step must be shorter the faster the sound.</td></tr>
+<tr><td class="name">Viscosity</td><td class="dflt">0.1</td><td>Viscosity coefficient (Monaghan's artificial viscosity, no unit): 0.1 lets the liquid flow freely and calms its noise, 1 is a thick liquid; below about 0.05 the liquid becomes unstable.</td></tr>
 </table>
 
 <h3 class="phx-h3">Settings (apply at any time)</h3>
@@ -134,9 +142,9 @@ water = phx.Liquid(gca, <span class="str">"Shape"</span>, {<span class="str">"Bo
 phx.Body(gca, <span class="str">"Position"</span>, [-0.3 0 0.33], <span class="str">"Density"</span>, 400, ...
     <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [0.08 0.08 0.05], <span class="str">"Color"</span>, [0.85 0.65 0.4]});
 
-<span class="cmt">% Contact tolerances for a Spacing of 2 cm, steps of 0.25 ms</span>
+<span class="cmt">% Contact tolerances for a Spacing of 2 cm, steps of 0.5 ms</span>
 sim = phx.Simulation(gca, <span class="str">"EngineSettings"</span>, phx.engine.Settings(<span class="str">"LengthScale"</span>, 0.02));
-sim.step(1.5, 6000, 40);</pre>
+sim.step(1.5, 3000, 20);</pre>
 
 <h4 class="phx-h4">Pressure of water at rest</h4>
 <p>A tank filled with water, drawn as its particles; after a second the pressures of the particles

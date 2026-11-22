@@ -432,16 +432,20 @@ water = phx.Liquid(ax, "Shape", {"Box", "Size", [0.2 0.4 0.4]}, "Position", [-0.
 crate = phx.Body(ax, "Position", [-0.5 0 0.45], "Shape", {"Box", "Size", [0.1 0.1 0.06]}, ...
     "Density", 400);                                   % floats
 sim = phx.Simulation(ax, "EngineSettings", phx.engine.Settings("LengthScale", 0.02));
-sim.step(2, 8000);                                     % 0.25 ms steps
+sim.step(2, 4000);                                     % 0.5 ms steps
 ```
 
 - `Spacing` (default 0.02 m) is the rest distance of the particles, read when the
   simulation is created; their radius is half of it. `Density` (1000 kg/m³), `SoundSpeed`
   (20 m/s, how stiff the liquid is against compression) and `Viscosity` (0.1, Monaghan's
-  artificial viscosity, no unit: 0.1 flows freely, 1 is thick) apply at any time.
+  artificial viscosity, no unit: 0.1 flows freely, 1 is thick; below about 0.05 the
+  liquid becomes unstable) apply at any time.
 - **Step:** explicit in time — keep the step (interval/substeps) under
-  `0.4*Spacing/(SoundSpeed + v)`, v the fastest flow; a `SoundSpeed` of about 10× the
-  fastest flow keeps the density within ~1 %. Too long a step makes it boil or blow apart.
+  `Spacing/(SoundSpeed + v)`, v the fastest flow (a falling column of height h reaches
+  about `2*sqrt(9.81*h)`). It stays stable to about 1.5× that and breaks up (particles
+  shot out, the liquid boils apart) from about 2×; below it the step does not change the
+  accuracy. A `SoundSpeed` of about 10× the fastest flow keeps the density within a few
+  per cent; less compresses the liquid more but moves it much the same.
 - **`LengthScale`** of the order of the `Spacing`, or the default 4 cm contact margin
   rounds thin walls and lets the liquid into the corners of a tank.
 - `ParticleMass` (0.990 `Density*Spacing^3`) and `Mass` are read-only, derived from
@@ -452,9 +456,11 @@ sim.step(2, 8000);                                     % 0.25 ms steps
 - Plain unscaled boxes (`Box` shapes, `arena` plates) are the cheapest boundaries; every
   other shape works through the engine's shape queries. A body overlapping the liquid at
   the start blows it apart: leave a gap of about one `Spacing`.
-- Accuracy: right in kind (dam break, sloshing, floating), not yet validated
-  quantitatively; a floating body rides some 10 % high and a resting surface sits about
-  `Spacing/4` low.
+- Accuracy, checked against the SPHERIC dam-break benchmark: water heights within
+  2-3 cm and the flow right, so it suits filling, sloshing, where water goes and how
+  high; mean pressures 10-20 % low (more next to an edge), noisy, and impact peaks
+  1.5-2× too high, so pressures and forces on bodies are not a result to rely on. A
+  floating body rides some 10 % high.
 
 ## Prefab assemblies (`phx.assembly.*`)
 

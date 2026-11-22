@@ -23,14 +23,22 @@ classdef Liquid < phx.base.ParticleGroup
 %   phx.Liquid(___, Name, Value, ...) sets properties values according to
 %   given name-value pairs.
 %
-%   The liquid is explicit in time: the simulation step (interval over
-%   substeps of phx.Simulation.step) must stay under
-%   0.4*Spacing/(SoundSpeed + v), v the fastest flow, for example 0.25 ms
-%   at a Spacing of 2 cm and a SoundSpeed of 30 m/s. The particles touch
-%   the walls with a radius of Spacing/2: give the simulation an engine
-%   LengthScale of the order of the Spacing (phx.engine.Settings), or the
-%   default contact margin of 4 cm rounds thin walls and lets the liquid
-%   into the corners of a tank.
+%   The liquid is explicit in time: keep the simulation step (interval over
+%   substeps of phx.Simulation.step) under Spacing/(SoundSpeed + v), v the
+%   fastest flow, for example 0.5 ms at a Spacing of 2 cm, a SoundSpeed of
+%   30 m/s and flows of up to 4 m/s. The liquid stays stable to about 1.5
+%   times that step and breaks up from about twice; below it the step does
+%   not change the accuracy, which Spacing, Viscosity and SoundSpeed set.
+%   The particles touch the walls with a radius of Spacing/2: give the
+%   simulation an engine LengthScale of the order of the Spacing
+%   (phx.engine.Settings), or the default contact margin of 4 cm rounds
+%   thin walls and lets the liquid into the corners of a tank.
+%
+%   Checked against the SPHERIC dam-break benchmark (a column of water
+%   collapsing onto a box): water heights within 2-3 cm and mean
+%   pressures 10-20 % low (more next to an edge), but the pressures, and
+%   with them the forces on bodies, are noisy and impact peaks 1.5-2 times
+%   too high.
 %
 %   See also phx.Particles, phx.Buoyancy, phx.Simulation,
 %   phx.engine.Settings, phx.base.ParticleGroup
@@ -57,12 +65,12 @@ classdef Liquid < phx.base.ParticleGroup
 
         % Speed of sound in the liquid (m/s): how stiff it is against
         % compression. Ten times the fastest flow keeps the density within
-        % about 1 %; the step must be shorter the faster the sound.
+        % a few per cent; the step must be shorter the faster the sound.
         SoundSpeed (1, 1) double {mustBePositive, mustBeFinite} = 20
 
         % Viscosity coefficient (Monaghan's artificial viscosity, no unit):
         % 0.1 lets the liquid flow freely and calms its noise, 1 is a thick
-        % liquid
+        % liquid; below about 0.05 the liquid becomes unstable
         Viscosity (1, 1) double {mustBeNonnegative, mustBeFinite} = 0.1
 
         % How the liquid is drawn: "surface", its surface, smooth over the
@@ -174,9 +182,10 @@ classdef Liquid < phx.base.ParticleGroup
 
     methods (Access = protected)
         function handle = createGroup(obj, world)
+            % Created as a liquid at once: no body per particle, so not
+            % bound by the number of bodies a world holds
             handle = phxEngine('add', world, 'particles', obj.worldPoints, ...
-                obj.Spacing/2, obj.ParticleMass, false);
-            phxEngine('set', world, handle, 'fluid', obj.fluidStruct);
+                obj.Spacing/2, obj.ParticleMass, false, obj.fluidStruct);
         end
 
         function r = particleRadius(obj)

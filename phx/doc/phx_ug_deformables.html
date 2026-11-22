@@ -230,18 +230,26 @@ water = phx.Liquid(gca, <span class="str">"Shape"</span>, {<span class="str">"Bo
 crate = phx.Body(gca, <span class="str">"Position"</span>, [-0.3 0 0.33], <span class="str">"Density"</span>, 400, ...
     <span class="str">"Shape"</span>, {<span class="str">"Box"</span>, <span class="str">"Size"</span>, [0.08 0.08 0.05], <span class="str">"Color"</span>, [0.85 0.65 0.4]});
 sim = phx.Simulation(gca, <span class="str">"EngineSettings"</span>, phx.engine.Settings(<span class="str">"LengthScale"</span>, 0.02));
-sim.step(1.5, 6000, 40);             <span class="cmt">% the column collapses and carries the crate along the tank</span></pre>
+sim.step(1.5, 3000, 20);             <span class="cmt">% the column collapses and carries the crate along the tank</span></pre>
 
 <p>The liquid is explicit in time, so its step is short: keep the simulation step (the interval
-over the substeps) under <code class="phx-inline">0.4*Spacing/(SoundSpeed + v)</code>,
-<code class="phx-inline">v</code> the fastest flow. The example above steps by 0.25&nbsp;ms for a
-<code class="phx-inline">Spacing</code> of 2&nbsp;cm and the default
-<code class="phx-inline">SoundSpeed</code> of 20&nbsp;m/s. A <code class="phx-inline">SoundSpeed</code>
-of about ten times the fastest flow keeps the liquid nearly incompressible; a higher one only
+over the substeps) under <code class="phx-inline">Spacing/(SoundSpeed + v)</code>,
+<code class="phx-inline">v</code> the fastest flow (a column of height h falls at about
+<code class="phx-inline">2*sqrt(9.81*h)</code>). The example above steps by 0.5&nbsp;ms; its limit is
+about 0.85&nbsp;ms, for a <code class="phx-inline">Spacing</code> of 2&nbsp;cm, the default
+<code class="phx-inline">SoundSpeed</code> of 20&nbsp;m/s and the 3.4&nbsp;m/s of the falling
+column. The liquid stays stable to about 1.5 times the limit and breaks up from about twice; below
+it a shorter step is no more accurate. A <code class="phx-inline">SoundSpeed</code>
+of about ten times the fastest flow keeps the density within a few per cent; a higher one only
 shortens the step. As for particles, set the <code class="phx-inline">LengthScale</code> to about
 the <code class="phx-inline">Spacing</code>, or the default contact margin rounds thin walls and lets
 the liquid into the corners of a tank. A body that only floats on still water of a flat surface is
 far cheaper with <a href="phx.Buoyancy.html">phx.Buoyancy</a>.</p>
+
+<p>Checked against the SPHERIC dam-break benchmark, the liquid gets the water heights within
+2&ndash;3&nbsp;cm and the flow right, so it suits filling, sloshing and where the water goes and how
+high. Its mean pressures are 10&ndash;20&nbsp;% low (more next to an edge), noisy, and impact peaks
+1.5&ndash;2 times too high: pressures and forces on bodies are not yet a result to rely on.</p>
 
 <div class="phx-note">
 <span class="lbl">Cost.</span> Deformable bodies and particles are solved point by point, so they
