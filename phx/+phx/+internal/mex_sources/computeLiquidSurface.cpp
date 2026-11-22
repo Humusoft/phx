@@ -194,7 +194,9 @@ public:
         size_t capacity = 16;
         while (capacity < 2*expected)
             capacity <<= 1;
-        keys_.assign(capacity, Empty);
+        // (a copy of Empty: bound to the reference itself it would need a
+        // definition outside the class before C++17, as mex uses on Linux)
+        keys_.assign(capacity, std::uint64_t(Empty));
         values_.assign(capacity, -1);
         mask_ = capacity - 1;
     }
