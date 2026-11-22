@@ -20,8 +20,7 @@ function phxex_dambreak
     set(tank.walls(3), "Visible", false);
 
     % Column of water 0.2 m wide and 0.4 m high against the left wall,
-    % particles 2 cm apart; drawn as its surface. Viscosity 0.3 calms the
-    % spray the surge throws up the far wall.
+    % particles 1 cm apart; drawn as its surface
     phx.Liquid(ax, "Shape", {"Box", "Size", [0.2 0.4 0.4]}, "Position", [-0.5 0 0.2], ...
         "Spacing", 0.01, "SoundSpeed", 10, "Viscosity", 0.1);
 
@@ -38,7 +37,7 @@ function phxex_dambreak
         "Density", 400);
 
     % Simulation; contact tolerances for parts of centimetres, steps of
-    % 0.25 ms as the liquid's sound speed and spacing need
+    % 1 ms
     opt = phx.engine.Settings("LengthScale", 0.02, "Threads", 8);
     sim = phx.Simulation(ax, "EngineSettings", opt);
     sim.step(3, 3000);

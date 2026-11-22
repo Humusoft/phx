@@ -4,7 +4,7 @@ description: >
   Build and run a physics scene with the PHX MATLAB toolbox (phx.* objects over
   a physics engine). Use when creating phx.Body objects, attaching phx.shape.*
   geometry, soft and flexible bodies or particle groups (phx.SoftBody,
-  phx.FlexibleBody, phx.Particles), importing meshes (STL/OBJ/PLY) or URDF models, using the phx.assembly
+  phx.FlexibleBody, phx.Particles), liquids (phx.Liquid), importing meshes (STL/OBJ/PLY) or URDF models, using the phx.assembly
   prefab builders (arena, chain, scatter, wall, import), drawing the scene into
   phx.extra.Viewer (the default) or plain axes, stepping a phx.Simulation,
   saving a scene to a MAT file or loading one back, or running a PHX scene
@@ -328,7 +328,8 @@ phx-logging-view). They generate no meshes for FlexibleBody/SoftBody.
 
 ## Deformable bodies and particles
 
-Besides rigid `phx.Body` objects a scene can hold three engine objects of their own kind.
+Besides rigid `phx.Body` objects a scene can hold engine objects of their own kind: soft
+and flexible bodies, particles and liquids.
 Each takes the axes (or `[]`) as its first argument like a body, is **top-level** (hand it
 to `phx.Simulation` / `addObjects` like a body, e.g. `phx.Simulation({floor, ball})` or
 the axes) and has `boundingBox`. They are newer than the rest of PHX and their tuning is
@@ -417,6 +418,43 @@ gravel.add(Pnew); gravel.remove(gravel.CurrentVertices(:, 3) < -1);   % world; a
   each) acts in the next engine step (one substep) of a running simulation. Set the
   engine's `LengthScale` to the grain size class (`phx.engine.Settings("LengthScale",
   0.01)` for centimetre grains).
+
+**Liquid — `phx.Liquid`.** A particle group whose particles do not collide with each other:
+the pressure of a weakly compressible SPH liquid keeps them apart. It flows, splashes and
+fills containers, collides with every body, and a dynamic body in it floats and is pushed
+by it (the liquid takes the reaction). Same frames, `Vertices`/`Velocities`, `Shape`
+filling, `add`/`remove`/`applyForce` as `Particles`, but no particle limit.
+
+```matlab
+tank = phx.assembly.arena(ax, "Size", [1.2 0.4 0.5], "Thickness", 0.04);
+water = phx.Liquid(ax, "Shape", {"Box", "Size", [0.2 0.4 0.4]}, "Position", [-0.5 0 0.2], ...
+    "Spacing", 0.02, "SoundSpeed", 30, "Viscosity", 0.1);
+crate = phx.Body(ax, "Position", [-0.5 0 0.45], "Shape", {"Box", "Size", [0.1 0.1 0.06]}, ...
+    "Density", 400);                                   % floats
+sim = phx.Simulation(ax, "EngineSettings", phx.engine.Settings("LengthScale", 0.02));
+sim.step(2, 8000);                                     % 0.25 ms steps
+```
+
+- `Spacing` (default 0.02 m) is the rest distance of the particles, read when the
+  simulation is created; their radius is half of it. `Density` (1000 kg/m³), `SoundSpeed`
+  (20 m/s, how stiff the liquid is against compression) and `Viscosity` (0.1, Monaghan's
+  artificial viscosity, no unit: 0.1 flows freely, 1 is thick) apply at any time.
+- **Step:** explicit in time — keep the step (interval/substeps) under
+  `0.4*Spacing/(SoundSpeed + v)`, v the fastest flow; a `SoundSpeed` of about 10× the
+  fastest flow keeps the density within ~1 %. Too long a step makes it boil or blow apart.
+- **`LengthScale`** of the order of the `Spacing`, or the default 4 cm contact margin
+  rounds thin walls and lets the liquid into the corners of a tank.
+- `ParticleMass` (0.990 `Density*Spacing^3`) and `Mass` are read-only, derived from
+  `Density` (unlike `Particles`). `Densities`/`Pressures` (N×1) read the particles'
+  state during a run. `Friction` and `Restitution` default to 0.
+- `Style` `"surface"` (default; a smooth surface computed on every redraw, ~15 ms for
+  4000 particles) or `"points"`.
+- Plain unscaled boxes (`Box` shapes, `arena` plates) are the cheapest boundaries; every
+  other shape works through the engine's shape queries. A body overlapping the liquid at
+  the start blows it apart: leave a gap of about one `Spacing`.
+- Accuracy: right in kind (dam break, sloshing, floating), not yet validated
+  quantitatively; a floating body rides some 10 % high and a resting surface sits about
+  `Spacing/4` low.
 
 ## Prefab assemblies (`phx.assembly.*`)
 
