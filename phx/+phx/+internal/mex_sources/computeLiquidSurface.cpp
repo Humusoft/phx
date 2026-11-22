@@ -28,12 +28,21 @@
 // are those of the .m file, the triangles may differ where a cube is
 // ambiguous; the surface is closed either way.
 //
-// The work runs brick by brick on `threads` threads (default
-// maxNumCompThreads), the calling one among them, with the same result on
-// any number. The helper threads are kept between calls and wait asleep
-// (a condition variable, no spinning), so they take no time from the
-// physics engine or MATLAB between calls; they end when the MEX file is
-// cleared. They never call MATLAB.
+// The work runs brick by brick on up to `threads` threads (default
+// maxNumCompThreads), the calling one among them, fewer where a pass has
+// little work, with the same result on any number. The helper threads are
+// kept between calls and wait asleep (a condition variable, no spinning),
+// so they take no time from the physics engine or MATLAB between calls;
+// they end when the MEX file is cleared. They never call MATLAB. A pass
+// ends when its work is done, without waiting for a helper that has not
+// started (on a busy computer one may not get a core in time).
+//
+// The Gaussian, the range of each brick and the inside bits of the cubes
+// use AVX2 where the processor and the system have it, checked at run time;
+// the file is built for the x64 baseline, so it loads on any processor, and
+// the scalar code runs elsewhere. Both give the same results to the bit.
+// The grid and the vertex table are kept between calls, for the time their
+// allocation takes, until the MEX file is cleared.
 //
 #include "mex.h"
 #include <algorithm>
@@ -43,10 +52,83 @@
 #include <cstdint>
 #include <functional>
 #include <mutex>
+#include <memory>
 #include <thread>
 #include <vector>
 
+// AVX2 on x64 where the CPU and the OS have it, chosen at run time; the
+// file itself is built for the baseline (SSE2), so it loads anywhere
+#if defined(_M_X64) || defined(__x86_64__)
+#define PHX_SURFACE_AVX2 1
+#include <immintrin.h>
+#if defined(_MSC_VER)
+#include <intrin.h>
+#define PHX_AVX2_FN
+#else
+#include <cpuid.h>
+#define PHX_AVX2_FN __attribute__((target("avx2")))
+#endif
+#endif
+
 namespace {
+
+#ifdef PHX_SURFACE_AVX2
+// CPUID.7.0:EBX bit 5 (AVX2), and the OS saving the YMM state (OSXSAVE and
+// XCR0 bits 1 and 2)
+bool detectAVX2()
+{
+#if defined(_MSC_VER)
+    int r[4];
+    __cpuid(r, 0);
+    if (r[0] < 7)
+        return false;
+    __cpuid(r, 1);
+    const unsigned features = unsigned(r[2]);
+    __cpuidex(r, 7, 0);
+    const unsigned extended = unsigned(r[1]);
+#else
+    unsigned a, b, c, d;
+    if (__get_cpuid_max(0, nullptr) < 7)
+        return false;
+    __cpuid(1, a, b, c, d);
+    const unsigned features = c;
+    __cpuid_count(7, 0, a, b, c, d);
+    const unsigned extended = b;
+#endif
+    if (!(features & (1u << 27)) || !(extended & (1u << 5)))
+        return false;
+#if defined(_MSC_VER)
+    const unsigned long long xcr0 = _xgetbv(0);
+#else
+    unsigned lo, hi;
+    __asm__ volatile("xgetbv" : "=a"(lo), "=d"(hi) : "c"(0));
+    const unsigned long long xcr0 = (static_cast<unsigned long long>(hi) << 32) | lo;
+#endif
+    return (xcr0 & 6) == 6;
+}
+const bool HasAVX2 = detectAVX2();
+#else
+const bool HasAVX2 = false;
+#endif
+
+// Work arrays kept between calls, uninitialised, grown with some headroom
+template <class T> class Buffer {
+public:
+    T *get(size_t n)
+    {
+        if (n > capacity_) {
+            data_.reset();
+            capacity_ = n + n/4;
+            data_.reset(new T[capacity_]);
+        }
+        return data_.get();
+    }
+private:
+    std::unique_ptr<T[]> data_;
+    size_t capacity_ = 0;
+};
+Buffer<float> fieldBuffer, blurBuffer;
+Buffer<std::int32_t> tableBuffer;
 
 const float Iso = 0.5f;
 
@@ -162,10 +244,13 @@ int neighbour(int dx, int dy, int dz)
     return (dx + 1) + 3*(dy + 1) + 9*(dz + 1);
 }
 
-// Helper threads kept between calls. run(count, threads, f) calls f(i) for
-// i = 0..count-1, on the calling thread and up to threads - 1 helpers,
-// which take the next i as they finish one; it returns when all are done.
-// Idle helpers wait on a condition variable.
+// Helper threads kept between calls. run(count, threads, f, grain) calls
+// f(i) for i = 0..count-1, on the calling thread and up to threads - 1
+// helpers, at most one helper per grain items beyond the first grain; each
+// takes the next i as it finishes one. It returns when all items are done:
+// a helper that has not started by then (no core for it yet) is not waited
+// for, it finds the job closed when it wakes. Idle helpers wait on a
+// condition variable.
 class Pool {
 public:
     ~Pool()
@@ -179,9 +264,11 @@ public:
             t.join();
     }
 
-    void run(size_t count, unsigned threads, const std::function<void(size_t)> &f)
+    void run(size_t count, unsigned threads, const std::function<void(size_t)> &f, size_t grain = 1)
     {
-        const size_t helpers = std::min<size_t>(threads > 1 ? threads - 1 : 0, count > 1 ? count - 1 : 0);
+        grain = std::max<size_t>(grain, 1);
+        const size_t byWork = (count + grain - 1)/grain;
+        const size_t helpers = std::min<size_t>(threads > 1 ? threads - 1 : 0, byWork > 1 ? byWork - 1 : 0);
         if (helpers == 0) {
             for (size_t i = 0; i < count; ++i)
                 f(i);
@@ -197,22 +284,33 @@ public:
             job_ = &f;
             count_ = count;
             next_.store(0);
+            done_.store(0);
             wanted_ = unsigned(helpers);
-            pending_ = unsigned(helpers);
             ++generation_;
+            open_.store(generation_);
         }
         wake_.notify_all();
         work();
         std::unique_lock<std::mutex> lock(mutex_);
-        finished_.wait(lock, [this] { return pending_ == 0; });
+        finished_.wait(lock, [this] { return done_.load() == count_; });
+        // Close the job; wait only for the helpers inside it, which have
+        // nothing left to take and are leaving
+        open_.store(0);
+        wanted_ = 0;
+        finished_.wait(lock, [this] { return active_.load() == 0; });
         job_ = nullptr;
     }
 
 private:
     void work()
     {
-        for (size_t i = next_.fetch_add(1); i < count_; i = next_.fetch_add(1))
+        for (size_t i = next_.fetch_add(1); i < count_; i = next_.fetch_add(1)) {
             (*job_)(i);
+            if (done_.fetch_add(1) + 1 == count_) {
+                std::lock_guard<std::mutex> lock(mutex_);
+                finished_.notify_all();
+            }
+        }
     }
 
     void loop(unsigned id, std::uint64_t seen)
@@ -224,10 +322,14 @@ private:
                 return;
             seen = generation_;
             lock.unlock();
-            work();
+            // Enter (sequentially consistent with the caller's close: either
+            // the job is seen open, or the caller sees this helper active)
+            active_.fetch_add(1);
+            if (open_.load() == seen)
+                work();
             lock.lock();
-            if (--pending_ == 0)
-                finished_.notify_one();
+            if (active_.fetch_sub(1) == 1)
+                finished_.notify_all();
         }
     }
 
@@ -236,19 +338,26 @@ private:
     std::condition_variable wake_, finished_;
     const std::function<void(size_t)> *job_ = nullptr;
     size_t count_ = 0;
-    std::atomic<size_t> next_{0};
-    unsigned wanted_ = 0, pending_ = 0;
+    std::atomic<size_t> next_{0}, done_{0};
+    std::atomic<unsigned> active_{0};
+    std::atomic<std::uint64_t> open_{0};
+    unsigned wanted_ = 0;
     std::uint64_t generation_ = 0;
     bool stopping_ = false;
 };
 
 Pool *pool = nullptr;
 
+
 void endPool()
 {
     delete pool;
     pool = nullptr;
 }
+
+#ifdef PHX_SURFACE_AVX2
+PHX_AVX2_FN void insideAVX2(const float *cube, unsigned *inside);
+#endif
 
 // The nodes of brick q and of the bricks above it (C^3, a missing brick
 // reads 0), and which of them lie inside, a bit per node along x
@@ -264,12 +373,178 @@ void gather(const float *G, const std::int32_t *around, size_t q, float *cube, u
                 const std::int32_t r = around[neighbour(x == B, y == B, z == B)];
                 cube[x + C*y + C*C*z] = r >= 0 ? G[size_t(r)*B3 + local(x, y, z)] : 0.0f;
             }
+#ifdef PHX_SURFACE_AVX2
+    if (HasAVX2) {
+        insideAVX2(cube, inside);
+        return;
+    }
+#endif
     for (int row = 0; row < C*C; ++row) {
         unsigned bits = 0;
         for (int x = 0; x < C; ++x)
             bits |= unsigned(cube[row*C + x] > Iso) << x;
         inside[row] = bits;
     }
+}
+
+// The Gaussian along x of a brick g (rows of B nodes), its neighbours
+// below and above along x gb and ga (null if missing), into t
+void blurXScalar(const float *g, const float *gb, const float *ga, float *t, const float *k)
+{
+    float line[B + 2*KR];
+    for (int row = 0; row < B*B; ++row) {
+        const int base = row*B;
+        for (int j = 0; j < KR; ++j) {
+            line[j] = gb ? gb[base + B - KR + j] : 0.0f;
+            line[KR + B + j] = ga ? ga[base + j] : 0.0f;
+        }
+        std::copy(g + base, g + base + B, line + KR);
+        for (int p = 0; p < B; ++p) {
+            float acc = 0;
+            for (int j = 0; j <= 2*KR; ++j)
+                acc += k[j]*line[p + j];
+            t[base + p] = acc;
+        }
+    }
+}
+
+// The Gaussian along y (s = B, so = B*B) or z (s = B*B, so = B), whole rows
+// along x at once, times factor; with range, the least and greatest value
+// written
+void blurYZScalar(const float *g, const float *gb, const float *ga, float *t, const float *k,
+    int s, int so, float factor, float *range)
+{
+    float lo = HUGE_VALF, hi = -HUGE_VALF;
+    for (int o = 0; o < B; ++o)
+        for (int p = 0; p < B; ++p) {
+            float acc[B] = {0};
+            for (int j = 0; j <= 2*KR; ++j) {
+                const int r = p - KR + j;
+                const float *row = r < 0 ? (gb ? gb + (r + B)*s : nullptr) : r < B ? g + r*s : (ga ? ga + (r - B)*s : nullptr);
+                if (row == nullptr)
+                    continue;
+                row += o*so;
+                for (int x = 0; x < B; ++x)
+                    acc[x] += k[j]*row[x];
+            }
+            for (int x = 0; x < B; ++x) {
+                const float v = factor*acc[x];
+                t[o*so + p*s + x] = v;
+                lo = std::min(lo, v);
+                hi = std::max(hi, v);
+            }
+        }
+    if (range != nullptr) {
+        range[0] = lo;
+        range[1] = hi;
+    }
+}
+
+#ifdef PHX_SURFACE_AVX2
+// The same in AVX2, a row of B = 8 nodes a register. Each lane takes the
+// steps of the scalar code in the same order (a product, then a sum; no
+// fused multiply-add), so the results are the same to the bit. Only AVX
+// instructions between the loads and the final vzeroupper, none of the
+// legacy SSE ones the rest of the file is built with.
+static_assert(B == 8, "the AVX2 code takes a brick row as one register");
+
+PHX_AVX2_FN void insideAVX2(const float *cube, unsigned *inside)
+{
+    const __m256 iso = _mm256_set1_ps(Iso);
+    for (int row = 0; row < C*C; ++row) {
+        const float *r = cube + row*C;
+        const unsigned low = unsigned(_mm256_movemask_ps(_mm256_cmp_ps(_mm256_loadu_ps(r), iso, _CMP_GT_OQ)));
+        const unsigned high = unsigned(_mm256_movemask_ps(_mm256_cmp_ps(_mm256_loadu_ps(r + 1), iso, _CMP_GT_OQ)));
+        inside[row] = low | (high >> (B - 1)) << B;
+    }
+    _mm256_zeroupper();
+}
+
+PHX_AVX2_FN void blurXAVX2(const float *g, const float *gb, const float *ga, float *t, const float *k)
+{
+    // Lane p of window j reads node p + j of the line: below[5..7],
+    // own[0..7], above[0..2]. Blend the neighbour's lanes into the own row
+    // where the window takes them, then rotate by j - KR.
+    const __m256 zero = _mm256_setzero_ps();
+    __m256 kv[2*KR + 1], mask[2*KR + 1];
+    __m256i rot[2*KR + 1];
+    for (int j = 0; j <= 2*KR; ++j) {
+        kv[j] = _mm256_set1_ps(k[j]);
+        int m[8], r[8];
+        for (int l = 0; l < 8; ++l) {
+            r[l] = (l + j - KR) & (B - 1);
+            m[l] = j < KR ? -int(l >= B - KR + j) : -int(l <= j - KR - 1);
+        }
+        rot[j] = _mm256_setr_epi32(r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7]);
+        mask[j] = _mm256_castsi256_ps(_mm256_setr_epi32(m[0], m[1], m[2], m[3], m[4], m[5], m[6], m[7]));
+    }
+    for (int row = 0; row < B*B; ++row) {
+        const int base = row*B;
+        const __m256 own = _mm256_loadu_ps(g + base);
+        const __m256 below = gb ? _mm256_loadu_ps(gb + base) : zero;
+        const __m256 above = ga ? _mm256_loadu_ps(ga + base) : zero;
+        __m256 acc = zero;
+        for (int j = 0; j <= 2*KR; ++j) {
+            const __m256 w = j == KR ? own :
+                _mm256_permutevar8x32_ps(_mm256_blendv_ps(own, j < KR ? below : above, mask[j]), rot[j]);
+            acc = _mm256_add_ps(acc, _mm256_mul_ps(kv[j], w));
+        }
+        _mm256_storeu_ps(t + base, acc);
+    }
+    _mm256_zeroupper();
+}
+
+PHX_AVX2_FN void blurYZAVX2(const float *g, const float *gb, const float *ga, float *t, const float *k,
+    int s, int so, float factor, float *range)
+{
+    __m256 kv[2*KR + 1];
+    for (int j = 0; j <= 2*KR; ++j)
+        kv[j] = _mm256_set1_ps(k[j]);
+    const __m256 f = _mm256_set1_ps(factor);
+    __m256 lo = _mm256_set1_ps(HUGE_VALF), hi = _mm256_set1_ps(-HUGE_VALF);
+    for (int o = 0; o < B; ++o)
+        for (int p = 0; p < B; ++p) {
+            __m256 acc = _mm256_setzero_ps();
+            for (int j = 0; j <= 2*KR; ++j) {
+                const int r = p - KR + j;
+                const float *row = r < 0 ? (gb ? gb + (r + B)*s : nullptr) : r < B ? g + r*s : (ga ? ga + (r - B)*s : nullptr);
+                if (row == nullptr)
+                    continue;
+                acc = _mm256_add_ps(acc, _mm256_mul_ps(kv[j], _mm256_loadu_ps(row + o*so)));
+            }
+            const __m256 v = _mm256_mul_ps(f, acc);
+            _mm256_storeu_ps(t + o*so + p*s, v);
+            lo = _mm256_min_ps(lo, v);
+            hi = _mm256_max_ps(hi, v);
+        }
+    alignas(32) float l8[8], h8[8];
+    _mm256_store_ps(l8, lo);
+    _mm256_store_ps(h8, hi);
+    _mm256_zeroupper();
+    if (range != nullptr) {
+        range[0] = *std::min_element(l8, l8 + 8);
+        range[1] = *std::max_element(h8, h8 + 8);
+    }
+}
+#endif
+
+void blurX(const float *g, const float *gb, const float *ga, float *t, const float *k)
+{
+#ifdef PHX_SURFACE_AVX2
+    if (HasAVX2)
+        return blurXAVX2(g, gb, ga, t, k);
+#endif
+    blurXScalar(g, gb, ga, t, k);
+}
+
+void blurYZ(const float *g, const float *gb, const float *ga, float *t, const float *k,
+    int s, int so, float factor, float *range)
+{
+#ifdef PHX_SURFACE_AVX2
+    if (HasAVX2)
+        return blurYZAVX2(g, gb, ga, t, k, s, so, factor, range);
+#endif
+    blurYZScalar(g, gb, ga, t, k, s, so, factor, range);
 }
 
 // The surface, brick by brick: vertices (3 per vertex) and triangles
@@ -384,8 +659,8 @@ void surface(const double *P, size_t n, double d, unsigned threads, Mesh &mesh)
         const std::int64_t *c = &coord[3*size_t(homeOf[q])];
         passes[(c[0] & 1) | (c[1] & 1) << 1 | (c[2] & 1) << 2].push_back(q);
     }
-    std::vector<float> G(nBricks*B3), T(nBricks*B3);
-    pool->run(nBricks, threads, [&](size_t q) { std::fill_n(&G[q*B3], B3, 0.0f); });
+    float *G = fieldBuffer.get(nBricks*B3), *T = blurBuffer.get(nBricks*B3);
+    pool->run(nBricks, threads, [&](size_t q) { std::fill_n(&G[q*B3], B3, 0.0f); }, 64);
     for (const std::vector<size_t> &pass : passes)
         pool->run(pass.size(), threads, [&](size_t j) {
             const size_t q = pass[j];
@@ -404,7 +679,7 @@ void surface(const double *P, size_t n, double d, unsigned threads, Mesh &mesh)
                             G[size_t(r)*B3 + local(x, y, z)] += w;
                         }
             }
-        });
+        }, 4);
 
     // Separable Gaussian along x (G to T), y (T to G) and z (G to T, with
     // the normalisation (d/h)^3), zeros outside the bricks: a missing
@@ -418,67 +693,33 @@ void surface(const double *P, size_t n, double d, unsigned threads, Mesh &mesh)
     const float scale = 8.0f;   // (d/h)^3
     pool->run(nBricks, threads, [&](size_t q) {
         const std::int32_t below = nb[27*q + neighbour(-1, 0, 0)], above = nb[27*q + neighbour(1, 0, 0)];
-        const float *g = &G[q*B3];
-        const float *gb = below >= 0 ? &G[size_t(below)*B3] : nullptr;
-        const float *ga = above >= 0 ? &G[size_t(above)*B3] : nullptr;
-        float *t = &T[q*B3];
-        float line[B + 2*KR];
-        for (int row = 0; row < B*B; ++row) {
-            const int base = row*B;
-            for (int j = 0; j < KR; ++j) {
-                line[j] = gb ? gb[base + B - KR + j] : 0.0f;
-                line[KR + B + j] = ga ? ga[base + j] : 0.0f;
-            }
-            std::copy(g + base, g + base + B, line + KR);
-            for (int p = 0; p < B; ++p) {
-                float acc = 0;
-                for (int j = 0; j <= 2*KR; ++j)
-                    acc += k[j]*line[p + j];
-                t[base + p] = acc;
-            }
-        }
-    });
+        blurX(&G[q*B3], below >= 0 ? &G[size_t(below)*B3] : nullptr, above >= 0 ? &G[size_t(above)*B3] : nullptr, &T[q*B3], k);
+    }, 16);
+    // Along y and z, whole rows along x at once, through the brick and its
+    // neighbours along the axis; the last pass keeps the least and greatest
+    // value of each brick
+    std::vector<float> bmin(nBricks), bmax(nBricks);
     for (int a = 1; a < 3; ++a) {
-        // Along y and z, whole rows along x at once, through the brick and
-        // its neighbours along the axis
-        const std::vector<float> &src = a == 1 ? T : G;
-        std::vector<float> &dst = a == 1 ? G : T;
+        const float *src = a == 1 ? T : G;
+        float *dst = a == 1 ? G : T;
         const float factor = a == 2 ? scale : 1.0f;
         const int s = a == 1 ? B : B*B, so = a == 1 ? B*B : B;
         pool->run(nBricks, threads, [&](size_t q) {
             const std::int32_t below = nb[27*q + neighbour(0, a == 1 ? -1 : 0, a == 2 ? -1 : 0)];
             const std::int32_t above = nb[27*q + neighbour(0, a == 1, a == 2)];
-            const float *g = &src[q*B3];
-            const float *gb = below >= 0 ? &src[size_t(below)*B3] : nullptr;
-            const float *ga = above >= 0 ? &src[size_t(above)*B3] : nullptr;
-            float *t = &dst[q*B3];
-            for (int o = 0; o < B; ++o)
-                for (int p = 0; p < B; ++p) {
-                    float acc[B] = {0};
-                    for (int j = 0; j <= 2*KR; ++j) {
-                        const int r = p - KR + j;
-                        const float *row = r < 0 ? (gb ? gb + (r + B)*s : nullptr) : r < B ? g + r*s : (ga ? ga + (r - B)*s : nullptr);
-                        if (row == nullptr)
-                            continue;
-                        row += o*so;
-                        for (int x = 0; x < B; ++x)
-                            acc[x] += k[j]*row[x];
-                    }
-                    for (int x = 0; x < B; ++x)
-                        t[o*so + p*s + x] = factor*acc[x];
-                }
-        });
+            float range[2];
+            blurYZ(&src[q*B3], below >= 0 ? &src[size_t(below)*B3] : nullptr, above >= 0 ? &src[size_t(above)*B3] : nullptr,
+                &dst[q*B3], k, s, so, factor, a == 2 ? range : nullptr);
+            if (a == 2) {
+                bmin[q] = range[0];
+                bmax[q] = range[1];
+            }
+        }, 16);
     }
-    const float *field = T.data();
+    const float *field = T;
 
     // The bricks the level crosses: those whose values, with the nodes of
     // the bricks above, do not all lie on one side of it
-    std::vector<float> bmin(nBricks), bmax(nBricks);
-    pool->run(nBricks, threads, [&](size_t q) {
-        const auto range = std::minmax_element(field + q*B3, field + (q + 1)*B3);
-        bmin[q] = *range.first;
-        bmax[q] = *range.second;
-    });
     std::vector<size_t> crossed;
     std::vector<std::int32_t> crossedIndex(nBricks, -1);
     for (size_t q = 0; q < nBricks; ++q) {
@@ -503,7 +744,7 @@ void surface(const double *P, size_t n, double d, unsigned threads, Mesh &mesh)
     // The vertices: one per crossed grid edge, made by the brick of the
     // edge's lower node; the table gives each edge's vertex in its brick
     // (entries only for crossed edges, the only ones read)
-    std::vector<std::int32_t> table(nCrossed*3*B3);
+    std::int32_t *table = tableBuffer.get(nCrossed*3*B3);
     pool->run(nCrossed, threads, [&](size_t a) {
         const size_t q = crossed[a];
         float cube[C*C*C];
@@ -530,7 +771,7 @@ void surface(const double *P, size_t n, double d, unsigned threads, Mesh &mesh)
                             out.push_back(float(lo[c] + (at[c] + (c == ax ? t : 0.0))*h));
                     }
             }
-    });
+    }, 4);
     mesh.vertexStart.assign(nCrossed + 1, 0);
     for (size_t a = 0; a < nCrossed; ++a)
         mesh.vertexStart[a + 1] = mesh.vertexStart[a] + mesh.vertices[a].size()/3;
@@ -636,7 +877,7 @@ void surface(const double *P, size_t n, double d, unsigned threads, Mesh &mesh)
                     }
                 }
             }
-    });
+    }, 4);
     mesh.triangleStart.assign(nCrossed + 1, 0);
     for (size_t a = 0; a < nCrossed; ++a)
         mesh.triangleStart[a + 1] = mesh.triangleStart[a] + mesh.triangles[a].size()/3;
@@ -704,7 +945,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             for (std::uint32_t id : mesh.triangles[a])
                 *f++ = id + 1;
         }
-    });
+    }, 16);
 
     // The normals: the area-weighted sums of the normals of the faces
     // around each vertex
@@ -731,6 +972,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 for (int c = 0; c < 3; ++c)
                     nq[c] /= len;
             }
-        });
+        }, 4);
     }
 }
