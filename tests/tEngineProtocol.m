@@ -1009,6 +1009,45 @@ classdef tEngineProtocol < PhxTestCase
             end
         end
 
+        function rollingDiskStaysOnItsRimBelowFiveDegrees(tc)
+            % The steel disk of phxex_eulerdisk (radius 0.15 m, 4 cm thick,
+            % no margin) launched rolling on its rim at 25 deg in steady
+            % precession, rolling resistance 1 mm, 1 ms steps: it rolls
+            % down to a tilt below 3 deg before it falls flat (1.9 deg).
+            % (Jolt 5.6.0 let a cap within 5 deg of its contact touch on the
+            % chords of a fixed octagon; the disk fell flat from 4.6 deg.)
+            g = tEngineProtocol.G;
+            r = 0.15;
+            hh = 0.02;
+            m = 7800*pi*r^2*2*hh;
+            I = m*[(3*r^2 + (2*hh)^2)/12*[1 1] r^2/2];
+            dt = 0.001;
+            w = tc.newWorld;
+            phxEngine('set', w, uint64(0), 'settings', struct('margin', 0));
+            floor = tc.addFloor(w);
+            phxEngine('set', w, floor, 'friction', [1 0 0]);
+            a = 25;
+            R = [1 0 0; 0 cosd(a) -sind(a); 0 sind(a) cosd(a)];
+            h = phxEngine('add', w, 'cylinder', 2, r, 2*hh, 'z', [R [0; 0; r*sind(a) + hh*cosd(a)]; 0 0 0 1], m, I);
+            phxEngine('set', w, h, 'friction', [1 0.001 0]);
+            precession = sqrt(m*g*r/(I(1)*sind(a)));
+            phxEngine('set', w, h, 'angvel', precession*sind(a)*[0 cosd(a) sind(a)]);
+            n = round(10/dt);
+            tilt = a*ones(n, 1);
+            for k = 1:n
+                [ids, T] = phxEngine('step', w, dt);
+                if any(ids == h)
+                    tilt(k) = acosd(T(3, 3, ids == h));
+                elseif k > 1
+                    tilt(k) = tilt(k - 1);
+                end
+            end
+            flat = find(tilt < 0.5, 1);
+            tc.assertNotEmpty(flat, "The disk lies flat within 10 s");
+            rolling = tilt(1:flat - round(0.1/dt));
+            tc.verifyLessThan(min(rolling), 3, "Lowest tilt 0.1 s before the disk lies flat (deg)");
+        end
+
         function bodyWithoutCollisionsFallsThrough(tc)
             w = tc.newWorld;
             tc.addFloor(w);
