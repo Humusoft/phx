@@ -2792,6 +2792,51 @@ classdef tEngineProtocol < PhxTestCase
                 "phx:engine:badArgument");
         end
 
+        function fluidBoundsRemoveParticlesBeforeTheStep(tc)
+            % bounds (step AB): read back as set, none by default and after
+            % []; the particles outside the box (turned with its transform)
+            % or not finite go before the next step, the others keep their
+            % order; reading the densities removes nothing. A plain group
+            % has no bounds, and setting fluid [] drops them.
+            r = 0.01;
+            S = struct("density", 1000, "soundspeed", 20, "viscosity", 0.1);
+            w = tc.newWorld([0 0 0]);
+            % Five lone particles along x, 0.3 m apart
+            P = [0 0.3 0.6 0.9 1.2; zeros(2, 5)];
+            g = phxEngine('add', w, 'particles', P, r, 0.01, false, S);
+            tc.verifyEqual(phxEngine('get', w, g, 'bounds'), []);
+            % A box 1 m along its x and 0.1 m across, centred at x = 0.6 and
+            % turned 90 deg about z: unturned it would hold the particles
+            % at 0.3, 0.6 and 0.9, turned only the one at 0.6
+            T = [0 -1 0 0.6; 1 0 0 0; 0 0 1 0; 0 0 0 1];
+            B = struct("transform", T, "size", [1 0.1 Inf]);
+            phxEngine('set', w, g, 'bounds', B);
+            got = phxEngine('get', w, g, 'bounds');
+            tc.verifyEqual(got.transform, T, "AbsTol", 1e-12);
+            tc.verifyEqual(got.size, [1 0.1 Inf], "RelTol", 1e-7);
+            phxEngine('get', w, g, 'density');
+            tc.verifyEqual(phxEngine('get', w, g, 'count'), 5, "Reading the densities removes nothing.");
+            phxEngine('step', w, 1e-3);
+            tc.verifyEqual(phxEngine('get', w, g, 'positions'), [0.6; 0; 0], "AbsTol", 1e-6, "Only the particle at 0.6 stays.");
+            % An axis-aligned box of +-1 m in x: of 0.6, 0, 0.3, 0.9, 1.2
+            % the last goes, and the third as not a number; the order of
+            % the rest is kept
+            phxEngine('add', w, g, P(:, [1 2 4 5]));
+            phxEngine('set', w, g, 'bounds', struct("transform", eye(4), "size", [2 1 1]));
+            phxEngine('set', w, g, 'positions', [NaN; 0; 0], 3);
+            phxEngine('step', w, 1e-3);
+            X = phxEngine('get', w, g, 'positions');
+            tc.verifyEqual(X(1, :), [0.6 0 0.9], "AbsTol", 1e-6);
+            phxEngine('set', w, g, 'bounds', []);
+            tc.verifyEqual(phxEngine('get', w, g, 'bounds'), []);
+            tc.verifyError(@() phxEngine('set', w, g, 'bounds', struct("transform", eye(4), "size", [1 0 1])), "phx:engine:badArgument");
+            tc.verifyError(@() phxEngine('set', w, g, 'bounds', struct("transform", eye(4))), "phx:engine:badArgument");
+            phxEngine('set', w, g, 'bounds', B);
+            phxEngine('set', w, g, 'fluid', []);
+            tc.verifyError(@() phxEngine('get', w, g, 'bounds'), "phx:engine:badArgument");
+            tc.verifyError(@() phxEngine('set', w, g, 'bounds', B), "phx:engine:badArgument");
+        end
+
         function fluidLatticeReadsTheRestDensity(tc)
             % A simple cubic lattice of spacing 2 r: its interior particle
             % reads the rest density, whatever mass the group was made with;

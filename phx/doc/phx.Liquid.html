@@ -95,6 +95,7 @@ and get its particles by <code class="phx-inline">add</code>. A shape and
 <tr><td class="name">Density</td><td class="dflt">1000</td><td>Density of the liquid at rest, <span class="phx-unit">kg/m&sup3;</span>.</td></tr>
 <tr><td class="name">SoundSpeed</td><td class="dflt">20</td><td>Speed of sound in the liquid, <span class="phx-unit">m/s</span>: how stiff it is against compression. Ten times the fastest flow keeps the density within a few per cent; the step must be shorter the faster the sound.</td></tr>
 <tr><td class="name">Viscosity</td><td class="dflt">0.1</td><td>Viscosity coefficient (Monaghan's artificial viscosity, no unit): 0.1 lets the liquid flow freely and calms its noise, 1 is a thick liquid; below about 0.05 the liquid becomes unstable.</td></tr>
+<tr><td class="name">Bounds</td><td class="dflt">[1000 1000 1000]</td><td>Size of the box the liquid stays in, <span class="phx-unit">m</span>, centred at <code class="phx-inline">Position</code> and turned with <code class="phx-inline">Orientation</code>: a particle that leaves it, splashed out of an open tank or thrown away when the liquid breaks up, is removed before the next step, and <code class="phx-inline">Count</code> falls. <code class="phx-inline">Inf</code> leaves an axis unbounded.</td></tr>
 </table>
 
 <h3 class="phx-h3">Settings (apply at any time)</h3>

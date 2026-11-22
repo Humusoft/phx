@@ -580,6 +580,17 @@ classdef (Abstract) ParticleGroup < phx.base.Object
                 else
                     obj.hM.VertexData = single(obj.toWorld(obj.StoredPositions')');
                 end
+                obj.fitShades(size(obj.hM.VertexData, 2));
+            end
+        end
+
+        function fitShades(obj, n)
+            % One shade per particle again after the engine removed some
+            % (a liquid's Bounds); which ones went is not known, and the
+            % shades are only looks, so the last ones go
+            if numel(obj.Shades) ~= n
+                obj.Shades = [obj.Shades(1:min(end, n)) rand(1, n - numel(obj.Shades))];
+                obj.applyTint;
             end
         end
 

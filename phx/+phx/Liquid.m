@@ -34,6 +34,11 @@ classdef Liquid < phx.base.ParticleGroup
 %   (phx.engine.Settings), or the default contact margin of 4 cm rounds
 %   thin walls and lets the liquid into the corners of a tank.
 %
+%   Particles that leave the box of Bounds around the liquid's Position
+%   (1 km on a side by default), splashed out of an open tank or thrown
+%   away when the liquid breaks up, are removed, so Count falls; a smaller
+%   box removes them sooner.
+%
 %   Checked against the SPHERIC dam-break benchmark (a column of water
 %   collapsing onto a box): water heights within 2-3 cm and mean
 %   pressures 10-20 % low (more next to an edge), but the pressures, and
@@ -72,6 +77,12 @@ classdef Liquid < phx.base.ParticleGroup
         % 0.1 lets the liquid flow freely and calms its noise, 1 is a thick
         % liquid; below about 0.05 the liquid becomes unstable
         Viscosity (1, 1) double {mustBeNonnegative, mustBeFinite} = 0.1
+
+        % Size of the box the liquid stays in (1x3, m), centred at Position
+        % and turned with Orientation: a particle that leaves it, splashed
+        % out of an open tank or thrown away when the liquid breaks up, is
+        % removed before the next step. Inf leaves an axis unbounded.
+        Bounds (1, 3) double {mustBePositive} = [1000 1000 1000]
 
         % How the liquid is drawn: "surface", its surface, smooth over the
         % particles (each redraw computes it, some 15 ms for 4000
@@ -178,6 +189,11 @@ classdef Liquid < phx.base.ParticleGroup
             obj.Viscosity = value;
             obj.pushFluid;
         end
+
+        function set.Bounds(obj, value)
+            obj.Bounds = value;
+            obj.engineSet('bounds', obj.boundsStruct);
+        end
     end
 
     methods (Access = protected)
@@ -186,6 +202,7 @@ classdef Liquid < phx.base.ParticleGroup
             % bound by the number of bodies a world holds
             handle = phxEngine('add', world, 'particles', obj.worldPoints, ...
                 obj.Spacing/2, obj.ParticleMass, false, obj.fluidStruct);
+            phxEngine('set', world, handle, 'bounds', obj.boundsStruct);
         end
 
         function r = particleRadius(obj)
@@ -257,6 +274,10 @@ classdef Liquid < phx.base.ParticleGroup
             s = struct("density", obj.Density, "soundspeed", obj.SoundSpeed, "viscosity", obj.Viscosity);
         end
 
+        function s = boundsStruct(obj)
+            s = struct("transform", [obj.Orientation obj.Position'; 0 0 0 1], "size", obj.Bounds);
+        end
+
         function pushFluid(obj)
             obj.engineSet('fluid', obj.fluidStruct);
         end
@@ -279,6 +300,7 @@ classdef Liquid < phx.base.ParticleGroup
                     obj.drawSurface(P);
                 else
                     obj.hM.VertexData = single(P);
+                    obj.fitShades(size(P, 2));
                 end
             end
         end

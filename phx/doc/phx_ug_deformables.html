@@ -246,6 +246,11 @@ the <code class="phx-inline">Spacing</code>, or the default contact margin round
 the liquid into the corners of a tank. A body that only floats on still water of a flat surface is
 far cheaper with <a href="phx.Buoyancy.html">phx.Buoyancy</a>.</p>
 
+<p>Particles splashed out of an open tank would fall for ever. Those that leave the box of
+<code class="phx-inline">Bounds</code> around the liquid's <code class="phx-inline">Position</code>,
+1&nbsp;km on a side unless set smaller, are removed, and the liquid's
+<code class="phx-inline">Count</code> falls.</p>
+
 <p>Checked against the SPHERIC dam-break benchmark, the liquid gets the water heights within
 2&ndash;3&nbsp;cm and the flow right, so it suits filling, sloshing and where the water goes and how
 high. Its mean pressures are 10&ndash;20&nbsp;% low (more next to an edge), noisy, and impact peaks

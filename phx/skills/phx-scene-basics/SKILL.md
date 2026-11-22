@@ -453,6 +453,10 @@ sim.step(2, 4000);                                     % 0.5 ms steps
   state during a run. `Friction` and `Restitution` default to 0.
 - `Style` `"surface"` (default; a smooth surface computed on every redraw, ~15 ms for
   4000 particles) or `"points"`.
+- `Bounds` (1×3, m, default `[1000 1000 1000]`): a box centred at `Position`, turned with
+  `Orientation`; particles that leave it (spray out of an open tank, a liquid breaking up)
+  are removed silently before the next step, so `Count` falls. Give an open scene a box
+  a little larger than the tank to drop spray early; `Inf` leaves an axis unbounded.
 - Plain unscaled boxes (`Box` shapes, `arena` plates) are the cheapest boundaries; every
   other shape works through the engine's shape queries. A body overlapping the liquid at
   the start blows it apart: leave a gap of about one `Spacing`.

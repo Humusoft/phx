@@ -9,7 +9,9 @@ classdef tLiquid < PhxTestCase
 %   engine takes the mass PHX reports, that a lattice at rest reads the
 %   Density and a changed Density reaches the engine, that a column in a
 %   tank keeps its level, that the Shape is done once the simulation holds
-%   the group, and that the state survives the end of the simulation. The
+%   the group, and that the state survives the end of the simulation; the
+%   drawn ones ("Engine" and "Graphics") that Bounds, placed and turned with
+%   the liquid's frame, removes the particles that leave it. The
 %   physics of the liquid itself is the engine's contract (tEngineProtocol,
 %   fluid* tests).
 %
@@ -32,6 +34,9 @@ classdef tLiquid < PhxTestCase
             "Cone", {{{"Cone", "Diameter", 0.2, "Height", 0.3}, pi*0.1^2*0.3/3}}, ...
             "Capsule", {{{"Capsule", "Diameter", 0.1, "Height", 0.2}, pi*0.05^2*0.2 + 4/3*pi*0.05^3}}, ...
             "Tube", {{{"Tube", "Diameter", 0.3, "WallThickness", 0.06, "Height", 0.2}, pi*(0.15^2 - 0.09^2)*0.2}})
+
+        % A liquid's frame unturned or turned
+        Turned = struct("Unturned", false, "Turned", true)
     end
 
     % --- Bookkeeping (no engine) ------------------------------------------
@@ -42,6 +47,7 @@ classdef tLiquid < PhxTestCase
             L = phx.Liquid([], "Vertices", [0 0 1; 1 0 1]);
             tc.verifyEqual([L.Friction L.Restitution], [0 0]);
             tc.verifyEqual([L.Spacing L.Density L.SoundSpeed L.Viscosity], [0.02 1000 20 0.1]);
+            tc.verifyEqual(L.Bounds, [1000 1000 1000]);
             tc.verifyEqual(L.ParticleMass, 1000*0.02^3*32768*pi/103950, "RelTol", 1e-12);
             tc.verifyEqual(L.ParticleMass/(1000*0.02^3), 0.990, "AbsTol", 5e-4);
             tc.verifyEqual(L.Mass, 2*L.ParticleMass, "RelTol", 1e-12);
@@ -185,6 +191,33 @@ classdef tLiquid < PhxTestCase
             delete(sim);
             tc.verifyEqual(L.CurrentVertices, [0 0 0.99], "AbsTol", 1e-6);
             tc.verifyEqual(L.Velocities, [0 0 -1], "AbsTol", 1e-6);
+        end
+    end
+
+    % --- Simulation drawn (engine, graphics) -------------------------------
+    methods (Test, TestTags = {'Engine', 'Graphics'})
+        function boundsRemoveParticlesThatLeave(tc, Turned)
+            % Bounds is a box centred at Position and turned with
+            % Orientation: 1 m tall, a falling block leaves it within half
+            % a second; turned so that the box's 10 m side stands, it
+            % stays. The points stay drawn as the particles go.
+            tc.requireLiquids;
+            R = eye(3);
+            if Turned
+                R = [1 0 0; 0 0 -1; 0 1 0];   % 90 deg about x: the box's y up
+            end
+            L = phx.Liquid(tc.prepareAxes, "Shape", {"Box", "Size", 3*tc.D*[1 1 1]}, "Position", [0 0 1], ...
+                "Orientation", R, "Bounds", [10 10 1], "Style", "points", "RandomTint", 0.5);
+            sim = tc.simulate({L});
+            sim.step(0.5, 0.5/(4*tc.Dt), 10);
+            if Turned
+                tc.verifyEqual(L.Count, 27);
+            else
+                tc.verifyEqual(L.Count, 0);
+            end
+            L.Bounds = [Inf Inf Inf];
+            sim.step(0.1, 0.1/(4*tc.Dt), 10);
+            tc.verifyEqual(L.Count, 27*Turned, "Inf bounds nothing.");
         end
     end
 
