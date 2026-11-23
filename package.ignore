@@ -26,6 +26,8 @@ doc/logo/
 CONTRIBUTING.md
 CODE_REVIEW.md
 CLAUDE.md
+DEFORMABLES_API.md
+MASS_API.md
 deploymentLog.html
 **/*.gif
 

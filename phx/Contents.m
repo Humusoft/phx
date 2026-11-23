@@ -1,5 +1,5 @@
 % PHX
-% Version 2.0.0 (R2026b) 16-Nov-2026
+% Version 2.1.0 (R2026b) 23-Nov-2026
 %
 % PHX is an object-oriented physics toolbox for MATLAB, layered over a
 % physics engine. Scenes are built from phx.* objects that draw into

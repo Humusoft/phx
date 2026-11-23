@@ -14,9 +14,28 @@ and for co-simulation with custom MATLAB elements.
 > ⚠️ **Technical preview.** PHX is published as a technical preview for evaluation
 > and feedback. APIs may change between releases.
 
-## 🚀 PHX 2.0 is here!
+## 🚀 New in PHX 2.1
 
-PHX 2.0 is the biggest update yet: a new physics engine, deformable bodies, and a big step
+* **Liquids** — `phx.Liquid`, a particle (SPH) liquid that fills tanks, sloshes, carries
+floating bodies and is drawn as a smooth surface
+* **Hollow shapes** — sphere, capsule and box shells for tanks and drums, solid from both
+sides, holding bodies, particles and liquids
+* **Compliant contacts** — a contact stiffness and damping per body for rubber pads, tyres
+and soft grippers
+* **Density with the body** — give a body its `Density` or `Mass`, and the inertia follows
+* **One way to the points** — soft and flexible bodies, particles and liquids share
+`Vertices`, `Velocities` and their `Current*` counterparts
+* **Faster flexible bodies** — the finite-element solver steps up to 3× faster
+* **2 new examples** — a dam break carrying a floating crate, and water sloshing in a ball
+on a tilting platform
+
+Coming from PHX 2.0? Contacts now combine the friction of two bodies as the geometric mean
+of their values, a shape's density belongs to its body, and a few names of deformable bodies
+changed; the old names still work with a warning. The release notes list every change.
+
+## PHX 2.0: a new engine
+
+PHX 2.0 was the biggest update yet: a new physics engine, deformable bodies, and a big step
 up in accuracy, stability and speed.
 
 * **New physics engine** — Jolt Physics with modified and custom solvers, tuned for
@@ -39,17 +58,19 @@ delta robot
 Coming from PHX 1.x? The User Guide topic **Upgrading from PHX 1.x** lists every change, and
 the `phx-upgrade-from-1x` skill lets your AI agent port a scene for you.
 
-![PHX demo 7](https://raw.githubusercontent.com/Humusoft/phx/2.0.0/doc/phx-demo-7.gif) ![PHX demo 8](https://raw.githubusercontent.com/Humusoft/phx/2.0.0/doc/phx-demo-8.gif)
-![PHX demo 9](https://raw.githubusercontent.com/Humusoft/phx/2.0.0/doc/phx-demo-9.gif)
+![PHX demo 7](https://raw.githubusercontent.com/Humusoft/phx/2.1.0/doc/phx-demo-7.gif) ![PHX demo 8](https://raw.githubusercontent.com/Humusoft/phx/2.1.0/doc/phx-demo-8.gif)
+![PHX demo 9](https://raw.githubusercontent.com/Humusoft/phx/2.1.0/doc/phx-demo-9.gif)
 
 ## Features
 
-* Rigid-body dynamics with collisions, friction and rolling resistance — boxes, spheres,
-cylinders, cones, capsules, tubes, extrusions, revolutions, rocks, terrain heightfields and
-imported OBJ/STL/PLY meshes, each with its own centre of mass and inertia
+* Rigid-body dynamics with collisions, friction, rolling resistance and optional compliant
+contacts — boxes, spheres, cylinders, cones, capsules, tubes, hollow shells, extrusions,
+revolutions, rocks, terrain heightfields and imported OBJ/STL/PLY meshes, each with its own
+centre of mass and inertia
 * Deformable bodies — soft bodies made of triangle meshes, finite-element flexible solids
 meshed from PHX shapes or PDE Toolbox meshes, rigid parts welded into them, and bulk
 particles for granular materials
+* Liquids of SPH particles that fill shapes and carry floating bodies
 * Joints (revolute, prismatic, cylindrical, spherical, gear, fixed, bushing and a generic
 6-DOF joint), most of them with limits, solved together and directly for accurate mechanisms
 * Linear and torsion springs and ropes routed over pulleys, solved inside the engine
@@ -70,9 +91,9 @@ PHX Toolbox also includes a set of AI skills for use with common AI agents. They
 installed with the toolbox in its `skills` folder;
 see **AI agent skills** in the User Guide for how to point your assistant at them.
 
-![PHX demo 1](https://raw.githubusercontent.com/Humusoft/phx/2.0.0/doc/phx-demo-1.gif) ![PHX demo 2](https://raw.githubusercontent.com/Humusoft/phx/2.0.0/doc/phx-demo-2.gif)
-![PHX demo 3](https://raw.githubusercontent.com/Humusoft/phx/2.0.0/doc/phx-demo-3.gif) ![PHX demo 4](https://raw.githubusercontent.com/Humusoft/phx/2.0.0/doc/phx-demo-4.gif)
-![PHX demo 5](https://raw.githubusercontent.com/Humusoft/phx/2.0.0/doc/phx-demo-5.gif) ![PHX demo 6](https://raw.githubusercontent.com/Humusoft/phx/2.0.0/doc/phx-demo-6.gif)
+![PHX demo 1](https://raw.githubusercontent.com/Humusoft/phx/2.1.0/doc/phx-demo-1.gif) ![PHX demo 2](https://raw.githubusercontent.com/Humusoft/phx/2.1.0/doc/phx-demo-2.gif)
+![PHX demo 3](https://raw.githubusercontent.com/Humusoft/phx/2.1.0/doc/phx-demo-3.gif) ![PHX demo 4](https://raw.githubusercontent.com/Humusoft/phx/2.1.0/doc/phx-demo-4.gif)
+![PHX demo 5](https://raw.githubusercontent.com/Humusoft/phx/2.1.0/doc/phx-demo-5.gif) ![PHX demo 6](https://raw.githubusercontent.com/Humusoft/phx/2.1.0/doc/phx-demo-6.gif)
 
 ## Requirements
 
@@ -103,25 +124,26 @@ sim.step(1, 100, 1);                   % simulate 1 s in 100 substeps, redrawing
 Once installed, the full documentation is in the MATLAB Help browser under
 **Supplemental Software → PHX Toolbox**: a Getting Started topic, a User Guide covering
 core concepts, units and engine settings, bodies and shapes, soft and flexible bodies,
+particles and liquids,
 joints, forces, assemblies, logging, automation, saving scenes, Simulink co-simulation, the
 interactive viewer, the AI agent skills and upgrading from PHX 1.x, plus an illustrated
 Examples gallery and the class reference. `phxdoc phx.Body` opens a single reference page
 directly.
 
-Over 60 ready-to-run examples are in the [`examples/`](https://github.com/Humusoft/phx/tree/2.0.0/examples) folder (all named
+Over 60 ready-to-run examples are in the [`examples/`](https://github.com/Humusoft/phx/tree/2.1.0/examples) folder (all named
 `phxex_*`) — each one is a single command in the Command Window. A guided introduction
-is in [`doc/GettingStarted.mlx`](https://github.com/Humusoft/phx/blob/2.0.0/doc/GettingStarted.mlx).
+is in [`doc/GettingStarted.mlx`](https://github.com/Humusoft/phx/blob/2.1.0/doc/GettingStarted.mlx).
 
 ## License
 
 PHX is a source-available **technical preview**, licensed under the **PHX Preview
-License** (see [`LICENSE.txt`](https://github.com/Humusoft/phx/blob/2.0.0/LICENSE.txt)). In short: you may read and adapt the
+License** (see [`LICENSE.txt`](https://github.com/Humusoft/phx/blob/2.1.0/LICENSE.txt)). In short: you may read and adapt the
 MATLAB (`.m`) source and use PHX for free, including commercially — but it is not
 for sale and may not be used to build a competing product. The physics engine is
 provided as a compiled binary.
 
 PHX bundles the Jolt Physics engine under the MIT License, with portions derived from
-Bullet Physics under the zlib License; see [`NOTICE.txt`](https://github.com/Humusoft/phx/blob/2.0.0/NOTICE.txt) for attribution.
+Bullet Physics under the zlib License; see [`NOTICE.txt`](https://github.com/Humusoft/phx/blob/2.1.0/NOTICE.txt) for attribution.
 
 A separate **commercial license** will be available from HUMUSOFT s.r.o. for uses the
 Preview License does not permit. Contact us at phx@humusoft.cz.
@@ -130,7 +152,7 @@ Preview License does not permit. Contact us at phx@humusoft.cz.
 
 During the technical preview we welcome bug reports and feedback via the issue
 tracker, but we are not yet accepting external code contributions. See
-[`CONTRIBUTING.md`](https://github.com/Humusoft/phx/blob/2.0.0/CONTRIBUTING.md).
+[`CONTRIBUTING.md`](https://github.com/Humusoft/phx/blob/2.1.0/CONTRIBUTING.md).
 
 ## About
 
