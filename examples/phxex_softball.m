@@ -12,7 +12,7 @@ function phxex_softball
     xlim([-1 5]); ylim(ylim); zlim([-5 2]);
 
     phx.SoftBody("Shape", {"Sphere", "Diameter", 1, "ElementResolution", 24}, "Position", [0.5 0 2], ...
-        "Mass", 1, "Compliance", 1e-3, "Pressure", 15, "Iterations", 10);
+        "Mass", 1, "Compliance", 1e-3, "Pressure", 20, "Iterations", 10);
 
     sim = phx.Simulation("PacingRate", 1);
     sim.step(4, 400);

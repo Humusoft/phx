@@ -27,8 +27,8 @@ function phxex_balancewater(Kp, Kd)
 %   Copyright 2026 HUMUSOFT s.r.o.
 
     arguments
-        Kp (1, 1) double = 2
-        Kd (1, 1) double = 0.5
+        Kp (1, 1) double = 8
+        Kd (1, 1) double = 2
     end
 
     % Figure setup
@@ -55,8 +55,8 @@ function phxex_balancewater(Kp, Kd)
     path = randomStops(p0(1:2), 8, 1.2, 2.5);
 
     % A ball of water of half the cavity's volume, which settles to the
-    % bottom; particles 5 cm apart
-    d = 0.05;
+    % bottom; particles 4 cm apart
+    d = 0.04;
     water = phx.Liquid(ax, "Position", p0, "Spacing", d, "SoundSpeed", 10, "Viscosity", 0.1, "Shape", {"Sphere", "Radius", ballR*0.75});
 
     % Visual trail of the ball path on the plate
@@ -168,7 +168,7 @@ function path = randomStops(start, n, aMax, rest)
 % acceleration aMax allows and is followed by a rest (s). The stream of
 % random numbers has a fixed seed, so every run takes the same path.
 
-    rs = RandStream("twister", "Seed", 12);
+    rs = RandStream("twister", "Seed", 25);
     W = start;
     while size(W, 1) <= n
         q = 2.6*rand(rs, 1, 2) - 1.3;

@@ -28,7 +28,7 @@ function phxex_walker(freq, duty)
 
     arguments
         freq (1, 1) double = 1.0
-        duty (1, 1) double = 0.82
+        duty (1, 1) double = 0.84
     end
 
     % Robot

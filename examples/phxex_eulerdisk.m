@@ -99,7 +99,7 @@ function phxex_eulerdisk(duration, tilt, rollingResistance)
         "Frequency", 100);
 
     % A rim contact at a grazing angle needs a small step and no margin
-    sim = phx.Simulation(ax, "EngineSettings", phx.engine.Settings("Margin", 0));
+    sim = phx.Simulation(ax, "PacingRate", 1);
     dt = 0.0005;
     subSteps = 20;
 

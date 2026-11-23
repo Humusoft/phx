@@ -265,7 +265,11 @@ classdef Liquid < phx.base.ParticleGroup
             % what the TriangleStrip takes as it is)
             [V, F, N] = phx.internal.computeLiquidSurface(P, obj.Spacing);
             if obj.Strip
-                set(obj.hS, "VertexData", V, "NormalData", N, "VertexIndices", reshape(F, 1, []));
+                hS = obj.hS;
+                hS.VertexData = V;
+                hS.NormalData = N;
+                hS.VertexIndices = reshape(F, 1, []);
+                % set(obj.hS, "VertexData", V, "NormalData", N, "VertexIndices", reshape(F, 1, []));
             else
                 set(obj.hS, "Faces", double(F'), "Vertices", double(V'), "VertexNormals", double(N'));
             end
